@@ -5,9 +5,9 @@ import type {
   Condition,
   ConditionOperator,
   ConditionOperand,
-} from '../core/model/conditions.model';
-import { CONDITION_OPERATORS } from '../core/model/conditions.model';
-import { emptyCondition } from '../core/model/conditions.model';
+} from '../shared/model/conditions.model';
+import { CONDITION_OPERATORS } from '../shared/model/conditions.model';
+import { emptyCondition } from '../shared/model/conditions.model';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatIconModule } from '@angular/material/icon';

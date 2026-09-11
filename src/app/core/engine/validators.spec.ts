@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { validateElementValue } from './validators';
-import type { ElementDefinition } from '../model/form.model';
+import type { ElementDefinition } from '../../shared/model/form.model';
 
 const textEl = (overrides: Partial<Record<string, unknown>> = {}): ElementDefinition =>
   ({ id: 'q1', type: 'text', label: 'Name', ...overrides }) as ElementDefinition;

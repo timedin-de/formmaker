@@ -1,4 +1,3 @@
-
 <div class="panel">
   @if (el(); as el) {
     <div class="head">
@@ -188,11 +187,7 @@
         @if (el.type === 'section') {
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
             <mat-label>Heading</mat-label>
-            <input
-              matInput
-              [ngModel]="el.heading"
-              (ngModelChange)="patch({ heading: $event })"
-            />
+            <input matInput [ngModel]="el.heading" (ngModelChange)="patch({ heading: $event })" />
           </mat-form-field>
         }
 
@@ -229,14 +224,11 @@
         </div>
         <div class="opt-row label-row">
           <span class="sec-label">Width</span>
-          <mat-button-toggle-group
-            [value]="widthValue(el.width)"
-            (valueChange)="setWidth($event)"
-          >
-            @for (w of WIDTHS; track w.value) {
-              <mat-button-toggle [value]="w.value">{{ w.label }}</mat-button-toggle>
+          <mat-select [value]="el.width ?? 1" (valueChange)="setWidth($event)">
+            @for (w of WIDTHS; track w.factor) {
+              <mat-option [value]="w.factor">{{ w.label }}</mat-option>
             }
-          </mat-button-toggle-group>
+          </mat-select>
         </div>
       </div>
 
@@ -255,11 +247,7 @@
                     (ngModelChange)="patchOption(i, { label: $event })"
                   />
                 </mat-form-field>
-                <mat-form-field
-                  appearance="outline"
-                  subscriptSizing="dynamic"
-                  class="val-field"
-                >
+                <mat-form-field appearance="outline" subscriptSizing="dynamic" class="val-field">
                   <input
                     matInput
                     placeholder="Value"
@@ -289,16 +277,16 @@
 
       <div class="section">
         <div class="sec-title">Default value</div>
-        <mat-button-toggle-group
-          [value]="defaultKind(el)"
-          (valueChange)="setDefaultKind($event)"
-        >
+        <mat-button-toggle-group [value]="defaultKind(el)" (valueChange)="setDefaultKind($event)">
           <mat-button-toggle value="none">None</mat-button-toggle>
-          <mat-button-toggle value="static">Static</mat-button-toggle>
-          <mat-button-toggle value="expression">Expression</mat-button-toggle>
-          <mat-button-toggle value="field">From field</mat-button-toggle>
+          @if (el.type !== 'group') {
+            <mat-button-toggle value="static">Static</mat-button-toggle>
+            <mat-button-toggle value="expression">Expression</mat-button-toggle>
+            <mat-button-toggle value="fromField">From field</mat-button-toggle>
+          } @else {
+            <mat-button-toggle value="fromField">From group</mat-button-toggle>
+          }
         </mat-button-toggle-group>
-
         @switch (defaultKind(el)) {
           @case ('static') {
             <mat-form-field appearance="outline" subscriptSizing="dynamic">
@@ -320,8 +308,31 @@
           @case ('fromField') {
             <mat-form-field appearance="outline" subscriptSizing="dynamic">
               <mat-select [ngModel]="fieldRef(el)" (ngModelChange)="setFromField($event)">
-                @for (opt of fields(); track opt.id) {
-                  <mat-option [value]="opt.id">{{ opt.label }}</mat-option>
+                @for (page of pages(); track page.id) {
+                  <mat-optgroup [label]="page.title ?? page.id">
+                    @if (el.type === 'group') {
+                      @for (opt of isSameGroup(page.elements); track opt.id) {
+                        <mat-option [value]="opt.id">{{ opt.label }}</mat-option>
+                      }
+                    } @else {
+                      @for (
+                        opt of page.elements.filter(
+                          (field) => field.id !== el?.id && field.type !== 'section'
+                        );
+                        track opt.id
+                      ) {
+                        @if (opt.type === 'group') {
+                          <mat-optgroup [label]="opt.label">
+                            @for (subOpt of opt.elements; track subOpt.id) {
+                              <mat-option [value]="opt.id">{{ subOpt.label }}</mat-option>
+                            }
+                          </mat-optgroup>
+                        } @else {
+                          <mat-option [value]="opt.id">{{ opt.label }}</mat-option>
+                        }
+                      }
+                    }
+                  </mat-optgroup>
                 }
               </mat-select>
             </mat-form-field>
@@ -500,4 +511,3 @@
     </div>
   }
 </div>
-  

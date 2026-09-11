@@ -1,6 +1,11 @@
-import type { FormDefinition, ElementDefinition, Elements } from '../model/form.model';
-import { CONDITION_OPERATORS } from '../model/conditions.model';
-import { VALIDATION_RULE_TYPES } from '../model/validation.model';
+import {
+  type FormDefinition,
+  type ElementDefinition,
+  type Elements,
+  ELEMENT_TYPES,
+} from '../../shared/model/form.model';
+import { CONDITION_OPERATORS } from '../../shared/model/conditions.model';
+import { VALIDATION_RULE_TYPES } from '../../shared/model/validation.model';
 import { expressionReferences } from '../engine/expression/evaluator';
 import { templateReferences } from '../engine/expression/template';
 import { conditionGroupReferences } from '../engine/condition-engine';
@@ -90,24 +95,8 @@ function validateElement(
     issues.push({ path: `${path}.type`, message: 'Missing type' });
     return;
   }
-  const allowedTypes = new Set<string>([
-    'text',
-    'longText',
-    'number',
-    'date',
-    'time',
-    'dateTime',
-    'boolean',
-    'choice',
-    'dropdown',
-    'multiChoice',
-    'scale',
-    'file',
-    'signature',
-    'group',
-    'section',
-  ]);
-  if (!allowedTypes.has(el.type)) {
+
+  if (!ELEMENT_TYPES.includes(el.type)) {
     issues.push({ path: `${path}.type`, message: `Unknown element type "${el.type}"` });
   }
   if (typeof el.id !== 'string' || !el.id)
@@ -224,10 +213,7 @@ function validateReferences(
       if (rule.message) for (const id of templateReferences(rule.message)) ref(id, 'validations');
     }
   }
-  if (
-    (el.type === 'choice' || el.type === 'dropdown' || el.type === 'multiChoice') &&
-    'options' in el
-  ) {
+  if (el.type === 'choice' || el.type === 'dropdown' || el.type === 'multiChoice') {
     const opts = (
       el as {
         options: { label: string; enabledWhen?: Parameters<typeof conditionGroupReferences>[0] }[];

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { evalCondition, evalConditionGroup, conditionGroupReferences } from './condition-engine';
-import type { Condition, ConditionGroup } from '../model/conditions.model';
-import type { FieldValue } from '../model/values.model';
+import type { Condition, ConditionGroup } from '../../shared/model/conditions.model';
+import type { FieldValue } from '../../shared/model/values.model';
 
 const values: Record<string, FieldValue> = {
   name: 'Alice',

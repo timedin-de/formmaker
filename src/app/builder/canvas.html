@@ -1,16 +1,19 @@
-
 <div class="canvas">
   <mat-toolbar class="block-title">
     <span class="clicks">
       @for (page of store().form().pages; track page.id) {
-        <button
+        <a
           class="page-chip"
           [class.active]="store().activePageId() === page.id"
-          (click)="store().selectPage(page.id)"
+          [routerLink]="[]"
+          queryParamsHandling="merge"
+          rel="button"
+          style="text-decoration: none"
+          [queryParams]="{ page: page.id }"
         >
           {{ page.title ?? 'Page' }}
           <mat-icon class="del" (click)="removePage(page)" svgIcon="close"></mat-icon>
-        </button>
+      </a>
       }
       <button class="page-add" matTooltip="Add page" (click)="store().addPage()">
         <mat-icon svgIcon="add"></mat-icon>
@@ -37,6 +40,10 @@
             (ngModelChange)="store().updatePage(page.id, { subtitle: $event })"
           />
         </mat-form-field>
+        <button mat-stroked-button (click)="clonePage(page)">
+          <mat-icon svgIcon="content_copy"></mat-icon>
+          Duplicate Page
+        </button>
       </div>
       <fm-condition-editor
         legend="Page logic — show this page only when"
@@ -86,4 +93,3 @@
     </div>
   }
 </div>
-  

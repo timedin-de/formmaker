@@ -8,10 +8,10 @@ import type {
   ScaleElement,
   FileElement,
   GroupElement,
-} from '../model/form.model';
+} from '../../shared/model/form.model';
 import { newForm, createPage, createElement } from './form-factory';
-import { uuid } from '../model/ids';
-import { emptyConditionGroup } from '../model/conditions.model';
+import { uuid } from '../../shared/model/ids';
+import { emptyConditionGroup } from '../../shared/model/conditions.model';
 
 export function buildDemoForm(): FormDefinition {
   const form = newForm('Customer onboarding');

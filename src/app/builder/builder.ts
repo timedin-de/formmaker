@@ -18,7 +18,7 @@ import { BuilderCanvas } from './canvas';
 import { BuilderPalette } from './palette';
 import { PropertyPanel } from './property-panel';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { switchMap } from 'rxjs';
+import { pairwise, startWith } from 'rxjs';
 
 @Component({
   imports: [
@@ -56,17 +56,32 @@ export class BuilderComponent {
 
   constructor() {
     // Load the working form: ?id= opens an existing form, ?new=1 a blank one.
-    this.route.queryParamMap
-      .pipe(takeUntilDestroyed())
-      .pipe(switchMap(async (q) => (q.get('id') ? this.repo.getForm(q.get('id')!) : null)))
-      .subscribe((loaded) => {
-        if (loaded) {
-          this.store.load(loaded);
-          this.snack.open(`Editing "${loaded.name}"`, 'OK', { duration: 2500 });
-        } else {
-          this.store.createEmpty();
-          this.store.rename(`Untitled form (${new Date().toLocaleDateString()})`);
+    this.route.queryParams
+      .pipe(startWith({ id: undefined, page: undefined }), pairwise(), takeUntilDestroyed())
+      .subscribe(async ([oldParams, q]) => {
+        if (!q.id || oldParams.id !== q.id) {
+          const loaded = q['id'] ? await this.repo.getForm(q['id']!) : null;
+          if (loaded) {
+            this.store.load(loaded);
+            this.snack.open(`Editing "${loaded.name}"`, 'OK', { duration: 2500 });
+          } else {
+            this.store.createEmpty();
+            this.store.rename(`Untitled form (${new Date().toLocaleDateString()})`);
+            this.save();
+            this.router.navigate([], {
+              relativeTo: this.route,
+              queryParams: { id: this.store.form().id },
+            });
+          }
         }
+        if (oldParams.page !== q.page) {
+          this.store.selectPage(q.page);
+        }
+        this.router.navigate([], {
+          relativeTo: this.route,
+          queryParams: { page: this.store.activePageId() },
+          queryParamsHandling: 'merge',
+        });
       });
 
     effect(() => {
@@ -77,14 +92,14 @@ export class BuilderComponent {
     });
   }
 
-  save(): void {
-    this.repo.saveForm(this.store.form());
+  async save(): Promise<void> {
+    await this.repo.saveForm(this.store.form());
     this.saved.set(true);
     this.snack.open('Form saved', 'OK', { duration: 2000 });
   }
 
-  preview(): void {
-    const kept = this.repo.saveForm(this.store.form());
+  async preview(): Promise<void> {
+    const kept = await this.repo.saveForm(this.store.form());
     void this.router.navigate(['/runner', kept.id]);
   }
 

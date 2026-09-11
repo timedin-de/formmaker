@@ -1,8 +1,8 @@
-import type { ElementDefinition } from '../model/form.model';
-import type { ValidationRule, ValidationRuleType } from '../model/validation.model';
+import type { ElementDefinition } from '../../shared/model/form.model';
+import type { ValidationRule, ValidationRuleType } from '../../shared/model/validation.model';
 import { evalExpression } from './expression/evaluator';
 import { interpolateTemplate } from './expression/template';
-import type { FieldValue } from '../model/values.model';
+import type { FieldValue } from '../../shared/model/values.model';
 
 export interface ValidationFailure {
   ruleId: string;

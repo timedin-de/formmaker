@@ -1,5 +1,6 @@
-import type { FormDefinition } from '../model/form.model';
-import type { Submission } from '../model/submission.model';
+import { Injectable, signal } from '@angular/core';
+import type { FormDefinition } from '../../shared/model/form.model';
+import type { Submission } from '../../shared/model/submission.model';
 import { buildDemoForm } from './demo-form';
 
 const FORMS_KEY = 'formmaker.forms.v1';
@@ -22,61 +23,189 @@ function write<T>(key: string, items: T[]): void {
   }
 }
 
-/** Lightweight local persistence for authored forms and submitted responses. */
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(path, {
+    ...init,
+    headers: init?.body ? { 'Content-Type': 'application/json' } : undefined,
+  });
+  if (!res.ok) throw new Error(`API ${res.status}`);
+  if (res.status === 204) return undefined as T;
+  return (await res.json()) as T;
+}
+
+/**
+ * Persistence layer for authored forms and submitted responses.
+ *
+ * Prefers the backend API (see server/). When the API is unreachable the
+ * repository degrades gracefully to localStorage so the app stays usable
+ * offline; `offline()` reflects which backend is currently in use.
+ */
+@Injectable({ providedIn: 'root' })
 export class FormsRepository {
-  listForms(): FormDefinition[] {
-    return read<FormDefinition>(FORMS_KEY);
+  /** true when the backend API is unreachable and localStorage is used instead. */
+  readonly offline = signal<boolean>(false);
+  readonly forms = signal<FormDefinition[]>([]);
+  readonly submissions = signal<Submission[]>([]);
+
+  private hydratePromise: Promise<void> | null = null;
+
+  /** Hydrate in-memory state from the API (falling back to localStorage). */
+  init(): Promise<void> {
+    this.hydratePromise ??= this.hydrate();
+    return this.hydratePromise;
   }
 
-  getForm(id: string): FormDefinition | null {
-    return this.listForms().find((f) => f.id === id) ?? null;
-  }
-
-  saveForm(form: FormDefinition): FormDefinition {
-    const all = read<FormDefinition>(FORMS_KEY);
-    const idx = all.findIndex((f) => f.id === form.id);
-    const normalized = { ...form, updatedAt: new Date().toISOString() };
-    if (idx >= 0) all[idx] = normalized;
-    else all.push(normalized);
-    write(FORMS_KEY, all);
-    return normalized;
-  }
-
-  deleteForm(id: string): void {
-    write(
-      FORMS_KEY,
-      read<FormDefinition>(FORMS_KEY).filter((f) => f.id !== id),
-    );
-  }
-
-  seedDemo(): void {
-    if (this.listForms().length === 0) {
-      this.saveForm(buildDemoForm());
+  private async hydrate(): Promise<void> {
+    try {
+      const forms = await request<FormDefinition[]>('/api/forms');
+      this.offline.set(false);
+      this.forms.set(forms);
+      write(FORMS_KEY, forms);
+    } catch {
+      this.offline.set(true);
+      this.forms.set(read<FormDefinition>(FORMS_KEY));
     }
   }
 
-  listSubmissions(): Submission[] {
-    const all = read<Submission>(SUBMISSIONS_KEY);
-    return [...all].sort((a, b) => b.submittedAt.localeCompare(a.submittedAt));
+  async listForms(): Promise<FormDefinition[]> {
+    await this.init();
+    return this.forms();
   }
 
-  submissionsFor(formId: string): Submission[] {
-    return this.listSubmissions().filter((s) => s.formId === formId);
+  async getForm(id: string): Promise<FormDefinition | null> {
+    await this.init();
+    if (!this.offline()) {
+      try {
+        return await request<FormDefinition>(`/api/forms/${encodeURIComponent(id)}`);
+      } catch {
+        this.offline.set(true);
+      }
+    }
+    return this.forms().find((f) => f.id === id) ?? null;
   }
 
-  addSubmission(submission: Submission): void {
-    const all = read<Submission>(SUBMISSIONS_KEY);
-    write(SUBMISSIONS_KEY, [submission, ...all].slice(0, 500));
+  async saveForm(form: FormDefinition): Promise<FormDefinition> {
+    await this.init();
+    if (!this.offline()) {
+      try {
+        const saved = await request<FormDefinition>('/api/forms', {
+          method: 'POST',
+          body: JSON.stringify(form),
+        });
+        this.upsert([saved]);
+        write(FORMS_KEY, this.forms());
+        return saved;
+      } catch {
+        this.offline.set(true);
+      }
+    }
+    const normalized: FormDefinition = { ...form, updatedAt: new Date().toISOString() };
+    this.upsert([normalized]);
+    write(FORMS_KEY, this.forms());
+    return normalized;
   }
 
-  clearSubmissions(): void {
-    write(SUBMISSIONS_KEY, []);
+  async deleteForm(id: string): Promise<void> {
+    await this.init();
+    if (!this.offline()) {
+      try {
+        await request<void>(`/api/forms/${encodeURIComponent(id)}`, { method: 'DELETE' });
+      } catch {
+        this.offline.set(true);
+      }
+    }
+    this.forms.set(this.forms().filter((f) => f.id !== id));
+    write(FORMS_KEY, this.forms());
   }
 
-  deleteSubmission(id: string): void {
-    write(
-      SUBMISSIONS_KEY,
-      read<Submission>(SUBMISSIONS_KEY).filter((s) => s.id !== id),
+  /** Seed a demo form only when running fully offline with no forms yet. */
+  async seedDemo(): Promise<void> {
+    await this.init();
+    if (this.offline() && this.forms().length === 0) {
+      await this.saveForm(buildDemoForm());
+    }
+  }
+
+  async submissionsFor(formId: string): Promise<Submission[]> {
+    await this.init();
+    if (!this.offline()) {
+      try {
+        const list = await request<Submission[]>(
+          `/api/forms/${encodeURIComponent(formId)}/submissions`,
+        );
+        const merged = [...list, ...this.submissions().filter((s) => s.formId !== formId)].sort(
+          (a, b) => b.submittedAt.localeCompare(a.submittedAt),
+        );
+        this.submissions.set(merged);
+        write(SUBMISSIONS_KEY, merged);
+        return list;
+      } catch {
+        this.offline.set(true);
+      }
+    }
+    return this.submissions()
+      .filter((s) => s.formId === formId)
+      .sort((a, b) => b.submittedAt.localeCompare(a.submittedAt));
+  }
+
+  async addSubmission(submission: Submission): Promise<void> {
+    await this.init();
+    if (!this.offline()) {
+      try {
+        await request<void>(`/api/forms/${encodeURIComponent(submission.formId)}/submissions`, {
+          method: 'POST',
+          body: JSON.stringify(submission),
+        });
+      } catch {
+        this.offline.set(true);
+      }
+    }
+    const all = [submission, ...this.submissions().filter((s) => s.id !== submission.id)].slice(
+      0,
+      2000,
     );
+    this.submissions.set(all);
+    write(SUBMISSIONS_KEY, all);
+  }
+
+  async deleteSubmission(formId: string, submissionId: string): Promise<void> {
+    await this.init();
+    if (!this.offline()) {
+      try {
+        await request<void>(
+          `/api/forms/${encodeURIComponent(formId)}/submissions/${encodeURIComponent(submissionId)}`,
+          { method: 'DELETE' },
+        );
+      } catch {
+        this.offline.set(true);
+      }
+    }
+    const all = this.submissions().filter((s) => !(s.formId === formId && s.id === submissionId));
+    this.submissions.set(all);
+    write(SUBMISSIONS_KEY, all);
+  }
+
+  async clearSubmissions(formId: string): Promise<void> {
+    await this.init();
+    if (!this.offline()) {
+      try {
+        await request<void>(`/api/forms/${encodeURIComponent(formId)}/submissions`, {
+          method: 'DELETE',
+        });
+      } catch {
+        this.offline.set(true);
+      }
+    }
+    const all = this.submissions().filter((s) => s.formId !== formId);
+    this.submissions.set(all);
+    write(SUBMISSIONS_KEY, all);
+  }
+
+  private upsert(updated: FormDefinition[]): void {
+    this.forms.update((existing) => {
+      const byId = new Map(existing.map((f) => [f.id, f]));
+      for (const f of updated) byId.set(f.id, f);
+      return [...byId.values()];
+    });
   }
 }

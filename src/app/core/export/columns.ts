@@ -1,6 +1,6 @@
-import type { FormDefinition, Elements } from '../model/form.model';
-import type { Submission } from '../model/submission.model';
-import type { FieldValue } from '../model/values.model';
+import type { FormDefinition, Elements } from '../../shared/model/form.model';
+import type { Submission } from '../../shared/model/submission.model';
+import type { FieldValue } from '../../shared/model/values.model';
 
 export interface ExportColumn {
   /** stable key used to look up the submission value. */

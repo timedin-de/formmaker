@@ -7,6 +7,8 @@
     "prestart": "npm run icons:copy",
     "prebuild": "npm run icons:copy",
     "start": "ng serve",
+    "start:api": "tsx server/index.ts",
+    "start:all": "node server/run-both.mjs",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
@@ -15,7 +17,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "tsc -p tsconfig.app.json --noEmit && tsc -p tsconfig.spec.json --noEmit",
-    "check": "npm run lint && npm run format:check && npm run typecheck && npm run test:ci && npm run build"
+    "typecheck:server": "tsc -p server/tsconfig.json --noEmit",
+    "check": "npm run lint && npm run format:check && npm run typecheck && npm run typecheck:server && npm run test:ci && npm run build"
   },
   "private": true,
   "packageManager": "npm@11.12.1",
@@ -29,7 +32,9 @@
     "@angular/material": "^22.1.6",
     "@angular/platform-browser": "^22.1.0",
     "@angular/router": "^22.1.0",
+    "cors": "^2.8.6",
     "exceljs": "^4.4.0",
+    "express": "^5.2.1",
     "rxjs": "~7.8.0",
     "signature_pad": "^5.1.4",
     "tslib": "^2.3.0"
@@ -40,10 +45,14 @@
     "@angular/compiler-cli": "^22.1.0",
     "@eslint/js": "^10.0.1",
     "@material-design-icons/svg": "^0.14.15",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/node": "^22.20.2",
     "angular-eslint": "22.5.0",
     "eslint": "^10.9.1",
     "jsdom": "^28.0.0",
     "prettier": "^3.8.1",
+    "tsx": "^4.23.13",
     "typescript": "~6.0.2",
     "typescript-eslint": "8.69.0",
     "vitest": "^4.0.8"

@@ -1,4 +1,4 @@
-import { computed, signal, Injectable } from '@angular/core';
+import { computed, signal, Injectable, inject } from '@angular/core';
 import type {
   ElementDefinition,
   FormDefinition,
@@ -6,9 +6,9 @@ import type {
   PageDefinition,
   QuestionType,
   ElementType,
-} from '../model/form.model';
+} from '../../shared/model/form.model';
 import { createElement, createPage, insertElementAfter, newForm } from './form-factory';
-import { uuid } from '../model/ids';
+import { uuid } from '../../shared/model/ids';
 
 const STORAGE_KEY = 'formmaker.designer.v1';
 
@@ -85,6 +85,16 @@ export class DesignerStore {
     return page;
   }
 
+  clonePage(pageId: string): void {
+    const src = this.form().pages.find((p) => p.id === pageId);
+    if (!src) return;
+    const copy = clonePageWithFreshId(src);
+    const pages = this.form().pages;
+    pages.push(copy);
+    this.patchForm({ pages });
+    this.selectedId.set(copy.id);
+  }
+
   removePage(pageId: string): void {
     const pages = this.form().pages.filter((p) => p.id !== pageId);
     this.patchForm({ pages });
@@ -158,7 +168,7 @@ export class DesignerStore {
   }
 
   selectPage(id: string): void {
-    this.activePageId.set(id);
+    if (this.form().pages.find((page) => page.id === id)) this.activePageId.set(id);
   }
 
   toJSON(): string {
@@ -304,6 +314,18 @@ function cloneElementWithFreshId(el: ElementDefinition): ElementDefinition {
   }
   if (cloned.type === 'group') {
     cloned.elements = cloned.elements.map((c) => ({ ...c, id: uuid() }));
+  }
+  return cloned;
+}
+
+function clonePageWithFreshId(el: PageDefinition): PageDefinition {
+  const cloned = structuredCloneSafe(el);
+  cloned.id = uuid();
+  cloned.title = `${el.title} (copy)`;
+  cloned.subtitle = `${el.subtitle ?? ''}`;
+
+  if ('elements' in cloned) {
+    cloned.elements = cloned.elements.map((e) => cloneElementWithFreshId(e));
   }
   return cloned;
 }

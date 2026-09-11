@@ -1,7 +1,7 @@
 import { Component, computed, input } from '@angular/core';
 import { DesignerStore } from '../core/state/designer.store';
 import { fieldMeta } from '../core/model/field-registry';
-import type { ElementDefinition, GroupElement } from '../core/model/form.model';
+import type { ElementDefinition, GroupElement } from '../shared/model/form.model';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';

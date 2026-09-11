@@ -2,23 +2,28 @@ import type { ElementId, FormId, PageId } from './ids';
 import type { ConditionGroup } from './conditions.model';
 import type { FieldValue } from './values.model';
 import type { ValidationRule } from './validation.model';
+import { ElementViewRef } from '../../core';
 
-export type QuestionType =
-  | 'text'
-  | 'longText'
-  | 'number'
-  | 'date'
-  | 'time'
-  | 'dateTime'
-  | 'boolean'
-  | 'choice'
-  | 'dropdown'
-  | 'multiChoice'
-  | 'scale'
-  | 'file'
-  | 'signature';
+export const QUESTION_TYPES = [
+  'text',
+  'longText',
+  'number',
+  'date',
+  'time',
+  'dateTime',
+  'boolean',
+  'choice',
+  'dropdown',
+  'multiChoice',
+  'scale',
+  'file',
+  'signature',
+] as const;
 
-export type ElementType = QuestionType | 'group' | 'section';
+export const ELEMENT_TYPES = [...QUESTION_TYPES, 'group', 'section', 'textdisplay'] as const;
+
+export type QuestionType = (typeof QUESTION_TYPES)[number];
+export type ElementType = (typeof ELEMENT_TYPES)[number];
 
 // ---------------------------------------------------------------------------
 // Default / predefined values
@@ -32,7 +37,7 @@ export type DefaultValueDef =
    */
   | { kind: 'expression'; expression: string }
   /** Copy the value of another field, optionally transformed. */
-  | { kind: 'fromField'; fieldId: ElementId; transform?: 'identity' | 'upper' | 'lower' };
+  | { kind: 'fromField'; fieldId: ElementId };
 
 // ---------------------------------------------------------------------------
 // Calculations
@@ -57,36 +62,45 @@ export interface ElementBase {
   /** Supports piping: segments like {{otherFieldId}} are substituted. */
   label: string;
   description?: string;
-  placeholder?: string;
-  readonly?: boolean;
-  /** Conditional (question/group based) visibility. Empty group = always visible. */
+  width?: number;
   enabledWhen?: ConditionGroup;
-  /** Static mandatory flag (rendered as rule) — sets a `required` validation preemptively. */
+}
+
+interface QuestionAttributes {
+  type: QuestionType;
+  placeholder?: string;
+  defaultValue?: DefaultValueDef;
   required?: boolean;
   validations?: ValidationRule[];
-  /** Static or dynamic predefined value. */
-  defaultValue?: DefaultValueDef;
-  /** Width factor within the row: 1 = full, 0.5 = half, 0.33 = third, etc. */
-  width?: number | 'full' | 'half' | 'third';
+  readonly?: boolean;
 }
+
+export interface ExtendedElementBase extends ElementBase {
+  placeholder?: undefined;
+  defaultValue?: undefined;
+  required?: undefined;
+  validations?: undefined;
+  readonly?: undefined;
+}
+
+export type QuestionBase = ElementBase & QuestionAttributes;
 
 export interface ChoiceOption {
   id: string;
   label: string;
   value: string | number;
-  enabledWhen?: ConditionGroup;
 }
 
-export interface ChoiceElement extends ElementBase {
+export interface ChoiceElement extends QuestionBase {
   type: 'choice' | 'dropdown' | 'multiChoice';
   options: ChoiceOption[];
 }
 
-export interface ScalarElement extends ElementBase {
+export interface ScalarElement extends QuestionBase {
   type: Exclude<QuestionType, 'choice' | 'dropdown' | 'multiChoice' | 'file' | 'signature'>;
 }
 
-export interface NumberElement extends ElementBase {
+export interface NumberElement extends QuestionBase {
   type: 'number';
   min?: number;
   max?: number;
@@ -97,7 +111,7 @@ export interface NumberElement extends ElementBase {
   decimals?: number;
 }
 
-export interface ScaleElement extends ElementBase {
+export interface ScaleElement extends QuestionBase {
   type: 'scale';
   min: number;
   max: number;
@@ -106,49 +120,53 @@ export interface ScaleElement extends ElementBase {
   maxLabel?: string;
 }
 
-export interface FileElement extends ElementBase {
+export interface FileElement extends QuestionBase {
   type: 'file';
   accept?: string;
   multiple?: boolean;
 }
 
-export interface SignatureElement extends ElementBase {
+export interface SignatureElement extends QuestionBase {
   type: 'signature';
 }
 
-export interface BooleanElement extends ElementBase {
+export interface BooleanElement extends QuestionBase {
   type: 'boolean';
 }
 
-export interface DateElement extends ElementBase {
+export interface DateElement extends QuestionBase {
   type: 'date' | 'time' | 'dateTime';
 }
 
-export interface TextElement extends ElementBase {
+export interface TextElement extends QuestionBase {
   type: 'text';
   inputType?: 'text' | 'email' | 'url' | 'phone' | 'number';
   maxLength?: number;
 }
 
-export interface LongTextElement extends ElementBase {
+export interface LongTextElement extends QuestionBase {
   type: 'longText';
   rows?: number;
   maxLength?: number;
 }
 
-export interface GroupElement extends ElementBase {
+export interface GroupElement extends ExtendedElementBase {
   type: 'group';
   legend?: string;
   elements: Elements;
+  elementsRef?: ElementViewRef[];
   collapsible?: boolean;
 }
 
-export interface SectionElement extends ElementBase {
+export interface SectionElement extends ExtendedElementBase {
   type: 'section';
   heading: string;
 }
 
-export type ElementDefinition =
+export interface TextDisplayElement extends ExtendedElementBase {
+  type: 'textdisplay';
+}
+export type QuestionDefinition =
   | TextElement
   | LongTextElement
   | NumberElement
@@ -157,9 +175,10 @@ export type ElementDefinition =
   | ChoiceElement
   | ScaleElement
   | FileElement
-  | SignatureElement
-  | GroupElement
-  | SectionElement;
+  | SignatureElement;
+
+export type ElementDefinition =
+  QuestionDefinition | GroupElement | SectionElement | TextDisplayElement;
 
 export type Elements = ElementDefinition[];
 

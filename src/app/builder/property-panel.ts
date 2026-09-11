@@ -6,11 +6,13 @@ import type {
   ChoiceElement,
   DefaultValueDef,
   ElementDefinition,
+  Elements,
+  GroupElement,
   NumberElement,
-} from '../core/model/form.model';
-import type { ValidationRule, ValidationRuleType } from '../core/model/validation.model';
-import { VALIDATION_RULE_TYPES, validationRule } from '../core/model/validation.model';
-import { uuid } from '../core/model/ids';
+} from '../shared/model/form.model';
+import type { ValidationRule, ValidationRuleType } from '../shared/model/validation.model';
+import { VALIDATION_RULE_TYPES, validationRule } from '../shared/model/validation.model';
+import { uuid } from '../shared/model/ids';
 import { ConditionEditor } from './condition-editor';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
@@ -23,11 +25,9 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatExpansionModule } from '@angular/material/expansion';
 
-const WIDTHS = [
-  { value: 'full', label: 'Full', factor: 1 },
-  { value: 'half', label: 'Half', factor: 0.5 },
-  { value: 'third', label: 'Third', factor: 0.33 },
-] as const;
+const WIDTHS = Array(12)
+  .fill(12)
+  .map((v, i) => ({ label: `${i + 1}/${v}`, factor: (i + 1) / 12 }));
 
 const INPUT_TYPES = [
   { value: 'text', label: 'Text' },
@@ -63,9 +63,12 @@ export class PropertyPanel {
   protected readonly INPUT_TYPES = INPUT_TYPES;
   protected readonly VALIDATION_RULE_TYPES = VALIDATION_RULE_TYPES;
 
-  protected el = computed(() => this.store().selectedElement());
+  protected el = computed(() => {
+    return this.store().selectedElement();
+  });
   protected meta = computed(() => (this.el() ? fieldMeta(this.el()!.type) : fieldMeta('text')));
   protected emptyGroup = computed(() => ({ logic: 'all' as const, conditions: [], groups: [] }));
+  protected pages = computed(() => this.store().form().pages);
   protected fields = computed(() =>
     this.store()
       .form()
@@ -84,7 +87,7 @@ export class PropertyPanel {
     this.store().updateElement(this.sel().id, patch);
   }
 
-str(value: unknown): string {
+  str(value: unknown): string {
     if (value === null || value === undefined) return '';
     return String(value);
   }
@@ -160,15 +163,8 @@ str(value: unknown): string {
 
   // ---- default value ----------------------------------------------------------
 
-  widthValue(w: number | 'full' | 'half' | 'third' | undefined): 'full' | 'half' | 'third' {
-    if (w === 'full' || w === 'half' || w === 'third') return w;
-    return 'full';
-  }
-
-  setWidth(value: string | number): void {
-    if (value === 'full' || value === 'half' || value === 'third') {
-      this.patch({ width: value });
-    }
+  setWidth(value: number): void {
+    this.patch({ width: value });
   }
 
   defaultKind(el: ElementDefinition): 'none' | 'static' | 'expression' | 'fromField' {
@@ -182,8 +178,8 @@ str(value: unknown): string {
           return { kind: 'static', value: null };
         case 'expression':
           return { kind: 'expression', expression: '' };
-        case 'field':
-          return { kind: 'fromField', fieldId: this.fields()[0]?.id ?? '', transform: 'identity' };
+        case 'fromField':
+          return { kind: 'fromField', fieldId: this.fields()[0]?.id ?? '' };
         default:
           return undefined;
       }
@@ -213,7 +209,25 @@ str(value: unknown): string {
   }
 
   setFromField(fieldId: string): void {
-    this.patch({ defaultValue: { kind: 'fromField', fieldId, transform: 'identity' } });
+    this.patch({ defaultValue: { kind: 'fromField', fieldId } });
+    const selected = this.el();
+    if (selected?.type === 'group') {
+      const selectedGroup = this.store()
+        .form()
+        .pages.flatMap((p) => p.elements)
+        .find((f): f is GroupElement => f.id === fieldId);
+      const values = selectedGroup?.elements;
+
+      const elements = selected.elements
+        .map((e, i) => {
+          const fieldId = values?.[i].id;
+          if (!fieldId) return;
+          e.defaultValue = { kind: 'fromField', fieldId };
+          return e;
+        })
+        .filter((x) => !!x);
+      this.patch({ elements });
+    }
   }
 
   // ---- calculation ------------------------------------------------------------
@@ -308,5 +322,16 @@ str(value: unknown): string {
     this.patch({
       validations: (el.validations ?? []).map((r) => (r.id === id ? { ...r, ...patch } : r)),
     });
+  }
+
+  isSameGroup(otherGroups: Elements) {
+    const thisGroup = this.el();
+    if (thisGroup?.type !== 'group') return;
+    const thisElems = thisGroup.elements;
+
+    return otherGroups.filter(
+      (e): e is GroupElement =>
+        e.type === 'group' && e.id !== this.el()?.id && thisElems.length === e.elements.length,
+    );
   }
 }

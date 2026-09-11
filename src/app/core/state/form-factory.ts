@@ -2,12 +2,12 @@ import type {
   ChoiceElement,
   ElementDefinition,
   Elements,
+  ElementType,
   FormDefinition,
   PageDefinition,
-  QuestionType,
-} from '../model/form.model';
-import { elementId, pageId, uuid } from '../model/ids';
-import { emptyConditionGroup } from '../model/conditions.model';
+} from '../../shared/model/form.model';
+import { elementId, pageId, uuid } from '../../shared/model/ids';
+import { emptyConditionGroup } from '../../shared/model/conditions.model';
 
 export function newForm(name = 'Untitled form'): FormDefinition {
   const now = new Date().toISOString();
@@ -26,7 +26,7 @@ export function newForm(name = 'Untitled form'): FormDefinition {
       navigation: 'auto',
       enableAutoSave: true,
     },
-    pages: [createPage(), createPage()],
+    pages: [createPage()],
   };
 }
 
@@ -34,16 +34,13 @@ export function createPage(title = 'New page'): PageDefinition {
   return { id: pageId(), title, elements: [], enabledWhen: emptyConditionGroup() };
 }
 
-export function createElement(
-  type: QuestionType | 'group' | 'section',
-  label: string,
-): ElementDefinition {
+export function createElement(type: ElementType, label: string): ElementDefinition {
   const base = {
+    type,
     id: elementId('q'),
     label,
     enabledWhen: emptyConditionGroup(),
-    validations: [] as never[],
-    width: 'full' as const,
+    width: 1,
   };
   switch (type) {
     case 'text':
@@ -68,7 +65,7 @@ export function createElement(
           { id: uuid(), label: 'Option 1', value: 'option_1' },
           { id: uuid(), label: 'Option 2', value: 'option_2' },
         ],
-      } as ChoiceElement;
+      };
     case 'dropdown':
       return {
         ...base,
@@ -105,6 +102,8 @@ export function createElement(
       return { ...base, type: 'group', elements: [] };
     case 'section':
       return { ...base, type: 'section', heading: 'Section heading' };
+    case 'textdisplay':
+      return { ...base, type: 'textdisplay' };
   }
 }
 
@@ -113,7 +112,7 @@ export function insertElementAfter(
   after: string | null,
   el: ElementDefinition,
 ): Elements {
-  const idx = after ? elements.findIndex((e) => e.id === after) : -1;
+  const idx = after ? elements.findIndex((e) => e.id === after) : elements.length;
   const next = [...elements];
   next.splice(idx + 1, 0, el);
   return next;

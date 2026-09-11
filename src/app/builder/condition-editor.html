@@ -1,4 +1,3 @@
-
 <div class="cond">
   <div class="row">
     <span class="legend">{{ legend() }}</span>
@@ -19,10 +18,7 @@
       </mat-form-field>
 
       <mat-form-field appearance="outline" subscriptSizing="dynamic">
-        <mat-select
-          [ngModel]="cond.operator"
-          (ngModelChange)="set($index, { operator: $event })"
-        >
+        <mat-select [ngModel]="cond.operator" (ngModelChange)="set($index, { operator: $event })">
           @for (op of OPERATORS; track op) {
             <mat-option [value]="op">{{ OPERATOR_LABELS[op] }}</mat-option>
           }
@@ -117,10 +113,11 @@
   }
 
   <div class="add-row">
-    <button mat-stroked-button (click)="addCond()"><mat-icon svgIcon="add"></mat-icon> Condition</button>
+    <button mat-stroked-button (click)="addCond()">
+      <mat-icon svgIcon="add"></mat-icon> Condition
+    </button>
     <button mat-stroked-button (click)="addGroup()">
       <mat-icon svgIcon="account_tree"></mat-icon> Nested group
     </button>
   </div>
 </div>
-  

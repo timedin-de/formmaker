@@ -1,13 +1,19 @@
 import { computed, signal } from '@angular/core';
 import { FormControl, FormGroup } from '@angular/forms';
-import type { FormDefinition, ElementDefinition, GroupElement } from '../model/form.model';
-import type { FieldValue, ValuesMap } from '../model/values.model';
+import {
+  type FormDefinition,
+  type ElementDefinition,
+  QUESTION_TYPES,
+  QuestionType,
+  QuestionDefinition,
+} from '../../shared/model/form.model';
+import type { FieldValue, ValuesMap } from '../../shared/model/values.model';
 import { FormEvaluator, type FormEvaluation } from './form-evaluator';
 import { evalExpression } from '../engine/expression/evaluator';
 import { validateElementValue } from '../engine/validators';
-import type { Submission } from '../model/submission.model';
+import type { Submission } from '../../shared/model/submission.model';
 import { collectElementRefs } from '../engine/dependencies';
-import { uuid } from '../model/ids';
+import { uuid } from '../../shared/model/ids';
 import { filter, debounceTime } from 'rxjs';
 
 export interface RunnerPage {
@@ -119,7 +125,7 @@ export class RunnerStore {
 
   private rebuildControls(form: FormDefinition, initialValues?: ValuesMap): void {
     const incoming = new Map<string, FormControl>();
-    walkElements(form, (el) => {
+    walkQuestions(form, (el) => {
       const existing = this.answers.get(el.id);
       if (existing) {
         incoming.set(el.id, existing as FormControl);
@@ -178,7 +184,6 @@ export class RunnerStore {
     diff: string[] | 'all' = 'all',
   ): void {
     const evalResult = this.evaluator.compute(values, diff === 'all' ? [] : diff);
-
     // Write calculated values into their controls (silently, no loops).
     for (const [id, view] of evalResult.byId) {
       if (!view.computed) continue;
@@ -188,18 +193,18 @@ export class RunnerStore {
       }
     }
 
-    // Apply dynamic defaults to still-empty controls when their deps changed.
+    // Apply dynamic defaults
     if (this.defaultsInitDone) {
-      walkElements(form, (el) => {
+      walkQuestions(form, (el) => {
         const dv = el.defaultValue;
         if (!dv || dv.kind === 'static') return;
         const control = this.answers.get(el.id);
-        if (!control || !isEmptyValueForDefault(control.getRawValue())) return;
+        if (!control || control.touched) return;
         const deps = collectElementRefs(el);
         if (diff !== 'all' && !deps.some((d) => diff.includes(d))) return;
         const value =
           dv.kind === 'fromField'
-            ? transformCopy(values[dv.fieldId] ?? null, dv.transform)
+            ? (values[dv.fieldId] ?? null)
             : (evalExpression(dv.expression, values) as FieldValue);
         if (!equal(control.getRawValue(), value)) {
           control.setValue(value, { emitEvent: false });
@@ -342,15 +347,25 @@ export class RunnerStore {
     const out: RunnerPage[] = [];
     for (const pv of evaluation.pages) {
       const refs: ElementViewRef[] = [];
-      const collect = (el: ElementDefinition): void => {
-        if (el.type === 'group') {
-          (el as GroupElement).elements.forEach(collect);
-          return;
-        }
+      const collect = (el: ElementDefinition): ElementViewRef | undefined => {
         const view = evaluation.byId.get(el.id);
         const control = this.answers.get(el.id) as FormControl;
-        if (!view || !control) return;
-        refs.push({
+        if (!view || !control) return undefined;
+
+        if (el.type === 'group') {
+          el.elementsRef = el.elements.map(collect).filter((x) => !!x) ?? [];
+          return {
+            id: el.id,
+            el,
+            label: view?.label,
+            description: el.description ?? '',
+            placeholder: el.placeholder ?? '',
+            visible: view.visible,
+            computed: view.computed,
+            control,
+          };
+        }
+        return {
           id: el.id,
           el,
           label: view.label,
@@ -359,9 +374,13 @@ export class RunnerStore {
           visible: view.visible,
           computed: view.computed,
           control,
-        });
+        };
       };
-      pv.elements.forEach((v) => collect(v.element));
+
+      pv.elements.forEach((v) => {
+        const collected = collect(v.element);
+        if (collected) refs.push(collected);
+      });
       out.push({
         id: pv.page.id,
         title: pv.page.title ?? `Page ${out.length + 1}`,
@@ -375,10 +394,10 @@ export class RunnerStore {
   }
 
   private evalInitialDefault(el: ElementDefinition, values: ValuesMap): FieldValue {
-    const dv = el.defaultValue;
+    const dv = 'defaultValue' in el && el.defaultValue;
     if (!dv) return null;
     if (dv.kind === 'static') return dv.value ?? null;
-    if (dv.kind === 'fromField') return transformCopy(values[dv.fieldId] ?? null, dv.transform);
+    if (dv.kind === 'fromField') return values[dv.fieldId] ?? null;
     try {
       return evalExpression(dv.expression, values) as FieldValue;
     } catch {
@@ -387,40 +406,23 @@ export class RunnerStore {
   }
 }
 
-function transformCopy(value: FieldValue, transform: string | undefined): FieldValue {
-  if (value === null || value === undefined) return null;
-  switch (transform) {
-    case 'upper':
-      return typeof value === 'string' ? value.toUpperCase() : value;
-    case 'lower':
-      return typeof value === 'string' ? value.toLowerCase() : value;
-    default:
-      return value;
-  }
-}
-
-function isEmptyValueForDefault(value: FieldValue): boolean {
-  return (
-    value === null ||
-    value === undefined ||
-    value === '' ||
-    (Array.isArray(value) && value.length === 0)
-  );
-}
-
 function equal(a: FieldValue, b: FieldValue): boolean {
   return JSON.stringify(a) === JSON.stringify(b);
 }
 
-function walkElements(form: FormDefinition, fn: (el: ElementDefinition) => void): void {
+function walkQuestions(form: FormDefinition, fn: (el: ElementDefinition) => void): void {
   for (const page of form.pages) {
     const walk = (els: ElementDefinition[]) => {
       for (const el of els) {
         fn(el);
-        if (el.type === 'group') walk((el as GroupElement).elements);
+        if (el.type === 'group') walk(el.elements);
       }
     };
-    walk(page.elements);
+    walk(
+      page.elements.filter((e): e is QuestionDefinition =>
+        QUESTION_TYPES.includes(e.type as QuestionType),
+      ),
+    );
   }
 }
 

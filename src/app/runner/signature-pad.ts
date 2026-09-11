@@ -3,7 +3,7 @@ import { ElementRef, OnDestroy } from '@angular/core';
 import SignaturePad from 'signature_pad';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import type { SignatureValue } from '../core/model/values.model';
+import type { SignatureValue } from '../shared/model/values.model';
 
 @Component({
   selector: 'fm-signature-pad',

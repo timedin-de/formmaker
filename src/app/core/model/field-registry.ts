@@ -1,9 +1,10 @@
-import type { ElementType, QuestionType } from './form.model';
+import type { ElementType } from '../../shared/model/form.model';
+import { IconName } from '../icon-names';
 
 export interface FieldTypeMeta {
-  type: QuestionType | 'group' | 'section';
+  type: ElementType;
   label: string;
-  icon: string;
+  icon: IconName;
   category: 'basic' | 'advanced' | 'special' | 'layout';
   description: string;
 }
@@ -108,24 +109,15 @@ export const FIELD_TYPES: FieldTypeMeta[] = [
     category: 'layout',
     description: 'Heading divider',
   },
+  {
+    type: 'textdisplay',
+    label: 'Textdisplay',
+    icon: 'text_snippet',
+    category: 'layout',
+    description: 'Shows a text',
+  },
 ];
 
 export function fieldMeta(type: ElementType): FieldTypeMeta {
   return FIELD_TYPES.find((f) => f.type === type) ?? FIELD_TYPES[0];
 }
-
-export const QUESTION_TYPES: QuestionType[] = [
-  'text',
-  'longText',
-  'number',
-  'boolean',
-  'choice',
-  'dropdown',
-  'multiChoice',
-  'date',
-  'time',
-  'dateTime',
-  'scale',
-  'file',
-  'signature',
-];

@@ -8,8 +8,8 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { FormsRepository } from '../core/state/forms.repository';
-import type { FormDefinition } from '../core/model/form.model';
-import type { Submission } from '../core/model/submission.model';
+import type { FormDefinition } from '../shared/model/form.model';
+import type { Submission } from '../shared/model/submission.model';
 import { buildColumns, rowForSubmission } from '../core/export';
 import { submissionsToCsv } from '../core/export';
 import { submissionsToExcel } from '../core/export';
@@ -44,10 +44,12 @@ export class Results {
   constructor() {
     const id = this.route.snapshot.paramMap.get('id');
     this.formId.set(id);
-    if (id) {
-      this.form.set(this.repo.getForm(id));
-      this.submissions.set(this.repo.submissionsFor(id));
-    }
+    if (id) void this.load(id);
+  }
+
+  private async load(id: string): Promise<void> {
+    this.form.set(await this.repo.getForm(id));
+    this.submissions.set(await this.repo.submissionsFor(id));
   }
 
   back(): void {
@@ -80,15 +82,19 @@ export class Results {
     return `${Math.floor(s / 60)}m ${s % 60}s`;
   }
 
-  deleteOne(id: string): void {
-    this.repo.deleteSubmission(id);
-    this.submissions.set(this.repo.submissionsFor(this.formId() ?? ''));
+  async deleteOne(id: string): Promise<void> {
+    const formId = this.formId();
+    if (!formId) return;
+    await this.repo.deleteSubmission(formId, id);
+    this.submissions.set(await this.repo.submissionsFor(formId));
     this.snack.open('Submission deleted', 'OK', { duration: 2000 });
   }
 
-  clearAll(): void {
-    this.repo.clearSubmissions();
-    this.submissions.set([]);
+  async clearAll(): Promise<void> {
+    const formId = this.formId();
+    if (!formId) return;
+    await this.repo.clearSubmissions(formId);
+    this.submissions.set(await this.repo.submissionsFor(formId));
     this.snack.open('All submissions cleared', 'OK', { duration: 2000 });
   }
 

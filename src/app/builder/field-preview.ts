@@ -1,5 +1,5 @@
 import { Component, input } from '@angular/core';
-import type { ChoiceElement, ElementDefinition, ScaleElement } from '../core/model/form.model';
+import type { ChoiceElement, ElementDefinition, ScaleElement } from '../shared/model/form.model';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatFormFieldModule } from '@angular/material/form-field';

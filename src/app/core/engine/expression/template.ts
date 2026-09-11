@@ -1,4 +1,4 @@
-import type { FieldValue } from '../../model/values.model';
+import type { FieldValue } from '../../../shared/model/values.model';
 
 export const TEMPLATE_PATTERN =
   /\{\{\s*([A-Za-z][A-Za-z0-9_.-]*)\s*(?:\|\s*([A-Za-z]+)(?:\s*:\s*([^}]*))?)?\s*\}\}/g;

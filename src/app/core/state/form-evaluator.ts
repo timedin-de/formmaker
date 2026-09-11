@@ -1,5 +1,9 @@
-import type { FormDefinition, ElementDefinition, PageDefinition } from '../model/form.model';
-import type { FieldValue, ValuesMap } from '../model/values.model';
+import type {
+  FormDefinition,
+  ElementDefinition,
+  PageDefinition,
+} from '../../shared/model/form.model';
+import type { FieldValue, ValuesMap } from '../../shared/model/values.model';
 import { evalConditionGroup } from '../engine/condition-engine';
 import { evalExpression } from '../engine/expression/evaluator';
 import { interpolateTemplate } from '../engine/expression/template';
@@ -101,6 +105,12 @@ export class FormEvaluator {
         const view = this.evaluateElement(el, values);
         views.push(view);
         byId.set(el.id, view);
+        if (el.type === 'group') {
+          for (const gel of el.elements) {
+            const gview = this.evaluateElement(gel, values);
+            byId.set(gel.id, gview);
+          }
+        }
       }
       pages.push({ page, visible: pageVisible, elements: views });
     }

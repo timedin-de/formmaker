@@ -1,7 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { FormsRepository } from '../core/state/forms.repository';
-import type { FormDefinition } from '../core/model/form.model';
+import type { FormDefinition } from '../shared/model/form.model';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatCardModule } from '@angular/material/card';
@@ -34,12 +34,14 @@ export class LandingComponent {
   readonly forms = signal<FormDefinition[]>([]);
 
   constructor() {
-    this.repo.seedDemo();
-    this.refresh();
+    void this.repo
+      .init()
+      .then(() => this.repo.seedDemo())
+      .then(() => this.refresh());
   }
 
-  refresh(): void {
-    this.forms.set(this.repo.listForms());
+  async refresh(): Promise<void> {
+    this.forms.set(await this.repo.listForms());
   }
 
   countQuestions(form: FormDefinition): number {
@@ -63,9 +65,9 @@ export class LandingComponent {
     downloadJSON(form, toSlug(form.name) + '.json');
   }
 
-  remove(form: FormDefinition): void {
-    this.repo.deleteForm(form.id);
-    this.refresh();
+  async remove(form: FormDefinition): Promise<void> {
+    await this.repo.deleteForm(form.id);
+    await this.refresh();
   }
 
   async onImport(event: Event): Promise<void> {
@@ -81,8 +83,8 @@ export class LandingComponent {
       this.snack.open(`Invalid form definition: ${issues[0].message}`, 'OK', { duration: 6000 });
       return;
     }
-    this.repo.saveForm(data);
-    this.refresh();
+    await this.repo.saveForm(data);
+    await this.refresh();
     this.snack.open(`Imported "${data.name}"`, 'OK', { duration: 3000 });
   }
 }

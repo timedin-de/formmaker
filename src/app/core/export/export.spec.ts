@@ -3,8 +3,8 @@ import { buildColumns, formatValueForExport, buildExportTable } from './columns'
 import { toCsv, submissionsToCsv } from './csv-exporter';
 import { validateFormDefinition } from './form-schema';
 import { newForm, createElement, createPage } from '../state/form-factory';
-import type { FormDefinition } from '../model/form.model';
-import type { Submission } from '../model/submission.model';
+import type { FormDefinition } from '../../shared/model/form.model';
+import type { Submission } from '../../shared/model/submission.model';
 
 function demoForm(): FormDefinition {
   const form = newForm('Demo');

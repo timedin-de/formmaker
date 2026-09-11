@@ -1,7 +1,7 @@
 import { formatValueForExport, buildColumns } from './columns';
-import type { Submission } from '../model/submission.model';
-import type { FormDefinition } from '../model/form.model';
-import type { FieldValue } from '../model/values.model';
+import type { Submission } from '../../shared/model/submission.model';
+import type { FormDefinition } from '../../shared/model/form.model';
+import type { FieldValue } from '../../shared/model/values.model';
 
 /** RFC-4180-ish CSV serialization (quotes when needed, CRLF). */
 export function toCsv(header: string[], rows: (string | number | boolean | null)[][]): Blob {

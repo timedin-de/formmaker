@@ -1,6 +1,6 @@
 import { collectReferences, parse } from './parser';
 import type { Expr, ExprValue, Primitive } from './ast';
-import type { FieldValue } from '../../model/values.model';
+import type { FieldValue } from '../../../shared/model/values.model';
 
 export type EvalContext = Readonly<Record<string, FieldValue>>;
 
