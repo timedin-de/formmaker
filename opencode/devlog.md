@@ -38,6 +38,7 @@
 - Tests run via Vitest (`ng test`), jsdom env.
 
 ## Ongoing issues / choices
+
 - Expression `+` is string-concat when either side is a string, else numeric (documented, tested).
 - Unknown identifiers evaluate to `null` (calculation-friendly).
 - Hidden fields keep their raw value in evaluation context (so gating works) but are excluded

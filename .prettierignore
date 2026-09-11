@@ -1,0 +1,5 @@
+/dist
+/node_modules
+/public/assets/icons
+/server/data
+deploy/nginx

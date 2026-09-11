@@ -21,6 +21,7 @@ const icons = [
   'check',
   'check_box',
   'close',
+  'cloud_off',
   'content_copy',
   'delete_outline',
   'delete_sweep',
@@ -53,6 +54,7 @@ const icons = [
   'upload_file',
   'view_agenda',
   'view_column',
+  'text_snippet',
 ];
 
 mkdirSync(outDir, { recursive: true });
@@ -68,7 +70,7 @@ for (const name of icons) {
 
 writeFileSync(
   manifestFile,
-  `export const ICON_NAMES = ${JSON.stringify(icons, null, 2)} as const;\n`,
+  `export const ICON_NAMES = ${JSON.stringify(icons, null, 2)} as const;\nexport type IconName = typeof ICON_NAMES[number];\n`,
 );
 
 if (missing.length > 0) {

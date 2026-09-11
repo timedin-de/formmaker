@@ -20,16 +20,17 @@ Chosen pieces:
 | Framework          | Angular 22 (standalone components, signals)                             |
 | Language           | TypeScript ~6.0, full strict mode (default `ng new` config)             |
 | UI kit             | Angular Material 22 + CDK (virtual scroll, overlay)                     |
-| Tests              | Vitest 4 (Angular's default in v22) + jsdom + Angular Testing Library    |
+| Tests              | Vitest 4 (Angular's default in v22) + jsdom + Angular Testing Library   |
 | Linting            | ESLint via `@angular-eslint` (template + TS)                            |
 | Formatting         | Prettier 3                                                              |
 | Expression engine  | Hand-rolled recursive-descent parser + evaluator (no dep, fully tested) |
 | Signature pad      | `signature_pad` 5 (canvas)                                              |
-| Excel export       | `exceljs` 4                                                              |
+| Excel export       | `exceljs` 4                                                             |
 | CSV export         | Hand-rolled serializer (escaped, RFC 4180 style) — no dep               |
-| Storage (sessions) | Signal-based stores; localStorage persistence                            |
+| Storage (sessions) | Signal-based stores; localStorage persistence                           |
 
 ### Why hand-roll the expression engine?
+
 Conditions, piping, dynamic defaults and calculations all need to evaluate **against field values** with
 functions (`sum/avg/if/...`). A JSON-predicate DSL would be anemic; `eval` is unsafe; a dependency
 (like `jexl`) bloats the bundle and is hard to type. A ~300-line parser/evaluator is fully unit-testable,
