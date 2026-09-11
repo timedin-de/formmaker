@@ -1,59 +1,73 @@
 # FormMaker
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.1.8.
+A visual, no-code style form builder with a live **designer**, a **runner** for respondents, and a **results** view with spreadsheets — all client-side. Design a form, preview it exactly as respondents see it, and collect submissions in your browser.
 
-## Development server
+Built with Angular 22 and Angular Material 22, running entirely in the browser with `localStorage` persistence.
 
-To start a local development server, run:
+## What it can do
 
-```bash
-ng serve
-```
+- **Visual form designer** — build multi-page forms by dragging nothing at all: pick a field from the palette and tune it in the property panel.
+- **Two editing layouts** — the classic split view (palette / canvas / property panel) or a stacked **WYSIWYG** view where fields render exactly as respondents will see them, with the property editor inline under each selected field.
+- **14 field types**
+  - Basic: short text, long text, number, yes/no, single choice, dropdown, multi-choice, date, time, date-time
+  - Advanced: rating scale, file upload
+  - Special: signature pad
+  - Layout: section heading, question group
+- **Live runner** — respondents fill the form with real Material controls, page-by-page navigation, and validation with per-field messages.
+- **Results** — every submission collected in the browser; view them side by side and export to **CSV** or **Excel (xlsx)**; delete single submissions or clear all.
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+## Advanced features
 
-## Code scaffolding
+- **Page logic** — show or hide whole pages via a visual condition builder ("all / any" conditions, nested groups, literals, ranges, and references to other fields).
+- **Field visibility** — every field can show/hide conditionally, again with the same visual condition editor.
+- **Default values** — static values, computed expressions (`now()`, `concat('A','B')`), or copy the value from another field.
+- **Calculated fields** — number fields with formulas over other fields (e.g. `(a * b) / 100`) and configurable decimals.
+- **Validation rules** — required, length bounds, min/max, between, regex patterns, date ranges, integers, email/url/phone, file-type and file-count/size rules, plus fully custom expressions — each with a custom error message.
+- **Groups** — nest questions inside collapsible groups; groups carry their own legend.
+- **Field layout** — full / half / third widths so multi-column forms are possible.
+- **Uploads & signatures** — file fields enforce `accept`/multiple/size/file-type rules; signatures are captured on a device-pixel-correct signature pad.
+- **Import / export** — save forms to JSON, re-import them (with schema validation), and continue editing.
+- **Persistence** — everything lives in `localStorage`; forms and their submissions survive a reload. Install as a PWA if you want it truly offline.
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+## Tech stack
 
-```bash
-ng generate component component-name
-```
+- Angular 22 (zoneless change detection, signals, new control flow, `Router` with lazy routes)
+- Angular Material 22 (Theming from Material 3 design tokens)
+- `signature_pad` for capturing signatures
+- `exceljs` for `.xlsx` export
+- Vitest for unit tests
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
-
-```bash
-ng generate --help
-```
-
-## Building
-
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
+## Getting started
 
 ```bash
-ng e2e
+npm install
+npm start        # dev server on http://localhost:4200
 ```
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+Other scripts:
 
-## Additional Resources
+```bash
+npm run lint        # ESLint
+npm run typecheck   # tsc for app + specs
+npm run test:ci     # unit tests (Vitest)
+npm run build       # production build into dist/
+```
 
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+## Structure
+
+```
+src/app/
+  core/
+    model/        # data model: forms, fields, values, validation
+    state/        # DesignerStore (signals), FormsRepository (localStorage)
+    engine/       # evaluation: values, conditions, validations, calculations, templates
+    export/       # JSON schema, CSV/Excel export, file helpers
+  landing/        # home: open a form to edit, preview, or review results
+  builder/        # designer UI: canvas, palette, property panel, condition editor
+  runner/         # respondent view
+  results/        # submissions & export
+```
+
+## Note on AI
+
+This project was **built for the most part with AI assistance** (opencode with a large language model), including significant portions of the code, the tests, and this README. It's a working, tested mini-go-live rather than a production product — expect rough edges.

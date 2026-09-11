@@ -1,0 +1,14 @@
+
+<div class="pad-wrap" [class.touched]="drawn()">
+  <canvas #canvas class="pad" (pointerup)="commit()"></canvas>
+  <div class="pad-ops">
+    @if (!drawn()) {
+      <span class="hint">Sign above</span>
+    }
+    <span class="spacer"></span>
+    <button mat-button type="button" (click)="clear()">
+      <mat-icon>refresh</mat-icon> Clear
+    </button>
+  </div>
+</div>
+  

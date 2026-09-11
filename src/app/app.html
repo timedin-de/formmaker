@@ -1,0 +1,20 @@
+
+<div class="shell">
+  <mat-toolbar color="primary" class="shell-toolbar">
+    <span class="brand">FormMaker</span>
+    <nav>
+      <a
+        mat-button
+        routerLink="/"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: true }"
+        >Forms</a
+      >
+      <a mat-button routerLink="/builder" routerLinkActive="active">Builder</a>
+    </nav>
+  </mat-toolbar>
+  <main class="shell-content">
+    <router-outlet />
+  </main>
+</div>
+  

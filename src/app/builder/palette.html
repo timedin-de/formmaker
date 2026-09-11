@@ -1,0 +1,35 @@
+
+@if (horizontal()) {
+  <mat-toolbar class="block-title"><span>Field palette</span></mat-toolbar>
+  <div class="palette-chips">
+    @for (meta of allFields; track meta.type) {
+      <button class="chip" (click)="add(meta.type)">
+        <mat-icon fontSet="material-icons-outlined">{{ meta.icon }}</mat-icon>
+        <span>{{ meta.label }}</span>
+      </button>
+    }
+  </div>
+} @else {
+  <mat-toolbar class="block-title">
+    <span>Field palette</span>
+  </mat-toolbar>
+  <mat-tab-group>
+    @for (cat of categories; track cat.key) {
+      <mat-tab [label]="cat.label">
+        <div class="palette-items">
+          @for (meta of fieldsFor(cat.key); track meta.type) {
+            <button class="field-btn" (click)="add(meta.type)">
+              <mat-icon fontSet="material-icons-outlined">{{ meta.icon }}</mat-icon>
+              <span class="field-label">
+                <b>{{ meta.label }}</b>
+                <small>{{ meta.description }}</small>
+              </span>
+              <mat-icon class="add">add</mat-icon>
+            </button>
+          }
+        </div>
+      </mat-tab>
+    }
+  </mat-tab-group>
+}
+  

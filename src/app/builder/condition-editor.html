@@ -1,0 +1,126 @@
+
+<div class="cond">
+  <div class="row">
+    <span class="legend">{{ legend() }}</span>
+    <mat-button-toggle-group [value]="edit().logic" (valueChange)="setLogic($event)">
+      <mat-button-toggle value="all">all</mat-button-toggle>
+      <mat-button-toggle value="any">any</mat-button-toggle>
+    </mat-button-toggle-group>
+  </div>
+
+  @for (cond of edit().conditions; track $index) {
+    <div class="cond-row" [class.indent]="indent()">
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-select [ngModel]="cond.fieldId" (ngModelChange)="set($index, { fieldId: $event })">
+          @for (opt of fields(); track opt.id) {
+            <mat-option [value]="opt.id">{{ opt.label }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-select
+          [ngModel]="cond.operator"
+          (ngModelChange)="set($index, { operator: $event })"
+        >
+          @for (op of OPERATORS; track op) {
+            <mat-option [value]="op">{{ OPERATOR_LABELS[op] }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <div class="rhs">
+        @switch (rightKind(cond.operator)) {
+          @case ('operand') {
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="val">
+              <mat-select
+                [ngModel]="operandKind(cond)"
+                (ngModelChange)="setOperandKind($index, $event)"
+              >
+                <mat-option value="literal">value</mat-option>
+                <mat-option value="field">field</mat-option>
+              </mat-select>
+            </mat-form-field>
+            @if (operandKind(cond) === 'literal') {
+              <mat-form-field appearance="outline" subscriptSizing="dynamic" class="val">
+                <input
+                  matInput
+                  [ngModel]="literalText(cond)"
+                  (ngModelChange)="set$($index, 'operand', $event)"
+                />
+              </mat-form-field>
+            } @else {
+              <mat-form-field appearance="outline" subscriptSizing="dynamic" class="val">
+                <mat-select
+                  [ngModel]="fieldOperandId(cond)"
+                  (ngModelChange)="set($index, { operand: { kind: 'field', fieldId: $event } })"
+                >
+                  @for (opt of fields(); track opt.id) {
+                    <mat-option [value]="opt.id">{{ opt.label }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+            }
+          }
+          @case ('range') {
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="val">
+              <input
+                matInput
+                placeholder="From"
+                [ngModel]="literalText(cond)"
+                (ngModelChange)="set$($index, 'operand', $event)"
+              />
+            </mat-form-field>
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="val">
+              <input
+                matInput
+                placeholder="To"
+                [ngModel]="rangeToText(cond)"
+                (ngModelChange)="setRangeTo($index, $event)"
+              />
+            </mat-form-field>
+          }
+          @case ('list') {
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="val grow">
+              <input
+                matInput
+                placeholder="comma, separated, values"
+                [ngModel]="listText(cond)"
+                (ngModelChange)="setList($index, $event)"
+              />
+            </mat-form-field>
+          }
+          @case ('none') {
+            <span class="hint">(no value)</span>
+          }
+        }
+      </div>
+
+      <button mat-icon-button matTooltip="Remove" (click)="removeCond($index)">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+  }
+
+  @for (group of edit().groups; track $index; let gi = $index) {
+    <div class="nested">
+      <fm-condition-editor
+        [group]="group"
+        [fields]="fields()"
+        [indent]="true"
+        (changed)="setGroup(gi, $event)"
+      />
+      <button mat-icon-button matTooltip="Remove group" (click)="removeGroup(gi)">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+  }
+
+  <div class="add-row">
+    <button mat-stroked-button (click)="addCond()"><mat-icon>add</mat-icon> Condition</button>
+    <button mat-stroked-button (click)="addGroup()">
+      <mat-icon>account_tree</mat-icon> Nested group
+    </button>
+  </div>
+</div>
+  

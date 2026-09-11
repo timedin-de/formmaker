@@ -1,0 +1,72 @@
+
+@if (el().type === 'group') {
+  <div class="group-box" [class.selected]="selected()" (click)="select()">
+    <div class="row-head">
+      <mat-icon class="icon">{{ meta().icon }}</mat-icon>
+      <span class="name">{{ el().label }}</span>
+      <span class="type-badge">GROUP</span>
+      <span class="spacer"></span>
+      <button mat-icon-button (click)="move(-1)" matTooltip="Move up">
+        <mat-icon>arrow_upward</mat-icon>
+      </button>
+      <button mat-icon-button (click)="move(1)" matTooltip="Move down">
+        <mat-icon>arrow_downward</mat-icon>
+      </button>
+      <button mat-icon-button (click)="duplicate()" matTooltip="Duplicate">
+        <mat-icon>content_copy</mat-icon>
+      </button>
+      <button mat-icon-button (click)="remove()" matTooltip="Delete">
+        <mat-icon>delete_outline</mat-icon>
+      </button>
+    </div>
+    <div class="group-children" (click)="$event.stopPropagation()">
+      @for (child of group().elements; track child.id) {
+        <fm-element-row [el]="child" [store]="store()" />
+      }
+      <button class="add-child" (click)="addChild()"><mat-icon>add</mat-icon> Add child</button>
+    </div>
+  </div>
+} @else {
+  <div
+    class="row"
+    [class.selected]="selected()"
+    [class.muted]="el().type === 'section'"
+    (click)="select()"
+  >
+    <mat-icon class="icon">{{ meta().icon }}</mat-icon>
+    <div class="body">
+      <div class="name">{{ el().label }}</div>
+      <div class="sub">
+        <span class="type-badge">{{ meta().label }}</span>
+        @if (el().required) {
+          <span class="required-badge">required</span>
+        }
+        @if (elEnabledWhen()) {
+          <span class="logic-badge">conditional</span>
+        }
+        @if (elCalculation()) {
+          <span class="logic-badge">calculated</span>
+        }
+        @if (elDefault()) {
+          <span class="logic-badge">default</span>
+        }
+      </div>
+    </div>
+    <span class="spacer"></span>
+    <div class="ops">
+      <button mat-icon-button (click)="move(-1)" matTooltip="Move up">
+        <mat-icon>arrow_upward</mat-icon>
+      </button>
+      <button mat-icon-button (click)="move(1)" matTooltip="Move down">
+        <mat-icon>arrow_downward</mat-icon>
+      </button>
+      <button mat-icon-button (click)="duplicate()" matTooltip="Duplicate">
+        <mat-icon>content_copy</mat-icon>
+      </button>
+      <button mat-icon-button (click)="remove()" matTooltip="Delete">
+        <mat-icon>delete_outline</mat-icon>
+      </button>
+    </div>
+  </div>
+}
+  

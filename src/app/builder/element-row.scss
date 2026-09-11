@@ -1,0 +1,104 @@
+
+.row,
+.group-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--mat-sys-surface);
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 12px;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition:
+    border-color 0.12s ease,
+    box-shadow 0.12s ease;
+  margin-bottom: 8px;
+}
+.row:hover {
+  border-color: var(--mat-sys-outline);
+}
+.row.selected,
+.group-box.selected {
+  border-color: var(--mat-sys-primary);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--mat-sys-primary) 25%, transparent);
+}
+.row.muted {
+  background: color-mix(in srgb, var(--mat-sys-primary) 6%, var(--mat-sys-surface));
+}
+.icon {
+  color: var(--mat-sys-primary);
+  flex-shrink: 0;
+}
+.body {
+  min-width: 0;
+  flex: 1;
+}
+.name {
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sub {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+.type-badge,
+.required-badge,
+.logic-badge {
+  font-size: 11px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--mat-sys-surface-container-high);
+  color: var(--mat-sys-on-surface-variant);
+}
+.required-badge {
+  background: color-mix(in srgb, var(--mat-sys-error) 12%, transparent);
+  color: var(--mat-sys-error);
+}
+.logic-badge {
+  background: color-mix(in srgb, var(--mat-sys-tertiary) 14%, transparent);
+  color: var(--mat-sys-tertiary);
+}
+.spacer {
+  flex: 1;
+}
+.ops {
+  display: flex;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+.row:hover .ops,
+.group-box:hover .ops {
+  opacity: 1;
+}
+.group-box {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  margin-bottom: 10px;
+}
+.row-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 0;
+}
+.group-children {
+  margin: 8px 0 4px 18px;
+  border-left: 2px dashed var(--mat-sys-outline-variant);
+  padding-left: 14px;
+}
+.add-child {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  background: transparent;
+  color: var(--mat-sys-primary);
+  cursor: pointer;
+  font-weight: 500;
+  padding: 6px 4px;
+}
+    

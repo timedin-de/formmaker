@@ -1,0 +1,73 @@
+
+<div class="wp">
+  @switch (el().type) {
+    @case ('section') {
+      <h3 class="sec">{{ headingText() }}</h3>
+      @if (el().description) {
+        <p class="desc">{{ el().description }}</p>
+      }
+    }
+    @case ('group') {
+      <fieldset class="grp">
+        <legend>{{ legendText() }}</legend>
+        <p class="desc muted">Group · {{ groupCount() }} question(s)</p>
+      </fieldset>
+    }
+    @case ('boolean') {
+      <mat-checkbox disabled>{{ el().label }}</mat-checkbox>
+    }
+    @case ('choice') {
+      <span class="label">{{ el().label }}</span>
+      <mat-radio-group disabled>
+        @for (opt of options(); track opt.id) {
+          <mat-radio-button [value]="opt.value" disabled>{{ opt.label }}</mat-radio-button>
+        }
+      </mat-radio-group>
+    }
+    @case ('multiChoice') {
+      <span class="label">{{ el().label }}</span>
+      @for (opt of options(); track opt.id) {
+        <mat-checkbox disabled>{{ opt.label }}</mat-checkbox>
+      }
+    }
+    @case ('dropdown') {
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>{{ el().label }}</mat-label>
+        <mat-select disabled>
+          @for (opt of options(); track opt.id) {
+            <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    }
+    @case ('scale') {
+      <span class="label">{{ el().label }}</span>
+      <div class="scale-row">
+        <span class="scale-min">{{ scaleEl().minLabel || scaleEl().min }}</span>
+        <mat-button-toggle-group disabled>
+          @for (val of scaleValues(); track val) {
+            <mat-button-toggle [value]="val" disabled>{{ val }}</mat-button-toggle>
+          }
+        </mat-button-toggle-group>
+        <span class="scale-max">{{ scaleEl().maxLabel || scaleEl().max }}</span>
+      </div>
+    }
+    @case ('signature') {
+      <span class="label">{{ el().label }}</span>
+      <div class="sig-pad">
+        <mat-icon fontSet="material-icons-outlined">gesture</mat-icon>
+        <span class="muted">Signature </span>
+      </div>
+    }
+    @default {
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>{{ el().label }}</mat-label>
+        <input matInput disabled [placeholder]="el().placeholder ?? ''" />
+      </mat-form-field>
+    }
+  }
+  @if (el().description && el().type !== 'section' && el().type !== 'group') {
+    <p class="desc">{{ el().description }}</p>
+  }
+</div>
+  

@@ -1,0 +1,136 @@
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  background: var(--mat-sys-surface);
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 12px;
+}
+.head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+}
+.head mat-icon {
+  color: var(--mat-sys-primary);
+}
+.hdr {
+  min-width: 0;
+}
+.title {
+  font-weight: 500;
+}
+.muted {
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 11px;
+}
+.ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.scroll {
+  overflow: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.sec-title {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--mat-sys-on-surface-variant);
+}
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.opt-row {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+}
+.label-row {
+  gap: 12px;
+}
+.sec-label {
+  font-size: 13px;
+  color: var(--mat-sys-on-surface-variant);
+}
+.opts {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.opt-editor {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.opt-editor mat-form-field {
+  flex: 1;
+}
+.opt-editor .val-field {
+  flex: 0 0 110px;
+}
+.opt-idx {
+  width: 18px;
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 12px;
+  text-align: center;
+}
+.add-row {
+  display: flex;
+  justify-content: flex-end;
+}
+.rules {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.rule {
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 10px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.rule-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.rule-name {
+  font-weight: 500;
+  font-size: 13px;
+}
+.placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex: 1;
+  color: var(--mat-sys-on-surface-variant);
+  text-align: center;
+  padding: 24px;
+}
+.placeholder mat-icon {
+  font-size: 42px;
+  width: 42px;
+  height: 42px;
+}
+    

@@ -1,0 +1,63 @@
+
+<div class="head">
+  <div>
+    <h1>Forms</h1>
+    <p class="muted">
+      Build once, fill many. Pages, conditions, piping, calculations, signatures.
+    </p>
+  </div>
+  <div class="actions">
+    <button mat-stroked-button (click)="fileInput.click()">
+      <mat-icon>upload_file</mat-icon> Import JSON
+    </button>
+    <input
+      #fileInput
+      type="file"
+      accept="application/json,.json"
+      hidden
+      (change)="onImport($event)"
+    />
+    <button mat-flat-button color="primary" routerLink="/builder" [queryParams]="{ new: '1' }">
+      <mat-icon>add</mat-icon> New form
+    </button>
+  </div>
+</div>
+
+@if (forms().length === 0) {
+  <mat-card class="empty"> No forms yet — create one or import a JSON definition. </mat-card>
+} @else {
+  <div class="cards">
+    @for (form of forms(); track form.id) {
+      <mat-card class="card">
+        <mat-card-header>
+          <mat-card-title>{{ form.name }}</mat-card-title>
+          <mat-card-subtitle>
+            v{{ form.version }} · {{ form.pages.length }} pages ·
+            {{ countQuestions(form) }} questions · {{ updated(form) }}
+          </mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <p class="muted desc">{{ form.description }}</p>
+        </mat-card-content>
+        <mat-card-actions align="end">
+          <button mat-button [routerLink]="['/runner', form.id]">
+            <mat-icon>play_circle_outline</mat-icon> Fill
+          </button>
+          <button mat-button routerLink="/builder" [queryParams]="{ id: form.id }">
+            <mat-icon>edit</mat-icon> Edit
+          </button>
+          <button mat-button [routerLink]="['/results', form.id]">
+            <mat-icon>bar_chart</mat-icon> Results
+          </button>
+          <button mat-icon-button (click)="exportJson(form)" matTooltip="Export JSON">
+            <mat-icon>download</mat-icon>
+          </button>
+          <button mat-icon-button (click)="remove(form)" matTooltip="Delete">
+            <mat-icon>delete_outline</mat-icon>
+          </button>
+        </mat-card-actions>
+      </mat-card>
+    }
+  </div>
+}
+  

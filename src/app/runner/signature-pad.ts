@@ -1,5 +1,5 @@
 import { Component, effect, input, output, signal, viewChild } from '@angular/core';
-import { ElementRef } from '@angular/core';
+import { ElementRef, OnDestroy } from '@angular/core';
 import SignaturePad from 'signature_pad';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -8,57 +8,10 @@ import type { SignatureValue } from '../core/model/values.model';
 @Component({
   selector: 'fm-signature-pad',
   imports: [MatButtonModule, MatIconModule],
-  template: `
-    <div class="pad-wrap" [class.touched]="drawn()">
-      <canvas #canvas class="pad" (pointerup)="commit()"></canvas>
-      <div class="pad-ops">
-        @if (!drawn()) {
-          <span class="hint">Sign above</span>
-        }
-        <span class="spacer"></span>
-        <button mat-button type="button" (click)="clear()">
-          <mat-icon>refresh</mat-icon> Clear
-        </button>
-      </div>
-    </div>
-  `,
-  styles: [
-    `
-      .pad-wrap {
-        border: 1px solid var(--mat-sys-outline);
-        border-radius: 10px;
-        overflow: hidden;
-        background: #fff;
-        width: 100%;
-        max-width: 460px;
-      }
-      .pad-wrap.touched {
-        border-color: var(--mat-sys-tertiary);
-      }
-      .pad {
-        width: 100%;
-        height: 160px;
-        display: block;
-        touch-action: none;
-        cursor: crosshair;
-        background: #fff;
-      }
-      .pad-ops {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 4px 8px;
-        font-size: 12px;
-        color: var(--mat-sys-on-surface-variant);
-        border-top: 1px solid var(--mat-sys-outline-variant);
-      }
-      .spacer {
-        flex: 1;
-      }
-    `,
-  ],
+  templateUrl: './signature-pad.html',
+  styleUrl: './signature-pad.scss',
 })
-export class SignaturePadField {
+export class SignaturePadField implements OnDestroy {
   /** Initial value; re-seeding only happens on first render. */
   readonly initialValue = input<SignatureValue | null>(null);
   readonly write = output<SignatureValue | null>();
@@ -67,22 +20,65 @@ export class SignaturePadField {
 
   private readonly canvas = viewChild<ElementRef<HTMLCanvasElement>>('canvas');
   private pad: SignaturePad | null = null;
+  private resizeObserver: ResizeObserver | null = null;
 
   constructor() {
     effect(() => {
       const cv = this.canvas()?.nativeElement;
       if (!cv || this.pad) return;
-      this.pad = new SignaturePad(cv, {
-        backgroundColor: 'rgba(255,255,255,1)',
-        penColor: 'rgb(28, 38, 56)',
-        throttle: 16,
-      });
+      this.pad = new SignaturePad(cv, this.penOptions());
+      this.syncSize(cv);
       const initial = this.initialValue();
       if (initial?.dataUrl) {
         this.pad.fromDataURL(initial.dataUrl);
         this.drawn.set(true);
       }
+      this.resizeObserver = new ResizeObserver(() => this.recreate(cv));
+      this.resizeObserver.observe(cv);
     });
+  }
+
+  private penOptions(): ConstructorParameters<typeof SignaturePad>[1] {
+    return {
+      backgroundColor: 'rgba(255,255,255,1)',
+      penColor: 'rgb(28, 38, 56)',
+      throttle: 16,
+      dotSize: 0,
+    };
+  }
+
+  private syncSize(cv: HTMLCanvasElement): void {
+    if (cv.clientWidth > 0) cv.width = cv.clientWidth;
+    if (cv.clientHeight > 0) cv.height = cv.clientHeight;
+  }
+
+  private recreate(cv: HTMLCanvasElement): void {
+    if (!this.pad) return;
+    const previous: SignatureValue | null = this.pad.isEmpty()
+      ? null
+      : {
+          dataUrl: this.pad.toDataURL('image/png'),
+          width: cv.width,
+          height: cv.height,
+          mimeType: 'image/png',
+        };
+    this.pad.off();
+    this.pad = null;
+    this.syncSize(cv);
+    this.pad = new SignaturePad(cv, this.penOptions());
+    if (previous) {
+      void this.pad.fromDataURL(previous.dataUrl);
+      this.drawn.set(true);
+    } else {
+      this.drawn.set(false);
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.resizeObserver?.disconnect();
+    this.resizeObserver = null;
+    this.pad?.off();
+    this.pad = null;
   }
 
   /** Called from the template on pointerup / end-of-stroke. */

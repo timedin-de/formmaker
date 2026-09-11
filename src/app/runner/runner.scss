@@ -1,0 +1,146 @@
+
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+.top {
+  gap: 12px;
+  background: var(--mat-sys-surface-container);
+}
+.info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.name {
+  font-weight: 500;
+}
+.pg {
+  font-size: 12px;
+}
+.bar {
+  width: 180px;
+}
+.spacer {
+  flex: 1;
+}
+.waiting {
+  padding: 48px;
+  text-align: center;
+  color: var(--mat-sys-on-surface-variant);
+}
+.scroll {
+  flex: 1;
+  overflow: auto;
+  max-width: 760px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 28px 20px 40px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.page-head h1 {
+  margin: 0 0 4px;
+  font-size: 26px;
+}
+.page-head .subtitle,
+.desc {
+  color: var(--mat-sys-on-surface-variant);
+  margin: 0;
+}
+.question {
+  padding: 18px;
+  background: var(--mat-sys-surface);
+  border-radius: 14px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--mat-sys-outline-variant);
+}
+.question.compact {
+  box-shadow: none;
+  border: 0;
+  padding: 8px 4px;
+}
+.label {
+  font-weight: 500;
+  display: block;
+  margin-bottom: 4px;
+}
+.req {
+  color: var(--mat-sys-error);
+}
+.field-host {
+  width: 100%;
+}
+.num-host.disabled {
+  opacity: 0.75;
+}
+.choice-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 4px;
+}
+.scale {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.scale-val {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: 1px solid var(--mat-sys-outline);
+  background: var(--mat-sys-surface-container-low);
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--mat-sys-on-surface);
+  transition: all 0.1s ease;
+}
+.scale-val.on {
+  background: var(--mat-sys-primary);
+  color: var(--mat-sys-on-primary);
+  border-color: var(--mat-sys-primary);
+}
+.scale-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--mat-sys-on-surface-variant);
+}
+.files {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.file-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 10px;
+}
+.fname {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+.section-head h3 {
+  margin: 6px 0 0;
+  color: var(--mat-sys-primary);
+}
+.nav {
+  display: flex;
+  gap: 12px;
+  padding: 20px 0 0;
+}
+.muted {
+  color: var(--mat-sys-on-surface-variant);
+}
+    

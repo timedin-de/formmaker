@@ -1,0 +1,33 @@
+
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 28px;
+}
+.head h1 {
+  margin: 0;
+}
+.actions {
+  display: flex;
+  gap: 12px;
+}
+.muted {
+  color: var(--mat-sys-on-surface-variant);
+}
+.desc {
+  margin: 8px 0 0;
+  min-height: 20px;
+}
+.empty {
+  margin: 28px;
+  padding: 32px;
+  text-align: center;
+}
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 16px;
+  padding: 12px 28px 40px;
+}
+    

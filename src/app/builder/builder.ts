@@ -5,6 +5,7 @@ import { DesignerStore } from '../core/state/designer.store';
 import { FormsRepository } from '../core/state/forms.repository';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
+import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSidenavModule } from '@angular/material/sidenav';
@@ -24,6 +25,7 @@ import { switchMap } from 'rxjs';
     FormsModule,
     MatToolbarModule,
     MatButtonModule,
+    MatButtonToggleModule,
     MatIconModule,
     MatInputModule,
     MatSidenavModule,
@@ -36,109 +38,8 @@ import { switchMap } from 'rxjs';
   ],
   providers: [DesignerStore],
   selector: 'fm-builder',
-  template: `
-    <div class="main">
-      <mat-toolbar class="sub">
-        <div class="title-group">
-          <mat-form-field appearance="outline" class="title-field" subscriptSizing="dynamic">
-            <input
-              matInput
-              [ngModel]="store.form().name"
-              (ngModelChange)="store.rename($event)"
-              placeholder="Form name"
-              aria-label="Form name"
-            />
-          </mat-form-field>
-          <span class="muted">{{ store.form().pages.length }} pages</span>
-        </div>
-        <div class="actions">
-          <button mat-button (click)="importInput.click()">
-            <mat-icon>upload_file</mat-icon> Import
-          </button>
-          <input
-            #importInput
-            type="file"
-            accept=".json,application/json"
-            hidden
-            (change)="onImport($event)"
-          />
-          <button mat-button (click)="export()"><mat-icon>download</mat-icon> Export</button>
-          <button mat-button (click)="save()" [disabled]="saved()">
-            <mat-icon>{{ saved() ? 'check' : 'save' }}</mat-icon> {{ saved() ? 'Saved' : 'Save' }}
-          </button>
-          <button mat-flat-button color="primary" (click)="preview()">
-            <mat-icon>play_arrow</mat-icon> Preview
-          </button>
-        </div>
-      </mat-toolbar>
-
-      <div class="layout">
-        <fm-builder-palette class="palette" [store]="store" />
-        <fm-builder-canvas class="canvas" [store]="store" />
-        <fm-property-panel class="panel" [store]="store" />
-      </div>
-    </div>
-  `,
-  styles: [
-    `
-      .main {
-        display: flex;
-        flex-direction: column;
-        flex: 1;
-        min-height: 0;
-      }
-      .sub {
-        gap: 16px;
-        justify-content: space-between;
-        background: var(--mat-sys-surface-container);
-      }
-      .title-group {
-        display: flex;
-        align-items: center;
-        gap: 14px;
-      }
-      .title-field {
-        width: 300px;
-      }
-      .actions {
-        display: flex;
-        gap: 6px;
-        align-items: center;
-      }
-      .layout {
-        display: grid;
-        grid-template-columns: 240px minmax(0, 1fr) 380px;
-        gap: 16px;
-        padding: 16px;
-        flex: 1;
-        min-height: 0;
-      }
-      .palette {
-        overflow: auto;
-      }
-      .panel {
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-      }
-      .canvas {
-        min-height: 0;
-      }
-      .muted {
-        color: var(--mat-sys-on-surface-variant);
-        font-size: 13px;
-      }
-      @media (max-width: 1100px) {
-        .layout {
-          grid-template-columns: 200px minmax(0, 1fr);
-        }
-        .panel {
-          grid-column: 1 / -1;
-          max-height: 60vh;
-        }
-      }
-    `,
-  ],
+  templateUrl: './builder.html',
+  styleUrl: './builder.scss',
 })
 export class BuilderComponent {
   readonly store = inject(DesignerStore);
@@ -147,6 +48,11 @@ export class BuilderComponent {
   private readonly router = inject(Router);
   private readonly snack = inject(MatSnackBar);
   readonly saved = signal(false);
+  readonly mode = signal<'split' | 'wysiwyg'>('split');
+
+  setMode(value: string): void {
+    if (value === 'split' || value === 'wysiwyg') this.mode.set(value);
+  }
 
   constructor() {
     // Load the working form: ?id= opens an existing form, ?new=1 a blank one.

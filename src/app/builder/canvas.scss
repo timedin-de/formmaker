@@ -1,0 +1,112 @@
+
+.canvas {
+  display: flex;
+  flex-direction: column;
+  background: var(--mat-sys-surface-container-low);
+  border-radius: 12px;
+  overflow: hidden;
+  min-height: 0;
+}
+.block-title {
+  background: transparent;
+  font-size: 15px;
+  height: 52px;
+  gap: 8px;
+}
+.clicks {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  max-width: 100%;
+}
+.page-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--mat-sys-outline-variant);
+  background: var(--mat-sys-surface);
+  border-radius: 999px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--mat-sys-on-surface);
+  white-space: nowrap;
+}
+.page-chip.active {
+  background: var(--mat-sys-primary);
+  color: var(--mat-sys-on-primary);
+}
+.page-chip.active .del {
+  color: var(--mat-sys-on-primary);
+}
+.page-chip .del {
+  font-size: 14px;
+  width: 14px;
+  height: 14px;
+}
+.page-add {
+  display: inline-flex;
+  align-items: center;
+  border: 1px dashed var(--mat-sys-outline);
+  background: transparent;
+  border-radius: 999px;
+  padding: 4px 12px;
+  cursor: pointer;
+}
+.page-head {
+  padding: 8px 16px 12px;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+}
+.fields {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.fields mat-form-field {
+  flex: 1;
+}
+.list {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 14px;
+  box-sizing: border-box;
+}
+.row-wrap {
+  padding-bottom: 8px;
+}
+.row-card {
+  border-radius: 12px;
+  border: 1px solid transparent;
+}
+.row-card.selected {
+  border-color: var(--mat-sys-primary);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--mat-sys-primary) 20%, transparent);
+}
+.inline-actions {
+  padding: 0 14px 10px;
+  font-size: 11px;
+}
+.inline-editor {
+  max-height: 75vh;
+  overflow: auto;
+  margin-top: 10px;
+}
+.muted {
+  color: var(--mat-sys-on-surface-variant);
+}
+.page-actions {
+  padding: 10px 16px;
+}
+.empty-hint {
+  text-align: center;
+  color: var(--mat-sys-on-surface-variant);
+  padding: 48px 16px;
+}
+.empty-hint mat-icon {
+  font-size: 40px;
+  width: 40px;
+  height: 40px;
+}
+    
