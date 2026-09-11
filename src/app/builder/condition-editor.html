@@ -97,7 +97,7 @@
       </div>
 
       <button mat-icon-button matTooltip="Remove" (click)="removeCond($index)">
-        <mat-icon>close</mat-icon>
+        <mat-icon svgIcon="close"></mat-icon>
       </button>
     </div>
   }
@@ -111,15 +111,15 @@
         (changed)="setGroup(gi, $event)"
       />
       <button mat-icon-button matTooltip="Remove group" (click)="removeGroup(gi)">
-        <mat-icon>close</mat-icon>
+        <mat-icon svgIcon="close"></mat-icon>
       </button>
     </div>
   }
 
   <div class="add-row">
-    <button mat-stroked-button (click)="addCond()"><mat-icon>add</mat-icon> Condition</button>
+    <button mat-stroked-button (click)="addCond()"><mat-icon svgIcon="add"></mat-icon> Condition</button>
     <button mat-stroked-button (click)="addGroup()">
-      <mat-icon>account_tree</mat-icon> Nested group
+      <mat-icon svgIcon="account_tree"></mat-icon> Nested group
     </button>
   </div>
 </div>

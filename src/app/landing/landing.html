@@ -8,7 +8,7 @@
   </div>
   <div class="actions">
     <button mat-stroked-button (click)="fileInput.click()">
-      <mat-icon>upload_file</mat-icon> Import JSON
+      <mat-icon svgIcon="upload_file"></mat-icon> Import JSON
     </button>
     <input
       #fileInput
@@ -18,7 +18,7 @@
       (change)="onImport($event)"
     />
     <button mat-flat-button color="primary" routerLink="/builder" [queryParams]="{ new: '1' }">
-      <mat-icon>add</mat-icon> New form
+      <mat-icon svgIcon="add"></mat-icon> New form
     </button>
   </div>
 </div>
@@ -41,19 +41,19 @@
         </mat-card-content>
         <mat-card-actions align="end">
           <button mat-button [routerLink]="['/runner', form.id]">
-            <mat-icon>play_circle_outline</mat-icon> Fill
+            <mat-icon svgIcon="play_circle_outline"></mat-icon> Fill
           </button>
           <button mat-button routerLink="/builder" [queryParams]="{ id: form.id }">
-            <mat-icon>edit</mat-icon> Edit
+            <mat-icon svgIcon="edit"></mat-icon> Edit
           </button>
           <button mat-button [routerLink]="['/results', form.id]">
-            <mat-icon>bar_chart</mat-icon> Results
+            <mat-icon svgIcon="bar_chart"></mat-icon> Results
           </button>
           <button mat-icon-button (click)="exportJson(form)" matTooltip="Export JSON">
-            <mat-icon>download</mat-icon>
+            <mat-icon svgIcon="download"></mat-icon>
           </button>
           <button mat-icon-button (click)="remove(form)" matTooltip="Delete">
-            <mat-icon>delete_outline</mat-icon>
+            <mat-icon svgIcon="delete_outline"></mat-icon>
           </button>
         </mat-card-actions>
       </mat-card>

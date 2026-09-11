@@ -9,11 +9,11 @@
           (click)="store().selectPage(page.id)"
         >
           {{ page.title ?? 'Page' }}
-          <mat-icon class="del" (click)="removePage(page)">close</mat-icon>
+          <mat-icon class="del" (click)="removePage(page)" svgIcon="close"></mat-icon>
         </button>
       }
       <button class="page-add" matTooltip="Add page" (click)="store().addPage()">
-        <mat-icon>add</mat-icon>
+        <mat-icon svgIcon="add"></mat-icon>
       </button>
     </span>
   </mat-toolbar>
@@ -48,7 +48,7 @@
 
     @if (page.elements.length === 0) {
       <div class="empty-hint">
-        <mat-icon>add_circle_outline</mat-icon>
+        <mat-icon svgIcon="add_circle_outline"></mat-icon>
         <p>Add a field from the palette on the left.</p>
       </div>
     } @else {
@@ -76,12 +76,12 @@
 
     <div class="page-actions">
       <button mat-stroked-button (click)="append()">
-        <mat-icon>add</mat-icon> Add question
+        <mat-icon svgIcon="add"></mat-icon> Add question
       </button>
     </div>
   } @else {
     <div class="empty-hint">
-      <mat-icon>note_add</mat-icon>
+      <mat-icon svgIcon="note_add"></mat-icon>
       <p>Add a page to get started.</p>
     </div>
   }

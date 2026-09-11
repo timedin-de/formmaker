@@ -21,17 +21,17 @@
         aria-label="Builder layout"
       >
         <mat-button-toggle value="split" matTooltip="Split layout">
-          <mat-icon>view_column</mat-icon>
+          <mat-icon svgIcon="view_column"></mat-icon>
         </mat-button-toggle>
         <mat-button-toggle value="wysiwyg" matTooltip="Everything stacked (WYSIWYG)">
-          <mat-icon>view_agenda</mat-icon>
+          <mat-icon svgIcon="view_agenda"></mat-icon>
         </mat-button-toggle>
       </mat-button-toggle-group>
 
       <span class="divider"></span>
 
       <button mat-button (click)="importInput.click()">
-        <mat-icon>upload_file</mat-icon> Import
+        <mat-icon svgIcon="upload_file"></mat-icon> Import
       </button>
       <input
         #importInput
@@ -40,12 +40,12 @@
         hidden
         (change)="onImport($event)"
       />
-      <button mat-button (click)="export()"><mat-icon>download</mat-icon> Export</button>
+      <button mat-button (click)="export()"><mat-icon svgIcon="download"></mat-icon> Export</button>
       <button mat-button (click)="save()" [disabled]="saved()">
-        <mat-icon>{{ saved() ? 'check' : 'save' }}</mat-icon> {{ saved() ? 'Saved' : 'Save' }}
+        <mat-icon [svgIcon]="saved() ? 'check' : 'save'"></mat-icon> {{ saved() ? 'Saved' : 'Save' }}
       </button>
       <button mat-flat-button color="primary" (click)="preview()">
-        <mat-icon>play_arrow</mat-icon> Preview
+        <mat-icon svgIcon="play_arrow"></mat-icon> Preview
       </button>
     </div>
   </mat-toolbar>

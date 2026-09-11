@@ -39,6 +39,10 @@ testem.log
 /typings
 __screenshots__/
 
+# Generated SVG icons (from @material-design-icons/svg via scripts/copy-icons.mjs)
+/public/assets/icons/
+/src/app/core/icon-names.ts
+
 # System files
 .DS_Store
 Thumbs.db

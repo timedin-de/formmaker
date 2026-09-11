@@ -1,7 +1,7 @@
 
 <mat-toolbar class="top">
   <button mat-icon-button (click)="back()" matTooltip="Back">
-    <mat-icon>arrow_back</mat-icon>
+    <mat-icon svgIcon="arrow_back"></mat-icon>
   </button>
   <div class="info">
     <div class="name">{{ store.form()?.name }}</div>
@@ -226,15 +226,15 @@
                       (change)="onFiles(vr.control, vr.el, $event)"
                     />
                     <button mat-stroked-button type="button" (click)="fileInput.click()">
-                      <mat-icon>attach_file</mat-icon> Choose files
+                      <mat-icon svgIcon="attach_file"></mat-icon> Choose files
                     </button>
                   </div>
                   @for (f of fileList(vr.control); track f.name) {
                     <div class="file-chip">
-                      <mat-icon>description</mat-icon>
+                      <mat-icon svgIcon="description"></mat-icon>
                       <span class="fname">{{ f.name }}</span>
                       <button mat-icon-button type="button" (click)="removeFile(vr.control, f)">
-                        <mat-icon>close</mat-icon>
+                        <mat-icon svgIcon="close"></mat-icon>
                       </button>
                     </div>
                   }
@@ -261,17 +261,17 @@
     <div class="nav">
       @if (store.canPrev()) {
         <button mat-stroked-button (click)="prev()">
-          <mat-icon>arrow_back</mat-icon> Back
+          <mat-icon svgIcon="arrow_back"></mat-icon> Back
         </button>
       }
       <span class="spacer"></span>
       @if (!store.isLast()) {
         <button mat-flat-button color="primary" (click)="next()">
-          Next <mat-icon>arrow_forward</mat-icon>
+          Next <mat-icon svgIcon="arrow_forward"></mat-icon>
         </button>
       } @else {
         <button mat-flat-button color="primary" (click)="submit()">
-          <mat-icon>send</mat-icon> {{ submitLabel() }}
+          <mat-icon svgIcon="send"></mat-icon> {{ submitLabel() }}
         </button>
       }
     </div>
