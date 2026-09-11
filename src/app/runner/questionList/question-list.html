@@ -1,0 +1,201 @@
+@for (vr of elements(); track vr.id) {
+  @if (vr.visible) {
+    <div class="question" [class.compact]="vr.el.type === 'section'">
+      @if (vr.el.type === 'section') {
+        <mat-divider class="thin"></mat-divider>
+        <div class="section-head">
+          <h3>{{ vr.label }}</h3>
+        </div>
+      } @else {
+        <label class="label">
+          {{ vr.label }}
+          @if (vr.el.required) {
+            <span class="req">*</span>
+          }
+        </label>
+        @if (vr.description) {
+          <div class="desc">{{ vr.description }}</div>
+        }
+
+        @switch (vr.el.type) {
+          @case ('text') {
+            <mat-form-field appearance="outline" class="field-host" subscriptSizing="dynamic">
+              <input
+                matInput
+                [formControl]="vr.control"
+                [placeholder]="vr.placeholder"
+                [type]="inputType(vr.el)"
+              />
+              @if (vr.control.touched && vr.control.errors) {
+                <mat-error>{{ errMsg(vr.control) }}</mat-error>
+              }
+            </mat-form-field>
+          }
+          @case ('longText') {
+            <mat-form-field appearance="outline" class="field-host" subscriptSizing="dynamic">
+              <textarea
+                matInput
+                [formControl]="vr.control"
+                [placeholder]="vr.placeholder"
+                [rows]="rows(vr.el)"
+              ></textarea>
+              @if (vr.control.touched && vr.control.errors) {
+                <mat-error>{{ errMsg(vr.control) }}</mat-error>
+              }
+            </mat-form-field>
+          }
+          @case ('number') {
+            <div class="num-host" [class.disabled]="vr.el.type === 'number' && vr.computed">
+              <mat-form-field appearance="outline" class="field-host" subscriptSizing="dynamic">
+                <input
+                  matInput
+                  type="number"
+                  [formControl]="vr.control"
+                  [placeholder]="vr.placeholder"
+                />
+                @if (vr.el.unit) {
+                  <span matTextSuffix>{{ vr.el.unit }}</span>
+                }
+                @if (vr.control.touched && vr.control.errors) {
+                  <mat-error>{{ errMsg(vr.control) }}</mat-error>
+                }
+              </mat-form-field>
+            </div>
+          }
+          @case ('boolean') {
+            <mat-checkbox [formControl]="vr.control">{{ vr.label }}</mat-checkbox>
+          }
+          @case ('choice') {
+            <mat-radio-group class="choice-group" [formControl]="vr.control">
+              @for (opt of options(vr.el); track opt.id) {
+                <mat-radio-button [value]="opt.value">{{ opt.label }}</mat-radio-button>
+              }
+            </mat-radio-group>
+            @if (vr.control.touched && vr.control.errors) {
+              <mat-error>{{ errMsg(vr.control) }}</mat-error>
+            }
+          }
+          @case ('dropdown') {
+            <mat-form-field appearance="outline" class="field-host" subscriptSizing="dynamic">
+              <mat-select [formControl]="vr.control">
+                @for (opt of options(vr.el); track opt.id) {
+                  <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
+                }
+              </mat-select>
+              @if (vr.control.touched && vr.control.errors) {
+                <mat-error>{{ errMsg(vr.control) }}</mat-error>
+              }
+            </mat-form-field>
+          }
+          @case ('multiChoice') {
+            <div class="choice-group">
+              @for (opt of options(vr.el); track opt.id) {
+                <mat-checkbox
+                  [value]="strOpt(opt.value)"
+                  [checked]="multiChecked(vr.control, opt.value)"
+                  (change)="toggleMulti(vr.control, opt.value, $event.checked)"
+                >
+                  {{ opt.label }}
+                </mat-checkbox>
+              }
+            </div>
+            @if (vr.control.touched && vr.control.errors) {
+              <mat-error>{{ errMsg(vr.control) }}</mat-error>
+            }
+          }
+          @case ('scale') {
+            <div class="scale">
+              @for (val of scaleValues(vr.el); track val) {
+                <button
+                  type="button"
+                  class="scale-val"
+                  [class.on]="vr.control.value === val"
+                  (click)="setScale(vr.control, val)"
+                >
+                  {{ val }}
+                </button>
+              }
+            </div>
+            @if (hasScaleLabels(vr.el)) {
+              <div class="scale-labels">
+                <span>{{ scaleMinLabel(vr.el) }}</span>
+                <span>{{ scaleMaxLabel(vr.el) }}</span>
+              </div>
+            }
+            @if (vr.control.touched && vr.control.errors) {
+              <mat-error>{{ errMsg(vr.control) }}</mat-error>
+            }
+          }
+          @case ('date') {
+            <mat-form-field appearance="outline" class="field-host" subscriptSizing="dynamic">
+              <input matInput type="date" [formControl]="vr.control" />
+              @if (vr.control.touched && vr.control.errors) {
+                <mat-error>{{ errMsg(vr.control) }}</mat-error>
+              }
+            </mat-form-field>
+          }
+          @case ('time') {
+            <mat-form-field appearance="outline" class="field-host" subscriptSizing="dynamic">
+              <input matInput type="time" [formControl]="vr.control" />
+              @if (vr.control.touched && vr.control.errors) {
+                <mat-error>{{ errMsg(vr.control) }}</mat-error>
+              }
+            </mat-form-field>
+          }
+          @case ('dateTime') {
+            <mat-form-field appearance="outline" class="field-host" subscriptSizing="dynamic">
+              <input matInput type="datetime-local" [formControl]="vr.control" />
+              @if (vr.control.touched && vr.control.errors) {
+                <mat-error>{{ errMsg(vr.control) }}</mat-error>
+              }
+            </mat-form-field>
+          }
+          @case ('file') {
+            <div class="files">
+              <div class="file-drop">
+                <input
+                  #fileInput
+                  type="file"
+                  [multiple]="fileMultiple(vr.el)"
+                  hidden
+                  (change)="onFiles(vr.control, vr.el, $event)"
+                />
+                <button mat-stroked-button type="button" (click)="fileInput.click()">
+                  <mat-icon svgIcon="attach_file"></mat-icon> Choose files
+                </button>
+              </div>
+              @for (f of fileList(vr.control); track f.name) {
+                <div class="file-chip">
+                  <mat-icon svgIcon="description"></mat-icon>
+                  <span class="fname">{{ f.name }}</span>
+                  <button mat-icon-button type="button" (click)="removeFile(vr.control, f)">
+                    <mat-icon svgIcon="close"></mat-icon>
+                  </button>
+                </div>
+              }
+              @if (vr.control.touched && vr.control.errors) {
+                <mat-error>{{ errMsg(vr.control) }}</mat-error>
+              }
+            </div>
+          }
+          @case ('signature') {
+            <fm-signature-pad
+              [initialValue]="sigValue(vr.control)"
+              (write)="onSig(vr.control, $event)"
+            />
+            @if (vr.control.touched && vr.control.errors) {
+              <mat-error>{{ errMsg(vr.control) }}</mat-error>
+            }
+          }
+          @case ('group') {
+            @if (vr.el.elementsRef) {
+              <div style="background-color: aqua">
+                <fm-question-list [elements]="vr.el.elementsRef"></fm-question-list>
+              </div>
+            }
+          }
+        }
+      }
+    </div>
+  }
+}
