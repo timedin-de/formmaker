@@ -1,6 +1,5 @@
-
 <div class="main">
-  <mat-toolbar class="sub">
+  <mat-toolbar color="surface" class="sub">
     <div class="title-group">
       <mat-form-field appearance="outline" class="title-field" subscriptSizing="dynamic">
         <input
@@ -42,7 +41,8 @@
       />
       <button mat-button (click)="export()"><mat-icon svgIcon="download"></mat-icon> Export</button>
       <button mat-button (click)="save()" [disabled]="saved()">
-        <mat-icon [svgIcon]="saved() ? 'check' : 'save'"></mat-icon> {{ saved() ? 'Saved' : 'Save' }}
+        <mat-icon [svgIcon]="saved() ? 'check' : 'save'"></mat-icon>
+        {{ saved() ? 'Saved' : 'Save' }}
       </button>
       <button mat-flat-button color="primary" (click)="preview()">
         <mat-icon svgIcon="play_arrow"></mat-icon> Preview
@@ -63,4 +63,3 @@
     </div>
   }
 </div>
-  

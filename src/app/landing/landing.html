@@ -1,10 +1,7 @@
-
 <div class="head">
   <div>
     <h1>Forms</h1>
-    <p class="muted">
-      Build once, fill many. Pages, conditions, piping, calculations, signatures.
-    </p>
+    <p class="subtitle">Build once, fill many. Pages, conditions, calculations, signatures.</p>
   </div>
   <div class="actions">
     <button mat-stroked-button (click)="fileInput.click()">
@@ -24,7 +21,17 @@
 </div>
 
 @if (forms().length === 0) {
-  <mat-card class="empty"> No forms yet — create one or import a JSON definition. </mat-card>
+  <div class="empty">
+    <mat-icon
+      svgIcon="note_add"
+      style="font-size: 52px; width: 52px; height: 52px; opacity: 0.4"
+    ></mat-icon>
+    <h2>No forms yet</h2>
+    <p>Create your first form or import an existing JSON definition.</p>
+    <button mat-flat-button color="primary" routerLink="/builder" [queryParams]="{ new: '1' }">
+      <mat-icon svgIcon="add"></mat-icon> Create form
+    </button>
+  </div>
 } @else {
   <div class="cards">
     @for (form of forms(); track form.id) {
@@ -37,7 +44,7 @@
           </mat-card-subtitle>
         </mat-card-header>
         <mat-card-content>
-          <p class="muted desc">{{ form.description }}</p>
+          <p class="desc">{{ form.description || 'No description' }}</p>
         </mat-card-content>
         <mat-card-actions align="end">
           <button mat-button [routerLink]="['/runner', form.id]">
@@ -60,4 +67,3 @@
     }
   </div>
 }
-  

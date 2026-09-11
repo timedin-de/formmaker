@@ -1,33 +1,107 @@
-
 .head {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px 28px;
+  padding: 32px 32px 8px;
 }
+
 .head h1 {
   margin: 0;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
+
+.subtitle {
+  margin: 6px 0 0;
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
 .actions {
   display: flex;
-  gap: 12px;
+  gap: 10px;
+  align-items: center;
 }
-.muted {
+
+.empty {
+  margin: 32px;
+  padding: 56px 32px;
+  text-align: center;
+  border-radius: 20px;
+  border: 1px dashed var(--mat-sys-outline-variant);
+  background: var(--mat-sys-surface-container-lowest);
   color: var(--mat-sys-on-surface-variant);
 }
-.desc {
-  margin: 8px 0 0;
-  min-height: 20px;
+
+.empty h2 {
+  margin: 12px 0 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--mat-sys-on-surface);
 }
-.empty {
-  margin: 28px;
-  padding: 32px;
-  text-align: center;
+
+.empty p {
+  margin: 4px 0 20px;
+  font-size: 13px;
 }
+
 .cards {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
   gap: 16px;
-  padding: 12px 28px 40px;
+  padding: 16px 32px 48px;
 }
-    
+
+.card {
+  border-radius: 16px;
+  border: 1px solid var(--mat-sys-outline-variant);
+  background: var(--mat-sys-surface);
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.07);
+  border-color: var(--mat-sys-outline);
+}
+
+.card mat-card-header {
+  padding-top: 16px;
+}
+
+.card mat-card-title {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.card mat-card-subtitle {
+  margin-top: 4px;
+}
+
+.card mat-card-content {
+  padding: 8px 16px 0;
+}
+
+.desc {
+  margin: 0;
+  min-height: 18px;
+  font-size: 13px;
+  color: var(--mat-sys-on-surface-variant);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.card mat-card-actions {
+  padding: 12px 12px 14px;
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+}

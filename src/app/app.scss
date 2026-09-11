@@ -1,28 +1,63 @@
-
 .shell {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
 }
+
 .shell-toolbar {
   position: sticky;
   top: 0;
   z-index: 20;
+  background: var(--mat-sys-surface);
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
+
 .brand {
-  font-weight: 600;
-  margin-right: 24px;
-  letter-spacing: 0.4px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  font-size: 17px;
+  margin-right: 28px;
+  color: var(--mat-sys-primary);
 }
+
+nav {
+  display: flex;
+  gap: 4px;
+}
+
+nav a {
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 13px;
+}
+
 nav a.active {
-  background: rgba(255, 255, 255, 0.18);
+  background: var(--mat-sys-secondary-container);
+  color: var(--mat-sys-on-secondary-container);
 }
+
 .shell-content {
   flex: 1;
   display: flex;
   flex-direction: column;
 }
+
 :host {
   display: block;
 }
-    
+
+.offline-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  background: var(--mat-sys-error-container);
+  color: var(--mat-sys-on-error-container);
+  margin-left: 16px;
+  text-transform: uppercase;
+}

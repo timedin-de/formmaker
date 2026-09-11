@@ -1,6 +1,5 @@
-
 <div class="shell">
-  <mat-toolbar color="primary" class="shell-toolbar">
+  <mat-toolbar class="shell-toolbar">
     <span class="brand">FormMaker</span>
     <nav>
       <a
@@ -8,13 +7,19 @@
         routerLink="/"
         routerLinkActive="active"
         [routerLinkActiveOptions]="{ exact: true }"
-        >Forms</a
       >
-      <a mat-button routerLink="/builder" routerLinkActive="active">Builder</a>
+        Forms
+      </a>
+      <a mat-button routerLink="/builder" routerLinkActive="active"> Builder </a>
     </nav>
+    @if (repo.offline()) {
+      <span class="offline-chip">
+        <mat-icon svgIcon="cloud_off" style="font-size: 13px; width: 13px; height: 13px"></mat-icon>
+        Offline
+      </span>
+    }
   </mat-toolbar>
   <main class="shell-content">
     <router-outlet />
   </main>
 </div>
-  
