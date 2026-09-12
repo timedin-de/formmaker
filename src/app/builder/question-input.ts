@@ -17,6 +17,7 @@ import { QuestionInputField } from './question-input-field';
 import { MatRadioModule } from '@angular/material/radio';
 import { MatOption } from '@angular/material/select';
 import { I18nService } from '../core/i18n';
+import { MarkdownPipe } from '../core/markdown';
 
 @Component({
   templateUrl: './question-input.html',
@@ -31,6 +32,7 @@ import { I18nService } from '../core/i18n';
     QuestionInputField,
     MatOption,
     MatRadioModule,
+    MarkdownPipe,
   ],
 })
 export class QuestionInput {

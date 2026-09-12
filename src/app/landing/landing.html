@@ -37,14 +37,18 @@
     @for (form of forms(); track form.id) {
       <mat-card class="card">
         <mat-card-header>
-          <mat-card-title>{{ form.name }}</mat-card-title>
+          <mat-card-title [innerHTML]="form.name | markdown"></mat-card-title>
           <mat-card-subtitle>
             v{{ form.version }} · {{ form.pages.length }} {{ i18n.t('landing.pages') }} ·
             {{ countQuestions(form) }} {{ i18n.t('landing.questions') }} · {{ updated(form) }}
           </mat-card-subtitle>
         </mat-card-header>
         <mat-card-content>
-          <p class="desc">{{ form.description || i18n.t('landing.noDescription') }}</p>
+          @if (form.description) {
+            <div class="desc" [innerHTML]="form.description | markdown: true"></div>
+          } @else {
+            <div class="desc">{{ i18n.t('landing.noDescription') }}</div>
+          }
         </mat-card-content>
         <mat-card-actions align="end">
           <button mat-button [routerLink]="['/runner', form.id]">

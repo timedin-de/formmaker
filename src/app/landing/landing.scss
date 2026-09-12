@@ -98,6 +98,9 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+.desc p {
+  margin: 0;
+}
 
 .card mat-card-actions {
   padding: 12px 12px 14px;

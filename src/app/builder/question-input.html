@@ -39,7 +39,9 @@
       </div>
     }
     @case ('boolean') {
-      <mat-checkbox [formControl]="vr.control">{{ vr.label }}</mat-checkbox>
+      <mat-checkbox [formControl]="vr.control">
+        <span [innerHTML]="vr.label | markdown"></span>
+      </mat-checkbox>
     }
     @case ('choice') {
       <mat-radio-group class="choice-group" [formControl]="vr.control" [name]="vr.id">

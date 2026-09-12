@@ -80,6 +80,10 @@
   color: var(--mat-sys-on-surface-variant);
   margin: 0;
 }
+.page-head .subtitle p,
+.desc p {
+  margin: 0;
+}
 
 .question.compact {
   box-shadow: none;
