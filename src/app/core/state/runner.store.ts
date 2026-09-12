@@ -1,6 +1,12 @@
 import { computed, signal } from '@angular/core';
 import { FormControl, FormGroup } from '@angular/forms';
-import { type FormDefinition, type ElementDefinition } from '../../shared/model/form.model';
+import {
+  type FormDefinition,
+  type ElementDefinition,
+  QUESTION_TYPES,
+  QuestionDefinition,
+  QuestionType,
+} from '../../shared/model/form.model';
 import type { FieldValue, ValuesMap } from '../../shared/model/values.model';
 import { FormEvaluator, type FormEvaluation } from './form-evaluator';
 import { evalExpression } from '../engine/expression/evaluator';
@@ -24,9 +30,9 @@ export interface ElementViewRef {
   el: ElementDefinition;
   label: string;
   description: string;
-  placeholder: string;
   visible: boolean;
   computed: boolean;
+  placeholder?: string;
   control: FormControl;
 }
 
@@ -197,11 +203,18 @@ export class RunnerStore {
       }
       const initial = initialValues?.[el.id] ?? this.evalInitialDefault(el, initialValues ?? {});
       const computed = el.type === 'number' && !!el.calculation;
-      const control = new FormControl(initial, (c: { value: FieldValue }) =>
-        this.validateControl(el, c.value),
-      );
-      if (el.readonly || computed) control.disable({ emitEvent: false });
-      incoming.set(el.id, control);
+
+      if (QUESTION_TYPES.includes(el.type as QuestionType)) {
+        const q = el as QuestionDefinition;
+        const control = new FormControl(initial, (c: { value: FieldValue }) =>
+          this.validateControl(q, c.value),
+        );
+        if (q.readonly || computed) control.disable({ emitEvent: false });
+        incoming.set(el.id, control);
+      } else {
+        // Dummy FormControl
+        incoming.set(el.id, new FormControl());
+      }
     });
 
     for (const key of Object.keys(this.answers.controls)) {
@@ -212,7 +225,7 @@ export class RunnerStore {
     }
   }
 
-  private validateControl(el: ElementDefinition, value: FieldValue) {
+  private validateControl(el: QuestionDefinition, value: FieldValue) {
     const result = validateElementValue(el, value, this.rawValues());
     if (result.valid) return null;
     return { message: result.failures[0]?.message ?? 'Invalid value' };
@@ -260,6 +273,7 @@ export class RunnerStore {
     // Apply dynamic defaults
     if (this.defaultsInitDone) {
       walkQuestions(form, (el) => {
+        if (!('defaultValue' in el)) return;
         const dv = el.defaultValue;
         if (!dv || dv.kind === 'static') return;
         const control = this.answers.get(el.id);
@@ -445,10 +459,9 @@ export class RunnerStore {
             el,
             label: view?.label,
             description: el.description ?? '',
-            placeholder: el.placeholder ?? '',
             visible: view.visible,
             computed: view.computed,
-            control,
+            control: control,
           };
         }
         return {

@@ -4,7 +4,6 @@ import type {
   FormDefinition,
   FormSettings,
   PageDefinition,
-  QuestionType,
   ElementType,
 } from '../../shared/model/form.model';
 import { createElement, createPage, insertElementAfter, newForm } from './form-factory';
@@ -111,7 +110,7 @@ export class DesignerStore {
 
   addElement(
     pageId: string,
-    type: QuestionType | ElementType,
+    type: ElementType,
     label?: string,
     afterId: string | null = null,
   ): ElementDefinition {

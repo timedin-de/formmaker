@@ -5,7 +5,7 @@ import { EXPORT_CHANNELS } from './channels';
 import { toCsv, submissionsToCsv } from './csv-exporter';
 import { validateFormDefinition } from './form-schema';
 import { newForm, createElement, createPage } from '../state/form-factory';
-import type { FormDefinition } from '../../shared/model/form.model';
+import type { FormDefinition, QuestionDefinition } from '../../shared/model/form.model';
 import type { Submission } from '../../shared/model/submission.model';
 
 function demoForm(): FormDefinition {
@@ -253,7 +253,10 @@ describe('validateFormDefinition', () => {
 
   it('rejects broken cross-references', () => {
     const form = demoForm();
-    form.pages[0].elements[0].defaultValue = { kind: 'fromField', fieldId: 'q_missing' };
+    (form.pages[0].elements[0] as QuestionDefinition).defaultValue = {
+      kind: 'fromField',
+      fieldId: 'q_missing',
+    };
     const issues = validateFormDefinition(form);
     expect(issues.some((i) => i.message.includes('Unknown reference'))).toBe(true);
   });

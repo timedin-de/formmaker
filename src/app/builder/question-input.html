@@ -6,7 +6,7 @@
           matInput
           [id]="vr.id"
           [formControl]="vr.control"
-          [placeholder]="vr.placeholder"
+          [placeholder]="vr.placeholder ?? ''"
           [type]="inputType(vr.el)"
         />
       </mat-form-field>
@@ -17,7 +17,7 @@
           matInput
           [id]="vr.id"
           [formControl]="vr.control"
-          [placeholder]="vr.placeholder"
+          [placeholder]="vr.placeholder ?? ''"
           [rows]="rows(vr.el)"
         ></textarea>
       </mat-form-field>
@@ -30,7 +30,7 @@
             [id]="vr.id"
             type="number"
             [formControl]="vr.control"
-            [placeholder]="vr.placeholder"
+            [placeholder]="vr.placeholder ?? ''"
           />
           @if (vr.el.unit) {
             <span matTextSuffix>{{ vr.el.unit }}</span>

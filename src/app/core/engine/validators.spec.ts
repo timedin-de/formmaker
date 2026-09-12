@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { validateElementValue } from './validators';
-import type { ElementDefinition } from '../../shared/model/form.model';
+import type { QuestionDefinition } from '../../shared/model/form.model';
 
-const textEl = (overrides: Partial<Record<string, unknown>> = {}): ElementDefinition =>
-  ({ id: 'q1', type: 'text', label: 'Name', ...overrides }) as ElementDefinition;
+const textEl = (overrides: Partial<Record<string, unknown>> = {}): QuestionDefinition =>
+  ({ id: 'q1', type: 'text', label: 'Name', ...overrides }) as QuestionDefinition;
 
 describe('validateElementValue', () => {
   it('passes for empty optional field', () => {

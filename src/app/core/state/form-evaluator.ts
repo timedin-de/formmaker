@@ -8,6 +8,7 @@ import { evalConditionGroup } from '../engine/condition-engine';
 import { evalExpression } from '../engine/expression/evaluator';
 import { interpolateTemplate } from '../engine/expression/template';
 import { collectElementRefs } from '../engine/dependencies';
+import { has } from '../../shared/helper';
 
 export interface ElementView {
   id: string;
@@ -128,7 +129,7 @@ export class FormEvaluator {
     const visible = evalConditionGroup(el.enabledWhen, values);
     const label = interpolateTemplate(el.label, values);
     const description = el.description ? interpolateTemplate(el.description, values) : '';
-    const placeholder = el.placeholder ? interpolateTemplate(el.placeholder, values) : '';
+    const placeholder = has(el, 'placeholder') ? interpolateTemplate(el.placeholder, values) : '';
 
     const view: ElementView = {
       id: el.id,

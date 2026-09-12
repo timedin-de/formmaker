@@ -61,26 +61,26 @@ export interface ElementBase {
   type: ElementType;
   /** Supports piping: segments like {{otherFieldId}} are substituted. */
   label: string;
-  description?: string;
+  description: string | undefined;
   width: number;
   enabledWhen?: ConditionGroup;
 }
 
-interface QuestionAttributes {
+// Question Parts
+
+interface QuestionAttributes extends DefaultValueable {
   type: QuestionType;
-  placeholder?: string;
-  defaultValue?: DefaultValueDef;
-  required?: boolean;
-  validations?: ValidationRule[];
-  readonly?: boolean;
+  required: boolean;
+  validations: ValidationRule[];
+  readonly: boolean;
 }
 
-export interface ExtendedElementBase extends ElementBase {
-  placeholder?: undefined;
-  defaultValue?: undefined;
-  required?: undefined;
-  validations?: undefined;
-  readonly?: undefined;
+interface Placeholderable {
+  placeholder: string;
+}
+
+interface DefaultValueable {
+  defaultValue: DefaultValueDef | undefined;
 }
 
 export type QuestionBase = ElementBase & QuestionAttributes;
@@ -96,11 +96,7 @@ export interface ChoiceElement extends QuestionBase {
   options: ChoiceOption[];
 }
 
-export interface ScalarElement extends QuestionBase {
-  type: Exclude<QuestionType, 'choice' | 'dropdown' | 'multiChoice' | 'file' | 'signature'>;
-}
-
-export interface NumberElement extends QuestionBase {
+export interface NumberElement extends QuestionBase, Placeholderable {
   type: 'number';
   min?: number;
   max?: number;
@@ -134,23 +130,23 @@ export interface BooleanElement extends QuestionBase {
   type: 'boolean';
 }
 
-export interface DateElement extends QuestionBase {
+export interface DateElement extends QuestionBase, Placeholderable {
   type: 'date' | 'time' | 'dateTime';
 }
 
-export interface TextElement extends QuestionBase {
+export interface TextElement extends QuestionBase, Placeholderable {
   type: 'text';
   inputType?: 'text' | 'email' | 'url' | 'phone' | 'number';
   maxLength?: number;
 }
 
-export interface LongTextElement extends QuestionBase {
+export interface LongTextElement extends QuestionBase, Placeholderable {
   type: 'longText';
   rows?: number;
   maxLength?: number;
 }
 
-export interface GroupElement extends ExtendedElementBase {
+export interface GroupElement extends ElementBase, DefaultValueable {
   type: 'group';
   legend?: string;
   elements: Elements;
@@ -158,12 +154,12 @@ export interface GroupElement extends ExtendedElementBase {
   collapsible?: boolean;
 }
 
-export interface SectionElement extends ExtendedElementBase {
+export interface SectionElement extends ElementBase {
   type: 'section';
   heading: string;
 }
 
-export interface TextDisplayElement extends ExtendedElementBase {
+export interface TextDisplayElement extends ElementBase {
   type: 'textdisplay';
 }
 export type QuestionDefinition =

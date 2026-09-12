@@ -9,6 +9,7 @@ import { VALIDATION_RULE_TYPES } from '../../shared/model/validation.model';
 import { expressionReferences } from '../engine/expression/evaluator';
 import { templateReferences } from '../engine/expression/template';
 import { conditionGroupReferences } from '../engine/condition-engine';
+import { has } from '../../shared/helper';
 
 export interface ValidationIssue {
   path: string;
@@ -116,7 +117,7 @@ function validateElement(
     );
   }
 
-  if (Array.isArray(el.validations)) {
+  if (has(el, 'validations') && Array.isArray(el.validations)) {
     el.validations.forEach((rule, ri) => {
       const known = VALIDATION_RULE_TYPES.map((t) => t.type);
       if (!rule || !known.includes(rule.rule)) {
@@ -191,22 +192,22 @@ function validateReferences(
     issues.push({ path: `${path}.${where}`, message: `Unknown reference to "${id}"` });
   };
 
-  for (const t of [el.label, el.description, el.placeholder]) {
+  for (const t of [el.label, el.description, has(el, 'placeholder') ? el.placeholder : '']) {
     for (const id of templateReferences(t ?? '')) ref(id, 'text');
   }
   if (el.enabledWhen) {
     for (const id of conditionGroupReferences(el.enabledWhen)) ref(id, 'enabledWhen');
   }
-  if (el.defaultValue) {
-    if (el.defaultValue.kind === 'fromField') ref(el.defaultValue.fieldId, 'defaultValue');
-    if (el.defaultValue.kind === 'expression') {
+  if (has(el, 'defaultValue')) {
+    if (el.defaultValue?.kind === 'fromField') ref(el.defaultValue.fieldId, 'defaultValue');
+    if (el.defaultValue?.kind === 'expression') {
       for (const id of expressionReferences(el.defaultValue.expression)) ref(id, 'defaultValue');
     }
   }
   if (el.type === 'number' && el.calculation) {
     for (const id of expressionReferences(el.calculation.formula)) ref(id, 'calculation');
   }
-  if (el.validations) {
+  if (has(el, 'validations')) {
     for (const rule of el.validations) {
       if (rule.expression)
         for (const id of expressionReferences(rule.expression)) ref(id, 'validations');
