@@ -76,7 +76,7 @@
           "builder": "@angular/build:unit-test",
           "options": {
             "coverage": false,
-            "coverageReporters": ["text", "lcov"],
+            "coverageReporters": ["text", "lcov", "html"],
             "coverageExclude": ["**/*.spec.ts", "**/main.ts", "src/app/core/icon-names.ts"],
             "coverageThresholds": {
               "statements": 55,
