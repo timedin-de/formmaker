@@ -2,13 +2,14 @@ import { Component, computed, inject, input } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DesignerStore } from '../core/state/designer.store';
 import { fieldMeta } from '../core/model/field-registry';
-import type {
-  ChoiceElement,
-  DefaultValueDef,
-  ElementDefinition,
-  Elements,
-  GroupElement,
-  NumberElement,
+import {
+  type ChoiceElement,
+  type DefaultValueDef,
+  type ElementDefinition,
+  type Elements,
+  type GroupElement,
+  type NumberElement,
+  type QuestionDefinition,
 } from '../shared/model/form.model';
 import type { ValidationRule, ValidationRuleType } from '../shared/model/validation.model';
 import { VALIDATION_RULE_TYPES, validationRule } from '../shared/model/validation.model';
@@ -25,6 +26,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { I18nService } from '../core/i18n';
+import { has } from '../shared/helper';
 
 const WIDTHS = Array(12)
   .fill(12)
@@ -58,6 +60,7 @@ export class PropertyPanel {
   protected readonly WIDTHS = WIDTHS;
   protected readonly INPUT_TYPES = INPUT_TYPES;
   protected readonly VALIDATION_RULE_TYPES = VALIDATION_RULE_TYPES;
+  protected readonly has = has;
 
   protected el = computed(() => {
     return this.store().selectedElement();
@@ -105,17 +108,6 @@ export class PropertyPanel {
     if (s === '') return '';
     const n = Number(s);
     return s !== '' && !Number.isNaN(n) && /^-?\d*\.?\d+$/.test(s) ? n : s;
-  }
-
-  wantsPlaceholder(el: ElementDefinition): boolean {
-    return (
-      el.type !== 'boolean' &&
-      el.type !== 'signature' &&
-      el.type !== 'scale' &&
-      el.type !== 'choice' &&
-      el.type !== 'dropdown' &&
-      el.type !== 'multiChoice'
-    );
   }
 
   isChoice(el: ElementDefinition): el is ChoiceElement {
@@ -167,10 +159,6 @@ export class PropertyPanel {
     this.patch({ width: value });
   }
 
-  defaultKind(el: ElementDefinition): 'none' | 'static' | 'expression' | 'fromField' {
-    return el.defaultValue?.kind ?? 'none';
-  }
-
   setDefaultKind(kind: string): void {
     const make = (): DefaultValueDef | undefined => {
       switch (kind) {
@@ -188,7 +176,8 @@ export class PropertyPanel {
   }
 
   staticText(el: ElementDefinition): string {
-    const v = el.defaultValue?.kind === 'static' ? el.defaultValue.value : null;
+    const q = el as QuestionDefinition;
+    const v = q.defaultValue?.kind === 'static' ? q.defaultValue.value : null;
     return v === null || v === undefined ? '' : String(v);
   }
 
@@ -197,7 +186,8 @@ export class PropertyPanel {
   }
 
   exprText(el: ElementDefinition): string {
-    return el.defaultValue?.kind === 'expression' ? el.defaultValue.expression : '';
+    const q = el as QuestionDefinition;
+    return q.defaultValue?.kind === 'expression' ? q.defaultValue.expression : '';
   }
 
   setExpr(expression: string): void {
@@ -205,7 +195,8 @@ export class PropertyPanel {
   }
 
   fieldRef(el: ElementDefinition): string {
-    return el.defaultValue?.kind === 'fromField' ? el.defaultValue.fieldId : '';
+    const q = el as QuestionDefinition;
+    return q.defaultValue?.kind === 'fromField' ? q.defaultValue.fieldId : '';
   }
 
   setFromField(fieldId: string): void {
@@ -220,9 +211,13 @@ export class PropertyPanel {
 
       const elements = selected.elements
         .map((e, i) => {
+          if (!has(e, 'defaultValue')) return e;
           const fieldId = values?.[i].id;
-          if (!fieldId) return;
-          e.defaultValue = { kind: 'fromField', fieldId };
+          if (fieldId)
+            return {
+              ...e,
+              defaultValue: { kind: 'fromField' as const, fieldId },
+            };
           return e;
         })
         .filter((x) => !!x);
@@ -308,17 +303,17 @@ export class PropertyPanel {
   }
 
   addRule(type: ValidationRuleType): void {
-    const el = this.sel();
+    const el = this.sel() as QuestionDefinition;
     this.patch({ validations: [...(el.validations ?? []), validationRule(type)] });
   }
 
   removeRule(id: string): void {
-    const el = this.sel();
+    const el = this.sel() as QuestionDefinition;
     this.patch({ validations: (el.validations ?? []).filter((r) => r.id !== id) });
   }
 
   patchRule(id: string, patch: Partial<ValidationRule>): void {
-    const el = this.sel();
+    const el = this.sel() as QuestionDefinition;
     this.patch({
       validations: (el.validations ?? []).map((r) => (r.id === id ? { ...r, ...patch } : r)),
     });

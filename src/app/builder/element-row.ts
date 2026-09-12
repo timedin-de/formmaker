@@ -10,6 +10,7 @@ import { FormsModule } from '@angular/forms';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { BuilderPalette } from './palette';
 import { I18nService } from '../core/i18n';
+import { has } from '../shared/helper';
 
 @Component({
   imports: [
@@ -30,6 +31,8 @@ export class ElementRow {
   readonly store = input.required<DesignerStore>();
   protected readonly i18n = inject(I18nService);
 
+  protected readonly has = has;
+
   readonly showPalette = signal(false);
 
   protected meta = computed(() => fieldMeta(this.el().type));
@@ -42,7 +45,6 @@ export class ElementRow {
     const el = this.el();
     return el.type === 'number' && !!el.calculation?.formula;
   });
-  protected elDefault = computed(() => !!this.el().defaultValue);
 
   select(): void {
     this.store().select(this.el().id);

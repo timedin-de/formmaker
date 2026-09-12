@@ -3,6 +3,7 @@ import { MatDivider } from '@angular/material/divider';
 import { ElementViewRef } from '../../core';
 import { QuestionInput } from '../../builder/question-input';
 import { MarkdownPipe } from '../../core/markdown';
+import { has } from '../../shared/helper';
 
 @Component({
   imports: [QuestionInput, MatDivider, MarkdownPipe],
@@ -13,4 +14,5 @@ import { MarkdownPipe } from '../../core/markdown';
 export class QuestionList {
   readonly elements = input.required<ElementViewRef[]>();
   readonly group = input<'true' | true>();
+  readonly has = has;
 }
