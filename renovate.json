@@ -1,0 +1,39 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended", ":automergeMinor", ":maintainLockFilesWeekly"],
+  "labels": ["dependencies"],
+  "dependencyDashboard": true,
+  "vulnerabilityAlerts": {
+    "enabled": true
+  },
+  "packageRules": [
+    {
+      "matchPackageNames": [
+        "@angular/core",
+        "@angular/common",
+        "@angular/compiler",
+        "@angular/animations",
+        "@angular/forms",
+        "@angular/router",
+        "@angular/material",
+        "@angular/cdk",
+        "@angular/platform-browser",
+        "@angular/platform-browser-dynamic",
+        "@angular/cli",
+        "@angular/build",
+        "@angular/compiler-cli",
+        "@angular/ssr",
+        "angular-eslint"
+      ],
+      "groupName": "angular"
+    },
+    {
+      "matchDepTypes": ["devDependencies"],
+      "automerge": true
+    },
+    {
+      "matchPackageNames": ["jspdf", "exceljs"],
+      "separateMajorMinor": false
+    }
+  ]
+}
