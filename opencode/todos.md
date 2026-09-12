@@ -20,6 +20,10 @@
 - [x] i18n: en/de dictionaries + reactive translations across the whole UI
 - [x] Runner draft persistence: autosave + restore + clear on submit/reset
 - [x] Runner thank-you screen: Download PDF receipt button
+- [x] PDF receipt + results summary show form groups and page titles
+- [x] Coverage config via `@vitest/coverage-v8` (thresholds 55/45/55/55; `npx ng test --watch=false --coverage`)
+- [x] CI: GitHub Actions + Forgejo workflows (lint, format, typecheck, tests with coverage, build)
+- [x] Renovate: `renovate.json` (recommended preset, angular group, auto-merge minors)
 - [x] AGENTS.md for AI tooling (repo map, commands, conventions)
 - [ ] (Optional) Retry "understand-everything" (Mor-Li) or `graftmap` MCP as a richer AGENTS alternative
 - [ ] (Optional) End-to-end demo walkthrough + browser-based regression pass

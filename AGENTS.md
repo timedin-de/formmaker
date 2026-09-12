@@ -8,17 +8,18 @@ Express API. This file helps AI/agent tools navigate the repo. Full docs: [openc
 Alwyays run the full gate before finishing: `npm run check`
 (= `lint` + `format:check` + `typecheck` + `typecheck:server` + `test:ci` + `build`).
 
-| Task             | Command                           |
-| ---------------- | --------------------------------- |
-| Dev UI           | `npm start`                       |
-| Dev API          | `npm run start:api`               |
-| Run both at once | `npm run start:all`               |
-| Unit tests       | `npm run test:ci`                 |
-| Lint             | `npm run lint`                    |
-| Format           | `npm run format` / `format:check` |
-| Typecheck app    | `npm run typecheck`               |
-| Typecheck API    | `npm run typecheck:server`        |
-| Full gate        | `npm run check`                   |
+| Task             | Command                                                               |
+| ---------------- | --------------------------------------------------------------------- |
+| Dev UI           | `npm start`                                                           |
+| Dev API          | `npm run start:api`                                                   |
+| Run both at once | `npm run start:all`                                                   |
+| Unit tests       | `npm run test:ci`                                                     |
+| Lint             | `npm run lint`                                                        |
+| Format           | `npm run format` / `format:check`                                     |
+| Typecheck app    | `npm run typecheck`                                                   |
+| Typecheck API    | `npm run typecheck:server`                                            |
+| Coverage         | `npx ng test --watch=false --coverage` (thresholds in `angular.json`) |
+| Full gate        | `npm run check`                                                       |
 
 - Node v24.15.0 is required by the Angular 22 CLI — via wrappers in `/home/user/.opencode/bin`.
 - Icons are bundled SVGs. Any new `mat-icon svgIcon="..."` MUST be registered in
@@ -84,8 +85,13 @@ scripts/            copy-icons.mjs (icon bundling)
   produces a download `Blob` or a `link` artifact (`{ form, submissions, ctx.t }` → `{ kind, ... }`).
   Add a channel there to appear in the results toolbar. Download filenames are slugged,
   e.g. `<form>-responses.csv` via `exportFileName`.
-- The runner's thank-you PDF receipt groups answers under their form groups (`buildReceipt` in
-  `core/export/receipt.ts`).
+- The runner's thank-you PDF receipt and the results summary PDF render blocks from
+  `buildReceipt` (`core/export/receipt.ts`); headings are emitted for **pages** (with an
+  answer/field) and groups, in order, with nesting indent (`page`/`group`/`answer` block kinds).
+- CI runs on GitHub Actions (`.github/workflows/ci.yml`) and Forgejo (mirror in
+  `.forgejo/workflows/ci.yml`): lint, format:check, typechecks, `test:ci -- --coverage`
+  (thresholds in `angular.json`, lcov at `coverage/`), build. Dependency updates via
+  Renovate (`renovate.json`).
 
 ## Tests
 
