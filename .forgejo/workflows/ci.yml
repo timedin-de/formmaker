@@ -51,3 +51,65 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate bundled icon manifest (src/app/core/icon-names.ts is gitignored)
+        run: npm run icons:copy
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium firefox webkit
+
+      - name: Run e2e tests (chromium/firefox/webkit; V8 coverage via chromium)
+        run: npm run e2e
+
+      - name: Upload e2e coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-e2e
+          path: |
+            coverage/e2e/lcov.info
+            coverage/e2e/index.html
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload test results on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results
+          path: |
+            test-results/
+            playwright-report/
+          if-no-files-found: ignore
+          retention-days: 14
+
+  coverage-merge:
+    needs: [verify, e2e]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download unit + e2e coverage
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Upload merged coverage bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-merged
+          path: artifacts/
+          merge-multiple: true
