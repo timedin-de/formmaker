@@ -1,20 +1,23 @@
 <mat-toolbar color="surface" class="top">
-  <button mat-icon-button (click)="back()" matTooltip="Back">
+  <button mat-icon-button (click)="back()" [matTooltip]="i18n.t('results.back')">
     <mat-icon svgIcon="arrow_back"></mat-icon>
   </button>
   <div class="info">
-    <span class="name">{{ form()?.name ?? 'Results' }}</span>
-    <span class="muted">{{ submissions().length }} submission(s)</span>
+    <span class="name">{{ form()?.name ?? i18n.t('results.title') }}</span>
+    <span class="muted">{{ i18n.t('results.submissions', { n: submissions().length }) }}</span>
   </div>
   <span class="spacer"></span>
   <button mat-button (click)="exportCsv()" [disabled]="submissions().length === 0">
-    <mat-icon svgIcon="download"></mat-icon> CSV
+    <mat-icon svgIcon="download"></mat-icon> {{ i18n.t('results.csv') }}
   </button>
   <button mat-button (click)="exportExcel()" [disabled]="submissions().length === 0">
-    <mat-icon svgIcon="table_view"></mat-icon> Excel
+    <mat-icon svgIcon="table_view"></mat-icon> {{ i18n.t('results.excel') }}
+  </button>
+  <button mat-button (click)="exportPdf()" [disabled]="submissions().length === 0">
+    <mat-icon svgIcon="picture_as_pdf"></mat-icon> {{ i18n.t('results.pdf') }}
   </button>
   <button mat-button color="warn" (click)="clearAll()" [disabled]="submissions().length === 0">
-    <mat-icon svgIcon="delete_sweep"></mat-icon> Clear
+    <mat-icon svgIcon="delete_sweep"></mat-icon> {{ i18n.t('results.clear') }}
   </button>
 </mat-toolbar>
 
@@ -22,9 +25,9 @@
   @if (submissions().length === 0) {
     <div class="empty">
       <mat-icon svgIcon="quiz"></mat-icon>
-      <p>No submissions yet for this form.</p>
+      <p>{{ i18n.t('results.noSubmissions') }}</p>
       <button mat-stroked-button (click)="run()">
-        <mat-icon svgIcon="play_arrow"></mat-icon> Fill it out
+        <mat-icon svgIcon="play_arrow"></mat-icon> {{ i18n.t('results.fillItOut') }}
       </button>
     </div>
   } @else {
@@ -35,7 +38,11 @@
             <mat-card-title>{{ formatDate(sub.submittedAt) }}</mat-card-title>
             <mat-card-subtitle>{{ duration(sub.durationMs) }}</mat-card-subtitle>
             <div class="spacer"></div>
-            <button mat-icon-button matTooltip="Delete" (click)="deleteOne(sub.id)">
+            <button
+              mat-icon-button
+              [matTooltip]="i18n.t('landing.delete')"
+              (click)="deleteOne(sub.id)"
+            >
               <mat-icon svgIcon="delete_outline"></mat-icon>
             </button>
           </mat-card-header>
@@ -49,7 +56,7 @@
                   }}</a>
                 </div>
               } @empty {
-                <div class="muted">No questions exported.</div>
+                <div class="muted">{{ i18n.t('results.noQuestions') }}</div>
               }
             </div>
           </mat-card-content>

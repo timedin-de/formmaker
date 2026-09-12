@@ -1,4 +1,8 @@
+import { buildColumns } from './columns';
+import type { FormDefinition } from '../../shared/model/form.model';
+import type { Submission } from '../../shared/model/submission.model';
 import type { FieldValue } from '../../shared/model/values.model';
+import { formatValueForExport } from './columns';
 
 /** RFC-4180-ish CSV serialization (quotes when needed, CRLF). */
 export function toCsv(header: string[], rows: (string | number | boolean | null)[][]): Blob {
@@ -22,7 +26,7 @@ function escapeCell(value: string | number | boolean | null): string {
 
 export type CsvFormatter = (value: FieldValue | undefined) => { text: string };
 
-/** Build a CSV Blob from submissions.
+/** Build a CSV Blob from submissions: one header row per question, one row per submission. */
 export function submissionsToCsv(
   form: FormDefinition,
   submissions: Submission[],
@@ -30,7 +34,6 @@ export function submissionsToCsv(
 ): Blob {
   const columns = buildColumns(form);
   const header = columns.map((c) => c.label);
-  const rows = submissions.map((s) => columns.map((c) => formatter(s.values[c.fieldId])));
+  const rows = submissions.map((s) => columns.map((c) => formatter(s.values[c.fieldId]).text));
   return toCsv(header, rows);
 }
-*/

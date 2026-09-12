@@ -40,14 +40,14 @@ describe('buildColumns', () => {
 
 describe('formatValueForExport', () => {
   it('formats kinds of values', () => {
-    expect(formatValueForExport(null)).toBe('');
-    expect(formatValueForExport('x')).toBe('x');
-    expect(formatValueForExport(3)).toBe('3');
-    expect(formatValueForExport(true)).toBe('Yes');
-    expect(formatValueForExport(false)).toBe('No');
-    expect(formatValueForExport(['a', 'b'])).toBe('a, b');
-    expect(formatValueForExport([{ name: 'f.pdf', size: 2, mimeType: 'application/pdf' }])).toBe(
-      'f.pdf',
+    expect(formatValueForExport(null)).toEqual({ text: '' });
+    expect(formatValueForExport('x')).toEqual({ text: 'x' });
+    expect(formatValueForExport(3)).toEqual({ text: '3' });
+    expect(formatValueForExport(true)).toEqual({ text: 'Yes', additional: { boolean: true } });
+    expect(formatValueForExport(false)).toEqual({ text: 'No', additional: { boolean: false } });
+    expect(formatValueForExport(['a', 'b'])).toEqual({ text: 'a, b' });
+    expect(formatValueForExport([{ name: 'f.pdf', size: 2, mimeType: 'application/pdf' }])).toEqual(
+      { text: 'f.pdf' },
     );
     expect(
       formatValueForExport({
@@ -56,7 +56,7 @@ describe('formatValueForExport', () => {
         height: 1,
         mimeType: 'image/png',
       }),
-    ).toBe('[signature]');
+    ).toMatchObject({ text: '[signature]' });
   });
 });
 

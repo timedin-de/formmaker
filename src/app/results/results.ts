@@ -1,4 +1,4 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -11,9 +11,9 @@ import { FormsRepository } from '../core/state/forms.repository';
 import type { FormDefinition } from '../shared/model/form.model';
 import type { Submission } from '../shared/model/submission.model';
 import { buildColumns, rowForSubmission } from '../core/export';
-import { submissionsToExcel } from '../core/export';
+import { submissionsToCsv, submissionsToExcel, submissionsToPdf } from '../core/export';
 import { downloadBlob } from '../core/export';
-import { signal } from '@angular/core';
+import { I18nService } from '../core/i18n';
 
 @Component({
   imports: [
@@ -34,6 +34,7 @@ export class Results {
   private readonly router = inject(Router);
   private readonly repo = inject(FormsRepository);
   private readonly snack = inject(MatSnackBar);
+  protected readonly i18n = inject(I18nService);
 
   private readonly formId = signal<string | null>(null);
   protected readonly form = signal<FormDefinition | null>(null);
@@ -66,7 +67,7 @@ export class Results {
     return '—';
   }
 
-  clickValueFor(sub: Submission, fieldId: string) {
+  clickValueFor(sub: Submission, fieldId: string): string {
     const row = rowForSubmission(sub, [{ fieldId, label: '' }]);
 
     if ((row[fieldId]?.additional as { dataUrl: string })?.dataUrl) {
@@ -98,7 +99,7 @@ export class Results {
     if (!formId) return;
     await this.repo.deleteSubmission(formId, id);
     this.submissions.set(await this.repo.submissionsFor(formId));
-    this.snack.open('Submission deleted', 'OK', { duration: 2000 });
+    this.snack.open(this.i18n.t('results.submissionDeleted'), 'OK', { duration: 2000 });
   }
 
   async clearAll(): Promise<void> {
@@ -106,14 +107,14 @@ export class Results {
     if (!formId) return;
     await this.repo.clearSubmissions(formId);
     this.submissions.set(await this.repo.submissionsFor(formId));
-    this.snack.open('All submissions cleared', 'OK', { duration: 2000 });
+    this.snack.open(this.i18n.t('results.allCleared'), 'OK', { duration: 2000 });
   }
 
   exportCsv(): void {
     const form = this.form();
     const subs = this.submissions();
     if (!form || subs.length === 0) return;
-    //downloadBlob(submissionsToCsv(form, subs), toSlug(form.name) + '-responses.csv');
+    downloadBlob(submissionsToCsv(form, subs), toSlug(form.name) + '-responses.csv');
   }
 
   async exportExcel(): Promise<void> {
@@ -122,6 +123,14 @@ export class Results {
     if (!form || subs.length === 0) return;
     const blob = await submissionsToExcel(form, subs);
     downloadBlob(blob, toSlug(form.name) + '-responses.xlsx');
+  }
+
+  async exportPdf(): Promise<void> {
+    const form = this.form();
+    const subs = this.submissions();
+    if (!form || subs.length === 0) return;
+    const blob = await submissionsToPdf(form, subs);
+    downloadBlob(blob, toSlug(this.i18n.t('pdf.filename', { name: form.name })) + '.pdf');
   }
 }
 
