@@ -83,10 +83,43 @@
 }
 @media (max-width: 1100px) {
   .layout {
-    grid-template-columns: 200px minmax(0, 1fr);
+    grid-template-columns: 100%;
   }
   .panel {
-    grid-column: 1 / -1;
+    grid-column: 1;
     max-height: 60vh;
+  }
+  .palette {
+    display: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .sub {
+    flex-wrap: wrap;
+    height: auto;
+    min-height: 64px;
+    row-gap: 4px;
+    padding: 10px 12px;
+  }
+  .title-group {
+    flex: 1 1 auto;
+    min-width: 200px;
+  }
+  .actions {
+    margin-inline-start: auto;
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 640px) {
+  .title-field {
+    width: 100%;
+  }
+  .muted {
+    display: none;
+  }
+  .btn-label {
+    display: none;
   }
 }

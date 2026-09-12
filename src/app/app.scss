@@ -11,6 +11,14 @@
   background: var(--mat-sys-surface);
   border-bottom: 1px solid var(--mat-sys-outline-variant);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+
+  @media (max-width: 700px) {
+    flex-wrap: wrap;
+    height: auto;
+    min-height: 64px;
+    row-gap: 2px;
+    padding-inline: 12px;
+  }
 }
 
 .brand {
@@ -25,6 +33,7 @@
 nav {
   display: flex;
   gap: 4px;
+  min-width: 0;
 
   a {
     border-radius: 8px;
@@ -52,13 +61,32 @@ nav {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 3px 10px;
+  padding: 8px 10px;
   border-radius: 10px;
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.02em;
   background: var(--mat-sys-error-container);
   color: var(--mat-sys-on-error-container);
-  margin-left: 16px;
+  margin-inline-start: 16px;
   text-transform: uppercase;
+  line-height: normal;
+}
+
+.buttons {
+  margin-inline-start: auto;
+  display: inline-flex;
+  align-items: center;
+}
+
+@media (max-width: 550px) {
+  .brand {
+    display: none;
+  }
+  .top-button-label {
+    display: none;
+  }
+  .offline-chip {
+    margin-inline-start: 8px;
+  }
 }

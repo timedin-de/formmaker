@@ -9,11 +9,13 @@
   <span class="spacer"></span>
   @for (ch of channels; track ch.id) {
     <button mat-button (click)="runChannel(ch)" [disabled]="submissions().length === 0">
-      <mat-icon [svgIcon]="ch.icon"></mat-icon> {{ i18n.t(ch.labelKey) }}
+      <mat-icon [svgIcon]="ch.icon"></mat-icon>
+      <span class="btn-label">{{ i18n.t(ch.labelKey) }}</span>
     </button>
   }
   <button mat-button color="warn" (click)="clearAll()" [disabled]="submissions().length === 0">
-    <mat-icon svgIcon="delete_sweep"></mat-icon> {{ i18n.t('results.clear') }}
+    <mat-icon svgIcon="delete_sweep"></mat-icon>
+    <span class="btn-label">{{ i18n.t('results.clear') }}</span>
   </button>
 </mat-toolbar>
 
