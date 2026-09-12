@@ -92,6 +92,15 @@ ctx.t }` into a download `Blob` or link artifact. The toolbar is now a single
   (`buildColumnBlocks` in `core/export/columns.ts`, `buildColumns` derived from
   the same source). `npm run check` green (77 tests).
 
+## Session 8 — grouped fields were never submitted
+
+- Root cause of "PDF has no groups": `RunnerStore.submit()` only walked
+  top-level page views, so values of questions inside a `group` never reached
+  the submission (exporters/PDFs read the submission, not live controls). The
+  value walk now descends into groups recursively with visibility gating; the
+  PDF group headings from sessions 6–7 then populate correctly.
+  Regression test in `runner.store.spec.ts`. `npm run check` green (78 tests).
+
 ## Ongoing issues / choices
 
 - Expression `+` is string-concat when either side is a string, else numeric (documented, tested).
