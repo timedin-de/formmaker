@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildColumns, formatValueForExport, buildExportTable } from './columns';
+import { buildColumns, buildColumnBlocks, formatValueForExport, buildExportTable } from './columns';
 import { buildReceipt } from './receipt';
 import { EXPORT_CHANNELS } from './channels';
 import { toCsv, submissionsToCsv } from './csv-exporter';
@@ -37,6 +37,35 @@ describe('buildColumns', () => {
     expect(cols.map((c) => c.label)).toEqual(
       expect.arrayContaining([expect.stringContaining('Street'), expect.stringContaining('City')]),
     );
+  });
+});
+
+describe('buildColumnBlocks', () => {
+  it('keeps group headings in order with nested fields', () => {
+    const form = newForm();
+    const street = createElement('text', 'Street');
+    const city = createElement('text', 'City');
+    const group = createElement('group', 'Address') as unknown as {
+      type: 'group';
+      elements: ReturnType<typeof createElement>[];
+    };
+    group.elements = [street, city];
+    form.pages[0].elements = [group as never];
+    expect(buildColumnBlocks(form)).toEqual([
+      { kind: 'group', label: 'Address', indent: 0 },
+      {
+        kind: 'field',
+        column: {
+          fieldId: street.id,
+          label: expect.stringContaining('Street') as unknown as string,
+        },
+      },
+      {
+        kind: 'field',
+        column: { fieldId: city.id, label: expect.stringContaining('City') as unknown as string },
+      },
+    ]);
+    expect(buildColumns(form)).toHaveLength(2);
   });
 });
 

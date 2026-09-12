@@ -9,30 +9,59 @@ export interface ExportColumn {
   label: string;
 }
 
+export type ExportColumnBlock =
+  { kind: 'group'; label: string; indent: number } | { kind: 'field'; column: ExportColumn };
+
 export interface ExportTable {
   columns: ExportColumn[];
   rows: Record<string, { text: string; additional?: unknown }>[];
 }
 
-/** Flatten the form's questions into export columns (groups keep a ` / ` path). */
-export function buildColumns(form: FormDefinition): ExportColumn[] {
-  const columns: ExportColumn[] = [];
+/**
+ * Flatten the form's questions into ordered export blocks: group headings
+ * followed by their fields, one level per nesting depth. Sections (visual
+ * dividers) are skipped. Group headings are only emitted for groups that
+ * contain at least one exported field.
+ */
+export function buildColumnBlocks(form: FormDefinition): ExportColumnBlock[] {
+  const blocks: ExportColumnBlock[] = [];
   let pageNum = 0;
   for (const page of form.pages) {
     pageNum += 1;
-    const collect = (elements: Elements, path: string[]) => {
+    const collect = (elements: Elements, path: string[], indent: number): boolean => {
+      let emitted = false;
       for (const el of elements) {
         if (el.type === 'group') {
-          collect((el as { elements: Elements }).elements, [...path, el.label]);
+          const start = blocks.length;
+          const nested = collect(
+            (el as { elements: Elements }).elements,
+            [...path, el.label],
+            indent + 1,
+          );
+          if (nested) {
+            blocks.splice(start, 0, { kind: 'group', label: el.label, indent });
+            emitted = true;
+          }
         } else if (el.type !== 'section') {
-          const label = buildLabel(pageNum, [...path, el.label]);
-          columns.push({ fieldId: el.id, label });
+          blocks.push({
+            kind: 'field',
+            column: { fieldId: el.id, label: buildLabel(pageNum, [...path, el.label]) },
+          });
+          emitted = true;
         }
       }
+      return emitted;
     };
-    collect(page.elements, []);
+    collect(page.elements, [], 0);
   }
-  return columns;
+  return blocks;
+}
+
+/** Flatten the form's questions into export columns (groups keep a ` / ` path). */
+export function buildColumns(form: FormDefinition): ExportColumn[] {
+  return buildColumnBlocks(form)
+    .filter((b): b is Extract<ExportColumnBlock, { kind: 'field' }> => b.kind === 'field')
+    .map((b) => b.column);
 }
 
 function buildLabel(pageNum: number, path: string[]): string {

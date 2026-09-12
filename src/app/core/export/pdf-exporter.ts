@@ -1,5 +1,5 @@
 import { jsPDF } from 'jspdf';
-import { buildColumns, formatValueForExport } from './columns';
+import { buildColumnBlocks, formatValueForExport } from './columns';
 import { buildReceipt } from './receipt';
 import type { FormDefinition } from '../../shared/model/form.model';
 import type { Submission } from '../../shared/model/submission.model';
@@ -18,7 +18,7 @@ export async function submissionsToPdf(
   submissions: Submission[],
 ): Promise<Blob> {
   const doc = new jsPDF({ unit: 'pt', format: 'a4' });
-  const columns = buildColumns(form);
+  const columnBlocks = buildColumnBlocks(form);
   let y = MARGIN;
 
   const ensureSpace = (needed = 60): void => {
@@ -76,13 +76,24 @@ export async function submissionsToPdf(
   doc.text('Rate', MARGIN + 12 + colW + ansW, y + 12);
   y += rowH;
 
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  for (let i = 0; i < columns.length; i++) {
-    const col = columns[i];
+  let fieldIndex = 0;
+  for (const block of columnBlocks) {
     ensureSpace(rowH * 2);
-    if ((i + 1) % 2 === 0) doc.setFillColor(248, 249, 250);
+    if (block.kind === 'group') {
+      doc.setFillColor(228, 234, 242);
+      doc.rect(MARGIN, y, CONTENT_W, rowH, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(20, 90, 180);
+      doc.text(wrap(doc, block.label, colW - 24), MARGIN + 12, y + 12);
+      y += rowH;
+      doc.setFont('helvetica', 'normal');
+      continue;
+    }
+    const col = block.column;
+    if (fieldIndex % 2 === 1) doc.setFillColor(248, 249, 250);
     else doc.setFillColor(255, 255, 255);
+    fieldIndex += 1;
     doc.rect(MARGIN, y, CONTENT_W, rowH, 'F');
     doc.setTextColor(60, 60, 60);
     doc.text(wrap(doc, col.label, colW - 24), MARGIN + 12, y + 12);
@@ -116,12 +127,35 @@ export async function submissionsToPdf(
     }
     y += 12;
     doc.setTextColor(50, 50, 50);
-    for (const col of columns) {
-      const text = formatValueForExport(sub.values[col.fieldId]).text;
-      if (!text) continue;
-      const label = wrap(doc, col.label, 150);
-      doc.text(label, MARGIN, y);
-      const lines = wrap(doc, text, CONTENT_W - 170);
+    for (const block of buildReceipt(form, sub)) {
+      if (block.kind === 'group') {
+        ensureSpace(20);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(10);
+        doc.setTextColor(20, 90, 180);
+        const x = MARGIN + block.indent * 18;
+        const lines = wrap(doc, block.label, CONTENT_W - x);
+        for (const line of lines) {
+          ensureSpace(14);
+          doc.text(line, x, y);
+          y += 14;
+        }
+        y += 4;
+        doc.setFontSize(9);
+        continue;
+      }
+      const x = MARGIN + block.indent * 18;
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(60, 60, 60);
+      const label = wrap(doc, block.label, 150 - block.indent * 18);
+      for (const line of label) {
+        ensureSpace(14);
+        doc.text(line, x, y);
+        y += 12;
+      }
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(50, 50, 50);
+      const lines = wrap(doc, block.value, CONTENT_W - 170);
       for (const line of lines) {
         ensureSpace(14);
         doc.text(line, MARGIN + 162, y);
