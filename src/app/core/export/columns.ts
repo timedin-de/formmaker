@@ -10,7 +10,9 @@ export interface ExportColumn {
 }
 
 export type ExportColumnBlock =
-  { kind: 'group'; label: string; indent: number } | { kind: 'field'; column: ExportColumn };
+  | { kind: 'page'; label: string; indent: number }
+  | { kind: 'group'; label: string; indent: number }
+  | { kind: 'field'; column: ExportColumn };
 
 export interface ExportTable {
   columns: ExportColumn[];
@@ -18,10 +20,10 @@ export interface ExportTable {
 }
 
 /**
- * Flatten the form's questions into ordered export blocks: group headings
- * followed by their fields, one level per nesting depth. Sections (visual
- * dividers) are skipped. Group headings are only emitted for groups that
- * contain at least one exported field.
+ * Flatten the form's questions into ordered export blocks: page headings,
+ * then group headings followed by their fields, one level per nesting depth.
+ * Sections (visual dividers) are skipped. Page and group headings are only
+ * emitted when they contain at least one exported field.
  */
 export function buildColumnBlocks(form: FormDefinition): ExportColumnBlock[] {
   const blocks: ExportColumnBlock[] = [];
@@ -52,7 +54,15 @@ export function buildColumnBlocks(form: FormDefinition): ExportColumnBlock[] {
       }
       return emitted;
     };
-    collect(page.elements, [], 0);
+    const start = blocks.length;
+    const hasFields = collect(page.elements, [], 0);
+    if (hasFields) {
+      blocks.splice(start, 0, {
+        kind: 'page',
+        label: page.title?.trim() || `Page ${pageNum}`,
+        indent: 0,
+      });
+    }
   }
   return blocks;
 }

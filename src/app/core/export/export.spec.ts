@@ -52,6 +52,7 @@ describe('buildColumnBlocks', () => {
     group.elements = [street, city];
     form.pages[0].elements = [group as never];
     expect(buildColumnBlocks(form)).toEqual([
+      { kind: 'page', label: 'New page', indent: 0 },
       { kind: 'group', label: 'Address', indent: 0 },
       {
         kind: 'field',
@@ -165,6 +166,7 @@ describe('buildReceipt', () => {
       submissionFor(form, { [street.id]: 'Main 1', [city.id]: 'Oslo' }),
     );
     expect(blocks).toEqual([
+      { kind: 'page', label: 'New page', indent: 0 },
       { kind: 'group', label: 'Address', indent: 0 },
       { kind: 'answer', label: 'Street', value: 'Main 1', indent: 1 },
       { kind: 'answer', label: 'City', value: 'Oslo', indent: 1 },
@@ -184,6 +186,7 @@ describe('buildReceipt', () => {
     ];
     const blocks = buildReceipt(form, submissionFor(form, { [street.id]: 'Main 1' }));
     expect(blocks).toEqual([
+      { kind: 'page', label: 'New page', indent: 0 },
       { kind: 'group', label: 'Address', indent: 0 },
       { kind: 'answer', label: 'Street', value: 'Main 1', indent: 1 },
     ]);
