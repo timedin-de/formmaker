@@ -85,6 +85,13 @@ ctx.t }` into a download `Blob` or link artifact. The toolbar is now a single
   `results.email`/`mailSubject`/`mailBody` + `export.exported`/`export.failed`.
 - Registered the `mail` icon; `npm run check` green (76 tests).
 
+## Session 7 — groups also in the results summary PDF
+
+- The summary export (`submissionsToPdf`) flattened groups too; it now renders
+  group heading rows in the fill-rate table and group headings per submission
+  (`buildColumnBlocks` in `core/export/columns.ts`, `buildColumns` derived from
+  the same source). `npm run check` green (77 tests).
+
 ## Ongoing issues / choices
 
 - Expression `+` is string-concat when either side is a string, else numeric (documented, tested).
