@@ -24,6 +24,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Generate bundled icon manifest (src/app/core/icon-names.ts is gitignored)
+        run: npm run icons:copy
+
       - name: Lint
         run: npm run lint
 
