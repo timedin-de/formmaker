@@ -1,0 +1,36 @@
+# FormMaker — single-service deployment.
+#
+# Usage:
+#   docker compose up -d --build
+#   FORMMAKER_PASSWORD=secret docker compose up -d --build   # custom editor password
+#
+# The container serves the Angular SPA and the JSON API on port 3000.
+# Forms and submissions persist in the formmaker-data volume.
+
+services:
+  formmaker:
+    image: timedin/formmaker:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: formmaker
+    restart: unless-stopped
+    ports:
+      - '3000:3000'
+    environment:
+      - FORMMAKER_PASSWORD=${FORMMAKER_PASSWORD:-formmaker}
+    volumes:
+      - formmaker-data:/app/server/data
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000/api/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  formmaker-data:

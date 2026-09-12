@@ -10,6 +10,7 @@
     "start:api": "tsx server/index.ts",
     "start:all": "node server/run-both.mjs",
     "build": "ng build",
+    "build:server": "node scripts/build-server.mjs",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "test:ci": "ng test --watch=false",
