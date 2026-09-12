@@ -30,6 +30,35 @@
   text-align: center;
   color: var(--mat-sys-on-surface-variant);
 }
+.thanks {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 40px 20px;
+  text-align: center;
+
+  h1 {
+    margin: 0;
+  }
+
+  p {
+    margin: 0 0 16px;
+    color: var(--mat-sys-on-surface-variant);
+  }
+}
+.tick {
+  font-size: 56px;
+  width: 56px;
+  height: 56px;
+  color: var(--mat-sys-primary);
+}
+.thanks-actions {
+  display: flex;
+  gap: 12px;
+}
 .scroll {
   flex: 1;
   overflow: auto;
