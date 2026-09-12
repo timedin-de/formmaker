@@ -1,12 +1,6 @@
 import { computed, signal } from '@angular/core';
 import { FormControl, FormGroup } from '@angular/forms';
-import {
-  type FormDefinition,
-  type ElementDefinition,
-  QUESTION_TYPES,
-  QuestionType,
-  QuestionDefinition,
-} from '../../shared/model/form.model';
+import { type FormDefinition, type ElementDefinition } from '../../shared/model/form.model';
 import type { FieldValue, ValuesMap } from '../../shared/model/values.model';
 import { FormEvaluator, type FormEvaluation } from './form-evaluator';
 import { evalExpression } from '../engine/expression/evaluator';
@@ -390,6 +384,7 @@ export class RunnerStore {
         elements: refs,
       });
     }
+    console.log(out);
     return out;
   }
 
@@ -418,11 +413,7 @@ function walkQuestions(form: FormDefinition, fn: (el: ElementDefinition) => void
         if (el.type === 'group') walk(el.elements);
       }
     };
-    walk(
-      page.elements.filter((e): e is QuestionDefinition =>
-        QUESTION_TYPES.includes(e.type as QuestionType),
-      ),
-    );
+    walk(page.elements);
   }
 }
 

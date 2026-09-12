@@ -44,7 +44,9 @@
               @for (col of columns(); track col.fieldId) {
                 <div class="cell">
                   <span class="cell-label">{{ col.label }}</span>
-                  <span class="cell-value">{{ valueFor(sub, col.fieldId) }}</span>
+                  <a class="cell-value" (click)="clickValueFor(sub, col.fieldId)">{{
+                    valueFor(sub, col.fieldId)
+                  }}</a>
                 </div>
               } @empty {
                 <div class="muted">No questions exported.</div>

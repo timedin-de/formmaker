@@ -1,3 +1,4 @@
+import { ElementType } from './form.model';
 import type { ElementId } from './ids';
 
 export type ConditionOperator =
@@ -38,6 +39,7 @@ export interface Condition {
    * Empty string means "unset" (editor placeholder).
    */
   fieldId: ElementId | '';
+  fieldType?: ElementType;
   operator: ConditionOperator;
   /** Right side of binary operators (eq/neq/gt/.../between-with-single-value). */
   operand?: ConditionOperand;

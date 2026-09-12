@@ -1,6 +1,6 @@
-import { Component, computed, inject, input } from '@angular/core';
+import { Component, computed, inject, input, signal } from '@angular/core';
 import { DesignerStore } from '../core/state/designer.store';
-import type { PageDefinition } from '../shared/model/form.model';
+import type { ElementType, PageDefinition } from '../shared/model/form.model';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
@@ -13,6 +13,7 @@ import { FieldPreview } from './field-preview';
 import { PropertyPanel } from './property-panel';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { first } from 'rxjs';
+import { BuilderPalette } from './palette';
 
 @Component({
   imports: [
@@ -27,6 +28,7 @@ import { first } from 'rxjs';
     FieldPreview,
     PropertyPanel,
     RouterLink,
+    BuilderPalette,
   ],
   selector: 'fm-builder-canvas',
   templateUrl: './canvas.html',
@@ -37,13 +39,16 @@ export class BuilderCanvas {
   private readonly route = inject(ActivatedRoute);
 
   readonly store = input.required<DesignerStore>();
+
+  readonly showPalette = signal(false);
+  protected readonly pages = () => this.store().form().pages;
+
   readonly preview = input(false);
   protected page = computed(() => this.store().activePage());
   protected emptyGroup = computed(() => ({ logic: 'all' as const, conditions: [], groups: [] }));
   protected fieldOptions = computed(() =>
-    this.store()
-      .form()
-      .pages.flatMap((p) => p.elements)
+    this.pages()
+      .flatMap((p) => p.elements)
       .filter((el) => el.type !== 'section' && el.type !== 'group')
       .map((el) => ({ id: el.id, label: el.label })),
   );
@@ -56,10 +61,10 @@ export class BuilderCanvas {
     this.store().removePage(page.id);
   }
 
-  append(): void {
+  append(type: ElementType = 'text'): void {
     const page = this.store().activePage();
     if (!page) this.store().addPage();
-    this.store().addElement(this.store().activePage()?.id ?? '', 'text');
+    this.store().addElement(this.store().activePage()?.id ?? '', type);
   }
 
   selectPage(pageId: string) {

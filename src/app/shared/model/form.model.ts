@@ -62,7 +62,7 @@ export interface ElementBase {
   /** Supports piping: segments like {{otherFieldId}} are substituted. */
   label: string;
   description?: string;
-  width?: number;
+  width: number;
   enabledWhen?: ConditionGroup;
 }
 

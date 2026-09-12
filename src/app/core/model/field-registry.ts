@@ -5,7 +5,7 @@ export interface FieldTypeMeta {
   type: ElementType;
   label: string;
   icon: IconName;
-  category: 'basic' | 'advanced' | 'special' | 'layout';
+  category: 'basic' | 'advanced' | 'layout';
   description: string;
 }
 
@@ -92,7 +92,7 @@ export const FIELD_TYPES: FieldTypeMeta[] = [
     type: 'signature',
     label: 'Signature',
     icon: 'draw',
-    category: 'special',
+    category: 'advanced',
     description: 'Canvas sign pad (PNG)',
   },
   {

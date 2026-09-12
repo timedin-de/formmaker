@@ -15,6 +15,9 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDividerModule } from '@angular/material/divider';
+import { QuestionSelector } from './question-selector';
+import { PageDefinition } from '../shared/model';
+import { QuestionInputField } from './question-input-field';
 
 const OPERATOR_LABELS: Record<ConditionOperator, string> = {
   eq: 'equals',
@@ -71,6 +74,8 @@ export interface ConditionFieldOption {
     MatSelectModule,
     MatTooltipModule,
     MatDividerModule,
+    QuestionSelector,
+    QuestionInputField,
   ],
   selector: 'fm-condition-editor',
   templateUrl: './condition-editor.html',
@@ -79,6 +84,9 @@ export interface ConditionFieldOption {
 export class ConditionEditor {
   readonly group = input<ConditionGroup>({ logic: 'all', conditions: [], groups: [] });
   readonly fields = input<ConditionFieldOption[]>([]);
+  readonly pages = input.required<PageDefinition[]>();
+
+  readonly self = input.required<string>();
   readonly legend = input<string>('When');
   readonly indent = input(false);
   readonly changed = output<ConditionGroup>();
@@ -128,6 +136,7 @@ export class ConditionEditor {
 
   set(index: number, patch: Partial<Condition>): void {
     this.mutate((g) => Object.assign(g.conditions[index], patch));
+    console.log('patch', patch);
   }
 
   set$(index: number, which: 'operand', raw: string): void {

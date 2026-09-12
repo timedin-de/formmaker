@@ -140,9 +140,10 @@ export class PropertyPanel {
 
   addOption(): void {
     const choice = this.choice();
-    const idx = choice.options.length + 1;
+    const options = choice.options ?? [];
+    const idx = options.length + 1;
     this.patch({
-      options: [...choice.options, { id: uuid(), label: `Option ${idx}`, value: idx }],
+      options: [...options, { id: uuid(), label: `Option ${idx}`, value: idx }],
     });
   }
 

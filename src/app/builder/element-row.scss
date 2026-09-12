@@ -100,3 +100,20 @@
   font-weight: 500;
   padding: 6px 4px;
 }
+
+.palette-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 9999;
+  width: 100%;
+  height: 100%;
+  background-color: rgba($color: #000000, $alpha: 4);
+}
+.palette-modal fm-builder-palette {
+  position: relative;
+  left: 50%;
+  top: 50%;
+  width: 50%;
+  transform: translate(-50%, -50%);
+}

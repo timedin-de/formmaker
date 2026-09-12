@@ -1,6 +1,3 @@
-import { formatValueForExport, buildColumns } from './columns';
-import type { Submission } from '../../shared/model/submission.model';
-import type { FormDefinition } from '../../shared/model/form.model';
 import type { FieldValue } from '../../shared/model/values.model';
 
 /** RFC-4180-ish CSV serialization (quotes when needed, CRLF). */
@@ -23,9 +20,9 @@ function escapeCell(value: string | number | boolean | null): string {
   return text;
 }
 
-export type CsvFormatter = (value: FieldValue | undefined) => string;
+export type CsvFormatter = (value: FieldValue | undefined) => { text: string };
 
-/** Build a CSV Blob from submissions. */
+/** Build a CSV Blob from submissions.
 export function submissionsToCsv(
   form: FormDefinition,
   submissions: Submission[],
@@ -36,3 +33,4 @@ export function submissionsToCsv(
   const rows = submissions.map((s) => columns.map((c) => formatter(s.values[c.fieldId])));
   return toCsv(header, rows);
 }
+*/

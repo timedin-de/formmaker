@@ -1,4 +1,4 @@
-import { computed, signal, Injectable, inject } from '@angular/core';
+import { computed, signal, Injectable } from '@angular/core';
 import type {
   ElementDefinition,
   FormDefinition,

@@ -22,7 +22,7 @@
       @for (child of group().elements; track child.id) {
         <fm-element-row [el]="child" [store]="store()" />
       }
-      <button class="add-child" (click)="addChild()">
+      <button class="add-child" (click)="showPalette.set(true)">
         <mat-icon svgIcon="add"></mat-icon> Add child
       </button>
     </div>
@@ -68,5 +68,14 @@
         <mat-icon svgIcon="delete_outline"></mat-icon>
       </button>
     </div>
+  </div>
+}
+@if (showPalette()) {
+  <div class="palette-modal">
+    <fm-builder-palette
+      class="palette"
+      (addModule)="addChild($event)"
+      [isModal]="true"
+    ></fm-builder-palette>
   </div>
 }

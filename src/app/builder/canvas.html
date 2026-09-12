@@ -13,7 +13,7 @@
         >
           {{ page.title ?? 'Page' }}
           <mat-icon class="del" (click)="removePage(page)" svgIcon="close"></mat-icon>
-      </a>
+        </a>
       }
       <button class="page-add" matTooltip="Add page" (click)="store().addPage()">
         <mat-icon svgIcon="add"></mat-icon>
@@ -48,6 +48,8 @@
       <fm-condition-editor
         legend="Page logic — show this page only when"
         [group]="page.enabledWhen ?? emptyGroup()"
+        [pages]="pages()"
+        [self]="page.id"
         [fields]="fieldOptions()"
         (changed)="store().updatePage(page.id, { enabledWhen: $event })"
       />
@@ -82,7 +84,7 @@
     }
 
     <div class="page-actions">
-      <button mat-stroked-button (click)="append()">
+      <button mat-stroked-button (click)="showPalette.set(true)">
         <mat-icon svgIcon="add"></mat-icon> Add question
       </button>
     </div>
@@ -93,3 +95,12 @@
     </div>
   }
 </div>
+@if (showPalette()) {
+  <div class="palette-modal">
+    <fm-builder-palette
+      class="palette"
+      (addModule)="append($event); showPalette.set(false)"
+      [isModal]="true"
+    ></fm-builder-palette>
+  </div>
+}

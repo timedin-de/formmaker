@@ -1,33 +1,34 @@
-import { Component, effect, input } from '@angular/core';
-import { AbstractControl, FormControl } from '@angular/forms';
-import { MatDivider } from '@angular/material/divider';
-import { ElementViewRef, RunnerStore } from '../../core';
+import { Component, computed, input, output } from '@angular/core';
+import { AbstractControl, FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { MatInputModule } from '@angular/material/input';
+import { MatIconModule } from '@angular/material/icon';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import {
-  ChoiceElement,
   ElementDefinition,
-  FieldValue,
-  FileValue,
+  ChoiceElement,
   ScaleElement,
+  FileValue,
   SignatureValue,
-} from '../../shared/model';
-import { QuestionInput } from '../../builder/question-input';
+  FieldValue,
+} from '../shared/model';
 
 @Component({
-  imports: [QuestionInput, MatDivider],
-  providers: [RunnerStore],
-  selector: 'fm-question-list',
-  templateUrl: './question-list.html',
-  styleUrl: './question-list.scss',
+  templateUrl: './question-input-field.html',
+  selector: 'fm-question-input-field',
+  imports: [MatInputModule, FormsModule, ReactiveFormsModule, MatIconModule, MatCheckboxModule],
 })
-export class QuestionList {
-  readonly elements = input.required<ElementViewRef[]>();
-  readonly group = input<'true' | true>();
+export class QuestionInputField {
+  readonly config = input<{
+    type: 'date';
+    min?: Date;
+    max?: Date;
+    id?: string;
+    control?: FormControl;
+    value?: string;
+  }>();
+  readonly control = computed(() => this.config()?.control ?? new FormControl());
 
-  constructor() {
-    effect(() => {
-      console.log(this.elements());
-    });
-  }
+  readonly value = output<string>();
 
   inputType(el: ElementDefinition): string {
     return (el as { inputType?: string }).inputType ?? 'text';

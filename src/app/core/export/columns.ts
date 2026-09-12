@@ -11,7 +11,7 @@ export interface ExportColumn {
 
 export interface ExportTable {
   columns: ExportColumn[];
-  rows: Record<string, string>[];
+  rows: Record<string, { text: string; additional?: unknown }>[];
 }
 
 /** Flatten the form's questions into export columns (groups keep a ` / ` path). */
@@ -40,33 +40,39 @@ function buildLabel(pageNum: number, path: string[]): string {
   return `P${pageNum}·${joined}`;
 }
 
-export function formatValueForExport(value: FieldValue | undefined): string {
-  if (value === null || value === undefined) return '';
-  if (typeof value === 'string') return value;
-  if (typeof value === 'number') return String(value);
-  if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+export function formatValueForExport(value: FieldValue | undefined): {
+  text: string;
+  additional?: unknown;
+} {
+  if (value === null || value === undefined) return { text: '' };
+  if (typeof value === 'string') return { text: value };
+  if (typeof value === 'number') return { text: String(value) };
+  if (typeof value === 'boolean')
+    return { text: value ? 'Yes' : 'No', additional: { boolean: value } };
   if (Array.isArray(value)) {
-    return value
-      .map((item) => {
-        if (typeof item === 'string') return item;
-        if (typeof item === 'object' && 'name' in item) return item.name;
-        return '';
-      })
-      .filter(Boolean)
-      .join(', ');
+    return {
+      text: value
+        .map((item) => {
+          if (typeof item === 'string') return item;
+          if (typeof item === 'object' && 'name' in item) return item.name;
+          return '';
+        })
+        .filter(Boolean)
+        .join(', '),
+    };
   }
   if (typeof value === 'object') {
-    if ('dataUrl' in value) return '[signature]';
-    return '[attachment]';
+    if ('dataUrl' in value) return { text: '[signature]', additional: { dataUrl: value.dataUrl } };
+    return { text: '[attachment]', additional: value };
   }
-  return '';
+  return { text: '' };
 }
 
 export function rowForSubmission(
   submission: Submission,
   columns: ExportColumn[],
-): Record<string, string> {
-  const row: Record<string, string> = {};
+): Record<string, { text: string; additional?: unknown }> {
+  const row: Record<string, { text: string; additional?: unknown }> = {};
   for (const column of columns) {
     row[column.fieldId] = formatValueForExport(submission.values[column.fieldId]);
   }
@@ -84,15 +90,21 @@ export function buildExportTable(form: FormDefinition, submissions: Submission[]
 export function tableToMd(table: ExportTable): string {
   const headers = table.columns.map((c) => c.label);
   const lines = [
-    ['Submitted', 'Duration (s)', ...headers],
+    [
+      { text: 'Submitted' },
+      { text: 'Duration (s)' },
+      ...headers.map((h) => ({
+        text: h,
+      })),
+    ],
     ...table.rows.map((r) => {
       const values = table.columns.map((c) => r[c.fieldId] ?? '');
-      return ['', '', ...values];
+      return [{ text: '' }, { text: '' }, ...values];
     }),
   ];
   return lines
     .map((row, i) => {
-      const cells = row.map((c) => c.replace(/\|/g, '\\|'));
+      const cells = row.map((c) => c.text.replace(/\|/g, '\\|'));
       const body = cells.join(' | ');
       if (i === 0) return `| ${body} |\n| ${cells.map(() => '---').join(' | ')} |`;
       return `| ${body} |`;

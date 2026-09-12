@@ -1,33 +1,41 @@
-import { Component, effect, input } from '@angular/core';
-import { AbstractControl, FormControl } from '@angular/forms';
-import { MatDivider } from '@angular/material/divider';
-import { ElementViewRef, RunnerStore } from '../../core';
+import { Component, input } from '@angular/core';
+import { AbstractControl, FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { MatInputModule } from '@angular/material/input';
+import { SignaturePadField } from '../runner/signature-pad';
+import { MatIconModule } from '@angular/material/icon';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import {
-  ChoiceElement,
   ElementDefinition,
-  FieldValue,
-  FileValue,
+  ChoiceElement,
   ScaleElement,
+  FileValue,
   SignatureValue,
-} from '../../shared/model';
-import { QuestionInput } from '../../builder/question-input';
+  FieldValue,
+} from '../shared/model';
+import { ElementViewRef } from '../core';
+import { QuestionInputField } from './question-input-field';
+import { MatRadioModule } from '@angular/material/radio';
+import { MatOption } from '@angular/material/select';
 
 @Component({
-  imports: [QuestionInput, MatDivider],
-  providers: [RunnerStore],
-  selector: 'fm-question-list',
-  templateUrl: './question-list.html',
-  styleUrl: './question-list.scss',
+  templateUrl: './question-input.html',
+  selector: 'fm-question-input',
+  imports: [
+    MatInputModule,
+    FormsModule,
+    ReactiveFormsModule,
+    SignaturePadField,
+    MatIconModule,
+    MatCheckboxModule,
+    QuestionInputField,
+    MatOption,
+    MatRadioModule,
+  ],
 })
-export class QuestionList {
-  readonly elements = input.required<ElementViewRef[]>();
-  readonly group = input<'true' | true>();
+export class QuestionInput {
+  readonly vr = input<ElementViewRef>();
 
-  constructor() {
-    effect(() => {
-      console.log(this.elements());
-    });
-  }
+  date = (value: unknown) => value as Date;
 
   inputType(el: ElementDefinition): string {
     return (el as { inputType?: string }).inputType ?? 'text';

@@ -1,4 +1,4 @@
-import { Component, input } from '@angular/core';
+import { Component, input, output } from '@angular/core';
 import { DesignerStore } from '../core/state/designer.store';
 import { FIELD_TYPES } from '../core/model/field-registry';
 import { MatButtonModule } from '@angular/material/button';
@@ -11,7 +11,6 @@ import { MatToolbarModule } from '@angular/material/toolbar';
 const CATEGORIES = [
   { key: 'basic', label: 'Basic' },
   { key: 'advanced', label: 'Advanced' },
-  { key: 'special', label: 'Special' },
   { key: 'layout', label: 'Layout' },
 ] as const;
 
@@ -22,8 +21,10 @@ const CATEGORIES = [
   styleUrl: './palette.scss',
 })
 export class BuilderPalette {
-  readonly store = input.required<DesignerStore>();
+  readonly store = input<DesignerStore>();
   readonly horizontal = input(false);
+  public readonly isModal = input(false);
+  public readonly addModule = output<ElementType>();
   protected readonly categories = CATEGORIES;
   protected readonly allFields = FIELD_TYPES;
 
@@ -32,13 +33,19 @@ export class BuilderPalette {
   }
 
   add(type: ElementType): void {
-    const page = this.store().activePage();
-    if (!page) {
-      this.store().addPage();
+    if (this.isModal()) {
+      this.addModule.emit(type);
+      return;
     }
-    this.store().addElement(
-      this.store().activePage()?.id ?? this.store().form().pages[0]?.id ?? '',
-      type,
-    );
+
+    const store = this.store();
+
+    if (store) {
+      const page = store.activePage();
+      if (!page) {
+        store.addPage();
+      }
+      store.addElement(store.activePage()?.id ?? store.form().pages[0]?.id ?? '', type);
+    }
   }
 }

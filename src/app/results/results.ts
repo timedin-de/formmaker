@@ -11,7 +11,6 @@ import { FormsRepository } from '../core/state/forms.repository';
 import type { FormDefinition } from '../shared/model/form.model';
 import type { Submission } from '../shared/model/submission.model';
 import { buildColumns, rowForSubmission } from '../core/export';
-import { submissionsToCsv } from '../core/export';
 import { submissionsToExcel } from '../core/export';
 import { downloadBlob } from '../core/export';
 import { signal } from '@angular/core';
@@ -62,7 +61,19 @@ export class Results {
 
   valueFor(sub: Submission, fieldId: string): string {
     const row = rowForSubmission(sub, [{ fieldId, label: '' }]);
-    const v = row[fieldId];
+    const v = row[fieldId].text;
+    if (typeof v === 'string' && v !== '') return v;
+    return '—';
+  }
+
+  clickValueFor(sub: Submission, fieldId: string) {
+    const row = rowForSubmission(sub, [{ fieldId, label: '' }]);
+
+    if ((row[fieldId]?.additional as { dataUrl: string })?.dataUrl) {
+      window.open((row[fieldId]?.additional as { dataUrl: string }).dataUrl, '_blank');
+    }
+
+    const v = row[fieldId].text;
     if (typeof v === 'string' && v !== '') return v;
     return '—';
   }
@@ -102,7 +113,7 @@ export class Results {
     const form = this.form();
     const subs = this.submissions();
     if (!form || subs.length === 0) return;
-    downloadBlob(submissionsToCsv(form, subs), toSlug(form.name) + '-responses.csv');
+    //downloadBlob(submissionsToCsv(form, subs), toSlug(form.name) + '-responses.csv');
   }
 
   async exportExcel(): Promise<void> {
