@@ -7,15 +7,11 @@
     <span class="muted">{{ i18n.t('results.submissions', { n: submissions().length }) }}</span>
   </div>
   <span class="spacer"></span>
-  <button mat-button (click)="exportCsv()" [disabled]="submissions().length === 0">
-    <mat-icon svgIcon="download"></mat-icon> {{ i18n.t('results.csv') }}
-  </button>
-  <button mat-button (click)="exportExcel()" [disabled]="submissions().length === 0">
-    <mat-icon svgIcon="table_view"></mat-icon> {{ i18n.t('results.excel') }}
-  </button>
-  <button mat-button (click)="exportPdf()" [disabled]="submissions().length === 0">
-    <mat-icon svgIcon="picture_as_pdf"></mat-icon> {{ i18n.t('results.pdf') }}
-  </button>
+  @for (ch of channels; track ch.id) {
+    <button mat-button (click)="runChannel(ch)" [disabled]="submissions().length === 0">
+      <mat-icon [svgIcon]="ch.icon"></mat-icon> {{ i18n.t(ch.labelKey) }}
+    </button>
+  }
   <button mat-button color="warn" (click)="clearAll()" [disabled]="submissions().length === 0">
     <mat-icon svgIcon="delete_sweep"></mat-icon> {{ i18n.t('results.clear') }}
   </button>

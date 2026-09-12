@@ -60,9 +60,9 @@ export const TRANSLATIONS: Record<Lang, Dict> = {
     'results.submissionDeleted': 'Submission deleted',
     'results.allCleared': 'All submissions cleared',
     'results.noQuestions': 'No questions exported.',
-    'results.exportCsv': 'Export CSV',
-    'results.exportExcel': 'Export Excel',
-    'results.exportPdf': 'Export PDF summary',
+    'results.email': 'Email',
+    'results.mailSubject': 'FormMaker — {name}: {n} submission(s)',
+    'results.mailBody': 'Form answers for {name}\n{n} submission(s)\n{range}',
     'results.back': 'Back',
 
     // runner
@@ -356,9 +356,11 @@ export const TRANSLATIONS: Record<Lang, Dict> = {
     'sig.clear': 'Clear',
     'q.invalid': 'This field is invalid.',
 
+    // export
+    'export.exported': 'Export finished',
+    'export.failed': 'Export failed',
+
     // PDF
-    'pdf.filename': '{name}-summary',
-    'pdf.exported': 'PDF exported',
     'pdf.receipt': '{name}-receipt',
   },
 
@@ -416,9 +418,9 @@ export const TRANSLATIONS: Record<Lang, Dict> = {
     'results.submissionDeleted': 'Einreichung gelöscht',
     'results.allCleared': 'Alle Einreichungen gelöscht',
     'results.noQuestions': 'Keine Fragen exportiert.',
-    'results.exportCsv': 'CSV exportieren',
-    'results.exportExcel': 'Excel exportieren',
-    'results.exportPdf': 'PDF-Zusammenfassung exportieren',
+    'results.email': 'E-Mail',
+    'results.mailSubject': 'FormMaker — {name}: {n} Einreichung(en)',
+    'results.mailBody': 'Formularantworten für {name}\n{n} Einreichung(en)\n{range}',
     'results.back': 'Zurück',
 
     // runner
@@ -656,9 +658,11 @@ export const TRANSLATIONS: Record<Lang, Dict> = {
     'sig.clear': 'Löschen',
     'q.invalid': 'Dieses Feld ist ungültig.',
 
+    // export
+    'export.exported': 'Export abgeschlossen',
+    'export.failed': 'Export fehlgeschlagen',
+
     // PDF
-    'pdf.filename': '{name}-zusammenfassung',
-    'pdf.exported': 'PDF exportiert',
     'pdf.receipt': '{name}-beleg',
   },
 };

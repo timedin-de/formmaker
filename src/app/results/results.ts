@@ -10,8 +10,12 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { FormsRepository } from '../core/state/forms.repository';
 import type { FormDefinition } from '../shared/model/form.model';
 import type { Submission } from '../shared/model/submission.model';
-import { buildColumns, rowForSubmission } from '../core/export';
-import { submissionsToCsv, submissionsToExcel, submissionsToPdf } from '../core/export';
+import {
+  buildColumns,
+  rowForSubmission,
+  EXPORT_CHANNELS,
+  type ExportChannel,
+} from '../core/export';
 import { downloadBlob } from '../core/export';
 import { I18nService } from '../core/i18n';
 
@@ -40,6 +44,7 @@ export class Results {
   protected readonly form = signal<FormDefinition | null>(null);
   protected readonly submissions = signal<Submission[]>([]);
   protected readonly columns = computed(() => (this.form() ? buildColumns(this.form()!) : []));
+  protected readonly channels = EXPORT_CHANNELS;
 
   constructor() {
     const id = this.route.snapshot.paramMap.get('id');
@@ -110,33 +115,23 @@ export class Results {
     this.snack.open(this.i18n.t('results.allCleared'), 'OK', { duration: 2000 });
   }
 
-  exportCsv(): void {
+  async runChannel(ch: ExportChannel): Promise<void> {
     const form = this.form();
     const subs = this.submissions();
     if (!form || subs.length === 0) return;
-    downloadBlob(submissionsToCsv(form, subs), toSlug(form.name) + '-responses.csv');
+    const ctx = {
+      t: (key: string, params?: Record<string, string | number>) => this.i18n.t(key, params),
+    };
+    try {
+      const artifact = await ch.build(form, subs, ctx);
+      if (artifact.kind === 'download') {
+        downloadBlob(artifact.blob, artifact.filename);
+      } else {
+        window.location.assign(artifact.url);
+      }
+      this.snack.open(this.i18n.t(ch.doneKey ?? 'export.exported'), 'OK', { duration: 2000 });
+    } catch {
+      this.snack.open(this.i18n.t('export.failed'), 'OK', { duration: 3000 });
+    }
   }
-
-  async exportExcel(): Promise<void> {
-    const form = this.form();
-    const subs = this.submissions();
-    if (!form || subs.length === 0) return;
-    const blob = await submissionsToExcel(form, subs);
-    downloadBlob(blob, toSlug(form.name) + '-responses.xlsx');
-  }
-
-  async exportPdf(): Promise<void> {
-    const form = this.form();
-    const subs = this.submissions();
-    if (!form || subs.length === 0) return;
-    const blob = await submissionsToPdf(form, subs);
-    downloadBlob(blob, toSlug(this.i18n.t('pdf.filename', { name: form.name })) + '.pdf');
-  }
-}
-
-function toSlug(value: string): string {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
 }

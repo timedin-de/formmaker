@@ -19,7 +19,7 @@ import { MatToolbarModule } from '@angular/material/toolbar';
 import { QuestionList } from './questionList/question-list';
 import { I18nService } from '../core/i18n';
 import { MatTooltip } from '@angular/material/tooltip';
-import { submissionToPdf, downloadBlob } from '../core/export';
+import { submissionToPdf, downloadBlob, toSlug } from '../core/export';
 import type { Submission } from '../shared/model/submission.model';
 
 @Component({
@@ -153,11 +153,4 @@ export class Runner {
   goHome(): void {
     void this.router.navigate(['/']);
   }
-}
-
-function toSlug(value: string): string {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
 }

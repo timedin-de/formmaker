@@ -42,6 +42,7 @@ const icons = [
   'lock_open',
   'login',
   'logout',
+  'mail',
   'note_add',
   'notes',
   'pin',
