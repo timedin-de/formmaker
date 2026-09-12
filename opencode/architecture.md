@@ -43,16 +43,38 @@ core/
   model/        pure TypeScript types — form schema, conditions, values, submissions
   engine/       expression parser/evaluator, template piping, condition engine,
                 calculation engine, dependency graph (no Angular imports where possible)
-  state/        signal-based stores: DesignerStore, RunnerStore, EvaluationCache
-  export/       CSV + XLSX export, form JSON import/export + schema validation
+  state/        signal-based stores: DesignerStore, RunnerStore, EvaluationCache,
+                FormsRepository (API client + offline fallback)
+  export/       CSV + XLSX export, jsPDF summary/receipt, JSON import/export + validation
+  i18n/         translations.ts (en/de) + translation.service.ts (I18nService)
+  auth/         auth.service.ts + auth.guard.ts (editor routes protected)
   utils/        ids, clone, coercion helpers
 builder/        designer UI: palette, canvas (virtual scroll), property panel,
                 condition editor, validation editor
-runner/         form filling UI: page navigation, progress, element host
+runner/         form filling UI: page navigation, progress, element host,
+                signature pad, draft autosave + PDF receipt
+landing/        form list / share / import / delete
+login/          password login screen
+results/        submissions viewer + CSV/Excel/PDF export
 shared/         field controls (one component per question type), layout blocks,
                 chip/section components, pipes
-app.routes.ts   builder / runner / landing routes
+app.routes.ts   builder / runner / landing / login routes (+ authGuard)
 ```
+
+## Common cross-cuts
+
+- **i18n**: `I18nService.t(key, params?)` with `{name}` interpolation; `lang()` signal; storage key
+  `formmaker.lang`; auto-detect `de`. Keys live in `core/i18n/translations.ts` (en + de) — never
+  hardcode UI strings.
+- **Auth**: `POST /api/auth/login` (password) → in-memory bearer token, 24 h TTL. `authGuard` on
+  `/`, `/builder`, `/results/:id`; login + runner public. `FormsRepository` attaches the token from
+  `formmaker.token`, offline fallback password is `formmaker`.
+- **Runner drafts**: per-form `formmaker.draft.<id>` in localStorage; restored unless the form
+  `version` changed; cleared on submit/reset; 300 ms debounce in `RunnerStore`.
+- **Icons**: bundled SVGs via `scripts/copy-icons.mjs`; register new `svgIcon`s there and run
+  `npm run icons:copy` (auto on prestart/prebuild). Manifest is generated → gitignored.
+- **Verification**: `npm run check` = lint + format:check + typecheck + typecheck:server +
+  test:ci + build. Always run before finishing work.
 
 ## Data model (core idea)
 

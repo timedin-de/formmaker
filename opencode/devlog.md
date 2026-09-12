@@ -37,9 +37,45 @@
 - Fixed several strict-TS + import-path mistakes; `lint` + `typecheck` green.
 - Tests run via Vitest (`ng test`), jsdom env.
 
+## Sessions 3/4 — model, engine, stores, UI, export, auth
+
+- Full core engine in place: expression parser/evaluator with safe functions, template piping,
+  condition engine with groups (all/any) + operators, dependency graph, validation rules — all
+  unit-tested (`core/engine/*`).
+- Signal stores: `DesignerStore` (form definition CRUD, selection, pages, localized default
+  labels), `RunnerStore` (ElementViewRef per page, condition evaluation, submit, thank-you state),
+  `FormsRepository` (API client, bearer-token auth, offline fallback to localStorage).
+- Builder UI and runner UI built out on Material 22; CSV/Excel/PDF exporters + JSON import/export.
+- **Auth**: `POST /api/auth/login` yields a 24h in-memory bearer token; `authGuard` protects
+  `/`, `/builder`, `/results/:id`; login + runner public. Offline fallback password `formmaker`.
+- **i18n**: `core/i18n/` with `I18nService.t(key, params)` + `lang()` signal, en/de dictionaries,
+  `formmaker.lang` storage key, browser auto-detect `de`. Every visible string goes through the
+  service — no hardcoded literals.
+- **Runner drafts**: autosave `<formId>` answers to localStorage (`formmaker.draft.<id>`,
+  300 ms debounce), restore on reload unless the form version changed, clear on submit/reset.
+- **PDF receipt**: `submissionToPdf(form, submission)` builds a per-response receipt; downloaded
+  from the runner thank-you screen via `downloadBlob`.
+- Ran `npm run check` (lint + format + typecheck + typecheck:server + test:ci + build) → green.
+
+## Session 5 — polish & commits
+
+- Tooling note: Node v24.15.0 wrappers in `/home/user/.opencode/bin`; PATH does not persist
+  between tool calls — prefix commands with `export PATH=/home/user/.opencode/bin:$PATH`.
+- Icons are bundled SVGs; new `mat-icon svgIcon` must be registered in `scripts/copy-icons.mjs`
+  and regenerated via `npm run icons:copy` (auto-runs on prestart/prebuild). Manifest is
+  generated → gitignored.
+- Added `AGENTS.md` so AI tools can navigate the repo and run the verification gate.
+- Cleaned dead duplicate logic in `question-list.ts` and stray `console.log`s.
+- CSV export restored to structured `{ text, additional? }` from `formatValueForExport`.
+- Committed the accumulated feature work in logical, reviewable commits (i18n module, builder
+  translation, auth, icons, exports, runner drafts+receipt, docs).
+
 ## Ongoing issues / choices
 
 - Expression `+` is string-concat when either side is a string, else numeric (documented, tested).
 - Unknown identifiers evaluate to `null` (calculation-friendly).
 - Hidden fields keep their raw value in evaluation context (so gating works) but are excluded
   from submissions.
+- Server-side tokens are in-memory only; restart invalidates all sessions. Offline mode relies on
+  localStorage and the fallback password.
+- Stale/docs hygiene: opencode/ docs should be refreshed alongside any major feature commit.
