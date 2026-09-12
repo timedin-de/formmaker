@@ -12,6 +12,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { downloadJSON, parseJsonFile } from '../core/export/file';
 import { validateFormDefinition } from '../core/export/form-schema';
 import { I18nService } from '../core/i18n';
+import { MarkdownPipe } from '../core/markdown';
 
 @Component({
   imports: [
@@ -23,6 +24,7 @@ import { I18nService } from '../core/i18n';
     MatDividerModule,
     MatTooltipModule,
     MatSnackBarModule,
+    MarkdownPipe,
   ],
   selector: 'fm-landing',
   templateUrl: './landing.html',

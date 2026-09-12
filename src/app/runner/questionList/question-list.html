@@ -9,21 +9,21 @@
         @if (vr.el.type === 'section') {
           <mat-divider class="thin"></mat-divider>
           <div class="section-head">
-            <h2>{{ vr.label }}</h2>
+            <h2 [innerHTML]="vr.label | markdown"></h2>
           </div>
         } @else {
           @if (vr.label) {
             <label class="label" [for]="vr.id">
               @if (group()) {
                 <h4>
-                  {{ vr.label }}
+                  <span [innerHTML]="vr.label | markdown"></span>
                   @if (vr.el.required) {
                     <span class="req">*</span>
                   }
                 </h4>
               } @else {
                 <h3>
-                  {{ vr.label }}
+                  <span [innerHTML]="vr.label | markdown"></span>
                   @if (vr.el.required) {
                     <span class="req">*</span>
                   }
@@ -32,7 +32,7 @@
             </label>
           }
           @if (vr.description) {
-            <div class="desc">{{ vr.description }}</div>
+            <div class="desc" [innerHTML]="vr.description | markdown: true"></div>
           }
 
           @switch (vr.el.type) {

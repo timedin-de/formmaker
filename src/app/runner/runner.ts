@@ -18,6 +18,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { QuestionList } from './questionList/question-list';
 import { I18nService } from '../core/i18n';
+import { MarkdownPipe } from '../core/markdown';
 import { MatTooltip } from '@angular/material/tooltip';
 import { submissionToPdf, downloadBlob, toSlug } from '../core/export';
 import type { Submission } from '../shared/model/submission.model';
@@ -38,6 +39,7 @@ import type { Submission } from '../shared/model/submission.model';
     MatSnackBarModule,
     MatToolbarModule,
     QuestionList,
+    MarkdownPipe,
     MatTooltip,
   ],
   providers: [RunnerStore],

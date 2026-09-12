@@ -59,6 +59,7 @@ const EMPTY_GROUP = { logic: 'all', conditions: [], groups: [] } as const;
 
 export interface SeedPage {
   title: string;
+  subtitle?: string;
   elements: Record<string, unknown>[];
 }
 
@@ -83,6 +84,7 @@ export function makeForm(name: string, pages: SeedPage[]): Record<string, unknow
     pages: pages.map((page) => ({
       id: uuid(),
       title: page.title,
+      subtitle: page.subtitle ?? '',
       enabledWhen: EMPTY_GROUP,
       elements: page.elements,
     })),

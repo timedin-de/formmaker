@@ -8,6 +8,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatRadioModule } from '@angular/material/radio';
 import { MatSelectModule } from '@angular/material/select';
 import { I18nService } from '../core/i18n';
+import { MarkdownPipe } from '../core/markdown';
 
 @Component({
   selector: 'fm-field-preview',
@@ -19,6 +20,7 @@ import { I18nService } from '../core/i18n';
     MatInputModule,
     MatRadioModule,
     MatSelectModule,
+    MarkdownPipe,
   ],
   templateUrl: './field-preview.html',
   styleUrl: './field-preview.scss',
