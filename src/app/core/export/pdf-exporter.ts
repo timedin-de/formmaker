@@ -1,6 +1,6 @@
 import { jsPDF } from 'jspdf';
 import { buildColumnBlocks, formatValueForExport } from './columns';
-import { buildReceipt } from './receipt';
+import { buildReceipt, type ReceiptBlock } from './receipt';
 import type { FormDefinition } from '../../shared/model/form.model';
 import type { Submission } from '../../shared/model/submission.model';
 
@@ -79,6 +79,18 @@ export async function submissionsToPdf(
   let fieldIndex = 0;
   for (const block of columnBlocks) {
     ensureSpace(rowH * 2);
+    if (block.kind === 'page') {
+      doc.setFillColor(241, 243, 245);
+      doc.rect(MARGIN, y, CONTENT_W, rowH, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
+      doc.setTextColor(40, 40, 40);
+      doc.text(wrap(doc, block.label, CONTENT_W - 24), MARGIN + 12, y + 12);
+      y += rowH;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      continue;
+    }
     if (block.kind === 'group') {
       doc.setFillColor(228, 234, 242);
       doc.rect(MARGIN, y, CONTENT_W, rowH, 'F');
@@ -126,43 +138,15 @@ export async function submissionsToPdf(
       y += 6;
     }
     y += 12;
-    doc.setTextColor(50, 50, 50);
-    for (const block of buildReceipt(form, sub)) {
-      if (block.kind === 'group') {
-        ensureSpace(20);
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(10);
-        doc.setTextColor(20, 90, 180);
-        const x = MARGIN + block.indent * 18;
-        const lines = wrap(doc, block.label, CONTENT_W - x);
-        for (const line of lines) {
-          ensureSpace(14);
-          doc.text(line, x, y);
-          y += 14;
-        }
-        y += 4;
-        doc.setFontSize(9);
-        continue;
-      }
-      const x = MARGIN + block.indent * 18;
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(60, 60, 60);
-      const label = wrap(doc, block.label, 150 - block.indent * 18);
-      for (const line of label) {
-        ensureSpace(14);
-        doc.text(line, x, y);
-        y += 12;
-      }
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(50, 50, 50);
-      const lines = wrap(doc, block.value, CONTENT_W - 170);
-      for (const line of lines) {
-        ensureSpace(14);
-        doc.text(line, MARGIN + 162, y);
-        y += 12;
-      }
-      y += 2;
-    }
+    const state: { value: number } = { value: y };
+    renderBlocks(doc, buildReceipt(form, sub), ensureSpace, state, {
+      fontSize: 9,
+      groupSize: 10,
+      labelWrap: 150,
+      valueX: MARGIN + 162,
+      gapAfter: 2,
+    });
+    y = state.value;
   }
 
   const buffer = doc.output('arraybuffer');
@@ -229,44 +213,94 @@ export async function submissionToPdf(form: FormDefinition, submission: Submissi
     doc.text('No answers.', MARGIN, y);
     y += 14;
   }
+  const state: { value: number } = { value: y };
+  renderBlocks(doc, blocks, ensureSpace, state, {
+    fontSize: 10,
+    groupSize: 12,
+    labelWrap: 170,
+    valueX: MARGIN + 180,
+    gapAfter: 8,
+  });
+  y = state.value;
+
+  const buffer = doc.output('arraybuffer');
+  return new Blob([buffer], { type: 'application/pdf' });
+}
+
+/**
+ * Render receipt blocks (page / group / answer) for one submission.
+ * Pages are rendered as bold subheadings with a divider line; groups in
+ * blue bold; answers as "label → value" pairs indented by nesting depth.
+ */
+interface BlockRenderOptions {
+  fontSize: number;
+  groupSize: number;
+  labelWrap: number;
+  valueX: number;
+  gapAfter?: number;
+}
+
+function renderBlocks(
+  doc: jsPDF,
+  blocks: ReceiptBlock[],
+  ensureSpace: (needed?: number) => void,
+  state: { value: number },
+  opts: BlockRenderOptions,
+): void {
+  const lineHeight = 12;
   for (const block of blocks) {
-    ensureSpace(block.kind === 'group' ? 34 : 30);
+    ensureSpace(block.kind === 'answer' ? 30 : 40);
     const x = MARGIN + block.indent * 18;
+    if (block.kind === 'page') {
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.setTextColor(50, 50, 50);
+      const lines = wrap(doc, block.label, CONTENT_W - x);
+      for (const line of lines) {
+        ensureSpace(14);
+        doc.text(line, x, state.value);
+        state.value += 15;
+      }
+      doc.setDrawColor(210, 215, 220);
+      doc.setLineWidth(0.6);
+      doc.line(MARGIN, state.value - 7, MARGIN + CONTENT_W, state.value - 7);
+      state.value += 8;
+      doc.setFontSize(opts.fontSize);
+      continue;
+    }
     if (block.kind === 'group') {
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(12);
+      doc.setFontSize(opts.groupSize);
       doc.setTextColor(20, 90, 180);
       const lines = wrap(doc, block.label, CONTENT_W - x);
       for (const line of lines) {
         ensureSpace(14);
-        doc.text(line, x, y);
-        y += 15;
+        doc.text(line, x, state.value);
+        state.value += 15;
       }
-      y += 6;
-      doc.setFontSize(10);
+      state.value += 6;
+      doc.setFontSize(opts.fontSize);
       continue;
     }
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(60, 60, 60);
-    const labelLines = wrap(doc, block.label, 170 - block.indent * 18);
+    const labelLines = wrap(doc, block.label, opts.labelWrap - block.indent * 18);
     for (const line of labelLines) {
       ensureSpace(14);
-      doc.text(line, x, y);
-      y += 12;
+      doc.text(line, x, state.value);
+      state.value += lineHeight;
     }
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(30, 30, 30);
-    const valueLines = wrap(doc, block.value, CONTENT_W - 190);
+    const valueWrap = CONTENT_W - (opts.valueX - MARGIN) - 12;
+    const valueLines = wrap(doc, block.value, valueWrap);
     for (const line of valueLines) {
       ensureSpace(14);
-      doc.text(line, MARGIN + 180, y);
-      y += 12;
+      doc.text(line, opts.valueX, state.value);
+      state.value += lineHeight;
     }
-    y += 8;
+    state.value += opts.gapAfter ?? 8;
   }
-
-  const buffer = doc.output('arraybuffer');
-  return new Blob([buffer], { type: 'application/pdf' });
 }
 
 function wrap(doc: jsPDF, text: string, width: number): string[] {
