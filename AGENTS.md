@@ -34,7 +34,8 @@ src/app/
     engine/         expression parser/evaluator, template piping, condition engine, validators,
                     dependency graph (no Angular imports) -- heavily unit-tested
     state/          signal stores: DesignerStore, RunnerStore, EvaluationCache; FormsRepository
-    export/         csv-exporter, excel-exporter, pdf-exporter (jsPDF), columns, file IO, form-schema
+    export/         channels (pluggable CSV/Excel/PDF/mail), pdf-exporter (jsPDF), receipt
+                    builder, columns, csv/excel exporters, file IO, form-schema
     i18n/           translations.ts (en/de dictionaries) + translation.service.ts (I18nService)
     auth/           auth.service.ts + auth.guard.ts (editor routes protected)
   builder/          designer UI: palette, canvas, element-row, property-panel, condition-editor,
@@ -79,7 +80,12 @@ scripts/            copy-icons.mjs (icon bundling)
 - All visible strings go through `I18nService`. Model-level default labels use keys, not literals.
 - CSV/Excel column text comes from `formatValueForExport(value)` → `{ text, additional? }`
   (structured, not a plain string).
-- Export filenames are localized via keys like `pdf.filename`.
+- Export buttons are pluggable via `EXPORT_CHANNELS` in `core/export/channels.ts`: each channel
+  produces a download `Blob` or a `link` artifact (`{ form, submissions, ctx.t }` → `{ kind, ... }`).
+  Add a channel there to appear in the results toolbar. Download filenames are slugged,
+  e.g. `<form>-responses.csv` via `exportFileName`.
+- The runner's thank-you PDF receipt groups answers under their form groups (`buildReceipt` in
+  `core/export/receipt.ts`).
 
 ## Tests
 

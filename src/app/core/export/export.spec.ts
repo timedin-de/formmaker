@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildColumns, formatValueForExport, buildExportTable } from './columns';
+import { buildReceipt } from './receipt';
+import { EXPORT_CHANNELS } from './channels';
 import { toCsv, submissionsToCsv } from './csv-exporter';
 import { validateFormDefinition } from './form-schema';
 import { newForm, createElement, createPage } from '../state/form-factory';
@@ -95,6 +97,101 @@ describe('buildExportTable', () => {
     const form = demoForm();
     const table = buildExportTable(form, []);
     expect(table.columns).toHaveLength(2);
+  });
+});
+
+describe('buildReceipt', () => {
+  function formWithGroup(): {
+    form: FormDefinition;
+    street: ReturnType<typeof createElement>;
+    city: ReturnType<typeof createElement>;
+  } {
+    const form = newForm();
+    const street = createElement('text', 'Street');
+    const city = createElement('text', 'City');
+    const group = createElement('group', 'Address') as unknown as {
+      type: 'group';
+      elements: ReturnType<typeof createElement>[];
+    };
+    group.elements = [street, city];
+    form.pages[0].elements = [group as never];
+    return { form, street, city };
+  }
+
+  function submissionFor(form: FormDefinition, values: Record<string, unknown>): Submission {
+    return {
+      id: 's1',
+      formId: form.id,
+      formName: form.name,
+      formVersion: 1,
+      submittedAt: '2026-01-01T00:00:00Z',
+      values,
+    } as unknown as Submission;
+  }
+
+  it('emits group headings with nested answers indented', () => {
+    const { form, street, city } = formWithGroup();
+    const blocks = buildReceipt(
+      form,
+      submissionFor(form, { [street.id]: 'Main 1', [city.id]: 'Oslo' }),
+    );
+    expect(blocks).toEqual([
+      { kind: 'group', label: 'Address', indent: 0 },
+      { kind: 'answer', label: 'Street', value: 'Main 1', indent: 1 },
+      { kind: 'answer', label: 'City', value: 'Oslo', indent: 1 },
+    ]);
+  });
+
+  it('skips empty groups, sections and unanswered questions', () => {
+    const { form, street } = formWithGroup();
+    const group = form.pages[0].elements[0] as { elements: { type: string; id: string }[] };
+    group.elements = [
+      ...group.elements,
+      { type: 'section', id: 'sec_1', heading: 'Remark' } as never,
+    ];
+    form.pages[0].elements = [
+      ...form.pages[0].elements,
+      { type: 'group', id: 'g_empty', label: 'Empty group', elements: [] } as never,
+    ];
+    const blocks = buildReceipt(form, submissionFor(form, { [street.id]: 'Main 1' }));
+    expect(blocks).toEqual([
+      { kind: 'group', label: 'Address', indent: 0 },
+      { kind: 'answer', label: 'Street', value: 'Main 1', indent: 1 },
+    ]);
+    expect(blocks.some((b) => b.kind === 'group')).toBe(true);
+    expect(blocks.some((b) => b.label === 'City')).toBe(false);
+    expect(blocks.some((b) => b.label === 'Empty group')).toBe(false);
+  });
+});
+
+describe('EXPORT_CHANNELS', () => {
+  const ctx = { t: (key: string) => key };
+
+  it('registers download channels for csv, xlsx, pdf and a link channel for mail', async () => {
+    const form = demoForm();
+    const [nameEl, ageEl] = form.pages[0].elements;
+    const submissions: Submission[] = [
+      {
+        id: 's1',
+        formId: form.id,
+        formName: form.name,
+        formVersion: 1,
+        submittedAt: '2026-01-01T00:00:00Z',
+        durationMs: 1000,
+        values: { [nameEl.id]: 'Ada', [ageEl.id]: 36 },
+      },
+    ];
+    expect(EXPORT_CHANNELS.map((c) => c.id)).toEqual(['csv', 'xlsx', 'pdf', 'mail']);
+    for (const ch of EXPORT_CHANNELS) {
+      const artifact = await ch.build(form, submissions, ctx);
+      expect(artifact.kind).toBe(ch.id === 'mail' ? 'link' : 'download');
+      if (artifact.kind === 'download') {
+        expect(artifact.filename).toMatch(/\.(csv|xlsx|pdf)$/);
+        expect(artifact.blob).toBeInstanceOf(Blob);
+      } else {
+        expect(artifact.url.startsWith('mailto:')).toBe(true);
+      }
+    }
   });
 });
 

@@ -1,6 +1,7 @@
 import { jsPDF } from 'jspdf';
 import { buildColumns, formatValueForExport } from './columns';
-import type { FormDefinition, Elements } from '../../shared/model/form.model';
+import { buildReceipt } from './receipt';
+import type { FormDefinition } from '../../shared/model/form.model';
 import type { Submission } from '../../shared/model/submission.model';
 
 const PAGE_W = 595; // A4 portrait, pt
@@ -148,8 +149,8 @@ function countQuestions(form: FormDefinition): number {
 
 /**
  * Render a single-submission receipt: form header, submitted-at, and one
- * "question → answer" line per answered field. Used on the runner's
- * thank-you screen after submitting.
+ * "question → answer" line per answered field, grouped under their group
+ * headings when present. Used on the runner's thank-you screen.
  */
 export async function submissionToPdf(form: FormDefinition, submission: Submission): Promise<Blob> {
   const doc = new jsPDF({ unit: 'pt', format: 'a4' });
@@ -187,26 +188,41 @@ export async function submissionToPdf(form: FormDefinition, submission: Submissi
   doc.text(drawWord(doc, 'Your answers'), MARGIN, y + 12);
   y += 22;
 
-  const rows = receiptRows(form, submission);
+  const blocks = buildReceipt(form, submission);
   doc.setFontSize(10);
-  if (rows.length === 0) {
+  if (blocks.length === 0) {
     doc.setTextColor(110, 110, 110);
     doc.text('No answers.', MARGIN, y);
     y += 14;
   }
-  for (const row of rows) {
-    ensureSpace(30);
+  for (const block of blocks) {
+    ensureSpace(block.kind === 'group' ? 34 : 30);
+    const x = MARGIN + block.indent * 18;
+    if (block.kind === 'group') {
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.setTextColor(20, 90, 180);
+      const lines = wrap(doc, block.label, CONTENT_W - x);
+      for (const line of lines) {
+        ensureSpace(14);
+        doc.text(line, x, y);
+        y += 15;
+      }
+      y += 6;
+      doc.setFontSize(10);
+      continue;
+    }
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(60, 60, 60);
-    const labelLines = wrap(doc, row.label, 170);
+    const labelLines = wrap(doc, block.label, 170 - block.indent * 18);
     for (const line of labelLines) {
       ensureSpace(14);
-      doc.text(line, MARGIN, y);
+      doc.text(line, x, y);
       y += 12;
     }
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(30, 30, 30);
-    const valueLines = wrap(doc, row.value, CONTENT_W - 190);
+    const valueLines = wrap(doc, block.value, CONTENT_W - 190);
     for (const line of valueLines) {
       ensureSpace(14);
       doc.text(line, MARGIN + 180, y);
@@ -217,27 +233,6 @@ export async function submissionToPdf(form: FormDefinition, submission: Submissi
 
   const buffer = doc.output('arraybuffer');
   return new Blob([buffer], { type: 'application/pdf' });
-}
-
-function receiptRows(
-  form: FormDefinition,
-  submission: Submission,
-): { label: string; value: string }[] {
-  const rows: { label: string; value: string }[] = [];
-  const walk = (elements: Elements, path: string[]): void => {
-    for (const el of elements) {
-      if (el.type === 'group') {
-        walk((el as { elements: Elements }).elements, [...path, el.label]);
-        continue;
-      }
-      if (el.type === 'section') continue;
-      const text = formatValueForExport(submission.values[el.id]).text;
-      if (!text) continue;
-      rows.push({ label: [...path, el.label].join(' / '), value: text });
-    }
-  };
-  form.pages.forEach((p) => walk(p.elements, []));
-  return rows;
 }
 
 function wrap(doc: jsPDF, text: string, width: number): string[] {
