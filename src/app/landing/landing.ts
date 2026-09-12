@@ -1,5 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { FormsRepository } from '../core/state/forms.repository';
 import type { FormDefinition } from '../shared/model/form.model';
 import { MatButtonModule } from '@angular/material/button';
@@ -11,6 +11,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { downloadJSON, parseJsonFile } from '../core/export/file';
 import { validateFormDefinition } from '../core/export/form-schema';
+import { I18nService } from '../core/i18n';
 
 @Component({
   imports: [
@@ -29,8 +30,8 @@ import { validateFormDefinition } from '../core/export/form-schema';
 })
 export class LandingComponent {
   private readonly repo = inject(FormsRepository);
-  private readonly router = inject(Router);
   private readonly snack = inject(MatSnackBar);
+  protected readonly i18n = inject(I18nService);
   readonly forms = signal<FormDefinition[]>([]);
 
   constructor() {
@@ -57,12 +58,22 @@ export class LandingComponent {
   }
 
   updated(form: FormDefinition): string {
-    if (!form.updatedAt) return 'n/a';
+    if (!form.updatedAt) return this.i18n.t('landing.updated');
     return new Date(form.updatedAt).toLocaleDateString();
   }
 
   exportJson(form: FormDefinition): void {
     downloadJSON(form, toSlug(form.name) + '.json');
+  }
+
+  async copyShareLink(form: FormDefinition): Promise<void> {
+    const url = `${location.origin}/runner/${form.id}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      this.snack.open(this.i18n.t('landing.linkCopied'), 'OK', { duration: 2500 });
+    } catch {
+      this.snack.open(url, 'OK', { duration: 6000 });
+    }
   }
 
   async remove(form: FormDefinition): Promise<void> {
@@ -75,17 +86,21 @@ export class LandingComponent {
     if (!file) return;
     const { data } = await parseJsonFile<FormDefinition>(file);
     if (!data) {
-      this.snack.open('Could not parse the file. Is it valid JSON?', 'OK', { duration: 4000 });
+      this.snack.open(this.i18n.t('landing.invalidJson'), 'OK', { duration: 4000 });
       return;
     }
     const issues = validateFormDefinition(data);
     if (issues.length > 0) {
-      this.snack.open(`Invalid form definition: ${issues[0].message}`, 'OK', { duration: 6000 });
+      this.snack.open(
+        this.i18n.t('landing.invalidDefinition', { message: issues[0].message }),
+        'OK',
+        { duration: 6000 },
+      );
       return;
     }
     await this.repo.saveForm(data);
     await this.refresh();
-    this.snack.open(`Imported "${data.name}"`, 'OK', { duration: 3000 });
+    this.snack.open(this.i18n.t('landing.imported', { name: data.name }), 'OK', { duration: 3000 });
   }
 }
 

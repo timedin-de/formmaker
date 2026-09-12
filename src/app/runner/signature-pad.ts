@@ -1,9 +1,10 @@
-import { Component, effect, input, output, signal, viewChild } from '@angular/core';
+import { Component, effect, inject, input, output, signal, viewChild } from '@angular/core';
 import { ElementRef, OnDestroy } from '@angular/core';
 import SignaturePad from 'signature_pad';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import type { SignatureValue } from '../shared/model/values.model';
+import { I18nService } from '../core/i18n';
 
 @Component({
   selector: 'fm-signature-pad',
@@ -15,6 +16,7 @@ export class SignaturePadField implements OnDestroy {
   /** Initial value; re-seeding only happens on first render. */
   readonly initialValue = input<SignatureValue | null>(null);
   readonly write = output<SignatureValue | null>();
+  protected readonly i18n = inject(I18nService);
 
   protected drawn = signal(false);
 

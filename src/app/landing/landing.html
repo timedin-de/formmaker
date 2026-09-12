@@ -1,11 +1,11 @@
 <div class="head">
   <div>
-    <h1>Forms</h1>
-    <p class="subtitle">Build once, fill many. Pages, conditions, calculations, signatures.</p>
+    <h1>{{ i18n.t('landing.title') }}</h1>
+    <p class="subtitle">{{ i18n.t('landing.subtitle') }}</p>
   </div>
   <div class="actions">
     <button mat-stroked-button (click)="fileInput.click()">
-      <mat-icon svgIcon="upload_file"></mat-icon> Import JSON
+      <mat-icon svgIcon="upload_file"></mat-icon> {{ i18n.t('landing.importJson') }}
     </button>
     <input
       #fileInput
@@ -15,7 +15,7 @@
       (change)="onImport($event)"
     />
     <button mat-flat-button color="primary" routerLink="/builder" [queryParams]="{ new: '1' }">
-      <mat-icon svgIcon="add"></mat-icon> New form
+      <mat-icon svgIcon="add"></mat-icon> {{ i18n.t('landing.newForm') }}
     </button>
   </div>
 </div>
@@ -26,10 +26,10 @@
       svgIcon="note_add"
       style="font-size: 52px; width: 52px; height: 52px; opacity: 0.4"
     ></mat-icon>
-    <h2>No forms yet</h2>
-    <p>Create your first form or import an existing JSON definition.</p>
+    <h2>{{ i18n.t('landing.empty.title') }}</h2>
+    <p>{{ i18n.t('landing.empty.text') }}</p>
     <button mat-flat-button color="primary" routerLink="/builder" [queryParams]="{ new: '1' }">
-      <mat-icon svgIcon="add"></mat-icon> Create form
+      <mat-icon svgIcon="add"></mat-icon> {{ i18n.t('landing.createForm') }}
     </button>
   </div>
 } @else {
@@ -39,27 +39,38 @@
         <mat-card-header>
           <mat-card-title>{{ form.name }}</mat-card-title>
           <mat-card-subtitle>
-            v{{ form.version }} · {{ form.pages.length }} pages ·
-            {{ countQuestions(form) }} questions · {{ updated(form) }}
+            v{{ form.version }} · {{ form.pages.length }} {{ i18n.t('landing.pages') }} ·
+            {{ countQuestions(form) }} {{ i18n.t('landing.questions') }} · {{ updated(form) }}
           </mat-card-subtitle>
         </mat-card-header>
         <mat-card-content>
-          <p class="desc">{{ form.description || 'No description' }}</p>
+          <p class="desc">{{ form.description || i18n.t('landing.noDescription') }}</p>
         </mat-card-content>
         <mat-card-actions align="end">
           <button mat-button [routerLink]="['/runner', form.id]">
-            <mat-icon svgIcon="play_circle_outline"></mat-icon> Fill
+            <mat-icon svgIcon="play_circle_outline"></mat-icon> {{ i18n.t('landing.fill') }}
           </button>
           <button mat-button routerLink="/builder" [queryParams]="{ id: form.id }">
-            <mat-icon svgIcon="edit"></mat-icon> Edit
+            <mat-icon svgIcon="edit"></mat-icon> {{ i18n.t('landing.edit') }}
           </button>
           <button mat-button [routerLink]="['/results', form.id]">
-            <mat-icon svgIcon="bar_chart"></mat-icon> Results
+            <mat-icon svgIcon="bar_chart"></mat-icon> {{ i18n.t('landing.results') }}
           </button>
-          <button mat-icon-button (click)="exportJson(form)" matTooltip="Export JSON">
+          <button
+            mat-icon-button
+            (click)="copyShareLink(form)"
+            [matTooltip]="i18n.t('landing.share')"
+          >
+            <mat-icon svgIcon="link"></mat-icon>
+          </button>
+          <button
+            mat-icon-button
+            (click)="exportJson(form)"
+            [matTooltip]="i18n.t('landing.exportJson')"
+          >
             <mat-icon svgIcon="download"></mat-icon>
           </button>
-          <button mat-icon-button (click)="remove(form)" matTooltip="Delete">
+          <button mat-icon-button (click)="remove(form)" [matTooltip]="i18n.t('landing.delete')">
             <mat-icon svgIcon="delete_outline"></mat-icon>
           </button>
         </mat-card-actions>
