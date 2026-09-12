@@ -14,6 +14,7 @@ import { PropertyPanel } from './property-panel';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { first } from 'rxjs';
 import { BuilderPalette } from './palette';
+import { I18nService } from '../core/i18n';
 
 @Component({
   imports: [
@@ -37,6 +38,7 @@ import { BuilderPalette } from './palette';
 export class BuilderCanvas {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+  protected readonly i18n = inject(I18nService);
 
   readonly store = input.required<DesignerStore>();
 

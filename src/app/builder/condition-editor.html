@@ -2,8 +2,8 @@
   <div class="row">
     <span class="legend">{{ legend() }}</span>
     <mat-button-toggle-group [value]="edit().logic" (valueChange)="setLogic($event)">
-      <mat-button-toggle value="all">all</mat-button-toggle>
-      <mat-button-toggle value="any">any</mat-button-toggle>
+      <mat-button-toggle value="all">{{ i18n.t('cond.all') }}</mat-button-toggle>
+      <mat-button-toggle value="any">{{ i18n.t('cond.any') }}</mat-button-toggle>
     </mat-button-toggle-group>
   </div>
 
@@ -19,7 +19,7 @@
       <mat-form-field appearance="outline" subscriptSizing="dynamic">
         <mat-select [ngModel]="cond.operator" (ngModelChange)="set($index, { operator: $event })">
           @for (op of OPERATORS; track op) {
-            <mat-option [value]="op">{{ OPERATOR_LABELS[op] }}</mat-option>
+            <mat-option [value]="op">{{ i18n.t('op.' + op) }}</mat-option>
           }
         </mat-select>
       </mat-form-field>
@@ -31,8 +31,8 @@
               [ngModel]="operandKind(cond)"
               (ngModelChange)="setOperandKind($index, $event)"
             >
-              <mat-option value="literal">value</mat-option>
-              <mat-option value="field">field</mat-option>
+              <mat-option value="literal">{{ i18n.t('cond.value') }}</mat-option>
+              <mat-option value="field">{{ i18n.t('cond.field') }}</mat-option>
             </mat-select>
           </mat-form-field>
           <br />
@@ -67,7 +67,7 @@
           <mat-form-field appearance="outline" subscriptSizing="dynamic" class="val">
             <input
               matInput
-              placeholder="From"
+              [placeholder]="i18n.t('cond.from')"
               [ngModel]="literalText(cond)"
               (ngModelChange)="set$($index, 'operand', $event)"
             />
@@ -75,7 +75,7 @@
           <mat-form-field appearance="outline" subscriptSizing="dynamic" class="val">
             <input
               matInput
-              placeholder="To"
+              [placeholder]="i18n.t('cond.to')"
               [ngModel]="rangeToText(cond)"
               (ngModelChange)="setRangeTo($index, $event)"
             />
@@ -85,18 +85,18 @@
           <mat-form-field appearance="outline" subscriptSizing="dynamic" class="val grow">
             <input
               matInput
-              placeholder="comma, separated, values"
+              [placeholder]="i18n.t('cond.commaList')"
               [ngModel]="listText(cond)"
               (ngModelChange)="setList($index, $event)"
             />
           </mat-form-field>
         }
         @case ('none') {
-          <span class="hint">(no value)</span>
+          <span class="hint">{{ i18n.t('cond.noValue') }}</span>
         }
       }
 
-      <button mat-icon-button matTooltip="Remove" (click)="removeCond($index)">
+      <button mat-icon-button [matTooltip]="i18n.t('cond.remove')" (click)="removeCond($index)">
         <mat-icon svgIcon="close"></mat-icon>
       </button>
     </div>
@@ -112,7 +112,7 @@
         [indent]="true"
         (changed)="setGroup(gi, $event)"
       />
-      <button mat-icon-button matTooltip="Remove group" (click)="removeGroup(gi)">
+      <button mat-icon-button [matTooltip]="i18n.t('cond.removeGroup')" (click)="removeGroup(gi)">
         <mat-icon svgIcon="close"></mat-icon>
       </button>
     </div>
@@ -120,10 +120,10 @@
 
   <div class="add-row">
     <button mat-stroked-button (click)="addCond()">
-      <mat-icon svgIcon="add"></mat-icon> Condition
+      <mat-icon svgIcon="add"></mat-icon> {{ i18n.t('cond.condition') }}
     </button>
     <button mat-stroked-button (click)="addGroup()">
-      <mat-icon svgIcon="account_tree"></mat-icon> Nested group
+      <mat-icon svgIcon="account_tree"></mat-icon> {{ i18n.t('cond.nestedGroup') }}
     </button>
   </div>
 </div>

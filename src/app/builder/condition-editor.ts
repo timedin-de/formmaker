@@ -1,4 +1,4 @@
-import { Component, computed, effect, input, output, signal } from '@angular/core';
+import { Component, computed, effect, inject, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import type {
   ConditionGroup,
@@ -18,26 +18,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { QuestionSelector } from './question-selector';
 import { PageDefinition } from '../shared/model';
 import { QuestionInputField } from './question-input-field';
-
-const OPERATOR_LABELS: Record<ConditionOperator, string> = {
-  eq: 'equals',
-  neq: 'does not equal',
-  gt: 'is greater than',
-  gte: 'is greater or equal',
-  lt: 'is less than',
-  lte: 'is less or equal',
-  contains: 'contains',
-  notContains: 'does not contain',
-  startsWith: 'starts with',
-  endsWith: 'ends with',
-  isEmpty: 'is empty',
-  isNotEmpty: 'is not empty',
-  in: 'is one of',
-  notIn: 'is none of',
-  hasAnyOf: 'has any of',
-  hasAllOf: 'has all of',
-  between: 'is between',
-};
+import { I18nService } from '../core/i18n';
 
 const NEEDS_RIGHT: Record<ConditionOperator, 'operand' | 'list' | 'range' | 'none'> = {
   eq: 'operand',
@@ -85,6 +66,7 @@ export class ConditionEditor {
   readonly group = input<ConditionGroup>({ logic: 'all', conditions: [], groups: [] });
   readonly fields = input<ConditionFieldOption[]>([]);
   readonly pages = input.required<PageDefinition[]>();
+  protected readonly i18n = inject(I18nService);
 
   readonly self = input.required<string>();
   readonly legend = input<string>('When');
@@ -92,7 +74,6 @@ export class ConditionEditor {
   readonly changed = output<ConditionGroup>();
 
   readonly OPERATORS = CONDITION_OPERATORS;
-  readonly OPERATOR_LABELS = OPERATOR_LABELS;
 
   private readonly source = signal<ConditionGroup>({ logic: 'all', conditions: [], groups: [] });
   protected edit = computed(() => this.source());
@@ -136,7 +117,6 @@ export class ConditionEditor {
 
   set(index: number, patch: Partial<Condition>): void {
     this.mutate((g) => Object.assign(g.conditions[index], patch));
-    console.log('patch', patch);
   }
 
   set$(index: number, which: 'operand', raw: string): void {

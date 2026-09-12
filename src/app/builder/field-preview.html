@@ -9,7 +9,7 @@
     @case ('group') {
       <fieldset class="grp">
         <legend>{{ legendText() }}</legend>
-        <p class="desc muted">Group · {{ groupCount() }} question(s)</p>
+        <p class="desc muted">{{ i18n.t('q.groupCount', { n: groupCount() }) }}</p>
       </fieldset>
     }
     @case ('boolean') {
@@ -55,7 +55,7 @@
       <span class="label">{{ el().label }}</span>
       <div class="sig-pad">
         <mat-icon svgIcon="gesture"></mat-icon>
-        <span class="muted">Signature </span>
+        <span class="muted">{{ i18n.t('q.signature') }} </span>
       </div>
     }
     @default {

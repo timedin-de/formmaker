@@ -1,27 +1,29 @@
 @if (horizontal()) {
-  <mat-toolbar class="block-title"><span>Field palette</span></mat-toolbar>
+  <mat-toolbar class="block-title"
+    ><span>{{ i18n.t('palette.title') }}</span></mat-toolbar
+  >
   <div class="palette-chips">
     @for (meta of allFields; track meta.type) {
       <button class="chip" (click)="add(meta.type)">
         <mat-icon [svgIcon]="meta.icon"></mat-icon>
-        <span>{{ meta.label }}</span>
+        <span>{{ i18n.t('field.' + meta.type) }}</span>
       </button>
     }
   </div>
 } @else {
   <mat-toolbar class="block-title">
-    <span>Field palette</span>
+    <span>{{ i18n.t('palette.title') }}</span>
   </mat-toolbar>
   <mat-tab-group>
     @for (cat of categories; track cat.key) {
-      <mat-tab [label]="cat.label">
+      <mat-tab [label]="i18n.t('palette.cat.' + cat.key)">
         <div class="palette-items">
           @for (meta of fieldsFor(cat.key); track meta.type) {
             <button class="field-btn" (click)="add(meta.type)">
               <mat-icon [svgIcon]="meta.icon"></mat-icon>
               <span class="field-label">
-                <b>{{ meta.label }}</b>
-                <small>{{ meta.description }}</small>
+                <b>{{ i18n.t('field.' + meta.type) }}</b>
+                <small>{{ i18n.t('field.' + meta.type + '.desc') }}</small>
               </span>
               <mat-icon class="add" svgIcon="add"></mat-icon>
             </button>

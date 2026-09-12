@@ -6,23 +6,23 @@
           matInput
           [ngModel]="store.form().name"
           (ngModelChange)="store.rename($event)"
-          placeholder="Form name"
-          aria-label="Form name"
+          [placeholder]="i18n.t('builder.formName')"
+          [attr.aria-label]="i18n.t('builder.formName')"
         />
       </mat-form-field>
-      <span class="muted">{{ store.form().pages.length }} pages</span>
+      <span class="muted">{{ i18n.t('builder.pages', { n: store.form().pages.length }) }}</span>
     </div>
     <div class="actions">
       <mat-button-toggle-group
         class="mode-toggle"
         [value]="mode()"
         (valueChange)="setMode($event)"
-        aria-label="Builder layout"
+        [attr.aria-label]="i18n.t('builder.splitTooltip')"
       >
-        <mat-button-toggle value="split" matTooltip="Split layout">
+        <mat-button-toggle value="split" [matTooltip]="i18n.t('builder.splitTooltip')">
           <mat-icon svgIcon="view_column"></mat-icon>
         </mat-button-toggle>
-        <mat-button-toggle value="wysiwyg" matTooltip="Everything stacked (WYSIWYG)">
+        <mat-button-toggle value="wysiwyg" [matTooltip]="i18n.t('builder.wysiwygTooltip')">
           <mat-icon svgIcon="view_agenda"></mat-icon>
         </mat-button-toggle>
       </mat-button-toggle-group>
@@ -30,7 +30,7 @@
       <span class="divider"></span>
 
       <button mat-button (click)="importInput.click()">
-        <mat-icon svgIcon="upload_file"></mat-icon> Import
+        <mat-icon svgIcon="upload_file"></mat-icon> {{ i18n.t('builder.import') }}
       </button>
       <input
         #importInput
@@ -39,13 +39,15 @@
         hidden
         (change)="onImport($event)"
       />
-      <button mat-button (click)="export()"><mat-icon svgIcon="download"></mat-icon> Export</button>
+      <button mat-button (click)="export()">
+        <mat-icon svgIcon="download"></mat-icon> {{ i18n.t('builder.export') }}
+      </button>
       <button mat-button (click)="save()" [disabled]="saved()">
         <mat-icon [svgIcon]="saved() ? 'check' : 'save'"></mat-icon>
-        {{ saved() ? 'Saved' : 'Save' }}
+        {{ saved() ? i18n.t('builder.saved') : i18n.t('builder.save') }}
       </button>
       <button mat-flat-button color="primary" (click)="preview()">
-        <mat-icon svgIcon="play_arrow"></mat-icon> Preview
+        <mat-icon svgIcon="play_arrow"></mat-icon> {{ i18n.t('builder.preview') }}
       </button>
     </div>
   </mat-toolbar>

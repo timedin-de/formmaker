@@ -3,18 +3,18 @@
     <div class="row-head">
       <mat-icon class="icon" [svgIcon]="meta().icon"></mat-icon>
       <span class="name">{{ el().label }}</span>
-      <span class="type-badge">GROUP</span>
+      <span class="type-badge">{{ i18n.t('row.group') }}</span>
       <span class="spacer"></span>
-      <button mat-icon-button (click)="move(-1)" matTooltip="Move up">
+      <button mat-icon-button (click)="move(-1)" [matTooltip]="i18n.t('row.moveUp')">
         <mat-icon svgIcon="arrow_upward"></mat-icon>
       </button>
-      <button mat-icon-button (click)="move(1)" matTooltip="Move down">
+      <button mat-icon-button (click)="move(1)" [matTooltip]="i18n.t('row.moveDown')">
         <mat-icon svgIcon="arrow_downward"></mat-icon>
       </button>
-      <button mat-icon-button (click)="duplicate()" matTooltip="Duplicate">
+      <button mat-icon-button (click)="duplicate()" [matTooltip]="i18n.t('row.duplicate')">
         <mat-icon svgIcon="content_copy"></mat-icon>
       </button>
-      <button mat-icon-button (click)="remove()" matTooltip="Delete">
+      <button mat-icon-button (click)="remove()" [matTooltip]="i18n.t('row.delete')">
         <mat-icon svgIcon="delete_outline"></mat-icon>
       </button>
     </div>
@@ -23,7 +23,7 @@
         <fm-element-row [el]="child" [store]="store()" />
       }
       <button class="add-child" (click)="showPalette.set(true)">
-        <mat-icon svgIcon="add"></mat-icon> Add child
+        <mat-icon svgIcon="add"></mat-icon> {{ i18n.t('row.addChild') }}
       </button>
     </div>
   </div>
@@ -38,33 +38,33 @@
     <div class="body">
       <div class="name">{{ el().label }}</div>
       <div class="sub">
-        <span class="type-badge">{{ meta().label }}</span>
+        <span class="type-badge">{{ i18n.t('field.' + el().type) }}</span>
         @if (el().required) {
-          <span class="required-badge">required</span>
+          <span class="required-badge">{{ i18n.t('row.required') }}</span>
         }
         @if (elEnabledWhen()) {
-          <span class="logic-badge">conditional</span>
+          <span class="logic-badge">{{ i18n.t('row.conditional') }}</span>
         }
         @if (elCalculation()) {
-          <span class="logic-badge">calculated</span>
+          <span class="logic-badge">{{ i18n.t('row.calculated') }}</span>
         }
         @if (elDefault()) {
-          <span class="logic-badge">default</span>
+          <span class="logic-badge">{{ i18n.t('row.default') }}</span>
         }
       </div>
     </div>
     <span class="spacer"></span>
     <div class="ops">
-      <button mat-icon-button (click)="move(-1)" matTooltip="Move up">
+      <button mat-icon-button (click)="move(-1)" [matTooltip]="i18n.t('row.moveUp')">
         <mat-icon svgIcon="arrow_upward"></mat-icon>
       </button>
-      <button mat-icon-button (click)="move(1)" matTooltip="Move down">
+      <button mat-icon-button (click)="move(1)" [matTooltip]="i18n.t('row.moveDown')">
         <mat-icon svgIcon="arrow_downward"></mat-icon>
       </button>
-      <button mat-icon-button (click)="duplicate()" matTooltip="Duplicate">
+      <button mat-icon-button (click)="duplicate()" [matTooltip]="i18n.t('row.duplicate')">
         <mat-icon svgIcon="content_copy"></mat-icon>
       </button>
-      <button mat-icon-button (click)="remove()" matTooltip="Delete">
+      <button mat-icon-button (click)="remove()" [matTooltip]="i18n.t('row.delete')">
         <mat-icon svgIcon="delete_outline"></mat-icon>
       </button>
     </div>

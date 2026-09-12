@@ -1,4 +1,4 @@
-import { Component, computed, input, signal } from '@angular/core';
+import { Component, computed, inject, input, signal } from '@angular/core';
 import { DesignerStore } from '../core/state/designer.store';
 import { fieldMeta } from '../core/model/field-registry';
 import type { ElementDefinition, ElementType, GroupElement } from '../shared/model/form.model';
@@ -9,6 +9,7 @@ import { MatToolbarModule } from '@angular/material/toolbar';
 import { FormsModule } from '@angular/forms';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { BuilderPalette } from './palette';
+import { I18nService } from '../core/i18n';
 
 @Component({
   imports: [
@@ -27,6 +28,7 @@ import { BuilderPalette } from './palette';
 export class ElementRow {
   readonly el = input.required<ElementDefinition>();
   readonly store = input.required<DesignerStore>();
+  protected readonly i18n = inject(I18nService);
 
   readonly showPalette = signal(false);
 
@@ -65,7 +67,7 @@ export class ElementRow {
       ...(this.el().type === 'group' ? {} : {}),
       id: `q_${Math.random().toString(36).slice(2, 10)}`,
       type,
-      label: 'Child question',
+      label: this.i18n.t('row.childQuestion'),
       enabledWhen: undefined,
       width: 1,
     };

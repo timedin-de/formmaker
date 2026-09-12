@@ -11,11 +11,11 @@
           style="text-decoration: none"
           [queryParams]="{ page: page.id }"
         >
-          {{ page.title ?? 'Page' }}
+          {{ page.title ?? i18n.t('canvas.untitledPage') }}
           <mat-icon class="del" (click)="removePage(page)" svgIcon="close"></mat-icon>
         </a>
       }
-      <button class="page-add" matTooltip="Add page" (click)="store().addPage()">
+      <button class="page-add" [matTooltip]="i18n.t('canvas.addPage')" (click)="store().addPage()">
         <mat-icon svgIcon="add"></mat-icon>
       </button>
     </span>
@@ -25,7 +25,7 @@
     <div class="page-head">
       <div class="fields">
         <mat-form-field appearance="outline" subscriptSizing="dynamic">
-          <mat-label>Page title</mat-label>
+          <mat-label>{{ i18n.t('canvas.pageTitle') }}</mat-label>
           <input
             matInput
             [ngModel]="page.title"
@@ -33,7 +33,7 @@
           />
         </mat-form-field>
         <mat-form-field appearance="outline" subscriptSizing="dynamic">
-          <mat-label>Subtitle</mat-label>
+          <mat-label>{{ i18n.t('canvas.subtitle') }}</mat-label>
           <input
             matInput
             [ngModel]="page.subtitle"
@@ -42,11 +42,11 @@
         </mat-form-field>
         <button mat-stroked-button (click)="clonePage(page)">
           <mat-icon svgIcon="content_copy"></mat-icon>
-          Duplicate Page
+          {{ i18n.t('canvas.duplicatePage') }}
         </button>
       </div>
       <fm-condition-editor
-        legend="Page logic — show this page only when"
+        [legend]="i18n.t('canvas.pageLogic')"
         [group]="page.enabledWhen ?? emptyGroup()"
         [pages]="pages()"
         [self]="page.id"
@@ -58,7 +58,7 @@
     @if (page.elements.length === 0) {
       <div class="empty-hint">
         <mat-icon svgIcon="add_circle_outline"></mat-icon>
-        <p>Add a field from the palette on the left.</p>
+        <p>{{ i18n.t('canvas.addFieldHint') }}</p>
       </div>
     } @else {
       <div class="list">
@@ -69,7 +69,7 @@
               @if (preview()) {
                 <fm-field-preview [el]="el" />
                 <div class="inline-actions">
-                  <span class="muted">Click to edit properties</span>
+                  <span class="muted">{{ i18n.t('canvas.clickToEdit') }}</span>
                 </div>
               }
             </div>
@@ -85,13 +85,13 @@
 
     <div class="page-actions">
       <button mat-stroked-button (click)="showPalette.set(true)">
-        <mat-icon svgIcon="add"></mat-icon> Add question
+        <mat-icon svgIcon="add"></mat-icon> {{ i18n.t('canvas.addQuestion') }}
       </button>
     </div>
   } @else {
     <div class="empty-hint">
       <mat-icon svgIcon="note_add"></mat-icon>
-      <p>Add a page to get started.</p>
+      <p>{{ i18n.t('canvas.addPageHint') }}</p>
     </div>
   }
 </div>

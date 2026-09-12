@@ -1,4 +1,4 @@
-import { Component, input } from '@angular/core';
+import { Component, inject, input } from '@angular/core';
 import { AbstractControl, FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatInputModule } from '@angular/material/input';
 import { SignaturePadField } from '../runner/signature-pad';
@@ -16,6 +16,7 @@ import { ElementViewRef } from '../core';
 import { QuestionInputField } from './question-input-field';
 import { MatRadioModule } from '@angular/material/radio';
 import { MatOption } from '@angular/material/select';
+import { I18nService } from '../core/i18n';
 
 @Component({
   templateUrl: './question-input.html',
@@ -34,6 +35,7 @@ import { MatOption } from '@angular/material/select';
 })
 export class QuestionInput {
   readonly vr = input<ElementViewRef>();
+  protected readonly i18n = inject(I18nService);
 
   date = (value: unknown) => value as Date;
 
@@ -50,7 +52,7 @@ export class QuestionInput {
     for (const key of Object.keys(errors)) {
       if (key !== 'message' && errors[key]?.message) return String(errors[key].message);
     }
-    return 'This field is invalid.';
+    return this.i18n.t('q.invalid', { field: this.vr()?.label ?? '' });
   }
 
   rows(el: ElementDefinition): number {

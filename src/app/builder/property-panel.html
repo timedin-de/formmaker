@@ -3,20 +3,20 @@
     <div class="head">
       <mat-icon [svgIcon]="meta().icon"></mat-icon>
       <div class="hdr">
-        <div class="title">{{ meta().label }}</div>
+        <div class="title">{{ i18n.t('field.' + el.type) }}</div>
         <div class="sub muted ellipsis">{{ el.id }}</div>
       </div>
     </div>
 
     <div class="scroll">
       <div class="section">
-        <div class="sec-title">Basics</div>
+        <div class="sec-title">{{ i18n.t('panel.basics') }}</div>
         <mat-form-field appearance="outline" subscriptSizing="dynamic">
-          <mat-label>Label</mat-label>
+          <mat-label>{{ i18n.t('panel.label') }}</mat-label>
           <input matInput [ngModel]="el.label" (ngModelChange)="patch({ label: $event })" />
         </mat-form-field>
         <mat-form-field appearance="outline" subscriptSizing="dynamic">
-          <mat-label>Description</mat-label>
+          <mat-label>{{ i18n.t('panel.description') }}</mat-label>
           <input
             matInput
             [ngModel]="el.description"
@@ -25,7 +25,7 @@
         </mat-form-field>
         @if (wantsPlaceholder(el)) {
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-label>Placeholder</mat-label>
+            <mat-label>{{ i18n.t('panel.placeholder') }}</mat-label>
             <input
               matInput
               [ngModel]="el.placeholder"
@@ -36,18 +36,18 @@
 
         @if (el.type === 'text') {
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-label>Keyboard type</mat-label>
+            <mat-label>{{ i18n.t('panel.keyboardType') }}</mat-label>
             <mat-select
               [ngModel]="el.inputType ?? 'text'"
               (ngModelChange)="patch({ inputType: $event })"
             >
-              @for (t of INPUT_TYPES; track t.value) {
-                <mat-option [value]="t.value">{{ t.label }}</mat-option>
+              @for (t of INPUT_TYPES; track t) {
+                <mat-option [value]="t">{{ i18n.t('input.' + t) }}</mat-option>
               }
             </mat-select>
           </mat-form-field>
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-label>Max length</mat-label>
+            <mat-label>{{ i18n.t('panel.maxLength') }}</mat-label>
             <input
               matInput
               type="number"
@@ -58,7 +58,7 @@
         }
         @if (el.type === 'longText') {
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-label>Rows</mat-label>
+            <mat-label>{{ i18n.t('panel.rows') }}</mat-label>
             <input
               matInput
               type="number"
@@ -67,7 +67,7 @@
             />
           </mat-form-field>
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-label>Max length</mat-label>
+            <mat-label>{{ i18n.t('panel.maxLength') }}</mat-label>
             <input
               matInput
               type="number"
@@ -80,7 +80,7 @@
         @if (el.type === 'number') {
           <div class="two-col">
             <mat-form-field appearance="outline" subscriptSizing="dynamic">
-              <mat-label>Min</mat-label>
+              <mat-label>{{ i18n.t('panel.min') }}</mat-label>
               <input
                 matInput
                 type="number"
@@ -89,7 +89,7 @@
               />
             </mat-form-field>
             <mat-form-field appearance="outline" subscriptSizing="dynamic">
-              <mat-label>Max</mat-label>
+              <mat-label>{{ i18n.t('panel.max') }}</mat-label>
               <input
                 matInput
                 type="number"
@@ -99,7 +99,7 @@
             </mat-form-field>
             @if (el.type === 'number') {
               <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                <mat-label>Step</mat-label>
+                <mat-label>{{ i18n.t('panel.step') }}</mat-label>
                 <input
                   matInput
                   type="number"
@@ -108,7 +108,7 @@
                 />
               </mat-form-field>
               <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                <mat-label>Unit</mat-label>
+                <mat-label>{{ i18n.t('panel.unit') }}</mat-label>
                 <input
                   matInput
                   [ngModel]="el.unit ?? ''"
@@ -122,7 +122,7 @@
         @if (el.type === 'scale') {
           <div class="two-col">
             <mat-form-field appearance="outline" subscriptSizing="dynamic">
-              <mat-label>Min</mat-label>
+              <mat-label>{{ i18n.t('panel.min') }}</mat-label>
               <input
                 matInput
                 type="number"
@@ -131,7 +131,7 @@
               />
             </mat-form-field>
             <mat-form-field appearance="outline" subscriptSizing="dynamic">
-              <mat-label>Max</mat-label>
+              <mat-label>{{ i18n.t('panel.max') }}</mat-label>
               <input
                 matInput
                 type="number"
@@ -140,7 +140,7 @@
               />
             </mat-form-field>
             <mat-form-field appearance="outline" subscriptSizing="dynamic">
-              <mat-label>Step</mat-label>
+              <mat-label>{{ i18n.t('panel.step') }}</mat-label>
               <input
                 matInput
                 type="number"
@@ -150,7 +150,7 @@
             </mat-form-field>
           </div>
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-label>Min scale label</mat-label>
+            <mat-label>{{ i18n.t('panel.minScaleLabel') }}</mat-label>
             <input
               matInput
               [ngModel]="el.minLabel ?? ''"
@@ -158,7 +158,7 @@
             />
           </mat-form-field>
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-label>Max scale label</mat-label>
+            <mat-label>{{ i18n.t('panel.maxScaleLabel') }}</mat-label>
             <input
               matInput
               [ngModel]="el.maxLabel ?? ''"
@@ -169,7 +169,7 @@
 
         @if (el.type === 'file') {
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-label>Accepted file types (ext or MIME, comma-separated)</mat-label>
+            <mat-label>{{ i18n.t('panel.acceptTypes') }}</mat-label>
             <input
               matInput
               [ngModel]="el.accept ?? ''"
@@ -180,20 +180,20 @@
             [checked]="el.multiple ?? false"
             (change)="patch({ multiple: $event.checked })"
           >
-            Allow multiple files
+            {{ i18n.t('panel.multipleFiles') }}
           </mat-checkbox>
         }
 
         @if (el.type === 'section') {
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-label>Heading</mat-label>
+            <mat-label>{{ i18n.t('panel.heading') }}</mat-label>
             <input matInput [ngModel]="el.heading" (ngModelChange)="patch({ heading: $event })" />
           </mat-form-field>
         }
 
         @if (el.type === 'group') {
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-label>Legend</mat-label>
+            <mat-label>{{ i18n.t('panel.legend') }}</mat-label>
             <input
               matInput
               [ngModel]="el.legend ?? ''"
@@ -204,7 +204,7 @@
             [checked]="el.collapsible ?? false"
             (change)="patch({ collapsible: $event.checked })"
           >
-            Collapsible group
+            {{ i18n.t('panel.collapsible') }}
           </mat-checkbox>
         }
 
@@ -213,17 +213,17 @@
             [checked]="el.required ?? false"
             (change)="patch({ required: $event.checked })"
           >
-            Required
+            {{ i18n.t('panel.required') }}
           </mat-checkbox>
           <mat-checkbox
             [checked]="el.readonly ?? false"
             (change)="patch({ readonly: $event.checked })"
           >
-            Read only
+            {{ i18n.t('panel.readOnly') }}
           </mat-checkbox>
         </div>
         <div class="opt-row label-row">
-          <span class="sec-label">Width</span>
+          <span class="sec-label">{{ i18n.t('panel.width') }}</span>
           <mat-select [value]="el.width ?? 1" (valueChange)="setWidth($event)">
             @for (w of WIDTHS; track w.factor) {
               <mat-option [value]="w.factor">{{ w.label }}</mat-option>
@@ -234,7 +234,7 @@
 
       @if (isChoice(el)) {
         <div class="section">
-          <div class="sec-title">Options</div>
+          <div class="sec-title">{{ i18n.t('panel.options') }}</div>
           <div class="opts">
             @for (opt of el.options; track opt.id; let i = $index) {
               <div class="opt-editor">
@@ -242,7 +242,7 @@
                 <mat-form-field appearance="outline" subscriptSizing="dynamic">
                   <input
                     matInput
-                    placeholder="Label"
+                    [placeholder]="i18n.t('panel.optionLabel')"
                     [ngModel]="opt.label"
                     (ngModelChange)="patchOption(i, { label: $event })"
                   />
@@ -250,18 +250,30 @@
                 <mat-form-field appearance="outline" subscriptSizing="dynamic" class="val-field">
                   <input
                     matInput
-                    placeholder="Value"
+                    [placeholder]="i18n.t('panel.optionValue')"
                     [ngModel]="str(opt.value)"
                     (ngModelChange)="patchOption(i, { value: stringOrNum($event) })"
                   />
                 </mat-form-field>
-                <button mat-icon-button matTooltip="Move up" (click)="moveOption(i, -1)">
+                <button
+                  mat-icon-button
+                  [matTooltip]="i18n.t('row.moveUp')"
+                  (click)="moveOption(i, -1)"
+                >
                   <mat-icon svgIcon="arrow_upward"></mat-icon>
                 </button>
-                <button mat-icon-button matTooltip="Move down" (click)="moveOption(i, 1)">
+                <button
+                  mat-icon-button
+                  [matTooltip]="i18n.t('row.moveDown')"
+                  (click)="moveOption(i, 1)"
+                >
                   <mat-icon svgIcon="arrow_downward"></mat-icon>
                 </button>
-                <button mat-icon-button matTooltip="Remove" (click)="removeOption(i)">
+                <button
+                  mat-icon-button
+                  [matTooltip]="i18n.t('panel.remove')"
+                  (click)="removeOption(i)"
+                >
                   <mat-icon svgIcon="close"></mat-icon>
                 </button>
               </div>
@@ -269,34 +281,36 @@
           </div>
           <div class="add-row">
             <button mat-stroked-button (click)="addOption()">
-              <mat-icon svgIcon="add"></mat-icon> Add option
+              <mat-icon svgIcon="add"></mat-icon> {{ i18n.t('panel.addOption') }}
             </button>
           </div>
         </div>
       }
 
       <div class="section">
-        <div class="sec-title">Default value</div>
+        <div class="sec-title">{{ i18n.t('panel.defaultValue') }}</div>
         <mat-button-toggle-group [value]="defaultKind(el)" (valueChange)="setDefaultKind($event)">
-          <mat-button-toggle value="none">None</mat-button-toggle>
+          <mat-button-toggle value="none">{{ i18n.t('panel.none') }}</mat-button-toggle>
           @if (el.type !== 'group') {
-            <mat-button-toggle value="static">Static</mat-button-toggle>
-            <mat-button-toggle value="expression">Expression</mat-button-toggle>
-            <mat-button-toggle value="fromField">From field</mat-button-toggle>
+            <mat-button-toggle value="static">{{ i18n.t('panel.static') }}</mat-button-toggle>
+            <mat-button-toggle value="expression">{{
+              i18n.t('panel.expression')
+            }}</mat-button-toggle>
+            <mat-button-toggle value="fromField">{{ i18n.t('panel.fromField') }}</mat-button-toggle>
           } @else {
-            <mat-button-toggle value="fromField">From group</mat-button-toggle>
+            <mat-button-toggle value="fromField">{{ i18n.t('panel.fromGroup') }}</mat-button-toggle>
           }
         </mat-button-toggle-group>
         @switch (defaultKind(el)) {
           @case ('static') {
             <mat-form-field appearance="outline" subscriptSizing="dynamic">
-              <mat-label>Static value</mat-label>
+              <mat-label>{{ i18n.t('panel.staticValue') }}</mat-label>
               <input matInput [ngModel]="staticText(el)" (ngModelChange)="setStatic($event)" />
             </mat-form-field>
           }
           @case ('expression') {
             <mat-form-field appearance="outline" subscriptSizing="dynamic">
-              <mat-label>Expression — e.g. now(), concat('A', 'B')</mat-label>
+              <mat-label>{{ i18n.t('panel.expressionExample') }}</mat-label>
               <textarea
                 matInput
                 rows="2"
@@ -342,13 +356,13 @@
 
       @if (el.type === 'number') {
         <div class="section">
-          <div class="sec-title">Calculation</div>
+          <div class="sec-title">{{ i18n.t('panel.calculation') }}</div>
           <mat-checkbox [checked]="!!el.calculation" (change)="toggleCalc($event.checked)">
-            Compute this field
+            {{ i18n.t('panel.computeField') }}
           </mat-checkbox>
           @if (el.calculation) {
             <mat-form-field appearance="outline" subscriptSizing="dynamic">
-              <mat-label>Formula — e.g. (n_a * n_b) / 100</mat-label>
+              <mat-label>{{ i18n.t('panel.formulaExample') }}</mat-label>
               <textarea
                 matInput
                 rows="2"
@@ -357,7 +371,7 @@
               ></textarea>
             </mat-form-field>
             <mat-form-field appearance="outline" subscriptSizing="dynamic">
-              <mat-label>Decimals</mat-label>
+              <mat-label>{{ i18n.t('panel.decimals') }}</mat-label>
               <input
                 matInput
                 type="number"
@@ -370,9 +384,9 @@
       }
 
       <div class="section">
-        <div class="sec-title">Visibility</div>
+        <div class="sec-title">{{ i18n.t('panel.visibility') }}</div>
         <fm-condition-editor
-          legend="Show this field when"
+          [legend]="i18n.t('panel.showWhen')"
           [group]="el.enabledWhen ?? emptyGroup()"
           [fields]="fields()"
           [pages]="pages()"
@@ -381,17 +395,20 @@
         />
         @if (hasGroup(el)) {
           <button mat-stroked-button (click)="clearGroup()">
-            <mat-icon svgIcon="lock_open"></mat-icon> Always visible
+            <mat-icon svgIcon="lock_open"></mat-icon> {{ i18n.t('panel.alwaysVisible') }}
           </button>
         }
       </div>
 
       <div class="section">
-        <div class="sec-title">Validation</div>
+        <div class="sec-title">{{ i18n.t('panel.validation') }}</div>
         <mat-form-field appearance="outline" subscriptSizing="dynamic">
-          <mat-select placeholder="Add a rule" (selectionChange)="addRule($event.value)">
+          <mat-select
+            [placeholder]="i18n.t('panel.addRule')"
+            (selectionChange)="addRule($event.value)"
+          >
             @for (r of VALIDATION_RULE_TYPES; track r.type) {
-              <mat-option [value]="r.type">{{ r.label }}</mat-option>
+              <mat-option [value]="r.type">{{ i18n.t('val.' + r.type) }}</mat-option>
             }
           </mat-select>
         </mat-form-field>
@@ -401,12 +418,16 @@
             <div class="rule">
               <div class="rule-top">
                 <span class="rule-name">{{ ruleLabel(rule.rule) }}</span>
-                <button mat-icon-button matTooltip="Remove" (click)="removeRule(rule.id)">
+                <button
+                  mat-icon-button
+                  [matTooltip]="i18n.t('panel.remove')"
+                  (click)="removeRule(rule.id)"
+                >
                   <mat-icon svgIcon="close"></mat-icon>
                 </button>
               </div>
               <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                <mat-label>Message</mat-label>
+                <mat-label>{{ i18n.t('panel.message') }}</mat-label>
                 <input
                   matInput
                   [ngModel]="rule.message ?? defaultRuleMessage(rule.rule)"
@@ -417,7 +438,7 @@
               @switch (ruleInputKind(rule.rule)) {
                 @case ('number') {
                   <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                    <mat-label>Value</mat-label>
+                    <mat-label>{{ i18n.t('panel.value') }}</mat-label>
                     <input
                       matInput
                       type="number"
@@ -428,7 +449,7 @@
                 }
                 @case ('text') {
                   <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                    <mat-label>Value</mat-label>
+                    <mat-label>{{ i18n.t('panel.value') }}</mat-label>
                     <input
                       matInput
                       [ngModel]="str(rule.value)"
@@ -439,7 +460,7 @@
                 @case ('range') {
                   <div class="two-col">
                     <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                      <mat-label>From</mat-label>
+                      <mat-label>{{ i18n.t('panel.from') }}</mat-label>
                       <input
                         matInput
                         type="number"
@@ -448,7 +469,7 @@
                       />
                     </mat-form-field>
                     <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                      <mat-label>To</mat-label>
+                      <mat-label>{{ i18n.t('panel.to') }}</mat-label>
                       <input
                         matInput
                         type="number"
@@ -460,7 +481,7 @@
                 }
                 @case ('pattern') {
                   <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                    <mat-label>Regex (JS)</mat-label>
+                    <mat-label>{{ i18n.t('panel.regex') }}</mat-label>
                     <input
                       matInput
                       [ngModel]="rule.pattern ?? ''"
@@ -470,7 +491,7 @@
                 }
                 @case ('date') {
                   <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                    <mat-label>Date</mat-label>
+                    <mat-label>{{ i18n.t('panel.date') }}</mat-label>
                     <input
                       matInput
                       type="date"
@@ -481,7 +502,7 @@
                 }
                 @case ('accept') {
                   <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                    <mat-label>Allowed types (.pdf, image/*)</mat-label>
+                    <mat-label>{{ i18n.t('panel.allowedTypes') }}</mat-label>
                     <input
                       matInput
                       [ngModel]="rule.accept ?? ''"
@@ -491,7 +512,7 @@
                 }
                 @case ('expression') {
                   <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                    <mat-label>Expression or msg('…')</mat-label>
+                    <mat-label>{{ i18n.t('panel.exprOrMsg') }}</mat-label>
                     <textarea
                       matInput
                       rows="2"
@@ -509,7 +530,7 @@
   } @else {
     <div class="placeholder">
       <mat-icon svgIcon="inbox"></mat-icon>
-      <p>Select a field to edit its properties.</p>
+      <p>{{ i18n.t('panel.selectField') }}</p>
     </div>
   }
 </div>

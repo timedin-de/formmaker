@@ -1,4 +1,4 @@
-import { Component, input } from '@angular/core';
+import { Component, inject, input } from '@angular/core';
 import type { ChoiceElement, ElementDefinition, ScaleElement } from '../shared/model/form.model';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -7,6 +7,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatRadioModule } from '@angular/material/radio';
 import { MatSelectModule } from '@angular/material/select';
+import { I18nService } from '../core/i18n';
 
 @Component({
   selector: 'fm-field-preview',
@@ -24,6 +25,7 @@ import { MatSelectModule } from '@angular/material/select';
 })
 export class FieldPreview {
   readonly el = input.required<ElementDefinition>();
+  protected readonly i18n = inject(I18nService);
 
   protected headingText(): string {
     const e = this.el() as ElementDefinition & { heading?: string };

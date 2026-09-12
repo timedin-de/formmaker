@@ -1,4 +1,4 @@
-import { Component, computed, input } from '@angular/core';
+import { Component, computed, inject, input } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DesignerStore } from '../core/state/designer.store';
 import { fieldMeta } from '../core/model/field-registry';
@@ -24,18 +24,13 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatExpansionModule } from '@angular/material/expansion';
+import { I18nService } from '../core/i18n';
 
 const WIDTHS = Array(12)
   .fill(12)
   .map((v, i) => ({ label: `${i + 1}/${v}`, factor: (i + 1) / 12 }));
 
-const INPUT_TYPES = [
-  { value: 'text', label: 'Text' },
-  { value: 'email', label: 'Email' },
-  { value: 'url', label: 'URL' },
-  { value: 'phone', label: 'Phone' },
-  { value: 'number', label: 'Number' },
-] as const;
+const INPUT_TYPES = ['text', 'email', 'url', 'phone', 'number'] as const;
 
 @Component({
   imports: [
@@ -58,6 +53,7 @@ const INPUT_TYPES = [
 })
 export class PropertyPanel {
   readonly store = input.required<DesignerStore>();
+  protected readonly i18n = inject(I18nService);
 
   protected readonly WIDTHS = WIDTHS;
   protected readonly INPUT_TYPES = INPUT_TYPES;
@@ -143,7 +139,10 @@ export class PropertyPanel {
     const options = choice.options ?? [];
     const idx = options.length + 1;
     this.patch({
-      options: [...options, { id: uuid(), label: `Option ${idx}`, value: idx }],
+      options: [
+        ...options,
+        { id: uuid(), label: `${this.i18n.t('panel.option')} ${idx}`, value: idx },
+      ],
     });
   }
 
@@ -266,7 +265,7 @@ export class PropertyPanel {
   // ---- validation -------------------------------------------------------------
 
   ruleLabel(rule: ValidationRuleType): string {
-    return VALIDATION_RULE_TYPES.find((r) => r.type === rule)?.label ?? rule;
+    return this.i18n.t('val.' + rule);
   }
 
   ruleInputKind(
@@ -305,7 +304,7 @@ export class PropertyPanel {
   }
 
   defaultRuleMessage(rule: ValidationRuleType): string {
-    return `This field fails the "${this.ruleLabel(rule)}" check.`;
+    return this.i18n.t('panel.defaultMessage', { rule: this.i18n.t('val.' + rule) });
   }
 
   addRule(type: ValidationRuleType): void {

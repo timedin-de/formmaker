@@ -123,7 +123,7 @@
             (change)="onFiles(vr.control, vr.el, $event)"
           />
           <button mat-stroked-button type="button" (click)="fileInput.click()">
-            <mat-icon svgIcon="attach_file"></mat-icon> Choose files
+            <mat-icon svgIcon="attach_file"></mat-icon> {{ i18n.t('q.chooseFiles') }}
           </button>
         </div>
         @for (f of fileList(vr.control); track f.name) {

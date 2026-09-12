@@ -19,6 +19,7 @@ import { BuilderPalette } from './palette';
 import { PropertyPanel } from './property-panel';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { pairwise, startWith } from 'rxjs';
+import { I18nService } from '../core/i18n';
 
 @Component({
   imports: [
@@ -47,6 +48,7 @@ export class BuilderComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly snack = inject(MatSnackBar);
+  protected readonly i18n = inject(I18nService);
   readonly saved = signal(false);
   readonly mode = signal<'split' | 'wysiwyg'>('split');
 
@@ -63,10 +65,14 @@ export class BuilderComponent {
           const loaded = q['id'] ? await this.repo.getForm(q['id']!) : null;
           if (loaded) {
             this.store.load(loaded);
-            this.snack.open(`Editing "${loaded.name}"`, 'OK', { duration: 2500 });
+            this.snack.open(this.i18n.t('builder.editing', { name: loaded.name }), 'OK', {
+              duration: 2500,
+            });
           } else {
             this.store.createEmpty();
-            this.store.rename(`Untitled form (${new Date().toLocaleDateString()})`);
+            this.store.rename(
+              this.i18n.t('builder.untitled', { date: new Date().toLocaleDateString() }),
+            );
             this.save();
             this.router.navigate([], {
               relativeTo: this.route,
@@ -95,7 +101,7 @@ export class BuilderComponent {
   async save(): Promise<void> {
     await this.repo.saveForm(this.store.form());
     this.saved.set(true);
-    this.snack.open('Form saved', 'OK', { duration: 2000 });
+    this.snack.open(this.i18n.t('builder.saveMsg'), 'OK', { duration: 2000 });
   }
 
   async preview(): Promise<void> {
@@ -113,13 +119,17 @@ export class BuilderComponent {
     const { data } = await parseJsonFile<Record<string, unknown>>(file);
     const issues = validateFormDefinition(data);
     if (!data || issues.length > 0) {
-      this.snack.open(`Import failed: ${issues[0]?.message ?? 'invalid JSON'}`, 'OK', {
-        duration: 6000,
-      });
+      this.snack.open(
+        this.i18n.t('builder.importFailed', {
+          message: issues[0]?.message ?? 'invalid JSON',
+        }),
+        'OK',
+        { duration: 6000 },
+      );
       return;
     }
     this.store.load(data as never);
-    this.snack.open('Form imported', 'OK', { duration: 2500 });
+    this.snack.open(this.i18n.t('builder.imported'), 'OK', { duration: 2500 });
   }
 }
 

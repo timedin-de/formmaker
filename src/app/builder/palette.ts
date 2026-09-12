@@ -1,4 +1,4 @@
-import { Component, input, output } from '@angular/core';
+import { Component, inject, input, output } from '@angular/core';
 import { DesignerStore } from '../core/state/designer.store';
 import { FIELD_TYPES } from '../core/model/field-registry';
 import { MatButtonModule } from '@angular/material/button';
@@ -7,12 +7,9 @@ import { FormsModule } from '@angular/forms';
 import type { ElementType } from '../shared/model/form.model';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatToolbarModule } from '@angular/material/toolbar';
+import { I18nService } from '../core/i18n';
 
-const CATEGORIES = [
-  { key: 'basic', label: 'Basic' },
-  { key: 'advanced', label: 'Advanced' },
-  { key: 'layout', label: 'Layout' },
-] as const;
+const CATEGORIES = [{ key: 'basic' }, { key: 'advanced' }, { key: 'layout' }] as const;
 
 @Component({
   imports: [MatButtonModule, MatIconModule, MatTabsModule, MatToolbarModule, FormsModule],
@@ -25,6 +22,7 @@ export class BuilderPalette {
   readonly horizontal = input(false);
   public readonly isModal = input(false);
   public readonly addModule = output<ElementType>();
+  protected readonly i18n = inject(I18nService);
   protected readonly categories = CATEGORIES;
   protected readonly allFields = FIELD_TYPES;
 

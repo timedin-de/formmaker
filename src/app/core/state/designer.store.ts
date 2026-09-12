@@ -1,4 +1,4 @@
-import { computed, signal, Injectable } from '@angular/core';
+import { computed, signal, Injectable, inject } from '@angular/core';
 import type {
   ElementDefinition,
   FormDefinition,
@@ -9,11 +9,13 @@ import type {
 } from '../../shared/model/form.model';
 import { createElement, createPage, insertElementAfter, newForm } from './form-factory';
 import { uuid } from '../../shared/model/ids';
+import { I18nService } from '../i18n/translation.service';
 
 const STORAGE_KEY = 'formmaker.designer.v1';
 
 @Injectable()
 export class DesignerStore {
+  private readonly i18n = inject(I18nService);
   readonly form = signal<FormDefinition>(newForm());
   readonly selectedId = signal<string | null>(null);
   readonly activePageId = signal<string | null>(null);
@@ -115,7 +117,7 @@ export class DesignerStore {
   ): ElementDefinition {
     const page = this.form().pages.find((p) => p.id === pageId);
     if (!page) throw new Error(`Unknown page ${pageId}`);
-    const el = createElement(type, label ?? defaultLabel(type));
+    const el = createElement(type, label ?? defaultLabel(type, this.i18n));
     const elements = insertElementAfter(page.elements, afterId, el);
     this.updatePage(pageId, { elements });
     this.selectedId.set(el.id);
@@ -212,25 +214,26 @@ export class DesignerStore {
   }
 }
 
-function defaultLabel(type: ElementType): string {
-  const map: Record<string, string> = {
-    text: 'Short text question',
-    longText: 'Long text question',
-    number: 'Number question',
-    date: 'Date question',
-    time: 'Time question',
-    dateTime: 'Date & time question',
-    boolean: 'Yes / No question',
-    choice: 'Single choice question',
-    dropdown: 'Dropdown question',
-    multiChoice: 'Multiple choice question',
-    scale: 'Rating scale question',
-    file: 'File upload question',
-    signature: 'Signature field',
-    group: 'Group',
-    section: 'Section heading',
+function defaultLabel(type: ElementType, i18n: I18nService): string {
+  const key: Record<ElementType, string> = {
+    text: 'q.shortText',
+    longText: 'q.longText',
+    number: 'q.number',
+    date: 'q.date',
+    time: 'q.time',
+    dateTime: 'q.dateTime',
+    boolean: 'q.yesNo',
+    choice: 'q.single',
+    dropdown: 'q.dropdown',
+    multiChoice: 'q.multiple',
+    scale: 'q.scale',
+    file: 'q.file',
+    signature: 'q.signature',
+    group: 'q.group',
+    section: 'q.section',
+    textdisplay: 'q.textdisplay',
   };
-  return map[type] ?? 'Question';
+  return i18n.t(key[type] ?? 'q.shortText');
 }
 
 function patchNested(
