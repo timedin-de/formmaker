@@ -91,3 +91,35 @@ describe('RunnerStore draft persistence', () => {
     expect(reloaded.restoredDraft()).toBe(false);
   });
 });
+
+describe('RunnerStore submission', () => {
+  it('includes values of fields nested inside groups', () => {
+    const form = newForm('Grouped');
+    const page = createPage('Details');
+    const name = createElement('text', 'Full name');
+    const member1 = createElement('text', 'Member 1');
+    const member2 = createElement('text', 'Member 2');
+    const group = createElement('group', 'Team') as unknown as {
+      type: 'group';
+      elements: ReturnType<typeof createElement>[];
+    };
+    group.elements = [member1, member2];
+    page.elements = [name, group as never];
+    form.pages = [page];
+
+    const store = new RunnerStore();
+    store.init(form);
+    store.setAnswer(name.id, 'Ada');
+    store.setAnswer(member1.id, 'Sam');
+    store.setAnswer(member2.id, 'Jo');
+
+    const result = store.submit();
+    expect(result?.submission.values).toMatchObject({
+      [name.id]: 'Ada',
+      [member1.id]: 'Sam',
+      [member2.id]: 'Jo',
+    });
+    expect(result?.visibleAnswerKeys).toContain(member1.id);
+    expect(result?.visibleAnswerKeys).toContain(member2.id);
+  });
+});

@@ -353,11 +353,31 @@ export class RunnerStore {
     const values: Record<string, FieldValue> = {};
     const visibleAnswerKeys: string[] = [];
 
+    const collectGroup = (group: ElementDefinition, parentVisible: boolean): void => {
+      if (group.type !== 'group') return;
+      for (const child of group.elements) {
+        const childView = evalResult.byId.get(child.id);
+        const visible = parentVisible && !!childView?.visible;
+        if (child.type === 'group') {
+          collectGroup(child, visible);
+          continue;
+        }
+        if (child.type === 'section' || !visible) continue;
+        const control = this.answers.get(child.id);
+        values[child.id] = control ? ((control.getRawValue() as FieldValue) ?? null) : null;
+        visibleAnswerKeys.push(child.id);
+      }
+    };
+
     for (const page of evalResult.pages) {
       if (!page.visible) continue;
       for (const view of page.elements) {
-        if (view.element.type === 'group' || view.element.type === 'section') continue;
         if (!view.visible) continue;
+        if (view.element.type === 'group') {
+          collectGroup(view.element, true);
+          continue;
+        }
+        if (view.element.type === 'section') continue;
         const control = view.id ? this.answers.get(view.id) : null;
         const value = control ? control.getRawValue() : view.value;
         values[view.id] = value ?? null;
