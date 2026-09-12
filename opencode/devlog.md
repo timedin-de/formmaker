@@ -156,6 +156,34 @@ ctx.t }` into a download `Blob` or link artifact. The toolbar is now a single
 - `npm run check` green (78 unit tests) + `npx playwright test` 12 passed
   across the three projects.
 
+## Session 11 — markdown in titles and descriptions
+
+- **Markdown rendering**: added `markdown-it` (v15) and `core/markdown/`
+  (`render.ts`, `markdown.pipe.ts`, `index.ts` + unit tests). A shared instance
+  is configured safety-first: `html:false` escapes raw HTML, `linkify:true`,
+  `breaks:true`; markdown-it's link validator rejects `javascript:` URLs and
+  Angular's `[innerHTML]` sanitizer runs on top anyway. The standalone
+  `markdown` pipe takes a `block` flag — inline for labels/titles (no `<p>`
+  wrapper), block for descriptions/subtitles (paragraphs, lists, headings).
+- **Applied to**: runner question label + description, section headings, page
+  title + subtitle, builder field preview labels/descriptions, boolean checkbox
+  label, and landing card title/description. CSS resets added so markdown `<p>`
+  blocks inside `.desc`/`.subtitle` don't add stray margins.
+- **Safety note**: block markdown is bound to `<div>`, never a `<p>` (avoiding
+  invalid `<p><p>` nesting); `[innerHTML]` on component hosts like
+  `mat-checkbox` is wrapped in a `<span>` so the component's own DOM survives.
+- **Demo + discoverability**: the seed demo form now showcases **bold**,
+  _italic_, `inline code` and [links](https://…) in its description, a section
+  heading, page subtitle and several field descriptions. The builder property
+  panel (label/description) and canvas (page title/subtitle) each gained a
+  `mat-hint` ("Markdown supported — …") in en + de.
+- **Testing + docs**: unit tests in `core/markdown/render.spec.ts`; Playwright
+  spec `e2e/markdown.spec.ts` (public runner renders emphasis, links and lists
+  correctly; green on chromium/firefox/webkit). `e2e/helpers.ts` `makeForm`
+  now passes `page.subtitle` through. Architectural notes added to
+  `opencode/architecture.md` and `AGENTS.md`.
+- Committed on `feat/markdown`. `npm run check` green (90 unit tests).
+
 ## Ongoing issues / choices
 
 - Expression `+` is string-concat when either side is a string, else numeric (documented, tested).

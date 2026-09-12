@@ -85,6 +85,9 @@ scripts/            copy-icons.mjs (icon bundling)
 - No `console.log` in app code (lint doesn't ban it — remove them in review anyway).
 - Sort/keep imports clean; run `npm run format` before committing.
 - All visible strings go through `I18nService`. Model-level default labels use keys, not literals.
+- Titles/labels and descriptions render **Markdown** via the `markdown` pipe (`core/markdown`,
+  `markdown-it`). Use inline mode for labels (`| markdown`) and block mode for descriptions
+  (`| markdown: true`). Raw HTML is escaped and Angular sanitizes the bound `[innerHTML]`.
 - CSV/Excel column text comes from `formatValueForExport(value)` → `{ text, additional? }`
   (structured, not a plain string).
 - Export buttons are pluggable via `EXPORT_CHANNELS` in `core/export/channels.ts`: each channel

@@ -31,14 +31,16 @@
             [ngModel]="page.title"
             (ngModelChange)="store().updatePage(page.id, { title: $event })"
           />
+          <mat-hint>{{ i18n.t('canvas.markdownHint') }}</mat-hint>
         </mat-form-field>
         <mat-form-field appearance="outline" subscriptSizing="dynamic">
           <mat-label>{{ i18n.t('canvas.subtitle') }}</mat-label>
-          <input
+          <textarea
             matInput
             [ngModel]="page.subtitle"
             (ngModelChange)="store().updatePage(page.id, { subtitle: $event })"
-          />
+          ></textarea>
+          <mat-hint>{{ i18n.t('canvas.markdownHint') }}</mat-hint>
         </mat-form-field>
         <button mat-stroked-button (click)="clonePage(page)">
           <mat-icon svgIcon="content_copy"></mat-icon>

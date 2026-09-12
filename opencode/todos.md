@@ -27,5 +27,6 @@
 - [x] AGENTS.md for AI tooling (repo map, commands, conventions)
 - [x] Playwright e2e suite (auth/journey/runner) across chromium/firefox/webkit + e2e scripts
 - [x] E2E coverage via Chromium V8 (`coverage/e2e/` istanbul report), e2e CI job + coverage merge
+- [x] Markdown in titles/descriptions (`markdown-it`, `core/markdown` pipe, demo + UI hints + docs + e2e test)
 - [ ] (Optional) Retry "understand-everything" (Mor-Li) or `graftmap` MCP as a richer AGENTS alternative
 - [ ] (Optional) End-to-end demo walkthrough + browser-based regression pass
