@@ -35,12 +35,21 @@ export interface SubmissionResult {
   visibleAnswerKeys: string[];
 }
 
+interface SavedDraft {
+  savedAt: number;
+  formVersion: number;
+  values: ValuesMap;
+}
+
+const DRAFT_PREFIX = 'formmaker.draft.';
+
 export class RunnerStore {
   readonly form = signal<FormDefinition | null>(null);
   readonly answers = new FormGroup({});
   readonly pageIndex = signal(0);
   readonly submitted = signal(false);
   readonly evaluation = signal<FormEvaluation | null>(null);
+  readonly restoredDraft = signal(false);
 
   readonly startedAt = signal(Date.now());
   readonly durationMs = signal(0);
@@ -68,6 +77,7 @@ export class RunnerStore {
   private previousValues: ValuesMap = {};
   private defaultsInitDone = false;
   private changeSub: { unsubscribe: () => void } | null = null;
+  private draftSub: { unsubscribe: () => void } | null = null;
 
   constructor() {
     this.evaluator = new FormEvaluator(this.emptyForm());
@@ -91,7 +101,11 @@ export class RunnerStore {
     this.submitted.set(false);
     this.startedAt.set(Date.now());
 
-    this.rebuildControls(form, initialValues);
+    const draft = this.loadDraft(form);
+    this.restoredDraft.set(!!draft && Object.keys(draft).length > 0);
+    const restoreValues: ValuesMap | undefined = initialValues ?? draft ?? undefined;
+
+    this.rebuildControls(form, restoreValues);
 
     this.changeSub?.unsubscribe();
     this.changeSub = this.answers.valueChanges
@@ -101,12 +115,20 @@ export class RunnerStore {
       )
       .subscribe(() => this.onValuesChanged());
 
+    this.draftSub?.unsubscribe();
+    this.draftSub = this.answers.valueChanges
+      .pipe(
+        debounceTime(300),
+        filter(() => !!this.form()),
+      )
+      .subscribe(() => this.saveDraft());
+
     // First evaluation pass.
     this.updateInternal(form, this.rawValues());
     this.defaultsInitDone = true;
 
-    if (initialValues) {
-      for (const [id, value] of Object.entries(initialValues)) {
+    if (restoreValues) {
+      for (const [id, value] of Object.entries(restoreValues)) {
         this.answers.get(id)?.setValue(value, { emitEvent: false });
       }
     }
@@ -115,6 +137,54 @@ export class RunnerStore {
   dispose(): void {
     this.changeSub?.unsubscribe();
     this.changeSub = null;
+    this.draftSub?.unsubscribe();
+    this.draftSub = null;
+  }
+
+  // ---- draft persistence (temporary localStorage autosave) -------------------
+
+  private draftKey(form: FormDefinition): string {
+    return DRAFT_PREFIX + form.id;
+  }
+
+  saveDraft(): void {
+    const form = this.form();
+    if (!form) return;
+    const data: SavedDraft = {
+      savedAt: Date.now(),
+      formVersion: form.version,
+      values: this.rawValues(),
+    };
+    try {
+      localStorage.setItem(this.draftKey(form), JSON.stringify(data));
+    } catch {
+      // storage full / unavailable — autosave is best-effort
+    }
+  }
+
+  loadDraft(form: FormDefinition): ValuesMap | null {
+    try {
+      const raw = localStorage.getItem(this.draftKey(form));
+      if (!raw) return null;
+      const data = JSON.parse(raw) as SavedDraft;
+      if (data.formVersion !== form.version || !data.values || typeof data.values !== 'object') {
+        localStorage.removeItem(this.draftKey(form));
+        return null;
+      }
+      return data.values;
+    } catch {
+      return null;
+    }
+  }
+
+  clearDraft(): void {
+    const form = this.form();
+    if (!form) return;
+    try {
+      localStorage.removeItem(this.draftKey(form));
+    } catch {
+      // ignore
+    }
   }
 
   private rebuildControls(form: FormDefinition, initialValues?: ValuesMap): void {
@@ -307,6 +377,7 @@ export class RunnerStore {
 
     this.durationMs.set(submission.durationMs);
     this.submitted.set(true);
+    this.clearDraft();
     return { submission, visibleAnswerKeys };
   }
 
@@ -320,6 +391,7 @@ export class RunnerStore {
     this.submitted.set(false);
     this.startedAt.set(Date.now());
     this.previousValues = {};
+    this.clearDraft();
     this.onValuesChanged();
   }
 
@@ -384,7 +456,6 @@ export class RunnerStore {
         elements: refs,
       });
     }
-    console.log(out);
     return out;
   }
 

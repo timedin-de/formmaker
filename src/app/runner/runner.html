@@ -1,11 +1,18 @@
 <mat-toolbar color="surface" class="top">
-  <button mat-icon-button (click)="back()" matTooltip="Back">
+  <button mat-icon-button (click)="back()" [matTooltip]="i18n.t('runner.back')">
     <mat-icon svgIcon="arrow_back"></mat-icon>
   </button>
   <div class="info">
     <div class="name">{{ store.form()?.name }}</div>
     @if (store.form()?.settings?.showProgress && store.activePages().length > 1) {
-      <div class="pg muted">{{ store.progress().index + 1 }} of {{ store.progress().total }}</div>
+      <div class="pg muted">
+        {{
+          i18n.t('runner.for', {
+            n: store.progress().index + 1,
+            total: store.progress().total,
+          })
+        }}
+      </div>
     }
   </div>
   <span class="spacer"></span>
@@ -18,10 +25,29 @@
   }
 </mat-toolbar>
 
-@if (!formLoaded()) {
-  <div class="waiting">Loading form…</div>
+@if (store.submitted()) {
+  <div class="thanks">
+    <mat-icon svgIcon="check" class="tick"></mat-icon>
+    <h1>{{ i18n.t('runner.thanks.title') }}</h1>
+    <p>{{ i18n.t('runner.thanks.text') }}</p>
+    <div class="thanks-actions">
+      @if (lastSubmission()) {
+        <button mat-stroked-button (click)="downloadReceipt()">
+          <mat-icon svgIcon="picture_as_pdf"></mat-icon> {{ i18n.t('runner.downloadPdf') }}
+        </button>
+      }
+      <button mat-stroked-button (click)="fillAgain()">
+        <mat-icon svgIcon="refresh"></mat-icon> {{ i18n.t('runner.fillAgain') }}
+      </button>
+      <button mat-flat-button color="primary" (click)="goHome()">
+        <mat-icon svgIcon="arrow_back"></mat-icon> {{ i18n.t('runner.home') }}
+      </button>
+    </div>
+  </div>
+} @else if (!formLoaded()) {
+  <div class="waiting">{{ i18n.t('runner.loading') }}</div>
 } @else if (!pageSignal()) {
-  <div class="waiting">No pages.</div>
+  <div class="waiting">{{ i18n.t('runner.noPages') }}</div>
 } @else {
   @if (pageSignal(); as page) {
     <div class="scroll">
@@ -37,13 +63,13 @@
       <div class="nav">
         @if (store.canPrev()) {
           <button mat-stroked-button (click)="prev()">
-            <mat-icon svgIcon="arrow_back"></mat-icon> Back
+            <mat-icon svgIcon="arrow_back"></mat-icon> {{ i18n.t('runner.prev') }}
           </button>
         }
         <span class="spacer"></span>
         @if (!store.isLast()) {
           <button mat-flat-button color="primary" (click)="next()">
-            Next <mat-icon svgIcon="arrow_forward"></mat-icon>
+            {{ i18n.t('runner.next') }} <mat-icon svgIcon="arrow_forward"></mat-icon>
           </button>
         } @else {
           <button mat-flat-button color="primary" (click)="submit()">
@@ -53,6 +79,6 @@
       </div>
     </div>
   } @else {
-    <div class="waiting">No pages on this form.</div>
+    <div class="waiting">{{ i18n.t('runner.noPagesOnForm') }}</div>
   }
 }

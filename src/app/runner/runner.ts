@@ -17,6 +17,10 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { QuestionList } from './questionList/question-list';
+import { I18nService } from '../core/i18n';
+import { MatTooltip } from '@angular/material/tooltip';
+import { submissionToPdf, downloadBlob } from '../core/export';
+import type { Submission } from '../shared/model/submission.model';
 
 @Component({
   imports: [
@@ -34,6 +38,7 @@ import { QuestionList } from './questionList/question-list';
     MatSnackBarModule,
     MatToolbarModule,
     QuestionList,
+    MatTooltip,
   ],
   providers: [RunnerStore],
   selector: 'fm-runner',
@@ -46,12 +51,16 @@ export class Runner {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly snack = inject(MatSnackBar);
+  protected readonly i18n = inject(I18nService);
 
   protected readonly Math = Math;
   protected readonly formLoaded = signal(false);
+  protected lastSubmission = signal<Submission | null>(null);
 
   protected pageSignal = computed<RunnerPage | null>(() => this.store.currentPage());
-  protected submitLabel = computed(() => this.store.form()?.settings?.submitLabel ?? 'Submit');
+  protected submitLabel = computed(
+    () => this.store.form()?.settings?.submitLabel ?? this.i18n.t('runner.submit'),
+  );
 
   constructor() {
     this.route.queryParams.pipe(first()).subscribe((q) => {
@@ -76,8 +85,11 @@ export class Runner {
           if (form) {
             this.store.init(form);
             this.formLoaded.set(true);
+            if (this.store.restoredDraft()) {
+              this.snack.open(this.i18n.t('runner.draftRestored'), 'OK', { duration: 4000 });
+            }
           } else {
-            this.snack.open('Form not found', 'OK', { duration: 4000 });
+            this.snack.open(this.i18n.t('runner.formNotFound'), 'OK', { duration: 4000 });
             void this.router.navigate(['/']);
           }
         }),
@@ -120,8 +132,32 @@ export class Runner {
       }
       return;
     }
+    this.lastSubmission.set(result.submission);
     void this.repo.addSubmission(result.submission);
-    this.snack.open('Submitted', 'OK', { duration: 2000 });
-    void this.router.navigate(['/results', this.store.form()!.id]);
+    this.snack.open(this.i18n.t('runner.submitted'), 'OK', { duration: 2000 });
   }
+
+  async downloadReceipt(): Promise<void> {
+    const form = this.store.form();
+    const submission = this.lastSubmission();
+    if (!form || !submission) return;
+    const blob = await submissionToPdf(form, submission);
+    downloadBlob(blob, toSlug(this.i18n.t('pdf.receipt', { name: form.name })) + '.pdf');
+  }
+
+  fillAgain(): void {
+    this.store.reset();
+    void this.router.navigate([], { relativeTo: this.route, queryParams: { page: 0 } });
+  }
+
+  goHome(): void {
+    void this.router.navigate(['/']);
+  }
+}
+
+function toSlug(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
 }
