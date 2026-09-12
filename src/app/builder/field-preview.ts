@@ -9,6 +9,7 @@ import { MatRadioModule } from '@angular/material/radio';
 import { MatSelectModule } from '@angular/material/select';
 import { I18nService } from '../core/i18n';
 import { MarkdownPipe } from '../core/markdown';
+import { hasSet } from '../shared/helper';
 
 @Component({
   selector: 'fm-field-preview',
@@ -28,6 +29,8 @@ import { MarkdownPipe } from '../core/markdown';
 export class FieldPreview {
   readonly el = input.required<ElementDefinition>();
   protected readonly i18n = inject(I18nService);
+
+  protected readonly hasSet = hasSet;
 
   protected headingText(): string {
     const e = this.el() as ElementDefinition & { heading?: string };

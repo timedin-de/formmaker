@@ -25,7 +25,7 @@
           />
           <mat-hint>{{ i18n.t('panel.markdownHint') }}</mat-hint>
         </mat-form-field>
-        @if (wantsPlaceholder(el)) {
+        @if (has(el, 'placeholder')) {
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
             <mat-label>{{ i18n.t('panel.placeholder') }}</mat-label>
             <input
@@ -211,18 +211,22 @@
         }
 
         <div class="opt-row">
-          <mat-checkbox
-            [checked]="el.required ?? false"
-            (change)="patch({ required: $event.checked })"
-          >
-            {{ i18n.t('panel.required') }}
-          </mat-checkbox>
-          <mat-checkbox
-            [checked]="el.readonly ?? false"
-            (change)="patch({ readonly: $event.checked })"
-          >
-            {{ i18n.t('panel.readOnly') }}
-          </mat-checkbox>
+          @if (has(el, 'required')) {
+            <mat-checkbox
+              [checked]="el.required ?? false"
+              (change)="patch({ required: $event.checked })"
+            >
+              {{ i18n.t('panel.required') }}
+            </mat-checkbox>
+          }
+          @if (has(el, 'readonly')) {
+            <mat-checkbox
+              [checked]="el.readonly ?? false"
+              (change)="patch({ readonly: $event.checked })"
+            >
+              {{ i18n.t('panel.readOnly') }}
+            </mat-checkbox>
+          }
         </div>
         <div class="opt-row label-row">
           <span class="sec-label">{{ i18n.t('panel.width') }}</span>
@@ -288,73 +292,81 @@
           </div>
         </div>
       }
-
-      <div class="section">
-        <div class="sec-title">{{ i18n.t('panel.defaultValue') }}</div>
-        <mat-button-toggle-group [value]="defaultKind(el)" (valueChange)="setDefaultKind($event)">
-          <mat-button-toggle value="none">{{ i18n.t('panel.none') }}</mat-button-toggle>
-          @if (el.type !== 'group') {
-            <mat-button-toggle value="static">{{ i18n.t('panel.static') }}</mat-button-toggle>
-            <mat-button-toggle value="expression">{{
-              i18n.t('panel.expression')
-            }}</mat-button-toggle>
-            <mat-button-toggle value="fromField">{{ i18n.t('panel.fromField') }}</mat-button-toggle>
-          } @else {
-            <mat-button-toggle value="fromField">{{ i18n.t('panel.fromGroup') }}</mat-button-toggle>
-          }
-        </mat-button-toggle-group>
-        @switch (defaultKind(el)) {
-          @case ('static') {
-            <mat-form-field appearance="outline" subscriptSizing="dynamic">
-              <mat-label>{{ i18n.t('panel.staticValue') }}</mat-label>
-              <input matInput [ngModel]="staticText(el)" (ngModelChange)="setStatic($event)" />
-            </mat-form-field>
-          }
-          @case ('expression') {
-            <mat-form-field appearance="outline" subscriptSizing="dynamic">
-              <mat-label>{{ i18n.t('panel.expressionExample') }}</mat-label>
-              <textarea
-                matInput
-                rows="2"
-                [ngModel]="exprText(el)"
-                (ngModelChange)="setExpr($event)"
-              ></textarea>
-            </mat-form-field>
-          }
-          @case ('fromField') {
-            <mat-form-field appearance="outline" subscriptSizing="dynamic">
-              <mat-select [ngModel]="fieldRef(el)" (ngModelChange)="setFromField($event)">
-                @for (page of pages(); track page.id) {
-                  <mat-optgroup [label]="page.title ?? page.id">
-                    @if (el.type === 'group') {
-                      @for (opt of isSameGroup(page.elements); track opt.id) {
-                        <mat-option [value]="opt.id">{{ opt.label }}</mat-option>
-                      }
-                    } @else {
-                      @for (
-                        opt of page.elements.filter(
-                          (field) => field.id !== el?.id && field.type !== 'section'
-                        );
-                        track opt.id
-                      ) {
-                        @if (opt.type === 'group') {
-                          <mat-optgroup [label]="opt.label">
-                            @for (subOpt of opt.elements; track subOpt.id) {
-                              <mat-option [value]="opt.id">{{ subOpt.label }}</mat-option>
-                            }
-                          </mat-optgroup>
-                        } @else {
+      @if (has(el, 'defaultValue')) {
+        <div class="section">
+          <div class="sec-title">{{ i18n.t('panel.defaultValue') }}</div>
+          <mat-button-toggle-group
+            [value]="el.defaultValue.kind ?? 'none'"
+            (valueChange)="setDefaultKind($event)"
+          >
+            <mat-button-toggle value="none">{{ i18n.t('panel.none') }}</mat-button-toggle>
+            @if (el.type !== 'group') {
+              <mat-button-toggle value="static">{{ i18n.t('panel.static') }}</mat-button-toggle>
+              <mat-button-toggle value="expression">{{
+                i18n.t('panel.expression')
+              }}</mat-button-toggle>
+              <mat-button-toggle value="fromField">{{
+                i18n.t('panel.fromField')
+              }}</mat-button-toggle>
+            } @else {
+              <mat-button-toggle value="fromField">{{
+                i18n.t('panel.fromGroup')
+              }}</mat-button-toggle>
+            }
+          </mat-button-toggle-group>
+          @switch (el.defaultValue.kind) {
+            @case ('static') {
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-label>{{ i18n.t('panel.staticValue') }}</mat-label>
+                <input matInput [ngModel]="staticText(el)" (ngModelChange)="setStatic($event)" />
+              </mat-form-field>
+            }
+            @case ('expression') {
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-label>{{ i18n.t('panel.expressionExample') }}</mat-label>
+                <textarea
+                  matInput
+                  rows="2"
+                  [ngModel]="exprText(el)"
+                  (ngModelChange)="setExpr($event)"
+                ></textarea>
+              </mat-form-field>
+            }
+            @case ('fromField') {
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-select [ngModel]="fieldRef(el)" (ngModelChange)="setFromField($event)">
+                  @for (page of pages(); track page.id) {
+                    <mat-optgroup [label]="page.title ?? page.id">
+                      @if (el.type === 'group') {
+                        @for (opt of isSameGroup(page.elements); track opt.id) {
                           <mat-option [value]="opt.id">{{ opt.label }}</mat-option>
                         }
+                      } @else {
+                        @for (
+                          opt of page.elements.filter(
+                            (field) => field.id !== el?.id && field.type !== 'section'
+                          );
+                          track opt.id
+                        ) {
+                          @if (opt.type === 'group') {
+                            <mat-optgroup [label]="opt.label">
+                              @for (subOpt of opt.elements; track subOpt.id) {
+                                <mat-option [value]="opt.id">{{ subOpt.label }}</mat-option>
+                              }
+                            </mat-optgroup>
+                          } @else {
+                            <mat-option [value]="opt.id">{{ opt.label }}</mat-option>
+                          }
+                        }
                       }
-                    }
-                  </mat-optgroup>
-                }
-              </mat-select>
-            </mat-form-field>
+                    </mat-optgroup>
+                  }
+                </mat-select>
+              </mat-form-field>
+            }
           }
-        }
-      </div>
+        </div>
+      }
 
       @if (el.type === 'number') {
         <div class="section">
@@ -401,68 +413,46 @@
           </button>
         }
       </div>
+      @if (has(el, 'validations')) {
+        <div class="section">
+          <div class="sec-title">{{ i18n.t('panel.validation') }}</div>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-select
+              [placeholder]="i18n.t('panel.addRule')"
+              (selectionChange)="addRule($event.value)"
+            >
+              @for (r of VALIDATION_RULE_TYPES; track r.type) {
+                <mat-option [value]="r.type">{{ i18n.t('val.' + r.type) }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
 
-      <div class="section">
-        <div class="sec-title">{{ i18n.t('panel.validation') }}</div>
-        <mat-form-field appearance="outline" subscriptSizing="dynamic">
-          <mat-select
-            [placeholder]="i18n.t('panel.addRule')"
-            (selectionChange)="addRule($event.value)"
-          >
-            @for (r of VALIDATION_RULE_TYPES; track r.type) {
-              <mat-option [value]="r.type">{{ i18n.t('val.' + r.type) }}</mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
+          <div class="rules">
+            @for (rule of el.validations ?? []; track rule.id; let i = $index) {
+              <div class="rule">
+                <div class="rule-top">
+                  <span class="rule-name">{{ ruleLabel(rule.rule) }}</span>
+                  <button
+                    mat-icon-button
+                    [matTooltip]="i18n.t('panel.remove')"
+                    (click)="removeRule(rule.id)"
+                  >
+                    <mat-icon svgIcon="close"></mat-icon>
+                  </button>
+                </div>
+                <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                  <mat-label>{{ i18n.t('panel.message') }}</mat-label>
+                  <input
+                    matInput
+                    [ngModel]="rule.message ?? defaultRuleMessage(rule.rule)"
+                    (ngModelChange)="patchRule(rule.id, { message: $event })"
+                  />
+                </mat-form-field>
 
-        <div class="rules">
-          @for (rule of el.validations ?? []; track rule.id; let i = $index) {
-            <div class="rule">
-              <div class="rule-top">
-                <span class="rule-name">{{ ruleLabel(rule.rule) }}</span>
-                <button
-                  mat-icon-button
-                  [matTooltip]="i18n.t('panel.remove')"
-                  (click)="removeRule(rule.id)"
-                >
-                  <mat-icon svgIcon="close"></mat-icon>
-                </button>
-              </div>
-              <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                <mat-label>{{ i18n.t('panel.message') }}</mat-label>
-                <input
-                  matInput
-                  [ngModel]="rule.message ?? defaultRuleMessage(rule.rule)"
-                  (ngModelChange)="patchRule(rule.id, { message: $event })"
-                />
-              </mat-form-field>
-
-              @switch (ruleInputKind(rule.rule)) {
-                @case ('number') {
-                  <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                    <mat-label>{{ i18n.t('panel.value') }}</mat-label>
-                    <input
-                      matInput
-                      type="number"
-                      [ngModel]="str(rule.value)"
-                      (ngModelChange)="patchRule(rule.id, { value: stringOrNum($event) })"
-                    />
-                  </mat-form-field>
-                }
-                @case ('text') {
-                  <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                    <mat-label>{{ i18n.t('panel.value') }}</mat-label>
-                    <input
-                      matInput
-                      [ngModel]="str(rule.value)"
-                      (ngModelChange)="patchRule(rule.id, { value: $event })"
-                    />
-                  </mat-form-field>
-                }
-                @case ('range') {
-                  <div class="two-col">
+                @switch (ruleInputKind(rule.rule)) {
+                  @case ('number') {
                     <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                      <mat-label>{{ i18n.t('panel.from') }}</mat-label>
+                      <mat-label>{{ i18n.t('panel.value') }}</mat-label>
                       <input
                         matInput
                         type="number"
@@ -470,64 +460,87 @@
                         (ngModelChange)="patchRule(rule.id, { value: stringOrNum($event) })"
                       />
                     </mat-form-field>
+                  }
+                  @case ('text') {
                     <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                      <mat-label>{{ i18n.t('panel.to') }}</mat-label>
+                      <mat-label>{{ i18n.t('panel.value') }}</mat-label>
                       <input
                         matInput
-                        type="number"
-                        [ngModel]="str(rule.valueTo)"
-                        (ngModelChange)="patchRule(rule.id, { valueTo: stringOrNum($event) })"
+                        [ngModel]="str(rule.value)"
+                        (ngModelChange)="patchRule(rule.id, { value: $event })"
                       />
                     </mat-form-field>
-                  </div>
+                  }
+                  @case ('range') {
+                    <div class="two-col">
+                      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                        <mat-label>{{ i18n.t('panel.from') }}</mat-label>
+                        <input
+                          matInput
+                          type="number"
+                          [ngModel]="str(rule.value)"
+                          (ngModelChange)="patchRule(rule.id, { value: stringOrNum($event) })"
+                        />
+                      </mat-form-field>
+                      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                        <mat-label>{{ i18n.t('panel.to') }}</mat-label>
+                        <input
+                          matInput
+                          type="number"
+                          [ngModel]="str(rule.valueTo)"
+                          (ngModelChange)="patchRule(rule.id, { valueTo: stringOrNum($event) })"
+                        />
+                      </mat-form-field>
+                    </div>
+                  }
+                  @case ('pattern') {
+                    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                      <mat-label>{{ i18n.t('panel.regex') }}</mat-label>
+                      <input
+                        matInput
+                        [ngModel]="rule.pattern ?? ''"
+                        (ngModelChange)="patchRule(rule.id, { pattern: $event })"
+                      />
+                    </mat-form-field>
+                  }
+                  @case ('date') {
+                    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                      <mat-label>{{ i18n.t('panel.date') }}</mat-label>
+                      <input
+                        matInput
+                        type="date"
+                        [ngModel]="str(rule.value)"
+                        (ngModelChange)="patchRule(rule.id, { value: $event })"
+                      />
+                    </mat-form-field>
+                  }
+                  @case ('accept') {
+                    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                      <mat-label>{{ i18n.t('panel.allowedTypes') }}</mat-label>
+                      <input
+                        matInput
+                        [ngModel]="rule.accept ?? ''"
+                        (ngModelChange)="patchRule(rule.id, { accept: $event })"
+                      />
+                    </mat-form-field>
+                  }
+                  @case ('expression') {
+                    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                      <mat-label>{{ i18n.t('panel.exprOrMsg') }}</mat-label>
+                      <textarea
+                        matInput
+                        rows="2"
+                        [ngModel]="rule.expression ?? ''"
+                        (ngModelChange)="patchRule(rule.id, { expression: $event })"
+                      ></textarea>
+                    </mat-form-field>
+                  }
                 }
-                @case ('pattern') {
-                  <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                    <mat-label>{{ i18n.t('panel.regex') }}</mat-label>
-                    <input
-                      matInput
-                      [ngModel]="rule.pattern ?? ''"
-                      (ngModelChange)="patchRule(rule.id, { pattern: $event })"
-                    />
-                  </mat-form-field>
-                }
-                @case ('date') {
-                  <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                    <mat-label>{{ i18n.t('panel.date') }}</mat-label>
-                    <input
-                      matInput
-                      type="date"
-                      [ngModel]="str(rule.value)"
-                      (ngModelChange)="patchRule(rule.id, { value: $event })"
-                    />
-                  </mat-form-field>
-                }
-                @case ('accept') {
-                  <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                    <mat-label>{{ i18n.t('panel.allowedTypes') }}</mat-label>
-                    <input
-                      matInput
-                      [ngModel]="rule.accept ?? ''"
-                      (ngModelChange)="patchRule(rule.id, { accept: $event })"
-                    />
-                  </mat-form-field>
-                }
-                @case ('expression') {
-                  <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                    <mat-label>{{ i18n.t('panel.exprOrMsg') }}</mat-label>
-                    <textarea
-                      matInput
-                      rows="2"
-                      [ngModel]="rule.expression ?? ''"
-                      (ngModelChange)="patchRule(rule.id, { expression: $event })"
-                    ></textarea>
-                  </mat-form-field>
-                }
-              }
-            </div>
-          }
+              </div>
+            }
+          </div>
         </div>
-      </div>
+      }
     </div>
   } @else {
     <div class="placeholder">

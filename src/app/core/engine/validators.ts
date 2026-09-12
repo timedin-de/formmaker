@@ -1,4 +1,4 @@
-import type { ElementDefinition } from '../../shared/model/form.model';
+import type { QuestionDefinition } from '../../shared/model/form.model';
 import type { ValidationRule, ValidationRuleType } from '../../shared/model/validation.model';
 import { evalExpression } from './expression/evaluator';
 import { interpolateTemplate } from './expression/template';
@@ -21,7 +21,7 @@ export interface ValidationResult {
  * piped messages can reference other questions.
  */
 export function validateElementValue(
-  element: ElementDefinition,
+  element: QuestionDefinition,
   value: FieldValue,
   allValues: Readonly<Record<string, FieldValue>>,
 ): ValidationResult {
@@ -43,7 +43,7 @@ export function validateElementValue(
 }
 
 function checkRule(
-  element: ElementDefinition,
+  element: QuestionDefinition,
   rule: ValidationRule,
   value: FieldValue,
   allValues: Readonly<Record<string, FieldValue>>,

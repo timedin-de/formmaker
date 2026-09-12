@@ -1,10 +1,11 @@
 import type {
-  ChoiceElement,
   ElementDefinition,
   Elements,
   ElementType,
   FormDefinition,
   PageDefinition,
+  QuestionDefinition,
+  QuestionType,
 } from '../../shared/model/form.model';
 import { elementId, pageId, uuid } from '../../shared/model/ids';
 import { emptyConditionGroup } from '../../shared/model/conditions.model';
@@ -34,33 +35,45 @@ export function createPage(title = 'New page'): PageDefinition {
   return { id: pageId(), title, elements: [], enabledWhen: emptyConditionGroup() };
 }
 
+export function createElement(type: QuestionType, label: string): QuestionDefinition;
+export function createElement(type: ElementType, label: string): ElementDefinition;
 export function createElement(type: ElementType, label: string): ElementDefinition {
   const base = {
     type,
+    description: undefined,
     id: elementId('q'),
     label,
     enabledWhen: emptyConditionGroup(),
     width: 1,
   };
+  const qBase = {
+    ...base,
+    placeholder: undefined,
+    defaultValue: undefined,
+    required: false,
+    readonly: false,
+    validations: [],
+  };
   switch (type) {
     case 'text':
-      return { ...base, type: 'text', inputType: 'text', maxLength: 255 };
+      return { ...qBase, type: 'text', inputType: 'text', maxLength: 255 };
     case 'longText':
-      return { ...base, type: 'longText', rows: 4 };
+      return { ...qBase, type: 'longText', rows: 4 };
     case 'number':
-      return { ...base, type: 'number' };
+      return { ...qBase, type: 'number' };
     case 'date':
-      return { ...base, type: 'date' };
+      return { ...qBase, type: 'date' };
     case 'time':
-      return { ...base, type: 'time' };
+      return { ...qBase, type: 'time' };
     case 'dateTime':
-      return { ...base, type: 'dateTime' };
+      return { ...qBase, type: 'dateTime' };
     case 'boolean':
-      return { ...base, type: 'boolean' };
+      return { ...qBase, type: 'boolean' };
     case 'choice':
       return {
-        ...base,
+        ...qBase,
         type: 'choice',
+        showOther: false,
         options: [
           { id: uuid(), label: 'Option 1', value: 'option_1' },
           { id: uuid(), label: 'Option 2', value: 'option_2' },
@@ -68,25 +81,27 @@ export function createElement(type: ElementType, label: string): ElementDefiniti
       };
     case 'dropdown':
       return {
-        ...base,
+        ...qBase,
         type: 'dropdown',
+        showOther: false,
         options: [
           { id: uuid(), label: 'Option 1', value: 'option_1' },
           { id: uuid(), label: 'Option 2', value: 'option_2' },
         ],
-      } as ChoiceElement;
+      };
     case 'multiChoice':
       return {
-        ...base,
+        ...qBase,
         type: 'multiChoice',
+        showOther: false,
         options: [
           { id: uuid(), label: 'Option 1', value: 'option_1' },
           { id: uuid(), label: 'Option 2', value: 'option_2' },
         ],
-      } as ChoiceElement;
+      };
     case 'scale':
       return {
-        ...base,
+        ...qBase,
         type: 'scale',
         min: 0,
         max: 10,
@@ -95,9 +110,9 @@ export function createElement(type: ElementType, label: string): ElementDefiniti
         maxLabel: 'High',
       };
     case 'file':
-      return { ...base, type: 'file', multiple: false };
+      return { ...qBase, type: 'file', multiple: false };
     case 'signature':
-      return { ...base, type: 'signature' };
+      return { ...qBase, type: 'signature' };
     case 'group':
       return { ...base, type: 'group', elements: [] };
     case 'section':

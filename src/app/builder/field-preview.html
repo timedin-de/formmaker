@@ -1,73 +1,79 @@
 <div class="wp">
-  @switch (el().type) {
-    @case ('section') {
-      <h3 class="sec" [innerHTML]="headingText() | markdown"></h3>
-      @if (el().description) {
-        <div class="desc" [innerHTML]="el().description | markdown: true"></div>
-      }
-    }
-    @case ('group') {
-      <fieldset class="grp">
-        <legend [innerHTML]="legendText() | markdown"></legend>
-        <p class="desc muted">{{ i18n.t('q.groupCount', { n: groupCount() }) }}</p>
-      </fieldset>
-    }
-    @case ('boolean') {
-      <mat-checkbox disabled>
-        <span [innerHTML]="el().label | markdown"></span>
-      </mat-checkbox>
-    }
-    @case ('choice') {
-      <span class="label" [innerHTML]="el().label | markdown"></span>
-      <mat-radio-group disabled>
-        @for (opt of options(); track opt.id) {
-          <mat-radio-button [value]="opt.value" disabled>{{ opt.label }}</mat-radio-button>
+  @if (el(); as el) {
+    @switch (el.type) {
+      @case ('section') {
+        <h3 class="sec" [innerHTML]="headingText() | markdown"></h3>
+        @if (el.description) {
+          <div class="desc" [innerHTML]="el.description | markdown: true"></div>
         }
-      </mat-radio-group>
-    }
-    @case ('multiChoice') {
-      <span class="label" [innerHTML]="el().label | markdown"></span>
-      @for (opt of options(); track opt.id) {
-        <mat-checkbox disabled>{{ opt.label }}</mat-checkbox>
+      }
+      @case ('group') {
+        <fieldset class="grp">
+          <legend [innerHTML]="legendText() | markdown"></legend>
+          <p class="desc muted">{{ i18n.t('q.groupCount', { n: groupCount() }) }}</p>
+        </fieldset>
+      }
+      @case ('boolean') {
+        <mat-checkbox disabled>
+          <span [innerHTML]="el.label | markdown"></span>
+        </mat-checkbox>
+      }
+      @case ('choice') {
+        <span class="label" [innerHTML]="el.label | markdown"></span>
+        <mat-radio-group disabled>
+          @for (opt of options(); track opt.id) {
+            <mat-radio-button [value]="opt.value" disabled>{{ opt.label }}</mat-radio-button>
+          }
+        </mat-radio-group>
+      }
+      @case ('multiChoice') {
+        <span class="label" [innerHTML]="el.label | markdown"></span>
+        @for (opt of options(); track opt.id) {
+          <mat-checkbox disabled>{{ opt.label }}</mat-checkbox>
+        }
+      }
+      @case ('dropdown') {
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label [innerHTML]="el.label | markdown"></mat-label>
+          <mat-select disabled>
+            @for (opt of options(); track opt.id) {
+              <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      }
+      @case ('scale') {
+        <span class="label" [innerHTML]="el.label | markdown"></span>
+        <div class="scale-row">
+          <span class="scale-min">{{ scaleEl().minLabel || scaleEl().min }}</span>
+          <mat-button-toggle-group disabled>
+            @for (val of scaleValues(); track val) {
+              <mat-button-toggle [value]="val" disabled>{{ val }}</mat-button-toggle>
+            }
+          </mat-button-toggle-group>
+          <span class="scale-max">{{ scaleEl().maxLabel || scaleEl().max }}</span>
+        </div>
+      }
+      @case ('signature') {
+        <span class="label" [innerHTML]="el.label | markdown"></span>
+        <div class="sig-pad">
+          <mat-icon svgIcon="gesture"></mat-icon>
+          <span class="muted">{{ i18n.t('q.signature') }} </span>
+        </div>
+      }
+      @default {
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label [innerHTML]="el.label | markdown"></mat-label>
+          <input
+            matInput
+            disabled
+            [placeholder]="hasSet(el, 'placeholder') ? el.placeholder : ''"
+          />
+        </mat-form-field>
       }
     }
-    @case ('dropdown') {
-      <mat-form-field appearance="outline" subscriptSizing="dynamic">
-        <mat-label [innerHTML]="el().label | markdown"></mat-label>
-        <mat-select disabled>
-          @for (opt of options(); track opt.id) {
-            <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
-          }
-        </mat-select>
-      </mat-form-field>
+    @if (el.description && el.type !== 'section' && el.type !== 'group') {
+      <div class="desc" [innerHTML]="el.description | markdown: true"></div>
     }
-    @case ('scale') {
-      <span class="label" [innerHTML]="el().label | markdown"></span>
-      <div class="scale-row">
-        <span class="scale-min">{{ scaleEl().minLabel || scaleEl().min }}</span>
-        <mat-button-toggle-group disabled>
-          @for (val of scaleValues(); track val) {
-            <mat-button-toggle [value]="val" disabled>{{ val }}</mat-button-toggle>
-          }
-        </mat-button-toggle-group>
-        <span class="scale-max">{{ scaleEl().maxLabel || scaleEl().max }}</span>
-      </div>
-    }
-    @case ('signature') {
-      <span class="label" [innerHTML]="el().label | markdown"></span>
-      <div class="sig-pad">
-        <mat-icon svgIcon="gesture"></mat-icon>
-        <span class="muted">{{ i18n.t('q.signature') }} </span>
-      </div>
-    }
-    @default {
-      <mat-form-field appearance="outline" subscriptSizing="dynamic">
-        <mat-label [innerHTML]="el().label | markdown"></mat-label>
-        <input matInput disabled [placeholder]="el().placeholder ?? ''" />
-      </mat-form-field>
-    }
-  }
-  @if (el().description && el().type !== 'section' && el().type !== 'group') {
-    <div class="desc" [innerHTML]="el().description | markdown: true"></div>
   }
 </div>

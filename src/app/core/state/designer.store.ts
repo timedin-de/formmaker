@@ -111,7 +111,7 @@ export class DesignerStore {
 
   addElement(
     pageId: string,
-    type: QuestionType | ElementType,
+    type: ElementType,
     label?: string,
     afterId: string | null = null,
   ): ElementDefinition {
