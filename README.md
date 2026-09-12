@@ -26,6 +26,7 @@ Built with Angular 22 and Angular Material 22, running entirely in the browser w
 - **Groups** — nest questions inside collapsible groups; groups carry their own legend.
 - **Field layout** — full / half / third widths so multi-column forms are possible.
 - **Uploads & signatures** — file fields enforce `accept`/multiple/size/file-type rules; signatures are captured on a device-pixel-correct signature pad.
+- **Markdown titles & descriptions** — question labels, page titles/subtitles and descriptions are rendered as Markdown (**bold**, _italic_, `code`, lists, links) with `markdown-it`; block formatting (paragraphs, lists, headings) works in descriptions.
 - **Import / export** — save forms to JSON, re-import them (with schema validation), and continue editing.
 - **Persistence** — everything lives in `localStorage`; forms and their submissions survive a reload. Install as a PWA if you want it truly offline.
 
@@ -35,6 +36,7 @@ Built with Angular 22 and Angular Material 22, running entirely in the browser w
 - Angular Material 22 (Theming from Material 3 design tokens)
 - `signature_pad` for capturing signatures
 - `exceljs` for `.xlsx` export
+- `markdown-it` for Markdown rendering of titles and descriptions
 - Vitest for unit tests
 
 ## Getting started

@@ -16,19 +16,23 @@ import { emptyConditionGroup } from '../../shared/model/conditions.model';
 export function buildDemoForm(): FormDefinition {
   const form = newForm('Customer onboarding');
   form.description =
-    'Shows page logic, conditional questions, piping, dynamic defaults, calculations, ' +
-    'validators and a signature pad.';
+    '**Full-featured example.** Shows page logic, conditional questions, piping, ' +
+    'dynamic defaults, calculations, validators and a signature pad. Titles and ' +
+    'descriptions support **bold**, *italic*, `code` and [links](https://example.com).';
 
   // ---- page 1: basics ----
   const p1 = createPage('About you');
   p1.title = 'About you';
   const name = createElement('text', 'Full name');
+  name.description = '**Required.** We will echo this back to you as you fill in the form.';
   const email = createElement('text', 'Business email') as TextElement;
   email.inputType = 'email';
   email.validations = [
     { id: uuid(), rule: 'email', message: "That doesn't look like an email — please fix it." },
   ];
   email.placeholder = 'you@company.com';
+  email.description =
+    'Used only for your receipt — read our [privacy policy](https://example.com/privacy).';
   const doh = createElement('longText', 'Short bio') as LongTextElement;
   doh.rows = 3;
   const role = createElement('choice', 'Primary role') as ChoiceElement;
@@ -63,7 +67,7 @@ export function buildDemoForm(): FormDefinition {
     ],
     groups: [],
   };
-  p2.subtitle = 'Only shown when you are not job seeking.';
+  p2.subtitle = 'Only shown when you are **not** *job seeking* — change the role to see it appear.';
   const jobTitle = createElement('text', `What is your role at {{${companySize.id}}}?`);
   const price = createElement('number', 'Hourly/unit price');
   price.defaultValue = { kind: 'static', value: 100 };
@@ -72,7 +76,7 @@ export function buildDemoForm(): FormDefinition {
   const gross = createElement('number', 'Gross monthly revenue') as NumberElement; // computed
   gross.calculation = { formula: `${price.id} * ${hours.id}`, decimals: 2 };
   gross.readonly = true;
-  gross.description = 'Auto-calculated from price × hours — editing disabled.';
+  gross.description = '**Read-only.** Auto-calculated from price × hours (`price * hours`).';
   const note = createElement(
     'longText',
     `You are signing up for {{${role.id}}}. Leave any notes below.`,
@@ -94,6 +98,7 @@ export function buildDemoForm(): FormDefinition {
   team.elements = [m1, m2];
   const cv = createElement('file', 'Upload your CV') as FileElement;
   cv.accept = '.pdf,.doc,.docx';
+  cv.description = 'Accepted: `.pdf`, `.doc`, `.docx`.';
   cv.validations = [
     {
       id: uuid(),
@@ -104,6 +109,7 @@ export function buildDemoForm(): FormDefinition {
   ];
   const sig = createElement('signature', 'Please sign to accept');
   sig.required = true;
+  sig.description = 'Use a **clean** signature — it will be included in your PDF receipt.';
   p3.elements = [team, cv, sig];
 
   form.pages = [p1, p2, p3];
@@ -111,7 +117,7 @@ export function buildDemoForm(): FormDefinition {
   // A hidden greeting uses piping to echo the applicant's name.
   const section = createElement(
     'section',
-    `Welcome aboard, {{${name.id}}}. Register with us below.`,
+    `**Welcome aboard**, {{${name.id}}}! Register with us below.`,
   );
   form.pages[0].elements = [section, ...form.pages[0].elements];
 

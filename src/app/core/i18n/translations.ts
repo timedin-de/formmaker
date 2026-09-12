@@ -102,6 +102,7 @@ export const TRANSLATIONS: Record<Lang, Dict> = {
     // canvas
     'canvas.pageTitle': 'Page title',
     'canvas.subtitle': 'Subtitle',
+    'canvas.markdownHint': 'Markdown supported — **bold**, *italic*, [link](https://…), lists.',
     'canvas.duplicatePage': 'Duplicate Page',
     'canvas.addPage': 'Add page',
     'canvas.addQuestion': 'Add question',
@@ -133,6 +134,8 @@ export const TRANSLATIONS: Record<Lang, Dict> = {
     'panel.basics': 'Basics',
     'panel.label': 'Label',
     'panel.description': 'Description',
+    'panel.markdownHint':
+      'Markdown supported — **bold**, *italic*, [link](https://…), lists, `code`.',
     'panel.placeholder': 'Placeholder',
     'panel.keyboardType': 'Keyboard type',
     'panel.maxLength': 'Max length',
@@ -460,6 +463,7 @@ export const TRANSLATIONS: Record<Lang, Dict> = {
     // canvas
     'canvas.pageTitle': 'Seitentitel',
     'canvas.subtitle': 'Untertitel',
+    'canvas.markdownHint': 'Markdown unterstützt — **fett**, *kursiv*, [Link](https://…), Listen.',
     'canvas.duplicatePage': 'Seite duplizieren',
     'canvas.addPage': 'Seite hinzufügen',
     'canvas.addQuestion': 'Frage hinzufügen',
@@ -491,6 +495,8 @@ export const TRANSLATIONS: Record<Lang, Dict> = {
     'panel.basics': 'Basiseinstellungen',
     'panel.label': 'Bezeichnung',
     'panel.description': 'Beschreibung',
+    'panel.markdownHint':
+      'Markdown unterstützt — **fett**, *kursiv*, [Link](https://…), Listen, `code`.',
     'panel.placeholder': 'Platzhalter',
     'panel.keyboardType': 'Tastaturtyp',
     'panel.maxLength': 'Max. Länge',

@@ -73,6 +73,12 @@ app.routes.ts   builder / runner / landing / login routes (+ authGuard)
   `version` changed; cleared on submit/reset; 300 ms debounce in `RunnerStore`.
 - **Icons**: bundled SVGs via `scripts/copy-icons.mjs`; register new `svgIcon`s there and run
   `npm run icons:copy` (auto on prestart/prebuild). Manifest is generated → gitignored.
+- **Markdown**: user-authored titles/labels, page titles/subtitles and descriptions are rendered
+  as markdown via `markdown-it` (`core/markdown/render.ts` + the standalone `markdown` pipe with a
+  `block` flag: inline for labels, block for descriptions). Config is safety-first: `html:false`
+  escapes raw HTML and markdown-it's link validator rejects `javascript:` URLs; Angular's built-in
+  `[innerHTML]` sanitizer runs on top. Titles use inline rendering (no `<p>` wrapper), descriptions
+  use block rendering (paragraphs, lists, headings).
 - **Verification**: `npm run check` = lint + format:check + typecheck + typecheck:server +
   test:ci + build. Always run before finishing work.
 
