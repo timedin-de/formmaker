@@ -101,6 +101,32 @@ ctx.t }` into a download `Blob` or link artifact. The toolbar is now a single
   PDF group headings from sessions 6–7 then populate correctly.
   Regression test in `runner.store.spec.ts`. `npm run check` green (78 tests).
 
+## Session 9 — page titles in PDFs + coverage + CI/Renovate
+
+- **Page titles**: `ReceiptBlock` and `ExportColumnBlock` gained a `page` kind.
+  `buildReceipt` and `buildColumnBlocks` emit a page heading (`page.title`, else
+  `Page N`) before a page's groups/answers — but only for pages that actually
+  contain an answer/field. `pdf-exporter.ts` renders page headings in the
+  summary fill-rate table and, via a shared `renderBlocks` helper (pages =
+  subheading + divider line), in the per-submission responses and the runner
+  thank-you receipt.
+- **Coverage**: added `@vitest/coverage-v8`, wired the Angular 22 unit-test
+  builder in `angular.json` (`coverage: false` default, `text`+`lcov`
+  reporters, `coverageExclude` for specs/entrypoints, thresholds
+  55/45/55/55 — the schema rejects `coverageThresholds.global`, keys must be
+  flat). Baseline: 71.7% stmts / 56.3% branch / 75.8% funcs / 75.9% lines.
+  Run coverage with `npx ng test --watch=false --coverage`; report lands in
+  `coverage/`.
+- **CI**: `.github/workflows/ci.yml` (+ identical `.forgejo/workflows/ci.yml`
+  for Forgejo): checkout, Node 24 + npm cache, `npm ci`, lint, format:check,
+  app+server typecheck, `npm run test:ci -- --coverage`, upload `coverage/`
+  artifact, production build.
+- **Renovate**: `renovate.json` — `config:recommended` preset, dependency
+  dashboard, `:automergeMinor` + weekly lockfile maintenance, grouped `angular`
+  packages, auto-merge for devDependencies, `jspdf`/`exceljs` kept on major
+  minor cadence.
+- `npm run check` green (78 tests).
+
 ## Ongoing issues / choices
 
 - Expression `+` is string-concat when either side is a string, else numeric (documented, tested).
