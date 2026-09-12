@@ -3,3 +3,6 @@
 /public/assets/icons
 /server/data
 deploy/nginx
+/coverage
+/test-results
+/playwright-report
