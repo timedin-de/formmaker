@@ -12,9 +12,13 @@
   display: flex;
   flex-direction: column;
   line-height: 1.2;
+  min-width: 0;
 }
 .name {
   font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .muted {
   color: var(--mat-sys-on-surface-variant);
@@ -79,4 +83,23 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+  .top {
+    flex-wrap: wrap;
+    height: auto;
+    min-height: 64px;
+    row-gap: 4px;
+    padding: 8px 12px;
+  }
+  .btn-label {
+    display: none;
+  }
+  .body {
+    padding: 12px;
+  }
+  .row {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 160px), 1fr));
+  }
 }

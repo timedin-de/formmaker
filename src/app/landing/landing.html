@@ -47,14 +47,22 @@
           <p class="desc">{{ form.description || i18n.t('landing.noDescription') }}</p>
         </mat-card-content>
         <mat-card-actions align="end">
-          <button mat-button [routerLink]="['/runner', form.id]">
-            <mat-icon svgIcon="play_circle_outline"></mat-icon> {{ i18n.t('landing.fill') }}
+          <button class="form-action" mat-button [routerLink]="['/runner', form.id]">
+            <mat-icon svgIcon="play_circle_outline"></mat-icon>
+            <span class="btn-label">{{ i18n.t('landing.fill') }}</span>
           </button>
-          <button mat-button routerLink="/builder" [queryParams]="{ id: form.id }">
-            <mat-icon svgIcon="edit"></mat-icon> {{ i18n.t('landing.edit') }}
+          <button
+            class="form-action"
+            mat-button
+            routerLink="/builder"
+            [queryParams]="{ id: form.id }"
+          >
+            <mat-icon svgIcon="edit"></mat-icon>
+            <span class="btn-label">{{ i18n.t('landing.edit') }}</span>
           </button>
-          <button mat-button [routerLink]="['/results', form.id]">
-            <mat-icon svgIcon="bar_chart"></mat-icon> {{ i18n.t('landing.results') }}
+          <button class="form-action" mat-button [routerLink]="['/results', form.id]">
+            <mat-icon svgIcon="bar_chart"></mat-icon>
+            <span class="btn-label">{{ i18n.t('landing.results') }}</span>
           </button>
           <button
             mat-icon-button
