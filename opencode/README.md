@@ -12,10 +12,16 @@ Per instructions, progress is documented **here**, not in chat.
 ## Commands
 
 ```bash
-npm start          # dev server (http://localhost:4200)
-npm run test:ci    # vitest unit tests, single run
-npm run lint       # eslint (angular-eslint + typescript-eslint)
-npm run format     # prettier --write
-npm run typecheck  # strict TS check of app + spec projects
-npm run check      # full gate: lint + format + typecheck + tests + production build
+npm start               # dev UI server (http://localhost:4200; /api proxied to :3000)
+npm run start:api       # Express API on http://localhost:3000
+npm run start:all       # both at once
+npm run test:ci         # vitest unit tests, single run
+npm run e2e             # Playwright e2e (chromium/firefox/webkit)
+npm run lint            # eslint (angular-eslint + typescript-eslint)
+npm run format          # prettier --write
+npm run typecheck       # strict TS check of app + spec projects
+npm run typecheck:server # strict TS check of the Express API
+npm run check           # full gate: lint + format + typecheck(+server) + tests + build
 ```
+
+History of what changed each session: [devlog.md](./devlog.md).

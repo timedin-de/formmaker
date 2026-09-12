@@ -1,0 +1,9 @@
+.coverage/
+.angular/
+dist/
+opencode/
+test-results/
+.forgejo/
+.github/
+.vscode/
+server/data/
