@@ -24,13 +24,25 @@ function write<T>(key: string, items: T[]): void {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const token = readToken();
   const res = await fetch(path, {
     ...init,
-    headers: init?.body ? { 'Content-Type': 'application/json' } : undefined,
+    headers: {
+      ...(init?.body ? { 'Content-Type': 'application/json' } : undefined),
+      ...(token ? { Authorization: `Bearer ${token}` } : undefined),
+    },
   });
   if (!res.ok) throw new Error(`API ${res.status}`);
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
+}
+
+function readToken(): string | null {
+  try {
+    return sessionStorage.getItem('formmaker.token');
+  } catch {
+    return null;
+  }
 }
 
 /**

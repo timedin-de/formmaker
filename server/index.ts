@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { store } from './store.ts';
+import { bearerToken, isEditorToken, login } from './auth.ts';
 import type { FormDefinition } from '../src/app/shared/model/form.model';
 import type { Submission } from '../src/app/shared/model/submission.model';
 
@@ -15,8 +16,29 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: '50mb' })); // file uploads and signatures arrive as data URLs
 
+function requireEditor(req: Request, res: Response, next: NextFunction): void {
+  if (!isEditorToken(bearerToken(req.headers.authorization))) {
+    res.status(401).json({ error: 'editor access required' });
+    return;
+  }
+  next();
+}
+
+/** Coerce a single route/query parameter to a string (Express 5 params may be arrays). */
+function param(req: Request, name: string): string {
+  const value = Array.isArray(req.params[name]) ? req.params[name][0] : req.params[name];
+  return value ?? '';
+}
+
 app.get('/api/health', (_req, res) => {
   res.json({ ok: true });
+});
+
+app.post('/api/auth/login', (req, res) => {
+  const password = (req.body as { password?: unknown } | undefined)?.password;
+  const token = typeof password === 'string' ? login(password) : null;
+  if (!token) return res.status(401).json({ error: 'invalid password' });
+  res.json({ token });
 });
 
 app.get('/api/forms', (_req, res) => {
@@ -24,12 +46,12 @@ app.get('/api/forms', (_req, res) => {
 });
 
 app.get('/api/forms/:id', (req, res) => {
-  const form = store.getForm(req.params.id);
+  const form = store.getForm(param(req, 'id'));
   if (!form) return res.status(404).json({ error: 'not found' });
   res.json(form);
 });
 
-app.post('/api/forms', (req, res) => {
+app.post('/api/forms', requireEditor, (req, res) => {
   const form = req.body as Partial<FormDefinition> | undefined;
   if (!form || typeof form.id !== 'string' || typeof form.name !== 'string') {
     return res.status(400).json({ error: 'form must have an id and a name' });
@@ -37,30 +59,30 @@ app.post('/api/forms', (req, res) => {
   res.status(201).json(store.saveForm(form as FormDefinition));
 });
 
-app.delete('/api/forms/:id', (req, res) => {
-  store.deleteForm(req.params.id);
+app.delete('/api/forms/:id', requireEditor, (req, res) => {
+  store.deleteForm(param(req, 'id'));
   res.status(204).end();
 });
 
-app.get('/api/forms/:id/submissions', (req, res) => {
-  res.json(store.getSubmissionsFor(req.params.id));
+app.get('/api/forms/:id/submissions', requireEditor, (req, res) => {
+  res.json(store.getSubmissionsFor(param(req, 'id')));
 });
 
 app.post('/api/forms/:id/submissions', (req, res) => {
   const sub = req.body as Partial<Submission> | undefined;
-  if (!sub || typeof sub.id !== 'string' || sub.formId !== req.params.id) {
+  if (!sub || typeof sub.id !== 'string' || sub.formId !== param(req, 'id')) {
     return res.status(400).json({ error: 'submission must match the form id' });
   }
   res.status(201).json(store.addSubmission(sub as Submission));
 });
 
-app.delete('/api/forms/:id/submissions', (req, res) => {
-  store.clearSubmissions(req.params.id);
+app.delete('/api/forms/:id/submissions', requireEditor, (req, res) => {
+  store.clearSubmissions(param(req, 'id'));
   res.status(204).end();
 });
 
-app.delete('/api/forms/:id/submissions/:submissionId', (req, res) => {
-  store.deleteSubmission(req.params.id, req.params.submissionId);
+app.delete('/api/forms/:id/submissions/:submissionId', requireEditor, (req, res) => {
+  store.deleteSubmission(param(req, 'id'), param(req, 'submissionId'));
   res.status(204).end();
 });
 

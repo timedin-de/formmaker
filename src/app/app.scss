@@ -19,22 +19,23 @@
   font-size: 17px;
   margin-right: 28px;
   color: var(--mat-sys-primary);
+  cursor: pointer;
 }
 
 nav {
   display: flex;
   gap: 4px;
-}
 
-nav a {
-  border-radius: 8px;
-  font-weight: 500;
-  font-size: 13px;
-}
+  a {
+    border-radius: 8px;
+    font-weight: 500;
+    font-size: 13px;
 
-nav a.active {
-  background: var(--mat-sys-secondary-container);
-  color: var(--mat-sys-on-secondary-container);
+    &.active {
+      background: var(--mat-sys-secondary-container);
+      color: var(--mat-sys-on-secondary-container);
+    }
+  }
 }
 
 .shell-content {

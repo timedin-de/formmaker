@@ -1,0 +1,30 @@
+<div class="login">
+  <mat-card class="card">
+    <mat-card-header>
+      <mat-card-title>
+        <mat-icon svgIcon="lock" class="lock"></mat-icon>
+        {{ i18n.t('login.title') }}
+      </mat-card-title>
+      <mat-card-subtitle>{{ i18n.t('login.subtitle') }}</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      <mat-form-field appearance="outline" class="field">
+        <mat-label>{{ i18n.t('login.password') }}</mat-label>
+        <input
+          matInput
+          type="password"
+          autocomplete="current-password"
+          [(ngModel)]="password"
+          (keydown.enter)="submit()"
+        />
+      </mat-form-field>
+      <p class="hint">{{ i18n.t('login.hint') }}</p>
+    </mat-card-content>
+    <mat-card-actions align="end">
+      <button mat-flat-button color="primary" (click)="submit()">
+        <mat-icon svgIcon="login"></mat-icon>
+        {{ i18n.t('login.submit') }}
+      </button>
+    </mat-card-actions>
+  </mat-card>
+</div>
