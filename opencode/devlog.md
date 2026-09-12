@@ -127,6 +127,35 @@ ctx.t }` into a download `Blob` or link artifact. The toolbar is now a single
   minor cadence.
 - `npm run check` green (78 tests).
 
+## Session 10 — Playwright e2e suite + e2e coverage
+
+- Added `@playwright/test` 1.63 and an e2e suite under `e2e/`
+  (`helpers.ts`, `auth.spec.ts`, `journey.spec.ts`, `runner.spec.ts`,
+  `fixtures.ts`, `global-teardown.ts`, `playwright.config.ts`). Scripts:
+  `npm run e2e` (= `playwright test`), `e2e:headed`, `e2e:ui`,
+  `e2e:install`. Config spins up both dev servers (Express API on 3000,
+  `ng serve` on 4200 via `proxy.conf.json`) so specs run against the real
+  stack. Three projects (chromium/firefox/webkit); helpers seed/clean forms
+  through the HTTP API with a bearer token.
+- **E2E coverage**: Playwright has no built-in coverage, so the auto fixture
+  `e2e/fixtures.ts` captures Chromium V8 JS coverage
+  (`page.coverage.startJSCoverage`, `resetOnNavigation:false`) per test into
+  `coverage/e2e/raw/` (Firefox/WebKit skip), and `global-teardown.ts` converts
+  the entries to an Istanbul report via `v8-to-istanbul` +
+  `istanbul-lib-*` (text + lcov + html in `coverage/e2e/`). The dev-server
+  inline source maps are decoded automatically; paths are normalized to
+  `src/app/…`/`server/…` and node_modules/Angular-chunk noise is dropped
+  (68 source files covered).
+- CIs (`verify`): `.github/workflows/ci.yml` + `.forgejo/workflows/ci.yml`
+  gained an `e2e` job (`npx playwright install --with-deps` +
+  `npm run e2e`, upload `coverage-e2e` artifact, `playwright-results` on
+  failure) and a `coverage-merge` job that bundles unit + e2e coverage.
+- `.prettierignore` now excludes `/coverage`, `/test-results`,
+  `/playwright-report` (generated artifacts); `.gitignore` gained the
+  Playwright dirs.
+- `npm run check` green (78 unit tests) + `npx playwright test` 12 passed
+  across the three projects.
+
 ## Ongoing issues / choices
 
 - Expression `+` is string-concat when either side is a string, else numeric (documented, tested).

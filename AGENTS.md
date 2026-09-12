@@ -14,17 +14,23 @@ Alwyays run the full gate before finishing: `npm run check`
 | Dev API          | `npm run start:api`                                                   |
 | Run both at once | `npm run start:all`                                                   |
 | Unit tests       | `npm run test:ci`                                                     |
+| Unit coverage    | `npx ng test --watch=false --coverage` (thresholds in `angular.json`) |
+| E2E tests        | `npm run e2e` / `e2e:headed` / `e2e:ui` (Playwright, 3 browsers)      |
+| E2E coverage     | collected automatically in the `e2e` run → `coverage/e2e/index.html`  |
 | Lint             | `npm run lint`                                                        |
 | Format           | `npm run format` / `format:check`                                     |
 | Typecheck app    | `npm run typecheck`                                                   |
 | Typecheck API    | `npm run typecheck:server`                                            |
-| Coverage         | `npx ng test --watch=false --coverage` (thresholds in `angular.json`) |
 | Full gate        | `npm run check`                                                       |
 
 - Node v24.15.0 is required by the Angular 22 CLI — via wrappers in `/home/user/.opencode/bin`.
 - Icons are bundled SVGs. Any new `mat-icon svgIcon="..."` MUST be registered in
   `scripts/copy-icons.mjs` and regenerated with `npm run icons:copy` (auto-runs on `prestart`/`prebuild`).
   The manifest lives in `src/app/core/icon-names.ts`.
+- Playwright: browser binaries via `npm run e2e:install`; the config spins up the API + UI dev
+  servers itself and reuses them locally. The `e2e` CI jobs run
+  `npx playwright install --with-deps chromium firefox webkit` then `npm run e2e`.
+  Before adding an e2e spec, check `e2e/helpers.ts` for the seed/cleanup API helpers.
 
 ## Repository layout
 

@@ -25,5 +25,7 @@
 - [x] CI: GitHub Actions + Forgejo workflows (lint, format, typecheck, tests with coverage, build)
 - [x] Renovate: `renovate.json` (recommended preset, angular group, auto-merge minors)
 - [x] AGENTS.md for AI tooling (repo map, commands, conventions)
+- [x] Playwright e2e suite (auth/journey/runner) across chromium/firefox/webkit + e2e scripts
+- [x] E2E coverage via Chromium V8 (`coverage/e2e/` istanbul report), e2e CI job + coverage merge
 - [ ] (Optional) Retry "understand-everything" (Mor-Li) or `graftmap` MCP as a richer AGENTS alternative
 - [ ] (Optional) End-to-end demo walkthrough + browser-based regression pass
