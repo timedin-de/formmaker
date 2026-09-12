@@ -73,7 +73,18 @@
           }
         },
         "test": {
-          "builder": "@angular/build:unit-test"
+          "builder": "@angular/build:unit-test",
+          "options": {
+            "coverage": false,
+            "coverageReporters": ["text", "lcov"],
+            "coverageExclude": ["**/*.spec.ts", "**/main.ts", "src/app/core/icon-names.ts"],
+            "coverageThresholds": {
+              "statements": 55,
+              "branches": 45,
+              "functions": 55,
+              "lines": 55
+            }
+          }
         },
         "lint": {
           "builder": "@angular-eslint/builder:lint",
