@@ -70,6 +70,21 @@
 - Committed the accumulated feature work in logical, reviewable commits (i18n module, builder
   translation, auth, icons, exports, runner drafts+receipt, docs).
 
+## Session 6 — receipt groups + pluggable result exports
+
+- Runner thank-you PDF receipt now renders **group headings** via
+  `core/export/receipt.ts` (`buildReceipt`): headings only for groups with an
+  answer, nested questions indented, sections/unanswered hidden.
+- Results exports refactored onto a **pluggable channel** API
+  (`core/export/channels.ts`): each `ExportChannel` turns `{ form, submissions,
+ctx.t }` into a download `Blob` or link artifact. The toolbar is now a single
+  loop; new outputs (e.g. a server email sender) plug in by registering a
+  channel. Added an `Email` channel (mailto summary) as the worked example.
+- Moved `toSlug` into `core/export/file.ts`; removed now-unused i18n keys
+  (`results.exportCsv/Excel/Pdf`, `pdf.filename`, `pdf.exported`), added
+  `results.email`/`mailSubject`/`mailBody` + `export.exported`/`export.failed`.
+- Registered the `mail` icon; `npm run check` green (76 tests).
+
 ## Ongoing issues / choices
 
 - Expression `+` is string-concat when either side is a string, else numeric (documented, tested).
