@@ -15,7 +15,7 @@ import {
 import { ElementViewRef } from '../core';
 import { QuestionInputField } from './question-input-field';
 import { MatRadioModule } from '@angular/material/radio';
-import { MatOption } from '@angular/material/select';
+import { MatOption, MatSelectModule } from '@angular/material/select';
 import { I18nService } from '../core/i18n';
 import { MarkdownPipe } from '../core/markdown';
 
@@ -31,6 +31,7 @@ import { MarkdownPipe } from '../core/markdown';
     MatCheckboxModule,
     QuestionInputField,
     MatOption,
+    MatSelectModule,
     MatRadioModule,
     MarkdownPipe,
   ],
