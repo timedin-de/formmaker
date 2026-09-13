@@ -43,7 +43,7 @@ export function collectElementRefs(el: ElementDefinition): string[] {
   }
 
   // Default value
-  if (has(el, 'defaultValue') && el.defaultValue !== undefined) {
+  if (has(el, 'defaultValue') && el.defaultValue) {
     const dv = el.defaultValue;
     if (dv.kind === 'expression') addExpr(dv.expression);
     if (dv.kind === 'fromField') refs.add(dv.fieldId);

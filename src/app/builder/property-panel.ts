@@ -159,7 +159,7 @@ export class PropertyPanel {
   }
 
   setDefaultKind(kind: string): void {
-    const make = (): DefaultValueDef | undefined => {
+    const make = (): DefaultValueDef | null => {
       switch (kind) {
         case 'static':
           return { kind: 'static', value: null };
@@ -168,7 +168,7 @@ export class PropertyPanel {
         case 'fromField':
           return { kind: 'fromField', fieldId: this.fields()[0]?.id ?? '' };
         default:
-          return undefined;
+          return null;
       }
     };
     this.patch({ defaultValue: make() });
