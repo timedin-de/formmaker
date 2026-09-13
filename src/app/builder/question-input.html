@@ -23,20 +23,18 @@
       </mat-form-field>
     }
     @case ('number') {
-      <div class="num-host" [class.disabled]="vr.el.type === 'number' && vr.computed">
-        <mat-form-field appearance="outline" class="field-host" subscriptSizing="dynamic">
-          <input
-            matInput
-            [id]="vr.id"
-            type="number"
-            [formControl]="vr.control"
-            [placeholder]="vr.placeholder ?? ''"
-          />
-          @if (vr.el.unit) {
-            <span matTextSuffix>{{ vr.el.unit }}</span>
-          }
-        </mat-form-field>
-      </div>
+      <mat-form-field appearance="outline" class="field-host" subscriptSizing="dynamic">
+        <input
+          matInput
+          [id]="vr.id"
+          type="number"
+          [formControl]="vr.control"
+          [placeholder]="vr.placeholder ?? ''"
+        />
+        @if (vr.el.unit) {
+          <span matTextSuffix>{{ vr.el.unit }}</span>
+        }
+      </mat-form-field>
     }
     @case ('boolean') {
       <mat-checkbox [formControl]="vr.control">

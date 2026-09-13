@@ -8,7 +8,6 @@ import {
   type ElementDefinition,
   type Elements,
   type GroupElement,
-  type NumberElement,
   type QuestionDefinition,
 } from '../shared/model/form.model';
 import type { ValidationRule, ValidationRuleType } from '../shared/model/validation.model';
@@ -223,26 +222,6 @@ export class PropertyPanel {
         .filter((x) => !!x);
       this.patch({ elements });
     }
-  }
-
-  // ---- calculation ------------------------------------------------------------
-
-  private numEl(): NumberElement {
-    return this.sel() as NumberElement;
-  }
-
-  toggleCalc(on: boolean): void {
-    this.patch(on ? { calculation: { formula: '' } } : { calculation: undefined });
-  }
-
-  setCalc(formula: string): void {
-    this.patch({ calculation: { ...this.numEl().calculation!, formula } });
-  }
-
-  setCalcDecimals(raw: string): void {
-    this.patch({
-      calculation: { ...this.numEl().calculation!, decimals: this.numOrUndef(raw) },
-    });
   }
 
   // ---- visibility -------------------------------------------------------------

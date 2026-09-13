@@ -74,7 +74,7 @@ export function buildDemoForm(): FormDefinition {
   const hours = createElement('number', 'Monthly hours');
   hours.defaultValue = { kind: 'static', value: 120 };
   const gross = createElement('number', 'Gross monthly revenue') as NumberElement; // computed
-  gross.calculation = { formula: `${price.id} * ${hours.id}`, decimals: 2 };
+  gross.defaultValue = { kind: 'expression', expression: `round(${price.id} * ${hours.id},2)` };
   gross.readonly = true;
   gross.description = '**Read-only.** Auto-calculated from price × hours (`price * hours`).';
   const note = createElement(

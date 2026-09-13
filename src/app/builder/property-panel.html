@@ -368,35 +368,6 @@
         </div>
       }
 
-      @if (el.type === 'number') {
-        <div class="section">
-          <div class="sec-title">{{ i18n.t('panel.calculation') }}</div>
-          <mat-checkbox [checked]="!!el.calculation" (change)="toggleCalc($event.checked)">
-            {{ i18n.t('panel.computeField') }}
-          </mat-checkbox>
-          @if (el.calculation) {
-            <mat-form-field appearance="outline" subscriptSizing="dynamic">
-              <mat-label>{{ i18n.t('panel.formulaExample') }}</mat-label>
-              <textarea
-                matInput
-                rows="2"
-                [ngModel]="el.calculation.formula"
-                (ngModelChange)="setCalc($event)"
-              ></textarea>
-            </mat-form-field>
-            <mat-form-field appearance="outline" subscriptSizing="dynamic">
-              <mat-label>{{ i18n.t('panel.decimals') }}</mat-label>
-              <input
-                matInput
-                type="number"
-                [ngModel]="el.calculation.decimals ?? ''"
-                (ngModelChange)="setCalcDecimals($event)"
-              />
-            </mat-form-field>
-          }
-        </div>
-      }
-
       <div class="section">
         <div class="sec-title">{{ i18n.t('panel.visibility') }}</div>
         <fm-condition-editor

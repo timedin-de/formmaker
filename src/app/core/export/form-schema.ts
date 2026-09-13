@@ -204,9 +204,6 @@ function validateReferences(
       for (const id of expressionReferences(el.defaultValue.expression)) ref(id, 'defaultValue');
     }
   }
-  if (el.type === 'number' && el.calculation) {
-    for (const id of expressionReferences(el.calculation.formula)) ref(id, 'calculation');
-  }
   if (has(el, 'validations')) {
     for (const rule of el.validations) {
       if (rule.expression)

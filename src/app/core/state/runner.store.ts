@@ -31,7 +31,6 @@ export interface ElementViewRef {
   label: string;
   description: string;
   visible: boolean;
-  computed: boolean;
   placeholder?: string;
   control: FormControl;
 }
@@ -202,14 +201,13 @@ export class RunnerStore {
         return;
       }
       const initial = initialValues?.[el.id] ?? this.evalInitialDefault(el, initialValues ?? {});
-      const computed = el.type === 'number' && !!el.calculation;
 
       if (QUESTION_TYPES.includes(el.type as QuestionType)) {
         const q = el as QuestionDefinition;
         const control = new FormControl(initial, (c: { value: FieldValue }) =>
           this.validateControl(q, c.value),
         );
-        if (q.readonly || computed) control.disable({ emitEvent: false });
+        if (q.readonly) control.disable({ emitEvent: false });
         incoming.set(el.id, control);
       } else {
         // Dummy FormControl
@@ -261,14 +259,6 @@ export class RunnerStore {
     diff: string[] | 'all' = 'all',
   ): void {
     const evalResult = this.evaluator.compute(values, diff === 'all' ? [] : diff);
-    // Write calculated values into their controls (silently, no loops).
-    for (const [id, view] of evalResult.byId) {
-      if (!view.computed) continue;
-      const control = this.answers.get(id);
-      if (control && !equal(control.getRawValue(), view.value)) {
-        control.setValue(view.value, { emitEvent: false });
-      }
-    }
 
     // Apply dynamic defaults
     if (this.defaultsInitDone) {
@@ -460,7 +450,6 @@ export class RunnerStore {
             label: view?.label,
             description: el.description ?? '',
             visible: view.visible,
-            computed: view.computed,
             control: control,
           };
         }
@@ -471,7 +460,6 @@ export class RunnerStore {
           description: view.description,
           placeholder: view.placeholder,
           visible: view.visible,
-          computed: view.computed,
           control,
         };
       };
