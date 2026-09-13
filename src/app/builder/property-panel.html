@@ -297,7 +297,7 @@
           <div class="sec-title">{{ i18n.t('panel.defaultValue') }}</div>
           <mat-button-toggle-group
             [value]="el.defaultValue?.kind ?? 'none'"
-            (valueChange)="setDefaultKind($event)"
+            (change)="setDefaultKind($event.value)"
           >
             <mat-button-toggle value="none">{{ i18n.t('panel.none') }}</mat-button-toggle>
             @if (el.type !== 'group') {
