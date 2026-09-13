@@ -39,14 +39,3 @@ export function readFileAsDataUrl(file: File): Promise<string> {
     reader.readAsDataURL(file);
   });
 }
-
-export async function parseJsonFile<T>(
-  file: File,
-): Promise<{ data: T | null; error: string | null }> {
-  try {
-    const text = await readFileAsText(file);
-    return { data: JSON.parse(text) as T, error: null };
-  } catch (err) {
-    return { data: null, error: err instanceof Error ? err.message : 'Invalid JSON' };
-  }
-}

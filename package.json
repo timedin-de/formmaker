@@ -44,7 +44,8 @@
     "markdown-it": "^15.0.2",
     "rxjs": "~7.8.0",
     "signature_pad": "^5.1.4",
-    "tslib": "^2.3.0"
+    "tslib": "^2.3.0",
+    "zod": "^4.6.4"
   },
   "devDependencies": {
     "@angular/build": "^22.1.8",

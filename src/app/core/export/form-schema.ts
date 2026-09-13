@@ -5,11 +5,11 @@ import {
   ELEMENT_TYPES,
 } from '../../shared/model/form.model';
 import { CONDITION_OPERATORS } from '../../shared/model/conditions.model';
-import { VALIDATION_RULE_TYPES } from '../../shared/model/validation.model';
 import { expressionReferences } from '../engine/expression/evaluator';
 import { templateReferences } from '../engine/expression/template';
 import { conditionGroupReferences } from '../engine/condition-engine';
 import { has } from '../../shared/helper';
+import { VALIDATION_RULE_TYPES } from '../../shared/model';
 
 export interface ValidationIssue {
   path: string;
@@ -119,8 +119,7 @@ function validateElement(
 
   if (has(el, 'validations') && Array.isArray(el.validations)) {
     el.validations.forEach((rule, ri) => {
-      const known = VALIDATION_RULE_TYPES.map((t) => t.type);
-      if (!rule || !known.includes(rule.rule)) {
+      if (!rule || !VALIDATION_RULE_TYPES.includes(rule.rule)) {
         issues.push({
           path: `${path}.validations[${ri}].rule`,
           message: `Unknown validation rule "${(rule as { rule?: string })?.rule}"`,

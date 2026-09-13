@@ -11,8 +11,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { downloadJSON, parseJsonFile } from '../core/export/file';
-import { validateFormDefinition } from '../core/export/form-schema';
+import { downloadJSON } from '../core/export/file';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { BuilderCanvas } from './canvas';
 import { BuilderPalette } from './palette';
@@ -20,6 +19,7 @@ import { PropertyPanel } from './property-panel';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { pairwise, startWith } from 'rxjs';
 import { I18nService } from '../core/i18n';
+import { FormImportService } from '../core/export/import';
 
 @Component({
   imports: [
@@ -44,6 +44,7 @@ import { I18nService } from '../core/i18n';
 })
 export class BuilderComponent {
   readonly store = inject(DesignerStore);
+  private readonly importService = inject(FormImportService);
   private readonly repo = inject(FormsRepository);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -114,22 +115,9 @@ export class BuilderComponent {
   }
 
   async onImport(event: Event): Promise<void> {
-    const file = (event.target as HTMLInputElement).files?.[0];
-    if (!file) return;
-    const { data } = await parseJsonFile<Record<string, unknown>>(file);
-    const issues = validateFormDefinition(data);
-    if (!data || issues.length > 0) {
-      this.snack.open(
-        this.i18n.t('builder.importFailed', {
-          message: issues[0]?.message ?? 'invalid JSON',
-        }),
-        'OK',
-        { duration: 6000 },
-      );
-      return;
-    }
-    this.store.load(data as never);
-    this.snack.open(this.i18n.t('builder.imported'), 'OK', { duration: 2500 });
+    const data = await this.importService.onImport(event);
+    if (!data) return;
+    this.store.load(data);
   }
 }
 

@@ -9,10 +9,10 @@ import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { downloadJSON, parseJsonFile } from '../core/export/file';
-import { validateFormDefinition } from '../core/export/form-schema';
+import { downloadJSON } from '../core/export/file';
 import { I18nService } from '../core/i18n';
 import { MarkdownPipe } from '../core/markdown';
+import { FormImportService } from '../core/export/import';
 
 @Component({
   imports: [
@@ -35,6 +35,7 @@ export class LandingComponent {
   private readonly snack = inject(MatSnackBar);
   protected readonly i18n = inject(I18nService);
   readonly forms = signal<FormDefinition[]>([]);
+  private readonly importService = inject(FormImportService);
 
   constructor() {
     void this.repo
@@ -78,31 +79,19 @@ export class LandingComponent {
     }
   }
 
+  async onImport(event: Event): Promise<void> {
+    const form = await this.importService.onImport(event);
+    if (!form) return;
+    await this.repo.saveForm(form);
+    await this.refresh();
+    this.snack.open(this.i18n.t('landing.imported', { name: form.name }), 'OK', {
+      duration: 3000,
+    });
+  }
+
   async remove(form: FormDefinition): Promise<void> {
     await this.repo.deleteForm(form.id);
     await this.refresh();
-  }
-
-  async onImport(event: Event): Promise<void> {
-    const file = (event.target as HTMLInputElement).files?.[0];
-    if (!file) return;
-    const { data } = await parseJsonFile<FormDefinition>(file);
-    if (!data) {
-      this.snack.open(this.i18n.t('landing.invalidJson'), 'OK', { duration: 4000 });
-      return;
-    }
-    const issues = validateFormDefinition(data);
-    if (issues.length > 0) {
-      this.snack.open(
-        this.i18n.t('landing.invalidDefinition', { message: issues[0].message }),
-        'OK',
-        { duration: 6000 },
-      );
-      return;
-    }
-    await this.repo.saveForm(data);
-    await this.refresh();
-    this.snack.open(this.i18n.t('landing.imported', { name: data.name }), 'OK', { duration: 3000 });
   }
 }
 
