@@ -11,11 +11,13 @@ import {
   FileValue,
   SignatureValue,
   FieldValue,
+  OTHER_OPTION,
+  OtherOption,
 } from '../shared/model';
 import { ElementViewRef } from '../core';
 import { QuestionInputField } from './question-input-field';
 import { MatRadioModule } from '@angular/material/radio';
-import { MatOption } from '@angular/material/select';
+import { MatOption, MatSelectModule } from '@angular/material/select';
 import { I18nService } from '../core/i18n';
 import { MarkdownPipe } from '../core/markdown';
 
@@ -33,13 +35,15 @@ import { MarkdownPipe } from '../core/markdown';
     MatOption,
     MatRadioModule,
     MarkdownPipe,
+    MatSelectModule,
   ],
 })
 export class QuestionInput {
   readonly vr = input<ElementViewRef>();
   protected readonly i18n = inject(I18nService);
 
-  date = (value: unknown) => value as Date;
+  protected readonly OTHER_OPTION = OTHER_OPTION();
+  protected readonly date = (value: unknown) => value as Date;
 
   inputType(el: ElementDefinition): string {
     return (el as { inputType?: string }).inputType ?? 'text';
@@ -94,19 +98,35 @@ export class QuestionInput {
     control.markAsTouched();
   }
 
-  multiChecked(control: FormControl, value: string | number): boolean {
-    const current = (control.value as (string | number)[] | null) ?? [];
+  multiChecked(control: FormControl, value: string | number | OtherOption): boolean {
+    const current = (control.value as (string | number | OtherOption)[] | null) ?? [];
+
+    if (typeof value === 'object') {
+      return !!current.find((e) => typeof e === 'object');
+    }
+
     return current.includes(value);
   }
 
-  toggleMulti(control: FormControl, value: string | number, checked: boolean): void {
-    const current = [...((control.value as (string | number)[] | null) ?? [])];
-    const next = checked
-      ? current.includes(value)
-        ? current
-        : [...current, value]
-      : current.filter((v) => v !== value);
-    control.setValue(next);
+  toggleMulti(control: FormControl, value: string | number | OtherOption, checked: boolean): void {
+    const current = [...((control.value as (string | number | OtherOption)[] | null) ?? [])];
+
+    if (typeof value === 'object') {
+      const isIncluded = this.multiChecked(control, value);
+      if (isIncluded) {
+        control.setValue(current.filter((e) => !(typeof e === 'object')));
+      } else {
+        control.setValue([...current, value]);
+      }
+    } else {
+      const next = checked
+        ? current.includes(value)
+          ? current
+          : [...current, value]
+        : current.filter((v) => v !== value);
+      control.setValue(next);
+    }
+
     control.markAsTouched();
   }
 

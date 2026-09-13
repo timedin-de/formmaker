@@ -86,9 +86,16 @@ export interface ChoiceOption {
   value: string | number;
 }
 
+export type OtherOption = ReturnType<typeof OTHER_OPTION>;
+export const OTHER_OPTION = () =>
+  ({
+    other: '',
+  }) as const;
+
 export interface ChoiceElement extends QuestionBase {
   type: 'choice' | 'dropdown' | 'multiChoice';
   options: ChoiceOption[];
+  showOther: boolean;
 }
 
 export interface ScalarElement extends QuestionBase {

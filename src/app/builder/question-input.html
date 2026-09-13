@@ -48,7 +48,24 @@
         @for (opt of options(vr.el); track opt.id) {
           <mat-radio-button [value]="opt.value">{{ opt.label }}</mat-radio-button>
         }
+        @if (vr.el.showOther) {
+          <mat-radio-button [value]="OTHER_OPTION">{{
+            i18n.t('choice.other.label')
+          }}</mat-radio-button>
+        }
       </mat-radio-group>
+      @if (vr.el.showOther && vr.control.value && typeof vr.control.value === 'object') {
+        <mat-form-field>
+          <input
+            matInput
+            [id]="vr.id"
+            [value]="vr.control.value.other()"
+            (input)="vr.control.value.other = $event.target.value"
+            [placeholder]="i18n.t('choice.other.placeholder')"
+            type="text"
+          />
+        </mat-form-field>
+      }
     }
     @case ('dropdown') {
       <mat-form-field appearance="outline" class="field-host" subscriptSizing="dynamic">
@@ -56,8 +73,23 @@
           @for (opt of options(vr.el); track opt.id) {
             <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
           }
+          @if (vr.el.showOther) {
+            <mat-option [value]="OTHER_OPTION">{{ i18n.t('choice.other.label') }}</mat-option>
+          }
         </mat-select>
       </mat-form-field>
+      @if (vr.el.showOther && vr.control.value && typeof vr.control.value === 'object') {
+        <mat-form-field>
+          <input
+            matInput
+            [id]="vr.id"
+            [value]="vr.control.value.other"
+            (input)="vr.control.value.other = $event.target.value"
+            [placeholder]="i18n.t('choice.other.placeholder')"
+            type="text"
+          />
+        </mat-form-field>
+      }
     }
     @case ('multiChoice') {
       <div class="choice-group">
@@ -69,6 +101,24 @@
           >
             {{ opt.label }}
           </mat-checkbox>
+        }
+        @if (vr.el.showOther) {
+          <mat-checkbox
+            [checked]="multiChecked(vr.control, OTHER_OPTION)"
+            (change)="toggleMulti(vr.control, OTHER_OPTION, $event.checked)"
+            >{{ i18n.t('choice.other.label') }}</mat-checkbox
+          >
+        }
+        @if (vr.el.showOther && multiChecked(vr.control, OTHER_OPTION)) {
+          <mat-form-field>
+            <input
+              matInput
+              [id]="vr.id"
+              [value]="vr.control.value.find((e) => typeof e === 'object').other"
+              [placeholder]="i18n.t('choice.other.placeholder')"
+              type="text"
+            />
+          </mat-form-field>
         }
       </div>
     }
