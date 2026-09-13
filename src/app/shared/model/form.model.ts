@@ -40,19 +40,6 @@ export type DefaultValueDef =
   | { kind: 'fromField'; fieldId: ElementId };
 
 // ---------------------------------------------------------------------------
-// Calculations
-// ---------------------------------------------------------------------------
-
-export interface Calculation {
-  /** Arithmetic expression, e.g. `(n_price * n_qty) * (1 - n_discount / 100)`. */
-  formula: string;
-  /** Optional number of decimals to round to. */
-  decimals?: number;
-  /** Explicit dependency list; if empty, dependencies are parsed from the formula. */
-  triggeredBy?: ElementId[];
-}
-
-// ---------------------------------------------------------------------------
 // Elements
 // ---------------------------------------------------------------------------
 
@@ -102,8 +89,6 @@ export interface NumberElement extends QuestionBase, Placeholderable {
   max?: number;
   step?: number;
   unit?: string;
-  /** If set, the field is read-only and reflects a computed result. */
-  calculation?: Calculation;
   decimals?: number;
 }
 

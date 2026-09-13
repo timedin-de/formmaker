@@ -46,9 +46,6 @@
           @if (elEnabledWhen()) {
             <span class="logic-badge">{{ i18n.t('row.conditional') }}</span>
           }
-          @if (elCalculation()) {
-            <span class="logic-badge">{{ i18n.t('row.calculated') }}</span>
-          }
           @if (has(el, 'defaultValue')) {
             <span class="logic-badge">{{ i18n.t('row.default') }}</span>
           }

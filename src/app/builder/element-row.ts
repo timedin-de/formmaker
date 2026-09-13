@@ -41,10 +41,6 @@ export class ElementRow {
   protected elEnabledWhen = computed(
     () => !!this.el().enabledWhen?.conditions?.length || !!this.el().enabledWhen?.groups?.length,
   );
-  protected elCalculation = computed(() => {
-    const el = this.el();
-    return el.type === 'number' && !!el.calculation?.formula;
-  });
 
   select(): void {
     this.store().select(this.el().id);

@@ -5,7 +5,6 @@ import type {
 } from '../../shared/model/form.model';
 import type { FieldValue, ValuesMap } from '../../shared/model/values.model';
 import { evalConditionGroup } from '../engine/condition-engine';
-import { evalExpression } from '../engine/expression/evaluator';
 import { interpolateTemplate } from '../engine/expression/template';
 import { collectElementRefs } from '../engine/dependencies';
 import { has } from '../../shared/helper';
@@ -17,8 +16,6 @@ export interface ElementView {
   label: string;
   description: string;
   placeholder: string;
-  /** true when the value is produced by a calculation (read-only). */
-  computed: boolean;
   /** resolved formula value for computed fields / applied dynamic value. */
   value: FieldValue;
   /** referenced field ids (dependencies). */
@@ -116,9 +113,6 @@ export class FormEvaluator {
       pages.push({ page, visible: pageVisible, elements: views });
     }
 
-    // Calculate cascade (topological order across the whole form).
-    this.applyCalculations(pages, values);
-
     return { pages, byId };
   }
 
@@ -138,79 +132,10 @@ export class FormEvaluator {
       label,
       description,
       placeholder,
-      computed: this.isComputed(el),
       value: values[el.id] ?? null,
       deps: this.depsById.get(el.id) ?? [],
     };
     this.cache.set(el.id, { rev: this.rev, view });
     return view;
   }
-
-  private isComputed(el: ElementDefinition): boolean {
-    return el.type === 'number' && !!el.calculation;
-  }
-
-  private applyCalculations(pages: PageView[], values: ValuesMap): void {
-    const flat: { id: string; el: ElementDefinition; view: ElementView }[] = [];
-    for (const pg of pages)
-      for (const v of pg.elements) flat.push({ id: v.id, el: v.element, view: v });
-
-    // Topological sort where edges el -> its dependencies (dependencies must run first).
-    const sorted = topoSort(
-      flat.map((f) => f.id),
-      (id) => this.depsById.get(id) ?? [],
-    );
-
-    for (const id of sorted) {
-      const entry = flat.find((f) => f.id === id);
-      if (!entry) continue;
-      const view = entry.view;
-      if (!view.computed) continue;
-      const calc = (entry.el as { calculation?: { formula?: string; decimals?: number } })
-        .calculation;
-      if (!calc?.formula) continue;
-      const result = evalExpression(calc.formula, values);
-      if (typeof result === 'number') {
-        view.value = calc.decimals !== undefined ? Number(result.toFixed(calc.decimals)) : result;
-      } else if (typeof result === 'string' || typeof result === 'boolean') {
-        view.value = result;
-      } else if (Array.isArray(result)) {
-        view.value = result
-          .filter((v): v is string | number => typeof v === 'string' || typeof v === 'number')
-          .map(String);
-      } else {
-        view.value = null;
-      }
-    }
-  }
-}
-
-/** Kahn topological sort; cycles fall back to original order. */
-function topoSort(ids: string[], depsOf: (id: string) => string[]): string[] {
-  const index = new Map<string, number>(ids.map((id, i) => [id, i]));
-  const indegree = new Map<string, number>(ids.map((id) => [id, 0]));
-  const adj = new Map<string, string[]>(ids.map((id) => [id, []]));
-
-  for (const id of ids) {
-    for (const dep of depsOf(id)) {
-      const target = index.get(dep);
-      if (target === undefined) continue; // dep is not an element (e.g. page-level ref)
-      indegree.set(id, (indegree.get(id) ?? 0) + 1);
-      adj.get(dep)?.push(id);
-    }
-  }
-
-  const queue = ids.filter((id) => (indegree.get(id) ?? 0) === 0).sort();
-  const out: string[] = [];
-  while (queue.length) {
-    const id = queue.shift() as string;
-    out.push(id);
-    for (const next of adj.get(id) ?? []) {
-      const d = (indegree.get(next) ?? 0) - 1;
-      indegree.set(next, d);
-      if (d === 0) queue.push(next);
-    }
-    queue.sort();
-  }
-  return out.length === ids.length ? out : ids;
 }
