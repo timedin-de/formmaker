@@ -392,8 +392,8 @@
               [placeholder]="i18n.t('panel.addRule')"
               (selectionChange)="addRule($event.value)"
             >
-              @for (r of VALIDATION_RULE_TYPES; track r.type) {
-                <mat-option [value]="r.type">{{ i18n.t('val.' + r.type) }}</mat-option>
+              @for (r of VALIDATION_RULE_TYPES; track r) {
+                <mat-option [value]="r">{{ i18n.t('val.' + r) }}</mat-option>
               }
             </mat-select>
           </mat-form-field>
