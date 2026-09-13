@@ -40,7 +40,7 @@ export function createElement(type: ElementType, label: string): ElementDefiniti
 export function createElement(type: ElementType, label: string): ElementDefinition {
   const base = {
     type,
-    description: undefined,
+    description: '',
     id: elementId('q'),
     label,
     enabledWhen: emptyConditionGroup(),
@@ -48,7 +48,7 @@ export function createElement(type: ElementType, label: string): ElementDefiniti
   };
   const qBase = {
     ...base,
-    defaultValue: undefined,
+    defaultValue: null,
     required: false,
     readonly: false,
     validations: [],
@@ -115,7 +115,7 @@ export function createElement(type: ElementType, label: string): ElementDefiniti
     case 'signature':
       return { ...qBase, type: 'signature' };
     case 'group':
-      return { ...base, type: 'group', defaultValue: undefined, elements: [] };
+      return { ...base, type: 'group', defaultValue: null, elements: [] };
     case 'section':
       return { ...base, type: 'section', heading: 'Section heading' };
     case 'textdisplay':

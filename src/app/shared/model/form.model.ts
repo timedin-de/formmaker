@@ -67,7 +67,7 @@ interface Placeholderable {
 }
 
 interface DefaultValueable {
-  defaultValue: DefaultValueDef | undefined;
+  defaultValue: DefaultValueDef | null;
 }
 
 export type QuestionBase = ElementBase & QuestionAttributes;

@@ -40,13 +40,13 @@
         <div class="name">{{ el.label }}</div>
         <div class="sub">
           <span class="type-badge">{{ i18n.t('field.' + el.type) }}</span>
-          @if (has(el, 'required')) {
+          @if (has(el, 'required') && el.required) {
             <span class="required-badge">{{ i18n.t('row.required') }}</span>
           }
           @if (elEnabledWhen()) {
             <span class="logic-badge">{{ i18n.t('row.conditional') }}</span>
           }
-          @if (has(el, 'defaultValue')) {
+          @if (has(el, 'defaultValue') && el.defaultValue) {
             <span class="logic-badge">{{ i18n.t('row.default') }}</span>
           }
         </div>
