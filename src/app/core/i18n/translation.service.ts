@@ -1,6 +1,7 @@
 import { Injectable, signal } from '@angular/core';
 import type { Lang } from './translations';
 import { SUPPORTED_LANGS, TRANSLATIONS } from './translations';
+import { catchFn } from '../../shared/helper';
 
 const STORAGE_KEY = 'formmaker.lang';
 
@@ -20,11 +21,7 @@ export class I18nService {
 
   setLang(lang: Lang): void {
     this.lang.set(lang);
-    try {
-      localStorage.setItem(STORAGE_KEY, lang);
-    } catch {
-      /* storage unavailable */
-    }
+    catchFn(() => localStorage.setItem(STORAGE_KEY, lang));
   }
 
   toggle(): void {
@@ -35,12 +32,8 @@ export class I18nService {
 }
 
 function readInitial(): Lang {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored === 'de' || stored === 'en') return stored;
-  } catch {
-    /* storage unavailable */
-  }
+  const { data: stored } = catchFn(() => localStorage.getItem(STORAGE_KEY));
+  if (stored === 'de' || stored === 'en') return stored;
   const browser = typeof navigator !== 'undefined' ? navigator.language : '';
   return browser.toLowerCase().startsWith('de') ? 'de' : 'en';
 }

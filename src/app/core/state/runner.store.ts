@@ -15,6 +15,7 @@ import type { Submission } from '../../shared/model/submission.model';
 import { collectElementRefs } from '../engine/dependencies';
 import { uuid } from '../../shared/model/ids';
 import { filter, debounceTime } from 'rxjs';
+import { RunnerDraft } from './runner-draft';
 
 export interface RunnerPage {
   id: string;
@@ -39,14 +40,6 @@ export interface SubmissionResult {
   submission: Submission;
   visibleAnswerKeys: string[];
 }
-
-interface SavedDraft {
-  savedAt: number;
-  formVersion: number;
-  values: ValuesMap;
-}
-
-const DRAFT_PREFIX = 'formmaker.draft.';
 
 export class RunnerStore {
   readonly form = signal<FormDefinition | null>(null);
@@ -79,6 +72,7 @@ export class RunnerStore {
   readonly values = computed<ValuesMap>(() => this.rawValues());
 
   private evaluator: FormEvaluator;
+  private readonly draft = new RunnerDraft();
   private previousValues: ValuesMap = {};
   private defaultsInitDone = false;
   private changeSub: { unsubscribe: () => void } | null = null;
@@ -148,48 +142,21 @@ export class RunnerStore {
 
   // ---- draft persistence (temporary localStorage autosave) -------------------
 
-  private draftKey(form: FormDefinition): string {
-    return DRAFT_PREFIX + form.id;
-  }
-
+  /** Persist the current answers immediately (normally triggered on changes). */
   saveDraft(): void {
     const form = this.form();
     if (!form) return;
-    const data: SavedDraft = {
-      savedAt: Date.now(),
-      formVersion: form.version,
-      values: this.rawValues(),
-    };
-    try {
-      localStorage.setItem(this.draftKey(form), JSON.stringify(data));
-    } catch {
-      // storage full / unavailable — autosave is best-effort
-    }
+    this.draft.save(form, this.rawValues());
   }
 
-  loadDraft(form: FormDefinition): ValuesMap | null {
-    try {
-      const raw = localStorage.getItem(this.draftKey(form));
-      if (!raw) return null;
-      const data = JSON.parse(raw) as SavedDraft;
-      if (data.formVersion !== form.version || !data.values || typeof data.values !== 'object') {
-        localStorage.removeItem(this.draftKey(form));
-        return null;
-      }
-      return data.values;
-    } catch {
-      return null;
-    }
+  private loadDraft(form: FormDefinition): ValuesMap | null {
+    return this.draft.load(form);
   }
 
-  clearDraft(): void {
+  private clearDraft(): void {
     const form = this.form();
     if (!form) return;
-    try {
-      localStorage.removeItem(this.draftKey(form));
-    } catch {
-      // ignore
-    }
+    this.draft.clear(form);
   }
 
   private rebuildControls(form: FormDefinition, initialValues?: ValuesMap): void {
