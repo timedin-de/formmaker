@@ -4,7 +4,6 @@ import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
-import { FormsRepository } from './core/state/forms.repository';
 import { AuthService } from './core/auth/auth.service';
 import { I18nService } from './core/i18n';
 
@@ -23,7 +22,6 @@ import { I18nService } from './core/i18n';
   styleUrl: './app.scss',
 })
 export class App {
-  readonly repo = inject(FormsRepository);
   readonly auth = inject(AuthService);
   readonly i18n = inject(I18nService);
   private readonly router = inject(Router);
