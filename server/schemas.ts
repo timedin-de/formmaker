@@ -1,0 +1,25 @@
+import { z } from 'zod';
+import { fieldValueSchema } from '../src/app/shared/model/model-validator.ts';
+
+const roles = ['admin', 'editor'] as const;
+
+export const loginSchema = z.object({
+  email: z.email().optional(),
+  password: z.string().min(1),
+});
+export const userCreateSchema = z.object({
+  email: z.email().max(320),
+  password: z.string().min(8).max(256),
+  role: z.enum(roles).default('editor'),
+});
+export const registrationSchema = userCreateSchema.pick({ email: true, password: true });
+export const passwordUpdateSchema = z.object({ password: z.string().min(8).max(256) });
+export const submissionSchema = z.object({
+  id: z.string().min(1).max(128),
+  formId: z.string().min(1).max(128),
+  formVersion: z.number().int().positive(),
+  formName: z.string().max(500),
+  submittedAt: z.iso.datetime(),
+  durationMs: z.number().nonnegative(),
+  values: z.record(z.string().min(1).max(128), fieldValueSchema),
+});
