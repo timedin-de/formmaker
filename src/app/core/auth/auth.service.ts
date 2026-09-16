@@ -1,61 +1,66 @@
-import { Injectable, inject, signal } from '@angular/core';
-import { FormsRepository } from '../state/forms.repository';
+import { Injectable, signal } from '@angular/core';
+import { clearApiCache } from '../state/api-cache';
+import { catchFn } from '../../shared/helper';
 
 const TOKEN_KEY = 'formmaker.token';
-
-/**
- * Offline fallback password. Keep in sync with `DEFAULT_PASSWORD` in
- * server/auth.ts — it is only accepted when the API is unreachable.
- */
-const OFFLINE_PASSWORD = 'formmaker';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   readonly authenticated = signal<boolean>(!!readToken());
 
-  readonly repo = inject(FormsRepository);
-
   token(): string | null {
     return readToken();
   }
 
-  /**
-   * Validate the editor password. Online it is checked against the server
-   * (FORMMAKER_PASSWORD). When the API is unreachable the same default
-   * password is accepted so the app stays usable offline.
-   */
-  async login(password: string): Promise<boolean> {
-    if (!this.repo.offline()) {
-      try {
-        const token = await requestLogin(password);
-        if (token) {
-          writeToken(token);
-          this.authenticated.set(true);
-          return true;
-        }
-      } catch {
-        /* server unreachable — fall through to offline check */
-      }
+  /** Validate editor credentials against the server. */
+  async login(password: string, email?: string): Promise<boolean> {
+    let token: string | null;
+    try {
+      token = await requestLogin(password, email);
+    } catch {
+      return false;
     }
-    if (password === OFFLINE_PASSWORD) {
-      writeToken('offline');
+    if (token) {
+      clearApiCache();
+      writeToken(token);
       this.authenticated.set(true);
       return true;
     }
     return false;
   }
 
+  /** Create an editor account and immediately start its session. */
+  async register(email: string, password: string): Promise<boolean> {
+    try {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      if (!res.ok) return false;
+      const body = (await res.json()) as { token?: string };
+      if (!body.token) return false;
+      clearApiCache();
+      writeToken(body.token);
+      this.authenticated.set(true);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   logout(): void {
+    clearApiCache();
     clearToken();
     this.authenticated.set(false);
   }
 }
 
-async function requestLogin(password: string): Promise<string | null> {
+async function requestLogin(password: string, email?: string): Promise<string | null> {
   const res = await fetch('/api/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ password }),
+    body: JSON.stringify({ password, ...(email ? { email } : {}) }),
   });
   if (!res.ok) return null;
   const body = (await res.json()) as { token?: string };
@@ -63,25 +68,13 @@ async function requestLogin(password: string): Promise<string | null> {
 }
 
 function readToken(): string | null {
-  try {
-    return sessionStorage.getItem(TOKEN_KEY);
-  } catch {
-    return null;
-  }
+  return catchFn(() => sessionStorage.getItem(TOKEN_KEY)).data;
 }
 
 function writeToken(token: string): void {
-  try {
-    sessionStorage.setItem(TOKEN_KEY, token);
-  } catch {
-    /* storage unavailable */
-  }
+  catchFn(() => sessionStorage.setItem(TOKEN_KEY, token));
 }
 
 function clearToken(): void {
-  try {
-    sessionStorage.removeItem(TOKEN_KEY);
-  } catch {
-    /* storage unavailable */
-  }
+  catchFn(() => sessionStorage.removeItem(TOKEN_KEY));
 }

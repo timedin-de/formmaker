@@ -3,27 +3,41 @@
     <mat-card-header>
       <mat-card-title>
         <mat-icon svgIcon="lock" class="lock"></mat-icon>
-        {{ i18n.t('login.title') }}
+        {{ i18n.t(registering() ? 'register.title' : 'login.title') }}
       </mat-card-title>
       <mat-card-subtitle>{{ i18n.t('login.subtitle') }}</mat-card-subtitle>
     </mat-card-header>
     <mat-card-content>
+      <mat-form-field appearance="outline" class="field">
+        <mat-label>{{ i18n.t('login.email') }}</mat-label>
+        <input
+          matInput
+          type="email"
+          autocomplete="username"
+          [value]="email()"
+          (input)="email.set($event.target.value)"
+        />
+      </mat-form-field>
       <mat-form-field appearance="outline" class="field">
         <mat-label>{{ i18n.t('login.password') }}</mat-label>
         <input
           matInput
           type="password"
           autocomplete="current-password"
-          [(ngModel)]="password"
+          [value]="password()"
+          (input)="password.set($any($event.target).value)"
           (keydown.enter)="submit()"
         />
       </mat-form-field>
-      <p class="hint">{{ i18n.t('login.hint') }}</p>
+      <p class="hint">{{ i18n.t(registering() ? 'register.hint' : 'login.hint') }}</p>
     </mat-card-content>
-    <mat-card-actions align="end">
+    <mat-card-actions align="end" class="actions">
       <button mat-flat-button color="primary" (click)="submit()">
         <mat-icon svgIcon="login"></mat-icon>
-        {{ i18n.t('login.submit') }}
+        {{ i18n.t(registering() ? 'register.submit' : 'login.submit') }}
+      </button>
+      <button mat-button (click)="toggleRegistration()">
+        {{ i18n.t(registering() ? 'register.back' : 'register.link') }}
       </button>
     </mat-card-actions>
   </mat-card>
