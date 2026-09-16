@@ -1,4 +1,4 @@
-import type { ElementType } from '../../shared/model/form.model';
+import { ElementType } from '@shared/model';
 import { IconName } from '../icon-names';
 
 export interface FieldTypeMeta {

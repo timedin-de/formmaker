@@ -1,7 +1,7 @@
 import { buildColumns } from './columns';
-import type { FormDefinition } from '../../shared/model/form.model';
-import type { Submission } from '../../shared/model/submission.model';
-import type { FieldValue } from '../../shared/model/values.model';
+import type { FormDefinition } from '@shared/model/form.model';
+import type { Submission } from '@shared/model/submission.model';
+import type { FieldValue } from '@shared/model/values.model';
 import { formatValueForExport } from './columns';
 
 /** RFC-4180-ish CSV serialization (quotes when needed, CRLF). */

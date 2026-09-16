@@ -5,7 +5,7 @@ import {
   isPiped,
   parseTemplate,
 } from './expression/template';
-import type { FieldValue } from '../../shared/model/values.model';
+import type { FieldValue } from '@shared/model/values.model';
 
 const values: Record<string, FieldValue> = {
   first_name: 'Alice',

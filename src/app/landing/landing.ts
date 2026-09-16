@@ -1,7 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { FormsRepository } from '../core/state/forms.repository';
-import type { FormDefinition } from '../shared/model/form.model';
+import type { FormDefinition } from '@shared/model/form.model';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatCardModule } from '@angular/material/card';

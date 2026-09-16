@@ -1,6 +1,6 @@
 import { Injectable, signal } from '@angular/core';
-import type { FormDefinition } from '../../shared/model/form.model';
-import type { Submission } from '../../shared/model/submission.model';
+import type { FormDefinition } from '@shared/model/form.model';
+import type { Submission } from '@shared/model/submission.model';
 import { request } from './api-client';
 import {
   FORM_CACHE_PREFIX,

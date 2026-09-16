@@ -3,7 +3,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { first, switchMap, tap } from 'rxjs';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { RunnerStore, type RunnerPage } from '../core/state/runner.store';
+import { RunnerStore } from '../core/state/runner.store';
 import { FormsRepository } from '../core/state/forms.repository';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -21,7 +21,8 @@ import { I18nService } from '../core/i18n';
 import { MarkdownPipe } from '../core/markdown';
 import { MatTooltip } from '@angular/material/tooltip';
 import { submissionToPdf, downloadBlob, toSlug } from '../core/export';
-import type { Submission } from '../shared/model/submission.model';
+import type { Submission } from '@shared/model/submission.model';
+import { RunnerPage } from '@shared/model';
 
 @Component({
   imports: [

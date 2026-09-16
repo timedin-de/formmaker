@@ -4,7 +4,7 @@ import { FIELD_TYPES } from '../core/model/field-registry';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { FormsModule } from '@angular/forms';
-import type { ElementType } from '../shared/model/form.model';
+import type { ElementType } from '@shared/model/form.model';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { I18nService } from '../core/i18n';

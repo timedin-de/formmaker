@@ -1,9 +1,9 @@
 import { Component, input } from '@angular/core';
 import { MatDivider } from '@angular/material/divider';
-import { ElementViewRef } from '../../core';
 import { QuestionInput } from '../../builder/question-input';
 import { MarkdownPipe } from '../../core/markdown';
-import { has } from '../../shared/helper';
+import { has } from '@shared/helper';
+import { ElementViewRef } from '@shared/model';
 
 @Component({
   imports: [QuestionInput, MatDivider, MarkdownPipe],

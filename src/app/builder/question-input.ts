@@ -11,8 +11,8 @@ import {
   FileValue,
   SignatureValue,
   FieldValue,
-} from '../shared/model';
-import { ElementViewRef } from '../core';
+  ElementViewRef,
+} from '@shared/model';
 import { QuestionInputField } from './question-input-field';
 import { MatRadioModule } from '@angular/material/radio';
 import { MatOption, MatSelectModule } from '@angular/material/select';

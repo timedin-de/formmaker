@@ -1,6 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 import { clearApiCache } from '../state/api-cache';
-import { catchFn } from '../../shared/helper';
+import { catchFn } from '@shared/helper';
 
 const TOKEN_KEY = 'formmaker.token';
 

@@ -3,13 +3,13 @@ import {
   type ElementDefinition,
   type Elements,
   ELEMENT_TYPES,
-} from '../../shared/model/form.model';
-import { CONDITION_OPERATORS } from '../../shared/model/conditions.model';
+} from '@shared/model/form.model';
+import { CONDITION_OPERATORS } from '@shared/model/conditions.model';
 import { expressionReferences } from '../engine/expression/evaluator';
 import { templateReferences } from '../engine/expression/template';
 import { conditionGroupReferences } from '../engine/condition-engine';
-import { has } from '../../shared/helper';
-import { VALIDATION_RULE_TYPES } from '../../shared/model';
+import { has } from '@shared/helper';
+import { VALIDATION_RULE_TYPES } from '@shared/model';
 
 export interface ValidationIssue {
   path: string;

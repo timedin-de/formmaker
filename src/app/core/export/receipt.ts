@@ -1,5 +1,5 @@
-import type { FormDefinition, Elements } from '../../shared/model/form.model';
-import type { Submission } from '../../shared/model/submission.model';
+import type { FormDefinition, Elements } from '@shared/model/form.model';
+import type { Submission } from '@shared/model/submission.model';
 import { formatValueForExport } from './columns';
 
 export type ReceiptBlock =

@@ -1,7 +1,7 @@
 import { Component, computed, inject, input, signal } from '@angular/core';
 import { DesignerStore } from '../core/state/designer.store';
 import { fieldMeta } from '../core/model/field-registry';
-import type { ElementDefinition, ElementType, GroupElement } from '../shared/model/form.model';
+import type { ElementDefinition, ElementType, GroupElement } from '@shared/model/form.model';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
@@ -10,7 +10,7 @@ import { FormsModule } from '@angular/forms';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { BuilderPalette } from './palette';
 import { I18nService } from '../core/i18n';
-import { has } from '../shared/helper';
+import { has } from '@shared/helper';
 
 @Component({
   imports: [

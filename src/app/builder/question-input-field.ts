@@ -10,7 +10,7 @@ import {
   FileValue,
   SignatureValue,
   FieldValue,
-} from '../shared/model';
+} from '@shared/model';
 
 @Component({
   templateUrl: './question-input-field.html',

@@ -1,6 +1,6 @@
 import { Component, computed, inject, input, signal } from '@angular/core';
 import { DesignerStore } from '../core/state/designer.store';
-import type { ElementType, PageDefinition } from '../shared/model/form.model';
+import type { ElementType, PageDefinition } from '@shared/model/form.model';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';

@@ -9,10 +9,10 @@ import {
   type Elements,
   type GroupElement,
   type QuestionDefinition,
-} from '../shared/model/form.model';
-import type { ValidationRule, ValidationRuleType } from '../shared/model/validation.model';
-import { VALIDATION_RULE_TYPES, validationRule } from '../shared/model/validation.model';
-import { uuid } from '../shared/model/ids';
+} from '@shared/model/form.model';
+import type { ValidationRule, ValidationRuleType } from '@shared/model/validation.model';
+import { VALIDATION_RULE_TYPES, validationRule } from '@shared/model/validation.model';
+import { uuid } from '@shared/model/ids';
 import { ConditionEditor } from './condition-editor';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
@@ -25,7 +25,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { I18nService } from '../core/i18n';
-import { has } from '../shared/helper';
+import { has } from '@shared/helper';
 
 const WIDTHS = Array(12)
   .fill(12)

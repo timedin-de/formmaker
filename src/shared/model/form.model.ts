@@ -2,7 +2,8 @@ import type { ElementId, FormId, PageId } from './ids';
 import type { ConditionGroup } from './conditions.model';
 import type { FieldValue } from './values.model';
 import type { ValidationRule } from './validation.model';
-import { ElementViewRef } from '../../core';
+import { Submission } from './submission.model';
+import { FormControl } from '@angular/forms';
 
 export const QUESTION_TYPES = [
   'text',
@@ -200,4 +201,28 @@ export interface FormDefinition {
   updatedAt?: string;
   settings: FormSettings;
   pages: PageDefinition[];
+}
+
+export interface RunnerPage {
+  id: string;
+  title: string;
+  subtitle: string;
+  index: number;
+  visible: boolean;
+  elements: ElementViewRef[];
+}
+
+export interface ElementViewRef {
+  id: string;
+  el: ElementDefinition;
+  label: string;
+  description: string;
+  visible: boolean;
+  placeholder?: string;
+  control: FormControl;
+}
+
+export interface SubmissionResult {
+  submission: Submission;
+  visibleAnswerKeys: string[];
 }
