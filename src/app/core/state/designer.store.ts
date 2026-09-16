@@ -9,6 +9,7 @@ import type {
 import { createElement, createPage, insertElementAfter, newForm } from './form-factory';
 import { uuid } from '../../shared/model/ids';
 import { I18nService } from '../i18n/translation.service';
+import { catchFn } from '../../shared/helper';
 import { parseFormData } from '../../shared/model/model-validator';
 
 const STORAGE_KEY = 'formmaker.designer.v1';
@@ -40,19 +41,15 @@ export class DesignerStore {
   }
 
   async hydrate(): Promise<void> {
-    try {
+    const { data: parsed, error } = catchFn(() => {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const { data, error } = parseFormData(raw);
-        if (data && Array.isArray(data.pages)) {
-          this.form.set(data);
-          this.schedulePersist();
-        } else {
-          console.warn('designer: stored form failed validation', error);
-        }
-      }
-    } catch {
-      /* corrupted storage — ignore */
+      return raw ? parseFormData(raw).data : null;
+    });
+    if (parsed && Array.isArray(parsed.pages)) {
+      this.form.set(parsed);
+      this.schedulePersist();
+    } else {
+      console.warn('designer: stored form failed validation', error);
     }
   }
 
@@ -203,11 +200,7 @@ export class DesignerStore {
   private persist(): void {
     if (this.persistTimer) clearTimeout(this.persistTimer);
     this.persistTimer = setTimeout(() => {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(this.form()));
-      } catch {
-        /* storage full/unavailable */
-      }
+      catchFn(() => localStorage.setItem(STORAGE_KEY, JSON.stringify(this.form())));
     }, 150);
   }
 

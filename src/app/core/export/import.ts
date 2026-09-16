@@ -6,12 +6,13 @@ import { catchFnAsync } from '../../shared/helper';
 import { I18nService } from '../i18n';
 import { validateFormDefinition } from './form-schema';
 import { readFileAsText } from './file';
+import { FormsRepository } from '../state/forms.repository';
 
 @Injectable({ providedIn: 'root' })
 export class FormImportService {
   private readonly snack = inject(MatSnackBar);
   private readonly i18n = inject(I18nService);
-
+  private readonly repo = inject(FormsRepository);
   /** Read, parse and validate an uploaded form file. Returns the definition or null. */
   async onImport(event: Event): Promise<FormDefinition | undefined> {
     const file = (event.target as HTMLInputElement).files?.[0];
@@ -33,6 +34,8 @@ export class FormImportService {
       this.report(this.i18n.t('import.failed', { message: issues[0].message }));
       return;
     }
+    await this.repo.newForm(form);
+
     this.snack.open(this.i18n.t('import.success'), 'OK', { duration: 2500 });
 
     return form;
