@@ -5,12 +5,12 @@ import type {
   FormSettings,
   PageDefinition,
   ElementType,
-} from '../../shared/model/form.model';
+} from '@shared/model/form.model';
 import { createElement, createPage, insertElementAfter, newForm } from './form-factory';
-import { uuid } from '../../shared/model/ids';
+import { uuid } from '@shared/model/ids';
 import { I18nService } from '../i18n/translation.service';
-import { catchFn } from '../../shared/helper';
-import { parseFormData } from '../../shared/model/model-validator';
+import { catchFn } from '@shared/helper';
+import { parseFormData } from '@shared/model/model-validator';
 
 const STORAGE_KEY = 'formmaker.designer.v1';
 

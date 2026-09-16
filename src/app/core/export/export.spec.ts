@@ -5,8 +5,8 @@ import { EXPORT_CHANNELS } from './channels';
 import { toCsv, submissionsToCsv } from './csv-exporter';
 import { validateFormDefinition } from './form-schema';
 import { newForm, createElement, createPage } from '../state/form-factory';
-import type { FormDefinition, QuestionDefinition } from '../../shared/model/form.model';
-import type { Submission } from '../../shared/model/submission.model';
+import type { FormDefinition, QuestionDefinition } from '@shared/model/form.model';
+import type { Submission } from '@shared/model/submission.model';
 
 function demoForm(): FormDefinition {
   const form = newForm('Demo');

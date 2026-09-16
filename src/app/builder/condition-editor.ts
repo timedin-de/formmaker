@@ -5,9 +5,9 @@ import type {
   Condition,
   ConditionOperator,
   ConditionOperand,
-} from '../shared/model/conditions.model';
-import { CONDITION_OPERATORS } from '../shared/model/conditions.model';
-import { emptyCondition } from '../shared/model/conditions.model';
+} from '@shared/model/conditions.model';
+import { CONDITION_OPERATORS } from '@shared/model/conditions.model';
+import { emptyCondition } from '@shared/model/conditions.model';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatIconModule } from '@angular/material/icon';
@@ -16,7 +16,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDividerModule } from '@angular/material/divider';
 import { QuestionSelector } from './question-selector';
-import { PageDefinition } from '../shared/model';
+import { PageDefinition } from '@shared/model';
 import { QuestionInputField } from './question-input-field';
 import { I18nService } from '../core/i18n';
 

@@ -1,6 +1,6 @@
 import { buildColumns } from './columns';
-import type { FormDefinition } from '../../shared/model/form.model';
-import type { Submission } from '../../shared/model/submission.model';
+import type { FormDefinition } from '@shared/model/form.model';
+import type { Submission } from '@shared/model/submission.model';
 import exp from 'exceljs';
 const { Workbook } = exp;
 

@@ -6,40 +6,21 @@ import {
   QUESTION_TYPES,
   QuestionDefinition,
   QuestionType,
-} from '../../shared/model/form.model';
-import type { FieldValue, ValuesMap } from '../../shared/model/values.model';
+  ElementViewRef,
+  RunnerPage,
+  SubmissionResult,
+} from '@shared/model/form.model';
+import type { FieldValue, ValuesMap } from '@shared/model/values.model';
 import { FormEvaluator, type FormEvaluation } from './form-evaluator';
 import { evalExpression } from '../engine/expression/evaluator';
 import { validateElementValue } from '../engine/validators';
-import type { Submission } from '../../shared/model/submission.model';
+import type { Submission } from '@shared/model/submission.model';
 import { collectElementRefs } from '../engine/dependencies';
-import { uuid } from '../../shared/model/ids';
+import { uuid } from '@shared/model/ids';
 import { filter, debounceTime } from 'rxjs';
 import { RunnerDraft } from './runner-draft';
 
-export interface RunnerPage {
-  id: string;
-  title: string;
-  subtitle: string;
-  index: number;
-  visible: boolean;
-  elements: ElementViewRef[];
-}
 
-export interface ElementViewRef {
-  id: string;
-  el: ElementDefinition;
-  label: string;
-  description: string;
-  visible: boolean;
-  placeholder?: string;
-  control: FormControl;
-}
-
-export interface SubmissionResult {
-  submission: Submission;
-  visibleAnswerKeys: string[];
-}
 
 export class RunnerStore {
   readonly form = signal<FormDefinition | null>(null);

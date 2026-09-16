@@ -1,5 +1,5 @@
 import { Component, inject, input } from '@angular/core';
-import type { ChoiceElement, ElementDefinition, ScaleElement } from '../shared/model/form.model';
+import type { ChoiceElement, ElementDefinition, ScaleElement } from '@shared/model/form.model';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -9,7 +9,7 @@ import { MatRadioModule } from '@angular/material/radio';
 import { MatSelectModule } from '@angular/material/select';
 import { I18nService } from '../core/i18n';
 import { MarkdownPipe } from '../core/markdown';
-import { has } from '../shared/helper';
+import { has } from '@shared/helper';
 
 @Component({
   selector: 'fm-field-preview',

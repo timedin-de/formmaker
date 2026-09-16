@@ -1,7 +1,7 @@
 import { Injectable, signal } from '@angular/core';
 import type { Lang } from './translations';
 import { SUPPORTED_LANGS, TRANSLATIONS } from './translations';
-import { catchFn } from '../../shared/helper';
+import { catchFn } from '@shared/helper';
 
 const STORAGE_KEY = 'formmaker.lang';
 

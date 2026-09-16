@@ -1,6 +1,6 @@
-import type { FormDefinition } from '../../shared/model/form.model';
-import type { ValuesMap } from '../../shared/model/values.model';
-import { catchFn } from '../../shared/helper';
+import type { FormDefinition } from '@shared/model/form.model';
+import type { ValuesMap } from '@shared/model/values.model';
+import { catchFn } from '@shared/helper';
 
 const DRAFT_PREFIX = 'formmaker.draft.';
 

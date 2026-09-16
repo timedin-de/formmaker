@@ -3,13 +3,13 @@ import type {
   GroupElement,
   PageDefinition,
   FormDefinition,
-} from '../../shared/model/form.model';
+} from '@shared/model/form.model';
 import { templateReferences } from './expression/template';
 import { expressionReferences } from './expression/evaluator';
 import { conditionGroupReferences } from './condition-engine';
-import { EMPTY_CONDITION_GROUP } from '../../shared/model/conditions.model';
-import type { ConditionGroup } from '../../shared/model/conditions.model';
-import { has } from '../../shared/helper';
+import { EMPTY_CONDITION_GROUP } from '@shared/model/conditions.model';
+import type { ConditionGroup } from '@shared/model/conditions.model';
+import { has } from '@shared/helper';
 
 /** Collect all field ids that `el` depends on (expressions, pipes, defaults, validations, etc.). */
 export function collectElementRefs(el: ElementDefinition): string[] {

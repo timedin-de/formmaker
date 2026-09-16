@@ -1,6 +1,6 @@
 import { Component, computed, input, output } from '@angular/core';
 import { MatSelectModule } from '@angular/material/select';
-import { PageDefinition, ElementDefinition, ElementType } from '../shared/model';
+import { PageDefinition, ElementDefinition, ElementType } from '@shared/model';
 import { FormsModule } from '@angular/forms';
 
 @Component({

@@ -8,8 +8,8 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { FormsRepository } from '../core/state/forms.repository';
-import type { FormDefinition } from '../shared/model/form.model';
-import type { Submission } from '../shared/model/submission.model';
+import type { FormDefinition } from '@shared/model/form.model';
+import type { Submission } from '@shared/model/submission.model';
 import {
   buildColumns,
   rowForSubmission,

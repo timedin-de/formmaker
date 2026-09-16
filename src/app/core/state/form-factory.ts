@@ -6,9 +6,9 @@ import type {
   PageDefinition,
   QuestionDefinition,
   QuestionType,
-} from '../../shared/model/form.model';
-import { elementId, pageId, uuid } from '../../shared/model/ids';
-import { emptyConditionGroup } from '../../shared/model/conditions.model';
+} from '@shared/model/form.model';
+import { elementId, pageId, uuid } from '@shared/model/ids';
+import { emptyConditionGroup } from '@shared/model/conditions.model';
 
 export function newForm(name = 'Untitled form'): FormDefinition {
   const now = new Date().toISOString();

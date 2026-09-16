@@ -1,8 +1,8 @@
 import { jsPDF } from 'jspdf';
 import { buildColumnBlocks, formatValueForExport } from './columns';
 import { buildReceipt, type ReceiptBlock } from './receipt';
-import type { FormDefinition } from '../../shared/model/form.model';
-import type { Submission } from '../../shared/model/submission.model';
+import type { FormDefinition } from '@shared/model/form.model';
+import type { Submission } from '@shared/model/submission.model';
 
 const PAGE_W = 595; // A4 portrait, pt
 const PAGE_H = 842;

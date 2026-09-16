@@ -1,5 +1,5 @@
-import type { FormDefinition } from '../../shared/model/form.model';
-import type { Submission } from '../../shared/model/submission.model';
+import type { FormDefinition } from '@shared/model/form.model';
+import type { Submission } from '@shared/model/submission.model';
 import { submissionsToCsv } from './csv-exporter';
 import { submissionsToExcel } from './excel-exporter';
 import { submissionsToPdf } from './pdf-exporter';
