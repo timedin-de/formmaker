@@ -57,7 +57,7 @@ const signatureValueSchema = z.object({
   mimeType: z.literal('image/png'),
 });
 
-const fieldValueSchema = z
+export const fieldValueSchema = z
   .union([
     z.string(),
     z.number(),
@@ -132,7 +132,7 @@ const formSettingsSchema = z.object({
 const questionAttributesSchema = defaultValueableSchema.extend({
   type: z.enum(QUESTION_TYPES),
   required: z.boolean().default(false),
-  validations: z.array(validationRuleSchema),
+  validations: z.array(validationRuleSchema).default([]),
   readonly: z.boolean().default(false),
 });
 
@@ -244,7 +244,7 @@ const pageDefinitionSchema = z.object({
   elements: elementsSchema,
 });
 
-const formDefinitionSchema = z.object({
+export const formDefinitionSchema = z.object({
   id: z.string(),
   name: z.string(),
   description: z.string().optional(),
