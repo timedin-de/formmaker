@@ -2,7 +2,7 @@
 
 A visual, no-code style form builder with a live **designer**, a **runner** for respondents, and a **results** view with spreadsheets. Design a form, preview it exactly as respondents see it, share a link, and collect submissions — served by a small Express API.
 
-Built with Angular 22 + Angular Material 22 on the frontend and a TypeScript Express backend that persists forms and submissions to JSON files (with a `localStorage` offline fallback).
+Built with Angular 22 + Angular Material 22 on the frontend and a TypeScript Express backend with TypeORM persistence.
 
 ## What it can do
 
@@ -30,18 +30,21 @@ Built with Angular 22 + Angular Material 22 on the frontend and a TypeScript Exp
 - **Draft autosave** — a respondent's answers are restored if they reload, cleared on submit or reset.
 - **Import / export** — save forms to JSON and re-import them (with schema validation) to continue editing.
 - **i18n** — the whole UI ships in English and German (auto-detected, or toggled manually).
-- **Persistence** — forms and submissions are stored server-side in JSON files; when the API is unreachable the frontend gracefully falls back to `localStorage`.
+- **Persistence** — forms, submissions, users, and durable sessions are stored server-side through TypeORM. SQLite is the default; MySQL is supported through configuration. The browser keeps short-lived cached API responses and local respondent drafts to reduce repeated requests; it never treats that cache as an offline write store.
 
 ## Backend & auth
 
 The Express API (`server/`) exposes:
 
-- `POST /api/auth/login` — password login; editor routes (`/`, `/builder`, `/results/:id`) require a bearer token (in-memory, 24 h), while `/runner/:id` and the API endpoints that read a form / submit answers stay public.
+- `POST /api/auth/login`, `POST /api/auth/register` — email/password login and self-registration. New registrations receive the `editor` role; sessions are durable, expire after 24 hours, and bearer tokens are stored as hashes. Omitting `email` keeps the existing single-password login compatible by selecting the initial admin account.
+- `GET/POST /api/users`, `PATCH /api/users/:id/password` — administrator-only user provisioning and password management. Forms are isolated by owner; admins retain access to all forms.
 - `GET /api/forms`, `GET/POST/DELETE /api/forms/:id` — form CRUD.
 - `GET/POST/DELETE /api/forms/:id/submissions[ /:submissionId]` — submissions per form.
 - `GET /api/health` — liveness probe.
 
-The default editor password is `formmaker`; override it with the `FORMMAKER_PASSWORD` environment variable.
+The first start creates `admin@formmaker.local` with password `formmaker`. Set `FORMMAKER_ADMIN_EMAIL` and `FORMMAKER_PASSWORD` before the first start to choose secure bootstrap credentials.
+
+SQLite is used by default at `server/data/formmaker.sqlite`. To use MySQL instead, set `DATABASE_PROVIDER=mysql` and `DATABASE_URL=mysql://user:password@host:3306/formmaker`. For controlled production schema rollouts, set `TYPEORM_SYNCHRONIZE=false` after applying the corresponding TypeORM migration.
 
 ## Tech stack
 
@@ -94,7 +97,7 @@ src/app/
   results/        # submissions & CSV/Excel/PDF/mail export
   login/          # password login screen
   shared/model/   # element definitions, conditions, validation, values, submission
-server/           # Express API: auth, forms + submissions endpoints, JSON file store
+server/           # Express API: TypeORM datasource, entities, auth, user/form/submission endpoints
 e2e/              # Playwright specs + coverage collection
 deploy/           # optional nginx reverse-proxy config
 ```
@@ -107,7 +110,7 @@ The simplest option is the included single-container Docker setup:
 FORMMAKER_PASSWORD=secret docker compose up -d --build
 ```
 
-The container serves both the built Angular SPA (with SPA fallback) and the JSON API on port 3000; forms and submissions persist in the `formmaker-data` volume. Alternatively, serve the static `dist/` build with **nginx** and reverse-proxy `/api/` to the Node backend — see `deploy/nginx/form-maker.conf`.
+The container serves both the built Angular SPA (with SPA fallback) and the API on port 3000; persist the SQLite database through a mounted volume, or configure MySQL via the environment variables above. Alternatively, serve the static `dist/` build with **nginx** and reverse-proxy `/api/` to the Node backend — see `deploy/nginx/form-maker.conf`.
 
 ## Note on AI
 
