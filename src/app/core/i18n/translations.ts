@@ -12,17 +12,21 @@ const en = {
   'app.forms': 'Forms',
   'app.builder': 'Builder',
   'app.logout': 'Log out',
-  'app.offline': 'Offline',
   'app.menu': 'Language',
 
   // login
   'login.title': 'Sign in',
   'login.subtitle': 'Editor access — respondents only need the share link.',
   'login.password': 'Password',
+  'login.email': 'Email address',
   'login.submit': 'Sign in',
   'login.error': 'Wrong password.',
-  'login.hint':
-    'Set FORMMAKER_PASSWORD on the server, or use the default. Offline mode accepts the default too.',
+  'login.hint': 'Use your email address and password.',
+  'register.title': 'Create account',
+  'register.hint': 'Your account will receive editor access. Passwords need at least 8 characters.',
+  'register.submit': 'Create account',
+  'register.link': 'Create an account',
+  'register.back': 'Back to sign in',
 
   // landing
   'landing.title': 'Forms',
@@ -365,17 +369,21 @@ const de: typeof en = {
   'app.forms': 'Formulare',
   'app.builder': 'Editor',
   'app.logout': 'Abmelden',
-  'app.offline': 'Offline',
   'app.menu': 'Sprache',
 
   // login
   'login.title': 'Anmelden',
   'login.subtitle': 'Editor-Zugriff — Teilnehmende brauchen nur den Teilen-Link.',
   'login.password': 'Passwort',
+  'login.email': 'E-Mail-Adresse',
   'login.submit': 'Anmelden',
   'login.error': 'Falsches Passwort.',
-  'login.hint':
-    'Setze FORMMAKER_PASSWORD am Server oder nutze das Standard-Passwort. Offline wird ebenfalls das Standard-Passwort akzeptiert.',
+  'login.hint': 'Nutze deine die E-Mail-Adresse und das Passwort.',
+  'register.title': 'Konto erstellen',
+  'register.hint': 'Dein Konto erhält Editor-Zugriff. Passwörter brauchen mindestens 8 Zeichen.',
+  'register.submit': 'Konto erstellen',
+  'register.link': 'Konto erstellen',
+  'register.back': 'Zurück zur Anmeldung',
 
   // landing
   'landing.title': 'Formulare',

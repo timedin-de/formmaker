@@ -1,5 +1,4 @@
-import { Component, inject } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { Component, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -12,7 +11,6 @@ import { I18nService } from '../core/i18n';
 
 @Component({
   imports: [
-    FormsModule,
     MatButtonModule,
     MatCardModule,
     MatIconModule,
@@ -30,17 +28,24 @@ export class Login {
   private readonly snack = inject(MatSnackBar);
   protected readonly i18n = inject(I18nService);
 
-  password = '';
+  readonly email = signal('');
+  readonly password = signal('');
+  readonly registering = signal(false);
 
   async submit(): Promise<void> {
-    const ok = await this.auth.login(this.password);
+    const ok = this.registering()
+      ? await this.auth.register(this.email(), this.password())
+      : await this.auth.login(this.password(), this.email() || undefined);
     if (!ok) {
       this.snack.open(this.i18n.t('login.error'), 'OK', { duration: 3000 });
       return;
     }
-    const redirect = (
-      this.router.getCurrentNavigation()?.extras.state as { redirect?: string } | null
-    )?.redirect;
+    const redirect = (this.router.currentNavigation()?.extras.state as { redirect?: string } | null)
+      ?.redirect;
     await this.router.navigate([redirect ?? '/']);
+  }
+
+  toggleRegistration(): void {
+    this.registering.update((value) => !value);
   }
 }
