@@ -1,12 +1,4 @@
-import {
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  readdirSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from 'node:fs';
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import type { FullConfig } from '@playwright/test';
@@ -14,6 +6,7 @@ import v8toIstanbul from 'v8-to-istanbul';
 import libCoverage from 'istanbul-lib-coverage';
 import libReport from 'istanbul-lib-report';
 import reports from 'istanbul-reports';
+import { removeE2eDatabase } from './db';
 
 interface V8Range {
   startOffset: number;
@@ -48,6 +41,7 @@ function normalizePath(file: string): string | null {
  * The report lands in `coverage/e2e/` next to the Vitest unit coverage.
  */
 export default async function globalTeardown(_config: FullConfig): Promise<void> {
+  removeE2eDatabase();
   const rawDir = path.join(process.cwd(), 'coverage/e2e/raw');
   const outDir = path.join(process.cwd(), 'coverage/e2e');
   if (!existsSync(rawDir)) return;

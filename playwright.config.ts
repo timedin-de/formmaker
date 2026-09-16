@@ -1,4 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
+import { E2E_SQLITE_PATH } from './e2e/db';
 
 const PORT = 4200;
 const API_PORT = 3000;
@@ -30,6 +31,10 @@ export default defineConfig({
       url: `http://localhost:${API_PORT}/api/health`,
       timeout: 60_000,
       reuseExistingServer: !process.env.CI,
+      env: {
+        DATABASE_PROVIDER: 'sqlite',
+        SQLITE_PATH: E2E_SQLITE_PATH,
+      },
     },
     {
       command: `npm start -- --port ${PORT}`,
