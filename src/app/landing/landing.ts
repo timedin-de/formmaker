@@ -38,10 +38,7 @@ export class LandingComponent {
   private readonly importService = inject(FormImportService);
 
   constructor() {
-    void this.repo
-      .init()
-      .then(() => this.repo.seedDemo())
-      .then(() => this.refresh());
+    void this.repo.init().then(() => this.refresh());
   }
 
   async refresh(): Promise<void> {
@@ -82,7 +79,6 @@ export class LandingComponent {
   async onImport(event: Event): Promise<void> {
     const form = await this.importService.onImport(event);
     if (!form) return;
-    await this.repo.saveForm(form);
     await this.refresh();
     this.snack.open(this.i18n.t('landing.imported', { name: form.name }), 'OK', {
       duration: 3000,
