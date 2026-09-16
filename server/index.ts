@@ -1,101 +1,56 @@
-import express from 'express';
-import type { Request, Response, NextFunction } from 'express';
-import cors from 'cors';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { store } from './store.ts';
-import { bearerToken, isEditorToken, login } from './auth.ts';
-import type { FormDefinition } from '../src/app/shared/model/form.model';
-import type { Submission } from '../src/app/shared/model/submission.model';
+import cors from 'cors';
+import express from 'express';
+import type { NextFunction, Request, Response } from 'express';
+import { ensureInitialAdmin } from './auth.ts';
+import { createDatabase } from './database.ts';
+import { Repository } from './repository.ts';
+import { authRoutes } from './routes/auth.routes.ts';
+import { formsRoutes } from './routes/forms.routes.ts';
+import { usersRoutes } from './routes/users.routes.ts';
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PORT = Number(process.env.PORT ?? 3000);
 
-const app = express();
-app.use(cors());
-app.use(express.json({ limit: '50mb' })); // file uploads and signatures arrive as data URLs
-
-function requireEditor(req: Request, res: Response, next: NextFunction): void {
-  if (!isEditorToken(bearerToken(req.headers.authorization))) {
-    res.status(401).json({ error: 'editor access required' });
-    return;
-  }
-  next();
-}
-
-/** Coerce a single route/query parameter to a string (Express 5 params may be arrays). */
-function param(req: Request, name: string): string {
-  const value = Array.isArray(req.params[name]) ? req.params[name][0] : req.params[name];
-  return value ?? '';
-}
-
-app.get('/api/health', (_req, res) => {
-  res.json({ ok: true });
-});
-
-app.post('/api/auth/login', (req, res) => {
-  const password = (req.body as { password?: unknown } | undefined)?.password;
-  const token = typeof password === 'string' ? login(password) : null;
-  if (!token) return res.status(401).json({ error: 'invalid password' });
-  res.json({ token });
-});
-
-app.get('/api/forms', (_req, res) => {
-  res.json(store.getForms());
-});
-
-app.get('/api/forms/:id', (req, res) => {
-  const form = store.getForm(param(req, 'id'));
-  if (!form) return res.status(404).json({ error: 'not found' });
-  res.json(form);
-});
-
-app.post('/api/forms', requireEditor, (req, res) => {
-  const form = req.body as Partial<FormDefinition> | undefined;
-  if (!form || typeof form.id !== 'string' || typeof form.name !== 'string') {
-    return res.status(400).json({ error: 'form must have an id and a name' });
-  }
-  res.status(201).json(store.saveForm(form as FormDefinition));
-});
-
-app.delete('/api/forms/:id', requireEditor, (req, res) => {
-  store.deleteForm(param(req, 'id'));
-  res.status(204).end();
-});
-
-app.get('/api/forms/:id/submissions', requireEditor, (req, res) => {
-  res.json(store.getSubmissionsFor(param(req, 'id')));
-});
-
-app.post('/api/forms/:id/submissions', (req, res) => {
-  const sub = req.body as Partial<Submission> | undefined;
-  if (!sub || typeof sub.id !== 'string' || sub.formId !== param(req, 'id')) {
-    return res.status(400).json({ error: 'submission must match the form id' });
-  }
-  res.status(201).json(store.addSubmission(sub as Submission));
-});
-
-app.delete('/api/forms/:id/submissions', requireEditor, (req, res) => {
-  store.clearSubmissions(param(req, 'id'));
-  res.status(204).end();
-});
-
-app.delete('/api/forms/:id/submissions/:submissionId', requireEditor, (req, res) => {
-  store.deleteSubmission(param(req, 'id'), param(req, 'submissionId'));
-  res.status(204).end();
-});
-
-// Production: serve the built Angular app with an SPA fallback.
-const dist = path.join(root, 'dist/form-maker/browser');
-if (fs.existsSync(dist)) {
-  app.use(express.static(dist));
-  app.use((req: Request, res: Response, next: NextFunction) => {
-    if (req.method !== 'GET' || req.path.startsWith('/api')) return next();
-    res.sendFile(path.join(dist, 'index.html'));
+async function start(): Promise<void> {
+  const source = await createDatabase();
+  const repository = new Repository(source);
+  await ensureInitialAdmin(repository);
+  const app = express();
+  app.disable('x-powered-by');
+  app.use(cors({ origin: process.env.CORS_ORIGIN?.split(',') ?? true }));
+  app.use(express.json({ limit: '50mb' }));
+  app.use((_req, res, next) => {
+    res.setHeader('X-Request-Id', crypto.randomUUID());
+    next();
   });
-}
 
-app.listen(PORT, () => {
-  console.log(`FormMaker API listening on http://localhost:${PORT}`);
-});
+  app.get('/api/health', (_req, res) => res.json({ ok: true }));
+  app.use('/api/auth', authRoutes(repository));
+  app.use('/api/users', usersRoutes(repository));
+  app.use('/api/forms', formsRoutes(repository));
+
+  const dist = path.join(root, 'dist/form-maker/browser');
+  if (fs.existsSync(dist)) {
+    app.use(express.static(dist));
+    app.use((req: Request, res: Response, next: NextFunction) => {
+      if (req.method !== 'GET' || req.path.startsWith('/api')) return next();
+      res.sendFile(path.join(dist, 'index.html'));
+    });
+  }
+  app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
+    console.error('Unhandled Server Error', error);
+    if (res.headersSent) return;
+
+    const code =
+      typeof error === 'object' && error !== null && 'code' in error ? error.code : undefined;
+    res
+      .status(code === 'SQLITE_CONSTRAINT_PRIMARYKEY' ? 409 : 500)
+      .json({ error: 'internal server error' });
+  });
+  app.listen(PORT, () => console.log(`FormMaker API listening on http://localhost:${PORT}`));
+}
+void start();
