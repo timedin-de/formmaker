@@ -21,7 +21,6 @@ const icons = [
   'check',
   'check_box',
   'close',
-  'cloud_off',
   'content_copy',
   'delete_outline',
   'delete_sweep',

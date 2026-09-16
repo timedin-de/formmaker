@@ -16,12 +16,6 @@
         </a>
       </nav>
     }
-    @if (repo.offline()) {
-      <span class="offline-chip">
-        <mat-icon svgIcon="cloud_off" style="font-size: 13px; width: 13px; height: 13px"></mat-icon>
-        {{ i18n.t('app.offline') }}
-      </span>
-    }
     <div class="buttons">
       @if (auth.authenticated()) {
         <button class="top-button" mat-button [matMenuTriggerFor]="langMenu">
