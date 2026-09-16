@@ -49,7 +49,8 @@ export class AuthService {
     }
   }
 
-  logout(): void {
+  async logout(): Promise<void> {
+    await fetch('/api/auth/logout', { method: 'POST' });
     clearApiCache();
     clearToken();
     this.authenticated.set(false);
