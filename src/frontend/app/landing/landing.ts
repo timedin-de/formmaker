@@ -5,14 +5,13 @@ import type { FormDefinition } from '@shared/model/form.model';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatCardModule } from '@angular/material/card';
-import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatDividerModule } from '@angular/material/divider';
-import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { downloadJSON } from '../core/export/file';
 import { I18nService } from '../core/i18n';
 import { MarkdownPipe } from '../core/markdown';
 import { FormImportService } from '../core/export/import';
+import { MatTooltip } from '@angular/material/tooltip';
 
 @Component({
   imports: [
@@ -20,11 +19,10 @@ import { FormImportService } from '../core/export/import';
     MatButtonModule,
     MatIconModule,
     MatCardModule,
-    MatToolbarModule,
     MatDividerModule,
-    MatTooltipModule,
     MatSnackBarModule,
     MarkdownPipe,
+    MatTooltip,
   ],
   selector: 'fm-landing',
   templateUrl: './landing.html',
@@ -57,9 +55,12 @@ export class LandingComponent {
     return n;
   }
 
-  updated(form: FormDefinition): string {
-    if (!form.updatedAt) return this.i18n.t('landing.updated');
-    return new Date(form.updatedAt).toLocaleDateString();
+  updated(form: FormDefinition) {
+    if (!form.updatedAt)
+      return { date: this.i18n.t('landing.updated'), time: this.i18n.t('landing.updated') };
+    const date = new Date(form.updatedAt);
+
+    return { date: date.toLocaleDateString(), time: date.toLocaleTimeString() };
   }
 
   exportJson(form: FormDefinition): void {
