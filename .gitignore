@@ -41,7 +41,7 @@ __screenshots__/
 
 # Generated SVG icons (from @material-design-icons/svg via scripts/copy-icons.mjs)
 /public/assets/icons/
-/src/app/core/icon-names.ts
+/src/frontend/app/core/icon-names.ts
 
 # Backend runtime data (TypeORM SQLite database)
 /server/data/

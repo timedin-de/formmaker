@@ -26,7 +26,7 @@ Alwyays run the full gate before finishing: `npm run check`
 - Node v24.15.0 is required by the Angular 22 CLI — via wrappers in `/home/user/.opencode/bin`.
 - Icons are bundled SVGs. Any new `mat-icon svgIcon="..."` MUST be registered in
   `scripts/copy-icons.mjs` and regenerated with `npm run icons:copy` (auto-runs on `prestart`/`prebuild`).
-  The manifest lives in `src/app/core/icon-names.ts`.
+  The manifest lives in `src/frontend/app/core/icon-names.ts`.
 - Playwright: browser binaries via `npm run e2e:install`; the config spins up the API + UI dev
   servers itself and reuses them locally. The `e2e` CI jobs run
   `npx playwright install --with-deps chromium firefox webkit` then `npm run e2e`.
@@ -53,7 +53,8 @@ src/app/
   results/          submissions viewer + CSV/Excel/PDF export
   shared/model/     element definitions, conditions.model, validation.model, values.model,
                     submission.model, form.model, ids
-server/             Express API: forms + submissions endpoints, auth.ts (password login, tokens)
+  server/           Express API + shared model live under src/: src/server (Express:
+                    forms + submissions endpoints, auth.ts) and src/shared (shared types)
 scripts/            copy-icons.mjs (icon bundling)
 ```
 
@@ -75,7 +76,7 @@ scripts/            copy-icons.mjs (icon bundling)
 - **Auth model**: editor routes (`/`, `/builder`, `/results/:id`) are guarded by `authGuard`.
   `POST /api/auth/login` with the server password returns a bearer token (in-memory, 24h TTL).
   Runner (`/runner/:id`) and login are public. Offline fallback password matches the server default.
-  Default password: `formmaker` (in `server/auth.ts` and `core/auth/auth.service.ts`).
+  Default password: `formmaker` (in `src/server/auth.ts` and `core/auth/auth.service.ts`).
 - **Conditions** (`conditions.model`): `ConditionGroup` = `{ logic: all|any, conditions[], groups[] }`.
   Operators need either `operand` (literal or field ref), `list`, `range`, or `none`.
 

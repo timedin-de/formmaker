@@ -1,0 +1,51 @@
+@use '@angular/material' as mat;
+
+html {
+  height: 100%;
+  @include mat.theme(
+    (
+      color: (
+        primary: mat.$violet-palette,
+        tertiary: mat.$chartreuse-palette,
+      ),
+      typography: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+      density: 0,
+      shape: (
+        small: 8px,
+        medium: 14px,
+        large: 20px,
+        extra-large: 28px,
+      ),
+    )
+  );
+}
+
+body {
+  color-scheme: light;
+  background: linear-gradient(
+    135deg,
+    var(--mat-sys-surface-container-lowest) 0%,
+    var(--mat-sys-surface-container-low) 50%,
+    var(--mat-sys-surface) 100%
+  );
+  color: var(--mat-sys-on-surface);
+  font:
+    400 14px/1.5 system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    'Helvetica Neue',
+    Arial,
+    sans-serif;
+  margin: 0;
+  height: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+.mdc-button {
+  line-height: normal !important;
+}
+.mat-mdc-form-field {
+  width: 100%;
+}

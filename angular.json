@@ -16,13 +16,13 @@
         }
       },
       "root": "",
-      "sourceRoot": "src",
+      "sourceRoot": "src/frontend",
       "prefix": "app",
       "architect": {
         "build": {
           "builder": "@angular/build:application",
           "options": {
-            "browser": "src/main.ts",
+            "browser": "src/frontend/main.ts",
             "tsConfig": "tsconfig.app.json",
             "inlineStyleLanguage": "scss",
             "assets": [
@@ -31,7 +31,7 @@
                 "input": "public"
               }
             ],
-            "styles": ["src/styles.scss"]
+            "styles": ["src/frontend/styles.scss"]
           },
           "configurations": {
             "production": {
@@ -77,7 +77,7 @@
           "options": {
             "coverage": false,
             "coverageReporters": ["text", "lcov", "html"],
-            "coverageExclude": ["**/*.spec.ts", "**/main.ts", "src/app/core/icon-names.ts"],
+            "coverageExclude": ["**/*.spec.ts", "**/main.ts", "src/frontend/app/core/icon-names.ts"],
             "coverageThresholds": {
               "statements": 55,
               "branches": 45,
