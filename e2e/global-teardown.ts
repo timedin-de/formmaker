@@ -27,7 +27,7 @@ interface V8Entry {
 
 function normalizePath(file: string): string | null {
   if (file.includes('node_modules')) return null;
-  for (const marker of ['/src/app/', '/src/server/']) {
+  for (const marker of ['/src/frontend/', '/src/shared/', '/src/server/']) {
     const index = file.lastIndexOf(marker);
     if (index !== -1) return file.slice(index + 1);
   }
