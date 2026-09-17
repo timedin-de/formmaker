@@ -40,7 +40,8 @@
           <mat-card-title [innerHTML]="form.name | markdown"></mat-card-title>
           <mat-card-subtitle>
             v{{ form.version }} · {{ form.pages.length }} {{ i18n.t('landing.pages') }} ·
-            {{ countQuestions(form) }} {{ i18n.t('landing.questions') }} · {{ updated(form) }}
+            {{ countQuestions(form) }} {{ i18n.t('landing.questions') }} ·
+            <span [matTooltip]="updated(form).time">{{ updated(form).date }}</span>
           </mat-card-subtitle>
         </mat-card-header>
         <mat-card-content>
