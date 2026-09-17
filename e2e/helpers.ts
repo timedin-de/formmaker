@@ -1,6 +1,6 @@
 import { expect, type APIRequestContext, type Page } from '@playwright/test';
 
-/** Editor password; matches `DEFAULT_PASSWORD` in server/auth.ts. */
+/** Editor password; matches `DEFAULT_PASSWORD` in src/server/auth.ts. */
 export const PASSWORD = 'formmaker';
 
 export function uniqueName(prefix: string): string {

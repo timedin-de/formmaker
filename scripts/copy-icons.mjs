@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const srcDir = join(root, 'node_modules/@material-design-icons/svg/filled');
 const outDir = join(root, 'public/assets/icons');
-const manifestFile = join(root, 'src/app/core/icon-names.ts');
+const manifestFile = join(root, 'src/frontend/app/core/icon-names.ts');
 
 const icons = [
   'account_tree',

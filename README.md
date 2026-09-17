@@ -34,7 +34,7 @@ Built with Angular 22 + Angular Material 22 on the frontend and a TypeScript Exp
 
 ## Backend & auth
 
-The Express API (`server/`) exposes:
+The Express API (`src/server/`) exposes:
 
 - `POST /api/auth/login`, `POST /api/auth/register` — email/password login and self-registration. New registrations receive the `editor` role; sessions are durable, expire after 24 hours, and bearer tokens are stored as hashes. Omitting `email` keeps the existing single-password login compatible by selecting the initial admin account.
 - `GET/POST /api/users`, `PATCH /api/users/:id/password` — administrator-only user provisioning and password management. Forms are isolated by owner; admins retain access to all forms.
@@ -44,7 +44,7 @@ The Express API (`server/`) exposes:
 
 The first start creates `admin@formmaker.local` with password `formmaker`. Set `FORMMAKER_ADMIN_EMAIL` and `FORMMAKER_PASSWORD` before the first start to choose secure bootstrap credentials.
 
-SQLite is used by default at `server/data/formmaker.sqlite`. To use MySQL instead, set `DATABASE_PROVIDER=mysql` and `DATABASE_URL=mysql://user:password@host:3306/formmaker`. For controlled production schema rollouts, set `TYPEORM_SYNCHRONIZE=false` after applying the corresponding TypeORM migration.
+SQLite is used by default at `src/server/data/formmaker.sqlite`. To use MySQL instead, set `DATABASE_PROVIDER=mysql` and `DATABASE_URL=mysql://user:password@host:3306/formmaker`. For controlled production schema rollouts, set `TYPEORM_SYNCHRONIZE=false` after applying the corresponding TypeORM migration.
 
 ## Tech stack
 
@@ -96,8 +96,8 @@ src/app/
   runner/         # respondent view (incl. signature pad, PDF receipt, draft autosave)
   results/        # submissions & CSV/Excel/PDF/mail export
   login/          # password login screen
-  shared/model/   # element definitions, conditions, validation, values, submission
-server/           # Express API: TypeORM datasource, entities, auth, user/form/submission endpoints
+shared/model/     # element definitions, conditions, validation, values, submission
+server/           # Express API: TypeORM datasource, entities, auth, user/form/submission endpoints (lives under src/)
 e2e/              # Playwright specs + coverage collection
 deploy/           # optional nginx reverse-proxy config
 ```

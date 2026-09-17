@@ -1,8 +1,8 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { DataSource } from 'typeorm';
-import { FormEntity, SubmissionEntity } from './entities/form.ts';
-import { UserEntity, SessionEntity } from './entities/user.ts';
+import { FormEntity, SubmissionEntity } from './entities/form.js';
+import { UserEntity, SessionEntity } from './entities/user.js';
 
 /** TypeORM datasource; select MySQL with DATABASE_PROVIDER=mysql. */
 export async function createDatabase(): Promise<DataSource> {
@@ -12,7 +12,7 @@ export async function createDatabase(): Promise<DataSource> {
   let source: DataSource;
 
   if (provider === 'sqlite') {
-    const filename = process.env.SQLITE_PATH ?? path.resolve('server/data/formmaker.sqlite');
+    const filename = process.env.SQLITE_PATH ?? path.resolve('src/server/data/formmaker.sqlite');
     mkdirSync(path.dirname(filename), { recursive: true });
     source = new DataSource({
       type: 'better-sqlite3',

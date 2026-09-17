@@ -44,7 +44,7 @@ __screenshots__/
 /src/frontend/app/core/icon-names.ts
 
 # Backend runtime data (TypeORM SQLite database)
-/server/data/
+/src/server/data/
 
 # Playwright
 /test-results/

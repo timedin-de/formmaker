@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { fieldValueSchema } from '../src/app/shared/model/model-validator.ts';
+import { fieldValueSchema } from '../shared/model/model-validator.js';
 
 const roles = ['admin', 'editor'] as const;
 

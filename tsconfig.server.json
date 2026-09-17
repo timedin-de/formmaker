@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "rootDir": ".",
+    "outDir": "./dist/server",
+    "noImplicitReturns": false,
+    "noPropertyAccessFromIndexSignature": false
+  },
+  "include": ["src/server/**/*.ts", "src/shared/model/**/*.ts"]
+}

@@ -1,18 +1,16 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import cors from 'cors';
 import express from 'express';
 import type { NextFunction, Request, Response } from 'express';
-import { ensureInitialAdmin } from './auth.ts';
-import { createDatabase } from './database.ts';
-import { Repository } from './repository.ts';
-import { authRoutes } from './routes/auth.routes.ts';
-import { formsRoutes } from './routes/forms.routes.ts';
-import { usersRoutes } from './routes/users.routes.ts';
+import { ensureInitialAdmin } from './auth.js';
+import { createDatabase } from './database.js';
+import { Repository } from './repository.js';
+import { authRoutes } from './routes/auth.routes.js';
+import { formsRoutes } from './routes/forms.routes.js';
+import { usersRoutes } from './routes/users.routes.js';
 
-const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PORT = Number(process.env.PORT ?? 3000);
 
 async function start(): Promise<void> {
@@ -33,7 +31,7 @@ async function start(): Promise<void> {
   app.use('/api/users', usersRoutes(repository));
   app.use('/api/forms', formsRoutes(repository));
 
-  const dist = path.join(root, 'dist/form-maker/browser');
+  const dist = path.resolve('dist/form-maker/browser');
   if (fs.existsSync(dist)) {
     app.use(express.static(dist));
     app.use((req: Request, res: Response, next: NextFunction) => {
