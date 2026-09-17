@@ -5,7 +5,7 @@ import path from 'node:path';
 /**
  * Throwaway SQLite database for the e2e run. A unique file per run guarantees a
  * clean slate (empty schema + freshly seeded admin) regardless of the state of
- * the developer's `server/data/formmaker.sqlite`; the global teardown removes
+ * the developer's `src/server/data/formmaker.sqlite`; the global teardown removes
  * it again. Only used when Playwright starts the API itself — a reused local
  * dev server keeps its own database.
  */
