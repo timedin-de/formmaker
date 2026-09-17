@@ -1,8 +1,4 @@
-import type {
-  ConditionGroup,
-  Condition,
-  ConditionOperand,
-} from '@shared/model/conditions.model';
+import type { ConditionGroup, Condition, ConditionOperand } from '@shared/model/conditions.model';
 import type { FieldValue } from '@shared/model/values.model';
 import { isEmptyValue, truthy } from './expression/evaluator';
 

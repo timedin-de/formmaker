@@ -1,8 +1,4 @@
-import type {
-  FormDefinition,
-  ElementDefinition,
-  PageDefinition,
-} from '@shared/model/form.model';
+import type { FormDefinition, ElementDefinition, PageDefinition } from '@shared/model/form.model';
 import type { FieldValue, ValuesMap } from '@shared/model/values.model';
 import { evalConditionGroup } from '../engine/condition-engine';
 import { interpolateTemplate } from '../engine/expression/template';
