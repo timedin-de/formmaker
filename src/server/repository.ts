@@ -1,10 +1,10 @@
-import type { FormDefinition } from '../src/app/shared/model/form.model.ts';
-import type { Submission } from '../src/app/shared/model/submission.model.ts';
+import type { FormDefinition } from '../shared/model/form.model.js';
+import type { Submission } from '../shared/model/submission.model.js';
 import type { DataSource } from 'typeorm';
-import { FormEntity, type FormEntityModel, SubmissionEntity } from './entities/form.ts';
-import { SessionEntity, UserEntity, type UserEntityModel } from './entities/user.ts';
-import { formDefinitionSchema } from '../src/app/shared/model/model-validator.ts';
-import { submissionSchema } from './schemas.ts';
+import { FormEntity, type FormEntityModel, SubmissionEntity } from './entities/form.js';
+import { SessionEntity, UserEntity, type UserEntityModel } from './entities/user.js';
+import { formDefinitionSchema } from '../shared/model/model-validator.js';
+import { submissionSchema } from './schemas.js';
 
 export type UserRole = 'admin' | 'editor';
 export interface User {

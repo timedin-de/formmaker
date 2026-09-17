@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 import type { Request, RequestHandler } from 'express';
-import type { Repository, User, UserRole } from './repository.ts';
+import type { Repository, User, UserRole } from './repository.js';
 
 export const DEFAULT_PASSWORD = 'formmaker';
 const SESSION_TTL_MS = 24 * 60 * 60 * 1000;

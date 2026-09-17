@@ -1,5 +1,5 @@
 import { EntitySchema } from 'typeorm';
-import { UserRole } from '../repository';
+import { UserRole } from '../repository.js';
 
 export interface UserEntityModel {
   id: string;

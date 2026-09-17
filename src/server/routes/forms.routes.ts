@@ -1,10 +1,10 @@
 import { Router } from 'express';
-import { authenticate } from '../auth.ts';
-import type { Repository } from '../repository.ts';
-import { submissionSchema } from '../schemas.ts';
-import { canManageForm, param, validate } from './helpers.ts';
-import { formDefinitionSchema } from '../../src/app/shared/model/model-validator.ts';
-import { uuid } from '../../src/app/shared/model/ids.ts';
+import { authenticate } from '../auth.js';
+import type { Repository } from '../repository.js';
+import { submissionSchema } from '../schemas.js';
+import { canManageForm, param, validate } from './helpers.js';
+import { formDefinitionSchema } from '../../shared/model/model-validator.js';
+import { uuid } from '../../shared/model/ids.js';
 
 export function formsRoutes(repository: Repository): Router {
   const router = Router();

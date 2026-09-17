@@ -6,4 +6,4 @@ test-results/
 .forgejo/
 .github/
 .vscode/
-server/data/
+src/server/data/
