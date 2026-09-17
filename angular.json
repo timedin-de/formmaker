@@ -77,7 +77,11 @@
           "options": {
             "coverage": false,
             "coverageReporters": ["text", "lcov", "html"],
-            "coverageExclude": ["**/*.spec.ts", "**/main.ts", "src/frontend/app/core/icon-names.ts"],
+            "coverageExclude": [
+              "**/*.spec.ts",
+              "**/main.ts",
+              "src/frontend/app/core/icon-names.ts"
+            ],
             "coverageThresholds": {
               "statements": 55,
               "branches": 45,

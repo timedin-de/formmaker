@@ -20,8 +20,6 @@ import { uuid } from '@shared/model/ids';
 import { filter, debounceTime } from 'rxjs';
 import { RunnerDraft } from './runner-draft';
 
-
-
 export class RunnerStore {
   readonly form = signal<FormDefinition | null>(null);
   readonly answers = new FormGroup({});
