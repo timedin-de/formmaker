@@ -24,7 +24,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Generate bundled icon manifest (src/app/core/icon-names.ts is gitignored)
+      - name: Generate bundled icon manifest (src/frontend/app/core/icon-names.ts is gitignored)
         run: npm run icons:copy
 
       - name: Lint
@@ -67,7 +67,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Generate bundled icon manifest (src/app/core/icon-names.ts is gitignored)
+      - name: Generate bundled icon manifest (src/frontend/app/core/icon-names.ts is gitignored)
         run: npm run icons:copy
 
       - name: Install Playwright browsers
