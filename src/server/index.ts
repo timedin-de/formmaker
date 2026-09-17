@@ -49,6 +49,19 @@ async function start(): Promise<void> {
       .status(code === 'SQLITE_CONSTRAINT_PRIMARYKEY' ? 409 : 500)
       .json({ error: 'internal server error' });
   });
-  app.listen(PORT, () => console.log(`FormMaker API listening on http://localhost:${PORT}`));
+  const server = app.listen(PORT, () =>
+    console.log(`FormMaker API listening on http://localhost:${PORT}`),
+  );
+
+  const shutdown = (signal: NodeJS.Signals): void => {
+    console.log(`${signal} received, shutting down`);
+    server.close();
+    source
+      .destroy()
+      .catch(() => undefined)
+      .finally(() => process.exit(0));
+  };
+  process.on('SIGINT', shutdown);
+  process.on('SIGTERM', shutdown);
 }
 void start();
