@@ -1,8 +1,8 @@
 # FormMaker — single-container deployment.
 #
-# Builds the Angular SPA and compiles the Express backend (src/server/*.ts →
-# plain JS via tsc), then runs one Node process that serves both the built app
-# with an SPA fallback and the JSON API.
+# Builds the Angular SPA and bundles the Express backend (src/server/*.ts →
+# a single dist/server/index.js via ncc), then runs one Node process that serves
+# both the built app with an SPA fallback and the JSON API.
 
 # syntax=docker/dockerfile:1
 
@@ -21,7 +21,7 @@ COPY public ./public
 COPY src ./src
 
 # "prebuild" automatically runs icons:copy (regenerates SVG icon bundle).
-# build:server compiles the Express API + shared model to dist/server (plain JS, ESM).
+# build:server bundles the Express API into dist/server/index.js (single file).
 RUN npm run build && npm run build:server
 
 # ---------- Runtime stage ----------
@@ -36,7 +36,7 @@ ENV SQLITE_PATH=server/data/formmaker.sqlite
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 
-# Built SPA + compiled server (server/ and shared/ live next to each other).
+# Built SPA + bundled server.
 COPY --from=build /app/dist ./dist
 
 # Forms + submissions are persisted here (see src/server/database.ts).
@@ -48,4 +48,4 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD node -e "fetch('http://127.0.0.1:' + (process.env.PORT || 3000) + '/api/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
 
-CMD ["node", "dist/server/src/server/index.js"]
+CMD ["node", "dist/server/index.js"]

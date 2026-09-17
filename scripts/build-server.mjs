@@ -1,32 +1,51 @@
-// Compiles the Express server (src/server/*.ts) and the shared model it imports
-// (src/shared/*) to plain JavaScript with tsc, then marks the emitted directory
-// as an ES module so Node runs it without tsx.
-//
-// tsc emits the server next to the shared model (rootDir = src/), so the
-// compiled JS keeps working relative imports like `../shared/...` at runtime.
+// Bundles the Express server (src/server/index.ts) and everything it imports,
+// including src/shared/*, into a single self-contained dist/server/index.js
+// with ncc. Bundling lets Node run the server without tsx and sidesteps ESM
+// extension resolution entirely (webpack resolves relative imports itself).
 
-import { spawnSync } from 'node:child_process';
-import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+const require = createRequire(import.meta.url);
+const ncc = require('@vercel/ncc');
+
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const outDir = join(root, 'dist', 'server', 'src');
-const esmMarker = JSON.stringify({ type: 'module' }, null, 2) + '\n';
+const outDir = join(root, 'dist', 'server');
 
 // Clearing the output first keeps stale emits (old dir layouts) out of dist/.
 rmSync(outDir, { recursive: true, force: true });
+mkdirSync(outDir, { recursive: true });
 
-const tsc = spawnSync(
-  process.platform === 'win32' ? 'npx.cmd' : 'npx',
-  ['tsc', '-p', join('tsconfig.server.json')],
-  { cwd: root, stdio: 'inherit' },
-);
+// Runtime dependencies stay in node_modules: native addons (better-sqlite3) and
+// packages with dynamic requires (typeorm's platform driver loader) don't
+// survive bundling. Everything else from src/ is bundled into the single file.
+const { dependencies } = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
 
-if (tsc.status !== 0) process.exit(tsc.status ?? 1);
+const { code, map, assets } = await ncc(join(root, 'src', 'server', 'index.ts'), {
+  externals: Object.keys(dependencies),
+  // Only relocate assets that live under src/; the Angular SPA in dist/ is
+  // served separately and must not be duplicated into the server bundle.
+  filterAssetBase: join(root, 'src'),
+  // The server tree is lenient about some tsc diagnostics; type checking stays in
+  // `npm run typecheck:server`, so the bundler only transpiles.
+  transpileOnly: true,
+  cache: true,
+  minify: true,
+  sourceMap: false,
+  target: 'es2022',
+  quiet: true,
+});
 
-// Mark both emitted subtrees as ES modules so Node resolves their .js files as ESM.
-for (const dir of [join(outDir, 'server'), join(outDir, 'shared')]) {
-  mkdirSync(dir, { recursive: true });
-  writeFileSync(join(dir, 'package.json'), esmMarker);
+writeFileSync(join(outDir, 'index.js'), code);
+if (map) writeFileSync(join(outDir, 'index.js.map'), map);
+for (const [name, asset] of Object.entries(assets)) {
+  // ncc relocates the default SQLite path as an asset when the local dev DB
+  // exists; never ship local runtime data in the bundle.
+  if (name.endsWith('.sqlite') || name.endsWith('.sqlite3')) continue;
+  const target = join(outDir, name);
+  mkdirSync(dirname(target), { recursive: true });
+  writeFileSync(target, asset.source);
 }
+console.log(`Server bundle written to ${join(outDir, 'index.js')}`);
