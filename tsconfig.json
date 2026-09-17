@@ -5,6 +5,7 @@
   "compilerOptions": {
     "noImplicitOverride": true,
     "noPropertyAccessFromIndexSignature": true,
+    "rootDir": "./src",
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
     "skipLibCheck": true,

@@ -22,7 +22,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "tsc -p tsconfig.app.json --noEmit && tsc -p tsconfig.spec.json --noEmit",
-    "typecheck:server": "tsc -p src/server/tsconfig.json --noEmit",
+    "typecheck:server": "tsc -p tsconfig.server.json --noEmit",
     "check": "npm run lint && npm run format:check && npm run typecheck && npm run typecheck:server && npm run test:ci && npm run build"
   },
   "private": true,
@@ -63,6 +63,7 @@
     "@types/istanbul-lib-report": "^3.0.3",
     "@types/istanbul-reports": "^3.0.4",
     "@types/node": "^22.20.2",
+    "@vercel/ncc": "^0.45.0",
     "@vitest/coverage-v8": "^4.1.11",
     "angular-eslint": "22.5.0",
     "concurrently": "^10.0.5",
