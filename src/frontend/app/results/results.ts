@@ -1,5 +1,4 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatDividerModule } from '@angular/material/divider';
@@ -7,17 +6,18 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { FormsRepository } from '../core/state/forms.repository';
+import { ActivatedRoute, Router } from '@angular/router';
 import type { FormDefinition } from '@shared/model/form.model';
 import type { Submission } from '@shared/model/submission.model';
 import {
   buildColumns,
-  rowForSubmission,
+  downloadBlob,
   EXPORT_CHANNELS,
+  rowForSubmission,
   type ExportChannel,
 } from '../core/export';
-import { downloadBlob } from '../core/export';
-import { I18nService } from '../core/i18n';
+import { I18nService, TranslationKey } from '../core/i18n';
+import { FormsRepository } from '../core/state/forms.repository';
 
 @Component({
   imports: [
@@ -120,7 +120,8 @@ export class Results {
     const subs = this.submissions();
     if (!form || subs.length === 0) return;
     const ctx = {
-      t: (key: string, params?: Record<string, string | number>) => this.i18n.t(key, params),
+      t: (key: TranslationKey, params?: Record<string, string | number>) =>
+        this.i18n.t(key, params),
     };
     try {
       const artifact = await ch.build(form, subs, ctx);

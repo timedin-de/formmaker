@@ -39,7 +39,7 @@
       <div class="body">
         <div class="name">{{ el.label }}</div>
         <div class="sub">
-          <span class="type-badge">{{ i18n.t('field.' + el.type) }}</span>
+          <span class="type-badge">{{ i18n.t(`field.${el.type}`) }}</span>
           @if (has(el, 'required') && el.required) {
             <span class="required-badge">{{ i18n.t('row.required') }}</span>
           }

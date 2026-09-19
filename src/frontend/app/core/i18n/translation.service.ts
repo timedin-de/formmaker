@@ -12,7 +12,7 @@ export class I18nService {
   readonly lang = signal<Lang>(readInitial());
 
   /** Reactive translate: reads `this.lang()` so template calls re-render on switch. */
-  t(key: string, params?: Record<string, string | number>): string {
+  t(key: TranslationKey, params?: Record<string, string | number>): string {
     const text = TRANSLATIONS[this.lang()][key] ?? TRANSLATIONS.en[key] ?? key;
     if (!params) return text;
     return text.replace(/\{(\w+)\}/g, (match, name) => {

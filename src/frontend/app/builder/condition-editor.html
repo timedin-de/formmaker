@@ -19,7 +19,7 @@
       <mat-form-field appearance="outline" subscriptSizing="dynamic">
         <mat-select [ngModel]="cond.operator" (ngModelChange)="set($index, { operator: $event })">
           @for (op of OPERATORS; track op) {
-            <mat-option [value]="op">{{ i18n.t('op.' + op) }}</mat-option>
+            <mat-option [value]="op">{{ i18n.t(`op.${op}`) }}</mat-option>
           }
         </mat-select>
       </mat-form-field>
