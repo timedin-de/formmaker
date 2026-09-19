@@ -1,0 +1,18 @@
+<mat-form-field appearance="outline">
+  <mat-label>{{ label() }}</mat-label>
+  <input
+    matInput
+    [formControl]="control"
+    [type]="type()"
+    [placeholder]="placeholder()"
+    [autocomplete]="autocomplete()"
+    [value]="value()"
+    [required]="true"
+    (blur)="touchedCallback?.()"
+    (input)="onInput($event)"
+    (keydown.enter)="onEnter()"
+  />
+  <mat-error>
+    {{ i18n.error(control.errors) }}
+  </mat-error>
+</mat-form-field>
