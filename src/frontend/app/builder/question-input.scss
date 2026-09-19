@@ -1,0 +1,32 @@
+.scale {
+  display: flex;
+  .scale-container {
+    width: calc(100% / 5);
+    margin: 0 10px;
+    .scale-val {
+      border: solid;
+      position: relative;
+      border-radius: var(--mat-sys-corner-full);
+
+      padding-bottom: 100% !important;
+      width: 100%;
+      padding-bottom: 50%;
+      padding: 0;
+      overflow: hidden;
+      box-sizing: border-box;
+
+      /*! border: 0; */
+
+      span {
+        justify-self: center;
+        font-size: clamp(1px, 15cqw, 110px);
+        transform: translate(-50%, 0);
+        font-weight: 900;
+        position: absolute !important;
+      }
+    }
+  }
+}
+.scale-labels span:nth-child(2) {
+  float: right;
+}
