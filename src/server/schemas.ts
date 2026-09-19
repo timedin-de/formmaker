@@ -4,7 +4,7 @@ import { fieldValueSchema } from '../shared/model/model-validator.js';
 const roles = ['admin', 'editor'] as const;
 
 export const loginSchema = z.object({
-  email: z.email().optional(),
+  email: z.email(),
   password: z.string().min(1),
 });
 export const userCreateSchema = z.object({
@@ -14,6 +14,15 @@ export const userCreateSchema = z.object({
 });
 export const registrationSchema = userCreateSchema.pick({ email: true, password: true });
 export const passwordUpdateSchema = z.object({ password: z.string().min(8).max(256) });
+export const emailUpdateSchema = z.object({
+  email: z.email().max(320),
+  currentPassword: z.string().min(1),
+});
+export const passwordChangeSchema = z.object({
+  currentPassword: z.string().min(1),
+  newPassword: z.string().min(8).max(256),
+});
+export const accountDeleteSchema = z.object({ currentPassword: z.string().min(1) });
 export const submissionSchema = z.object({
   id: z.string().min(1).max(128),
   formId: z.string().min(1).max(128),

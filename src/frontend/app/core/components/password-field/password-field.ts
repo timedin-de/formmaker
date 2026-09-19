@@ -41,10 +41,6 @@ export class PasswordField implements ControlValueAccessor {
 
   protected readonly hidden = signal(true);
 
-  constructor() {
-    console.log(this.control?.validator);
-  }
-
   onInput(event: Event): void {
     this.value.set((event.target as HTMLInputElement).value);
   }

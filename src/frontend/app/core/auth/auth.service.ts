@@ -1,22 +1,26 @@
-import { Injectable, signal } from '@angular/core';
-import { clearApiCache } from '../state/api-cache';
+import { Injectable, inject, signal } from '@angular/core';
 import { catchFn } from '@shared/helper';
+import type { PublicUser } from '@shared/model/user.model';
+import { clearApiCache } from '../state/api-cache';
+import { UsersRepository } from '../state/users.repository';
 
 const TOKEN_KEY = 'formmaker.token';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   readonly authenticated = signal<boolean>(!!readToken());
+  readonly user = signal<PublicUser | null>(null);
+  private readonly users = inject(UsersRepository);
 
   token(): string | null {
     return readToken();
   }
 
   /** Validate editor credentials against the server. */
-  async login(password: string, email?: string): Promise<boolean> {
+  async login(email: string, password: string): Promise<boolean> {
     let token: string | null;
     try {
-      token = await requestLogin(password, email);
+      token = await requestLogin(email, password);
     } catch {
       return false;
     }
@@ -24,6 +28,7 @@ export class AuthService {
       clearApiCache();
       writeToken(token);
       this.authenticated.set(true);
+      await this.loadUser();
       return true;
     }
     return false;
@@ -43,21 +48,35 @@ export class AuthService {
       clearApiCache();
       writeToken(body.token);
       this.authenticated.set(true);
+      await this.loadUser();
       return true;
     } catch {
       return false;
     }
   }
 
+  /** Refresh the current user profile from the server. */
+  async loadUser(): Promise<void> {
+    try {
+      this.user.set(await this.users.me());
+    } catch {
+      this.user.set(null);
+    }
+  }
+
   async logout(): Promise<void> {
-    await fetch('/api/auth/logout', { method: 'POST' });
-    clearApiCache();
-    clearToken();
-    this.authenticated.set(false);
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } finally {
+      clearApiCache();
+      clearToken();
+      this.authenticated.set(false);
+      this.user.set(null);
+    }
   }
 }
 
-async function requestLogin(password: string, email?: string): Promise<string | null> {
+async function requestLogin(email: string, password: string): Promise<string | null> {
   const res = await fetch('/api/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

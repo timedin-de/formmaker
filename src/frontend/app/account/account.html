@@ -1,0 +1,133 @@
+<div class="content">
+  <h1>{{ i18n.t('account.title') }}</h1>
+
+  @if (user(); as u) {
+    <div class="grid">
+      <mat-card class="card section">
+        <form [formGroup]="emailForm" #emailDir="ngForm" (ngSubmit)="saveEmail(emailDir)">
+          <mat-card-header>
+            <mat-card-title>
+              <mat-icon svgIcon="account_circle" class="title-icon"></mat-icon>
+              {{ i18n.t('account.profile') }}
+            </mat-card-title>
+            <mat-card-subtitle>
+              {{ i18n.t('account.role') }}: {{ roleLabel(u.role) }} ·
+              {{ i18n.t('account.memberSince', { date: memberSince(u.createdAt) }) }}
+            </mat-card-subtitle>
+          </mat-card-header>
+          <mat-card-content>
+            <fm-text
+              [label]="i18n.t('account.email')"
+              type="email"
+              autocomplete="email"
+              formControlName="email"
+            ></fm-text>
+
+            <fm-password
+              [label]="i18n.t('account.currentPassword')"
+              autocomplete="current-password"
+              formControlName="password"
+              (enter)="saveEmail(emailDir)"
+              required
+            />
+            <p class="hint">{{ i18n.t('account.emailHint') }}</p>
+          </mat-card-content>
+          <mat-card-actions align="end">
+            <button mat-flat-button color="primary" [disabled]="emailForm.invalid" type="submit">
+              <mat-icon svgIcon="save"></mat-icon>
+              {{ i18n.t('account.saveChanges') }}
+            </button>
+          </mat-card-actions>
+        </form>
+      </mat-card>
+      <mat-card class="card section">
+        <form [formGroup]="passwordForm" #formDir="ngForm" (ngSubmit)="savePassword(formDir)">
+          <mat-card-header>
+            <mat-card-title>
+              <mat-icon svgIcon="lock" class="title-icon"></mat-icon>
+              {{ i18n.t('account.password') }}
+            </mat-card-title>
+            <mat-card-subtitle>{{ i18n.t('account.passwordHint') }}</mat-card-subtitle>
+          </mat-card-header>
+          <mat-card-content>
+            <fm-password
+              formControlName="currentPassword"
+              required
+              [label]="i18n.t('account.currentPassword')"
+              autocomplete="current-password"
+            />
+            <fm-password
+              formControlName="newPassword"
+              required
+              [label]="i18n.t('account.newPassword')"
+              autocomplete="new-password"
+            />
+
+            <fm-password
+              formControlName="confirmPassword"
+              [label]="i18n.t('account.confirmPassword')"
+              autocomplete="new-password"
+            />
+            <mat-error>
+              @if (passwordForm.dirty && passwordForm.invalid) {
+                {{ i18n.error(passwordForm.errors) }}
+              }
+            </mat-error>
+          </mat-card-content>
+          <mat-card-actions align="end">
+            <button mat-flat-button color="primary" type="submit" [disabled]="passwordForm.invalid">
+              <mat-icon svgIcon="save"></mat-icon>
+              {{ i18n.t('account.saveChanges') }}
+            </button>
+          </mat-card-actions>
+        </form>
+      </mat-card>
+
+      <mat-card class="card section danger">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon svgIcon="delete_outline" class="title-icon"></mat-icon>
+            {{ i18n.t('account.dangerZone') }}
+          </mat-card-title>
+          <mat-card-subtitle>{{ i18n.t('account.deleteHint') }}</mat-card-subtitle>
+        </mat-card-header>
+        @if (confirmDelete()) {
+          <mat-card-content>
+            <fm-password
+              [formControl]="deletePassword"
+              [label]="i18n.t('account.currentPassword')"
+              autocomplete="current-password"
+            />
+            <p class="hint">{{ i18n.t('account.deleteConfirmHint') }}</p>
+          </mat-card-content>
+          <mat-card-actions align="end">
+            <button mat-button (click)="confirmDelete.set(false)" type="reset">
+              {{ i18n.t('account.cancel') }}
+            </button>
+            <button
+              mat-flat-button
+              color="warn"
+              [disabled]="deletePassword.invalid"
+              (click)="deleteAccount()"
+            >
+              <mat-icon svgIcon="delete_outline"></mat-icon>
+              {{ i18n.t('account.deleteForever') }}
+            </button>
+          </mat-card-actions>
+        } @else {
+          <mat-card-actions align="end">
+            <button mat-flat-button color="warn" (click)="confirmDelete.set(true)">
+              <mat-icon svgIcon="delete_outline"></mat-icon>
+              {{ i18n.t('account.deleteAccount') }}
+            </button>
+          </mat-card-actions>
+        }
+      </mat-card>
+    </div>
+  } @else {
+    <div class="empty">
+      <mat-icon svgIcon="account_circle" class="empty-icon"></mat-icon>
+      <p>{{ i18n.t('account.loading') }}</p>
+    </div>
+  }
+</div>

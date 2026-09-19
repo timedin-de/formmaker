@@ -88,7 +88,6 @@ function jsonValidatorAsync(): AsyncValidatorFn {
         }
 
         const { error: parseError } = catchFn(() => formDefinitionSchema.parse(data));
-        console.log(parseError);
         if (parseError) {
           return resolve({
             invalidJson: { message: 'errors.invalidDefinition', error: parseError },

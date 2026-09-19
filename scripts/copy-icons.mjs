@@ -8,6 +8,7 @@ const outDir = join(root, 'public/assets/icons');
 const manifestFile = join(root, 'src/frontend/app/core/icon-names.ts');
 
 const icons = [
+  'account_circle',
   'account_tree',
   'add',
   'add_circle_outline',
@@ -61,6 +62,8 @@ const icons = [
   'view_agenda',
   'view_column',
   'text_snippet',
+  'visibility',
+  'visibility_off',
 ];
 
 mkdirSync(outDir, { recursive: true });
