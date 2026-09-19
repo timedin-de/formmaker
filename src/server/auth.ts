@@ -1,16 +1,10 @@
-import crypto from 'node:crypto';
 import type { Request, RequestHandler } from 'express';
-import type { Repository, User, UserRole } from './repository.js';
+import crypto from 'node:crypto';
+import { PublicUser, UserRole } from '../shared/model/user.model.js';
+import type { Repository, User } from './repository.js';
 
 export const DEFAULT_PASSWORD = 'formmaker';
 const SESSION_TTL_MS = 24 * 60 * 60 * 1000;
-
-export interface PublicUser {
-  id: string;
-  email: string;
-  role: UserRole;
-  createdAt: string;
-}
 
 export function publicUser(user: User): PublicUser {
   const { id, email, role, createdAt } = user;
@@ -32,12 +26,10 @@ export async function ensureInitialAdmin(repository: Repository): Promise<void> 
 
 export async function login(
   repository: Repository,
-  email: string | undefined,
+  email: string,
   password: string,
 ): Promise<{ token: string; user: PublicUser } | null> {
-  const normalizedEmail = (email ?? process.env.FORMMAKER_ADMIN_EMAIL ?? 'admin@formmaker.local')
-    .trim()
-    .toLowerCase();
+  const normalizedEmail = email.trim().toLowerCase();
   const user = await repository.userByEmail(normalizedEmail);
   if (!user || !(await verifyPassword(password, user.passwordHash))) return null;
 
@@ -113,6 +105,8 @@ function scrypt(password: string, salt: string): Promise<Buffer> {
 function tokenHash(token: string): string {
   return crypto.createHash('sha256').update(token).digest('hex');
 }
+
+export { tokenHash };
 
 declare global {
   namespace Express {

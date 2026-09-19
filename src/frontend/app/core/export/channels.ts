@@ -1,9 +1,10 @@
 import type { FormDefinition } from '@shared/model/form.model';
 import type { Submission } from '@shared/model/submission.model';
+import { TranslationKey } from '../i18n';
 import { submissionsToCsv } from './csv-exporter';
 import { submissionsToExcel } from './excel-exporter';
-import { submissionsToPdf } from './pdf-exporter';
 import { toSlug } from './file';
+import { submissionsToPdf } from './pdf-exporter';
 
 export type ExportChannelId = 'csv' | 'xlsx' | 'pdf' | 'mail';
 
@@ -23,10 +24,10 @@ export interface ExportContext {
 export interface ExportChannel {
   readonly id: ExportChannelId;
   /** I18n key for the action button label. */
-  readonly labelKey: string;
+  readonly labelKey: TranslationKey;
   readonly icon: string;
   /** I18n key for the success message; defaults to 'export.exported'. */
-  readonly doneKey?: string;
+  readonly doneKey?: TranslationKey;
   build(
     form: FormDefinition,
     submissions: Submission[],

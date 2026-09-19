@@ -6,11 +6,13 @@ export const SUPPORTED_LANGS: { code: Lang; label: string }[] = [
 ];
 
 type Dict = Record<string, string>;
+export type TranslationKey = keyof typeof en;
 
 const en = {
   // shell
   'app.forms': 'Forms',
   'app.builder': 'Builder',
+  'app.account': 'Account',
   'app.logout': 'Log out',
   'app.menu': 'Language',
 
@@ -18,15 +20,17 @@ const en = {
   'login.title': 'Sign in',
   'login.subtitle': 'Editor access — respondents only need the share link.',
   'login.password': 'Password',
+  'login.passwordRepeat': 'Repeat password',
   'login.email': 'Email address',
   'login.submit': 'Sign in',
-  'login.error': 'Wrong password.',
+  'login.error': 'Login failed. Check your credentials.',
   'login.hint': 'Use your email address and password.',
   'register.title': 'Create account',
   'register.hint': 'Your account will receive editor access. Passwords need at least 8 characters.',
   'register.submit': 'Create account',
   'register.link': 'Create an account',
   'register.back': 'Back to sign in',
+  'register.error': 'Registration failed. Check if your email is already registered.',
 
   // landing
   'landing.title': 'Forms',
@@ -56,6 +60,32 @@ const en = {
   'landing.questions': 'questions',
   'landing.imported': 'Imported "{name}"',
   'landing.updated': 'n/a',
+
+  // Account
+  'account.title': 'My account',
+  'account.profile': 'Profile',
+  'account.role': 'Role',
+  'account.memberSince': 'Member since {date}',
+  'account.email': 'Email address',
+  'account.currentPassword': 'Current password',
+  'account.emailHint': 'Enter your password to change the email address.',
+  'account.saveChanges': 'Save changes',
+  'account.password': 'Password',
+  'account.passwordHint': 'Passwords need at least 8 characters.',
+  'account.newPassword': 'New password',
+  'account.confirmPassword': 'Confirm new password',
+  'account.dangerZone': 'Danger zone',
+  'account.deleteHint': 'Deleting removes your account and all your forms permanently.',
+  'account.deleteConfirmHint': 'Enter your password to permanently delete the account.',
+  'account.cancel': 'Cancel',
+  'account.deleteForever': 'Delete permanently',
+  'account.deleteAccount': 'Delete account',
+  'account.loading': 'Loading…',
+  'account.emailSaved': 'Email was changed successfully',
+  'account.role.admin': 'Administrator',
+  'account.role.editor': 'Editor',
+  'account.passwordChanged': 'Password was changed successfully',
+  'account.accountDeleted': 'Account was deleted successfully',
 
   // results
   'results.title': 'Results',
@@ -94,8 +124,11 @@ const en = {
 
   // Errors
   'errors.required': 'Required',
-  'errors.invalidJson': 'Invalid JSON',
-  'errors.invalidDefinition': 'Invalid definition',
+  'errors.invalidJson': 'Invalid JSON.',
+  'errors.invalidDefinition': 'Invalid definition.',
+  'errors.minLength': 'Minimal length of {requiredLength} characters.',
+  'errors.passwordMismatch': 'Passwords must match.',
+  'errors.email': 'Input must be a valid email.',
 
   // builder
   'builder.formName': 'Form name',
@@ -368,6 +401,9 @@ const en = {
   'sig.signAbove': 'Sign above',
   'sig.clear': 'Clear',
   'q.invalid': 'This field is invalid.',
+  // password field
+  'password.show': 'Show password',
+  'password.hide': 'Hide password',
 
   // export
   'export.exported': 'Export finished',
@@ -381,6 +417,7 @@ const de: typeof en = {
   // shell
   'app.forms': 'Formulare',
   'app.builder': 'Editor',
+  'app.account': 'Konto',
   'app.logout': 'Abmelden',
   'app.menu': 'Sprache',
 
@@ -388,15 +425,17 @@ const de: typeof en = {
   'login.title': 'Anmelden',
   'login.subtitle': 'Editor-Zugriff — Teilnehmende brauchen nur den Teilen-Link.',
   'login.password': 'Passwort',
+  'login.passwordRepeat': 'Passwort wiederholen',
   'login.email': 'E-Mail-Adresse',
   'login.submit': 'Anmelden',
-  'login.error': 'Falsches Passwort.',
+  'login.error': 'Anmeldung fehlgeschlagen. Zugangsdaten überprüfen.',
   'login.hint': 'Nutze deine die E-Mail-Adresse und das Passwort.',
   'register.title': 'Konto erstellen',
   'register.hint': 'Dein Konto erhält Editor-Zugriff. Passwörter brauchen mindestens 8 Zeichen.',
   'register.submit': 'Konto erstellen',
   'register.link': 'Konto erstellen',
   'register.back': 'Zurück zur Anmeldung',
+  'register.error': 'Registrierung fehlgeschlagen. Möglicherweise ist die E-Mail bereits vergeben.',
 
   // landing
   'landing.title': 'Formulare',
@@ -427,6 +466,33 @@ const de: typeof en = {
   'landing.questions': 'Fragen',
   'landing.imported': '"{name}" importiert',
   'landing.updated': 'k. A.',
+
+  // Account
+  'account.title': 'Mein Konto',
+  'account.profile': 'Profil',
+  'account.role': 'Rolle',
+  'account.memberSince': 'Mitglied seit {date}',
+  'account.email': 'E-Mail-Adresse',
+  'account.currentPassword': 'Aktuelles Passwort',
+  'account.emailHint': 'Gib dein Passwort ein, um die E-Mail-Adresse zu ändern.',
+  'account.saveChanges': 'Änderungen speichern',
+  'account.password': 'Passwort',
+  'account.passwordHint': 'Passwörter brauchen mindestens 8 Zeichen.',
+  'account.newPassword': 'Neues Passwort',
+  'account.confirmPassword': 'Neues Passwort bestätigen',
+  'account.dangerZone': 'Gefahrenzone',
+  'account.deleteHint':
+    'Beim Löschen werden dein Konto und alle deine Formulare endgültig entfernt.',
+  'account.deleteConfirmHint': 'Gib dein Passwort ein, um das Konto endgültig zu löschen.',
+  'account.cancel': 'Abbrechen',
+  'account.deleteForever': 'Endgültig löschen',
+  'account.deleteAccount': 'Konto löschen',
+  'account.loading': 'Lädt…',
+  'account.emailSaved': 'E-Mail wurde erfolgreich geändert.',
+  'account.role.admin': 'Administrator',
+  'account.role.editor': 'Bearbeiter',
+  'account.passwordChanged': 'Passwort wurde erfolgreich geändert',
+  'account.accountDeleted': 'Konto wurde erfolgreich gelöscht',
 
   // results
   'results.title': 'Ergebnisse',
@@ -467,6 +533,9 @@ const de: typeof en = {
   'errors.required': 'Pflichtfeld',
   'errors.invalidJson': 'Ungültiges JSON',
   'errors.invalidDefinition': 'Ungültige Definition',
+  'errors.minLength': 'Mindestlänge von {requiredLength} Zeichen.',
+  'errors.passwordMismatch': 'Passwörter müssen übereinstimmen.',
+  'errors.email': 'Eingabe muss eine gültige E-Mail-Adresse sein.',
 
   // builder
   'builder.formName': 'Formularname',
@@ -741,6 +810,9 @@ const de: typeof en = {
   'sig.signAbove': 'Hier unterschreiben',
   'sig.clear': 'Löschen',
   'q.invalid': 'Dieses Feld ist ungültig.',
+  // password field
+  'password.show': 'Passwort anzeigen',
+  'password.hide': 'Passwort ausblenden',
 
   // export
   'export.exported': 'Export abgeschlossen',

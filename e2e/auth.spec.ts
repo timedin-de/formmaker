@@ -1,13 +1,14 @@
-import { test, expect } from './fixtures';
-import { PASSWORD, login } from './helpers';
+import { expect, test } from './fixtures';
+import { PASSWORD, USERNAME, login } from './helpers';
 
 test('guards editor routes and signs in with the editor password', async ({ page }) => {
   await page.goto('/');
   await expect(page).toHaveURL(/\/login$/);
+  await page.getByLabel('Email address', { exact: true }).fill(USERNAME);
 
   await page.getByLabel('Password', { exact: true }).fill('wrong-password');
   await page.getByRole('button', { name: 'Sign in' }).click();
-  await expect(page.getByText('Wrong password.')).toBeVisible();
+  await expect(page.getByText('Login failed. Check your credentials.')).toBeVisible();
   await expect(page).toHaveURL(/\/login$/);
 
   await page.getByLabel('Password', { exact: true }).fill(PASSWORD);

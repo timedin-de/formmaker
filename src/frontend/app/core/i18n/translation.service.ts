@@ -1,7 +1,7 @@
 import { Injectable, signal } from '@angular/core';
 import { ValidationErrors } from '@angular/forms';
 import { catchFn } from '@shared/helper';
-import type { Lang } from './translations';
+import type { Lang, TranslationKey } from './translations';
 import { SUPPORTED_LANGS, TRANSLATIONS } from './translations';
 
 const STORAGE_KEY = 'formmaker.lang';
@@ -46,7 +46,7 @@ function readInitial(): Lang {
 }
 export function getErrorKey(
   errors: ValidationErrors | null,
-): [string, Record<string, string>?] | [undefined] {
+): [TranslationKey, Record<string, string>?] | [undefined] {
   if (!errors) return [undefined];
   if (errors['required']) return ['errors.required'];
   if (errors['minlength'])

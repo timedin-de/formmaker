@@ -1,6 +1,7 @@
 import { expect, type APIRequestContext, type Page } from '@playwright/test';
 
 /** Editor password; matches `DEFAULT_PASSWORD` in src/server/auth.ts. */
+export const USERNAME = 'admin@formmaker.local';
 export const PASSWORD = 'formmaker';
 
 export function uniqueName(prefix: string): string {
@@ -14,6 +15,8 @@ export function uuid(): string {
 /** Sign in through the UI (also covers the guard > login redirect). */
 export async function login(page: Page, password = PASSWORD): Promise<void> {
   await page.goto('/login');
+  await page.getByLabel('Email address', { exact: true }).fill(USERNAME);
+
   await page.getByLabel('Password', { exact: true }).fill(password);
   await page.getByRole('button', { name: 'Sign in' }).click();
   await page.waitForURL((url) => url.pathname === '/');
@@ -26,7 +29,9 @@ export interface ApiSession {
 
 /** Obtain an editor token over the API. */
 export async function loginApi(request: APIRequestContext): Promise<ApiSession> {
-  const res = await request.post('/api/auth/login', { data: { password: PASSWORD } });
+  const res = await request.post('/api/auth/login', {
+    data: { email: USERNAME, password: PASSWORD },
+  });
   expect(res.ok()).toBeTruthy();
   const body = (await res.json()) as { token?: string };
   expect(body.token).toBeTruthy();

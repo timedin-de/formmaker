@@ -1,12 +1,13 @@
-import type { FormDefinition } from '../shared/model/form.model.js';
-import type { Submission } from '../shared/model/submission.model.js';
 import type { DataSource } from 'typeorm';
-import { FormEntity, type FormEntityModel, SubmissionEntity } from './entities/form.js';
-import { SessionEntity, UserEntity, type UserEntityModel } from './entities/user.js';
+
+import { FormDefinition } from '../shared/model/form.model.js';
 import { formDefinitionSchema } from '../shared/model/model-validator.js';
+import { Submission } from '../shared/model/submission.model.js';
+import { UserRole } from '../shared/model/user.model.js';
+import { FormEntity, SubmissionEntity } from './entities/form.js';
+import { SessionEntity, UserEntity, type UserEntityModel } from './entities/user.js';
 import { submissionSchema } from './schemas.js';
 
-export type UserRole = 'admin' | 'editor';
 export interface User {
   id: string;
   email: string;
@@ -28,6 +29,11 @@ export class Repository {
     return row ? toUser(row) : null;
   }
 
+  async userById(id: string): Promise<User | null> {
+    const row = await this.source.getRepository(UserEntity).findOneBy({ id });
+    return row ? toUser(row) : null;
+  }
+
   async userBySession(tokenHash: string): Promise<User | null> {
     const session = await this.source.getRepository(SessionEntity).findOneBy({ tokenHash });
     if (!session || session.expiresAt <= new Date().toISOString()) return null;
@@ -45,8 +51,25 @@ export class Repository {
     );
   }
 
+  async updateUserEmail(id: string, email: string): Promise<boolean> {
+    return (await this.source.getRepository(UserEntity).update(id, { email })).affected === 1;
+  }
+
   async deleteUser(id: string): Promise<boolean> {
     return (await this.source.getRepository(UserEntity).delete(id)).affected === 1;
+  }
+
+  /** Remove a user together with their forms, submissions and sessions. */
+  async deleteUserWithData(id: string): Promise<void> {
+    const forms = await this.source.getRepository(FormEntity).findBy({ ownerId: id });
+    for (const form of forms) {
+      await this.source.getRepository(SubmissionEntity).delete({ formId: form.id });
+    }
+    this.source.transaction(async (em) => {
+      await em.getRepository(FormEntity).delete({ ownerId: id });
+      await em.getRepository(SessionEntity).delete({ userId: id });
+      await em.getRepository(UserEntity).delete({ id });
+    });
   }
 
   async createSession(tokenHash: string, userId: string, expiresAt: string): Promise<void> {
@@ -165,5 +188,3 @@ export class Repository {
 function toUser(row: UserEntityModel): User {
   return row;
 }
-
-export type { FormEntityModel };
