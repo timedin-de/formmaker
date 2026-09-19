@@ -1,16 +1,16 @@
-import { computed, signal, Injectable, inject } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
+import { catchFn } from '@shared/helper';
 import type {
   ElementDefinition,
+  ElementType,
   FormDefinition,
   FormSettings,
   PageDefinition,
-  ElementType,
 } from '@shared/model/form.model';
-import { createElement, createPage, insertElementAfter, newForm } from './form-factory';
 import { uuid } from '@shared/model/ids';
-import { I18nService } from '../i18n/translation.service';
-import { catchFn } from '@shared/helper';
 import { parseFormData } from '@shared/model/model-validator';
+import { I18nService } from '../i18n/translation.service';
+import { createElement, createPage, insertElementAfter, newForm } from './form-factory';
 
 const STORAGE_KEY = 'formmaker.designer.v1';
 
@@ -116,7 +116,7 @@ export class DesignerStore {
   ): ElementDefinition {
     const page = this.form().pages.find((p) => p.id === pageId);
     if (!page) throw new Error(`Unknown page ${pageId}`);
-    const el = createElement(type, label ?? defaultLabel(type, this.i18n));
+    const el = createElement(type, label ?? this.i18n.t(`q.${type}`));
     const elements = insertElementAfter(page.elements, afterId, el);
     this.updatePage(pageId, { elements });
     this.selectedId.set(el.id);
@@ -207,28 +207,6 @@ export class DesignerStore {
   private schedulePersist(): void {
     this.persist();
   }
-}
-
-function defaultLabel(type: ElementType, i18n: I18nService): string {
-  const key: Record<ElementType, string> = {
-    text: 'q.shortText',
-    longText: 'q.longText',
-    number: 'q.number',
-    date: 'q.date',
-    time: 'q.time',
-    dateTime: 'q.dateTime',
-    boolean: 'q.yesNo',
-    choice: 'q.single',
-    dropdown: 'q.dropdown',
-    multiChoice: 'q.multiple',
-    scale: 'q.scale',
-    file: 'q.file',
-    signature: 'q.signature',
-    group: 'q.group',
-    section: 'q.section',
-    textdisplay: 'q.textdisplay',
-  };
-  return i18n.t(key[type] ?? 'q.shortText');
 }
 
 function patchNested(

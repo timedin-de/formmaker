@@ -6,7 +6,7 @@
     @for (meta of allFields; track meta.type) {
       <button class="chip" (click)="add(meta.type)">
         <mat-icon [svgIcon]="meta.icon"></mat-icon>
-        <span>{{ i18n.t('field.' + meta.type) }}</span>
+        <span>{{ i18n.t(`field.${meta.type}`) }}</span>
       </button>
     }
   </div>
@@ -16,14 +16,14 @@
   </mat-toolbar>
   <mat-tab-group>
     @for (cat of categories; track cat.key) {
-      <mat-tab [label]="i18n.t('palette.cat.' + cat.key)">
+      <mat-tab [label]="i18n.t(`palette.cat.${cat.key}`)">
         <div class="palette-items">
           @for (meta of fieldsFor(cat.key); track meta.type) {
             <button class="field-btn" (click)="add(meta.type)">
               <mat-icon [svgIcon]="meta.icon"></mat-icon>
               <span class="field-label">
-                <b>{{ i18n.t('field.' + meta.type) }}</b>
-                <small>{{ i18n.t('field.' + meta.type + '.desc') }}</small>
+                <b>{{ i18n.t(`field.${meta.type}`) }}</b>
+                <small>{{ i18n.t(`field.${meta.type}.desc`) }}</small>
               </span>
               <mat-icon class="add" svgIcon="add"></mat-icon>
             </button>

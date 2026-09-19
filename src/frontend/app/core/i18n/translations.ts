@@ -404,6 +404,22 @@ const en = {
   // password field
   'password.show': 'Show password',
   'password.hide': 'Hide password',
+  // default question labels
+  'q.text': 'Short text',
+  'q.longText': 'Long text',
+  'q.number': 'Number',
+  'q.date': 'Date',
+  'q.time': 'Time',
+  'q.dateTime': 'Date & time',
+  'q.boolean': 'Yes / No',
+  'q.choice': 'Single choice',
+  'q.dropdown': 'Dropdown',
+  'q.multiChoice': 'Multiple choice',
+  'q.scale': 'Rating scale',
+  'q.file': 'File upload',
+  'q.group': 'Group',
+  'q.section': 'Section',
+  'q.textdisplay': 'Text',
 
   // export
   'export.exported': 'Export finished',
@@ -813,6 +829,23 @@ const de: typeof en = {
   // password field
   'password.show': 'Passwort anzeigen',
   'password.hide': 'Passwort ausblenden',
+
+  // default question labels
+  'q.text': 'Kurztext',
+  'q.longText': 'Langtext',
+  'q.number': 'Zahl',
+  'q.date': 'Datum',
+  'q.time': 'Uhrzeit',
+  'q.dateTime': 'Datum & Uhrzeit',
+  'q.boolean': 'Ja / Nein',
+  'q.choice': 'Einfachauswahl',
+  'q.dropdown': 'Dropdown',
+  'q.multiChoice': 'Mehrfachauswahl',
+  'q.scale': 'Bewertungsskala',
+  'q.file': 'Datei-Upload',
+  'q.group': 'Gruppe',
+  'q.section': 'Abschnitt',
+  'q.textdisplay': 'Hinweistext',
 
   // export
   'export.exported': 'Export abgeschlossen',

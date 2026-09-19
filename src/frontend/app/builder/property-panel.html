@@ -3,7 +3,7 @@
     <div class="head">
       <mat-icon [svgIcon]="meta().icon"></mat-icon>
       <div class="hdr">
-        <div class="title">{{ i18n.t('field.' + el.type) }}</div>
+        <div class="title">{{ i18n.t(`field.${el.type}`) }}</div>
         <div class="sub muted ellipsis">{{ el.id }}</div>
       </div>
     </div>
@@ -44,7 +44,7 @@
               (ngModelChange)="patch({ inputType: $event })"
             >
               @for (t of INPUT_TYPES; track t) {
-                <mat-option [value]="t">{{ i18n.t('input.' + t) }}</mat-option>
+                <mat-option [value]="t">{{ i18n.t(`input.${t}`) }}</mat-option>
               }
             </mat-select>
           </mat-form-field>
@@ -393,7 +393,7 @@
               (selectionChange)="addRule($event.value)"
             >
               @for (r of VALIDATION_RULE_TYPES; track r) {
-                <mat-option [value]="r">{{ i18n.t('val.' + r) }}</mat-option>
+                <mat-option [value]="r">{{ i18n.t(`val.${r}`) }}</mat-option>
               }
             </mat-select>
           </mat-form-field>

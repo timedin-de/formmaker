@@ -239,7 +239,7 @@ export class PropertyPanel {
   // ---- validation -------------------------------------------------------------
 
   ruleLabel(rule: ValidationRuleType): string {
-    return this.i18n.t('val.' + rule);
+    return this.i18n.t(`val.${rule}`);
   }
 
   ruleInputKind(
@@ -278,7 +278,7 @@ export class PropertyPanel {
   }
 
   defaultRuleMessage(rule: ValidationRuleType): string {
-    return this.i18n.t('panel.defaultMessage', { rule: this.i18n.t('val.' + rule) });
+    return this.i18n.t('panel.defaultMessage', { rule: this.i18n.t(`val.${rule}`) });
   }
 
   addRule(type: ValidationRuleType): void {
