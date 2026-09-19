@@ -17,6 +17,29 @@ html {
       ),
     )
   );
+
+  $border_radius: 8px;
+  @include mat.button-overrides(
+    (
+      filled-container-shape: $border_radius,
+      outlined-container-shape: $border_radius,
+      protected-container-shape: $border_radius,
+      text-container-shape: $border_radius,
+      tonal-container-shape: $border_radius,
+    )
+  );
+  @include mat.button-toggle-overrides(
+    (
+      shape: $border_radius,
+    )
+  );
+  @include mat.form-field-overrides(
+    (
+      filled-container-shape: $border_radius,
+
+      outlined-container-shape: $border_radius,
+    )
+  );
 }
 
 body {

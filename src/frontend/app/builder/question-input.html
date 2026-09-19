@@ -73,14 +73,18 @@
     @case ('scale') {
       <div class="scale">
         @for (val of scaleValues(vr.el); track val) {
-          <button
-            type="button"
-            class="scale-val"
-            [class.on]="vr.control.value === val"
-            (click)="setScale(vr.control, val)"
-          >
-            {{ val }}
-          </button>
+          <div class="scale-container">
+            <button
+              [matButton]="vr.control.value === val ? 'filled' : 'outlined'"
+              extended
+              type="button"
+              class="scale-val"
+              [class.on]="vr.control.value === val"
+              (click)="setScale(vr.control, val)"
+            >
+              <span>{{ val }}</span>
+            </button>
+          </div>
         }
       </div>
       @if (hasScaleLabels(vr.el)) {

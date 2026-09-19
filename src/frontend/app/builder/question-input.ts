@@ -1,26 +1,28 @@
 import { Component, inject, input } from '@angular/core';
 import { AbstractControl, FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { MatInputModule } from '@angular/material/input';
-import { SignaturePadField } from '../runner/signature-pad';
-import { MatIconModule } from '@angular/material/icon';
+import { MatButton } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
-import {
-  ElementDefinition,
-  ChoiceElement,
-  ScaleElement,
-  FileValue,
-  SignatureValue,
-  FieldValue,
-  ElementViewRef,
-} from '@shared/model';
-import { QuestionInputField } from './question-input-field';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
 import { MatRadioModule } from '@angular/material/radio';
 import { MatOption, MatSelectModule } from '@angular/material/select';
+import {
+  ChoiceElement,
+  ElementDefinition,
+  ElementViewRef,
+  FieldValue,
+  FileValue,
+  ScaleElement,
+  SignatureValue,
+} from '@shared/model';
 import { I18nService } from '../core/i18n';
 import { MarkdownPipe } from '../core/markdown';
+import { SignaturePadField } from '../runner/signature-pad';
+import { QuestionInputField } from './question-input-field';
 
 @Component({
   templateUrl: './question-input.html',
+  styleUrl: './question-input.scss',
   selector: 'fm-question-input',
   imports: [
     MatInputModule,
@@ -34,6 +36,7 @@ import { MarkdownPipe } from '../core/markdown';
     MatSelectModule,
     MatRadioModule,
     MarkdownPipe,
+    MatButton,
   ],
 })
 export class QuestionInput {
