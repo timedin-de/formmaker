@@ -7,38 +7,45 @@
       </mat-card-title>
       <mat-card-subtitle>{{ i18n.t('login.subtitle') }}</mat-card-subtitle>
     </mat-card-header>
-    <mat-card-content>
-      <mat-form-field appearance="outline" class="field">
-        <mat-label>{{ i18n.t('login.email') }}</mat-label>
-        <input
-          matInput
+    <form [formGroup]="form" (ngSubmit)="submit()">
+      <mat-card-content>
+        <fm-text
           type="email"
           autocomplete="username"
-          [value]="email()"
-          (input)="email.set($event.target.value)"
-        />
-      </mat-form-field>
-      <mat-form-field appearance="outline" class="field">
-        <mat-label>{{ i18n.t('login.password') }}</mat-label>
-        <input
-          matInput
-          type="password"
+          formControlName="email"
+          [label]="i18n.t('login.email')"
+        ></fm-text>
+        <fm-password
+          [label]="i18n.t('login.password')"
+          formControlName="password"
           autocomplete="current-password"
-          [value]="password()"
-          (input)="password.set($any($event.target).value)"
-          (keydown.enter)="submit()"
+          required
+          (enter)="registering() || submit()"
         />
-      </mat-form-field>
-      <p class="hint">{{ i18n.t(registering() ? 'register.hint' : 'login.hint') }}</p>
-    </mat-card-content>
-    <mat-card-actions align="end" class="actions">
-      <button mat-flat-button color="primary" (click)="submit()">
-        <mat-icon svgIcon="login"></mat-icon>
-        {{ i18n.t(registering() ? 'register.submit' : 'login.submit') }}
-      </button>
-      <button mat-button (click)="toggleRegistration()">
-        {{ i18n.t(registering() ? 'register.back' : 'register.link') }}
-      </button>
-    </mat-card-actions>
+        @if (registering()) {
+          <fm-password
+            [label]="i18n.t('login.passwordRepeat')"
+            autocomplete="current-password"
+            formControlName="passwordRepeat"
+            required
+            (enter)="submit()"
+          />
+        }
+        <mat-error>
+          @if (form.dirty && form.invalid) {
+            {{ i18n.error(form.errors) }}
+          }
+        </mat-error>
+      </mat-card-content>
+      <mat-card-actions align="end" class="actions">
+        <button mat-flat-button color="primary" type="submit" [disabled]="form.invalid">
+          <mat-icon svgIcon="login"></mat-icon>
+          {{ i18n.t(registering() ? 'register.submit' : 'login.submit') }}
+        </button>
+        <button mat-button (click)="toggleRegistration()" type="button">
+          {{ i18n.t(registering() ? 'register.back' : 'register.link') }}
+        </button>
+      </mat-card-actions>
+    </form>
   </mat-card>
 </div>

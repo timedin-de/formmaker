@@ -5,12 +5,12 @@ test('guards editor routes and signs in with the editor password', async ({ page
   await page.goto('/');
   await expect(page).toHaveURL(/\/login$/);
 
-  await page.getByLabel('Password').fill('wrong-password');
+  await page.getByLabel('Password', { exact: true }).fill('wrong-password');
   await page.getByRole('button', { name: 'Sign in' }).click();
   await expect(page.getByText('Wrong password.')).toBeVisible();
   await expect(page).toHaveURL(/\/login$/);
 
-  await page.getByLabel('Password').fill(PASSWORD);
+  await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
   await page.getByRole('button', { name: 'Sign in' }).click();
   await page.waitForURL((url) => url.pathname === '/');
 

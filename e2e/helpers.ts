@@ -14,7 +14,7 @@ export function uuid(): string {
 /** Sign in through the UI (also covers the guard > login redirect). */
 export async function login(page: Page, password = PASSWORD): Promise<void> {
   await page.goto('/login');
-  await page.getByLabel('Password').fill(password);
+  await page.getByLabel('Password', { exact: true }).fill(password);
   await page.getByRole('button', { name: 'Sign in' }).click();
   await page.waitForURL((url) => url.pathname === '/');
 }

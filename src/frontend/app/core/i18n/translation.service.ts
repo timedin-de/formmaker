@@ -1,7 +1,8 @@
 import { Injectable, signal } from '@angular/core';
+import { ValidationErrors } from '@angular/forms';
+import { catchFn } from '@shared/helper';
 import type { Lang } from './translations';
 import { SUPPORTED_LANGS, TRANSLATIONS } from './translations';
-import { catchFn } from '@shared/helper';
 
 const STORAGE_KEY = 'formmaker.lang';
 
@@ -17,6 +18,12 @@ export class I18nService {
     return text.replace(/\{(\w+)\}/g, (match, name) => {
       return name in (params as object) ? String(params[name as keyof typeof params]) : match;
     });
+  }
+  error(error?: ValidationErrors | null) {
+    if (!error) return '';
+    const [errorKey, params] = getErrorKey(error);
+    if (!errorKey) return '';
+    return this.t(errorKey, params);
   }
 
   setLang(lang: Lang): void {
@@ -36,4 +43,15 @@ function readInitial(): Lang {
   if (stored === 'de' || stored === 'en') return stored;
   const browser = typeof navigator !== 'undefined' ? navigator.language : '';
   return browser.toLowerCase().startsWith('de') ? 'de' : 'en';
+}
+export function getErrorKey(
+  errors: ValidationErrors | null,
+): [string, Record<string, string>?] | [undefined] {
+  if (!errors) return [undefined];
+  if (errors['required']) return ['errors.required'];
+  if (errors['minlength'])
+    return ['errors.minLength', { requiredLength: errors['minlength'].requiredLength }];
+  if (errors['passwordMismatch']) return ['errors.passwordMismatch'];
+  if (errors['email']) return ['errors.email'];
+  return [undefined];
 }
