@@ -1,17 +1,19 @@
 import { Component, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
-import { FormsRepository } from '../core/state/forms.repository';
-import type { FormDefinition } from '@shared/model/form.model';
 import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
 import { MatCardModule } from '@angular/material/card';
 import { MatDividerModule } from '@angular/material/divider';
+import { MatIconModule } from '@angular/material/icon';
+import { MatMenuModule } from '@angular/material/menu';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatTooltip } from '@angular/material/tooltip';
+import { RouterLink } from '@angular/router';
+import type { FormDefinition } from '@shared/model/form.model';
+import { FormImportModal } from '../core/components';
 import { downloadJSON } from '../core/export/file';
+import { FormImportService } from '../core/export/import';
 import { I18nService } from '../core/i18n';
 import { MarkdownPipe } from '../core/markdown';
-import { FormImportService } from '../core/export/import';
-import { MatTooltip } from '@angular/material/tooltip';
+import { FormsRepository } from '../core/state/forms.repository';
 
 @Component({
   imports: [
@@ -23,6 +25,8 @@ import { MatTooltip } from '@angular/material/tooltip';
     MatSnackBarModule,
     MarkdownPipe,
     MatTooltip,
+    FormImportModal,
+    MatMenuModule,
   ],
   selector: 'fm-landing',
   templateUrl: './landing.html',
@@ -34,6 +38,9 @@ export class LandingComponent {
   protected readonly i18n = inject(I18nService);
   readonly forms = signal<FormDefinition[]>([]);
   private readonly importService = inject(FormImportService);
+
+  private timedOutCloser: number | undefined;
+  protected showTextModal = signal(false);
 
   constructor() {
     void this.repo.init().then(() => this.refresh());
@@ -80,6 +87,27 @@ export class LandingComponent {
   async onImport(event: Event): Promise<void> {
     const form = await this.importService.onImport(event);
     if (!form) return;
+    await this.refresh();
+  }
+
+  mouseEnter(trigger: { openMenu: () => void }) {
+    if (this.timedOutCloser) {
+      clearTimeout(this.timedOutCloser);
+    }
+    trigger.openMenu();
+  }
+
+  mouseLeave(trigger: { closeMenu: () => void }) {
+    this.timedOutCloser = setTimeout(() => {
+      trigger.closeMenu();
+    }, 50);
+  }
+
+  async importText(raw: string | null): Promise<void> {
+    if (raw === null) return this.showTextModal.set(false);
+    const form = await this.importService.importJson(raw);
+    if (!form) return;
+    this.showTextModal.set(false);
     await this.refresh();
     this.snack.open(this.i18n.t('landing.imported', { name: form.name }), 'OK', {
       duration: 3000,

@@ -4,9 +4,24 @@
     <p class="subtitle">{{ i18n.t('landing.subtitle') }}</p>
   </div>
   <div class="actions">
-    <button mat-stroked-button (click)="fileInput.click()">
-      <mat-icon svgIcon="upload_file"></mat-icon> {{ i18n.t('landing.importJson') }}
-    </button>
+    <div (mouseenter)="mouseEnter(menuTrigger)" (mouseleave)="mouseLeave(menuTrigger)">
+      <button mat-stroked-button [mat-menu-trigger-for]="menu" #menuTrigger="matMenuTrigger">
+        <mat-icon svgIcon="upload_file"></mat-icon> {{ i18n.t('landing.import.form') }}
+      </button>
+      <mat-menu #menu="matMenu" [hasBackdrop]="false">
+        <div (mouseenter)="mouseEnter(menuTrigger)" (mouseleave)="mouseLeave(menuTrigger)">
+          <button mat-menu-item (click)="fileInput.click()">
+            <mat-icon svgIcon="upload_file"></mat-icon> {{ i18n.t('landing.import.file') }}
+          </button>
+          <button mat-menu-item (click)="showTextModal.set(true)">
+            <mat-icon svgIcon="upload_file"></mat-icon> {{ i18n.t('landing.import.text') }}
+          </button>
+        </div>
+      </mat-menu>
+    </div>
+    @if (showTextModal()) {
+      <fm-form-import-modal (formSubmit)="importText($event)"></fm-form-import-modal>
+    }
     <input
       #fileInput
       type="file"

@@ -31,7 +31,15 @@ const en = {
   // landing
   'landing.title': 'Forms',
   'landing.subtitle': 'Build once, fill many. Pages, conditions, calculations, signatures.',
-  'landing.importJson': 'Import JSON',
+  'landing.import.form': 'Import form',
+  'landing.import.file': 'Import from File',
+  'landing.import.text': 'Import from text',
+  'landing.import.title': 'Import form from text',
+  'landing.import.placeholder': 'Paste a FormDefinition JSON here',
+  'landing.import.cancel': 'Cancel',
+  'landing.import.close': 'Close',
+  'landing.import.submit': 'Import',
+
   'landing.newForm': 'New form',
   'landing.empty.title': 'No forms yet',
   'landing.empty.text': 'Create your first form or import an existing JSON definition.',
@@ -83,6 +91,11 @@ const en = {
   'runner.home': 'Home',
   'runner.draftRestored': 'Draft restored from an earlier session.',
   'runner.downloadPdf': 'Download PDF',
+
+  // Errors
+  'errors.required': 'Required',
+  'errors.invalidJson': 'Invalid JSON',
+  'errors.invalidDefinition': 'Invalid definition',
 
   // builder
   'builder.formName': 'Form name',
@@ -389,7 +402,14 @@ const de: typeof en = {
   'landing.title': 'Formulare',
   'landing.subtitle':
     'Einmal bauen, oft ausfüllen. Seiten, Bedingungen, Berechnungen, Unterschriften.',
-  'landing.importJson': 'JSON importieren',
+  'landing.import.form': 'Formular importieren',
+  'landing.import.file': 'Von Datei importieren',
+  'landing.import.text': 'Aus Text importieren',
+  'landing.import.title': 'Formular aus Text importieren',
+  'landing.import.placeholder': 'FormDefinition-JSON hier einfügen',
+  'landing.import.cancel': 'Abbrechen',
+  'landing.import.close': 'Schließen',
+  'landing.import.submit': 'Importieren',
   'landing.newForm': 'Neues Formular',
   'landing.empty.title': 'Noch keine Formulare',
   'landing.empty.text':
@@ -442,6 +462,11 @@ const de: typeof en = {
   'runner.home': 'Start',
   'runner.draftRestored': 'Entwurf aus einer früheren Sitzung wiederhergestellt.',
   'runner.downloadPdf': 'PDF herunterladen',
+
+  // Errors
+  'errors.required': 'Pflichtfeld',
+  'errors.invalidJson': 'Ungültiges JSON',
+  'errors.invalidDefinition': 'Ungültige Definition',
 
   // builder
   'builder.formName': 'Formularname',

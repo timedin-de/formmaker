@@ -113,12 +113,6 @@ export class BuilderComponent {
   export(): void {
     downloadJSON(this.store.form(), toSlug(this.store.form().name) + '.json');
   }
-
-  async onImport(event: Event): Promise<void> {
-    const data = await this.importService.onImport(event);
-    if (!data) return;
-    this.store.load(data);
-  }
 }
 
 function toSlug(value: string): string {

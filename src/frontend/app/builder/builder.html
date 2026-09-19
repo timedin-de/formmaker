@@ -29,17 +29,6 @@
 
       <span class="divider"></span>
 
-      <button mat-button (click)="importInput.click()">
-        <mat-icon svgIcon="upload_file"></mat-icon>
-        <span class="btn-label">{{ i18n.t('builder.import') }}</span>
-      </button>
-      <input
-        #importInput
-        type="file"
-        accept=".json,application/json"
-        hidden
-        (change)="onImport($event)"
-      />
       <button mat-button (click)="export()">
         <mat-icon svgIcon="download"></mat-icon>
         <span class="btn-label">{{ i18n.t('builder.export') }}</span>
