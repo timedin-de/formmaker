@@ -23,7 +23,17 @@ export class FormImportService {
       this.report(this.i18n.t('import.failed', { message: this.i18n.t('import.badFile') }));
       return;
     }
-    const { data: form } = parseFormData(text);
+    const form = await this.importJson(text);
+    if (!form) return;
+
+    this.snack.open(this.i18n.t('import.success'), 'OK', { duration: 2500 });
+
+    return form;
+  }
+
+  /** Parse, validate and persist a raw JSON string. Reports failures, returns undefined. */
+  async importJson(raw: string): Promise<FormDefinition | undefined> {
+    const { data: form } = parseFormData(raw);
     if (!form) {
       this.report(this.i18n.t('import.failed', { message: this.i18n.t('import.badJson') }));
       return;
@@ -35,8 +45,6 @@ export class FormImportService {
       return;
     }
     await this.repo.newForm(form);
-
-    this.snack.open(this.i18n.t('import.success'), 'OK', { duration: 2500 });
 
     return form;
   }

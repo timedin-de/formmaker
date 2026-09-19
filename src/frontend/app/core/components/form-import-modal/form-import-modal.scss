@@ -1,0 +1,57 @@
+dialog {
+  position: fixed;
+  top: 50%;
+  z-index: 2;
+  transform: translateY(-50%);
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 16px;
+  background: var(--mat-sys-surface);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+  padding: 16px;
+  max-height: calc(100vh - var(--mat-toolbar-standard-height, 64px));
+}
+
+.modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.modal-head h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--mat-sys-on-surface);
+}
+
+.json-input {
+  width: 100%;
+  resize: none;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 8px;
+  background: var(--mat-sys-surface-container-lowest);
+  color: var(--mat-sys-on-surface);
+  padding: 8px;
+  box-sizing: border-box;
+}
+
+.error {
+  margin: 8px 0 0;
+  color: var(--mat-sys-error);
+  font-size: 13px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+dialog::backdrop {
+  background-color: rgba(0, 0, 0, 0.1);
+}

@@ -1,0 +1,44 @@
+<dialog
+  #importDialog
+  (cancel)="formSubmit.emit(null)"
+  (click)="onDialogClick($event)"
+  aria-labelledby="import-dialog-title"
+>
+  <div class="modal-head">
+    <h2 id="import-dialog-title">{{ i18n.t('landing.import.title') }}</h2>
+    <button
+      type="button"
+      mat-icon-button
+      [attr.aria-label]="i18n.t('landing.import.close')"
+      (click)="formSubmit.emit(null)"
+    >
+      <mat-icon svgIcon="close"></mat-icon>
+    </button>
+  </div>
+  <form>
+    <textarea
+      class="json-input"
+      cols="80"
+      rows="16"
+      [placeholder]="i18n.t('landing.import.placeholder')"
+      [formControl]="jsonControl"
+    ></textarea>
+    @if (jsonControl.invalid) {
+      <p class="error">{{ showError() }}</p>
+    }
+    <div class="modal-actions">
+      <button type="button" mat-button (click)="formSubmit.emit(null)">
+        {{ i18n.t('landing.import.cancel') }}
+      </button>
+      <button
+        type="button"
+        mat-flat-button
+        color="primary"
+        [disabled]="jsonControl.invalid"
+        (click)="importText()"
+      >
+        {{ i18n.t('landing.import.submit') }}
+      </button>
+    </div>
+  </form>
+</dialog>
