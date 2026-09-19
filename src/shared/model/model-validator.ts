@@ -11,12 +11,12 @@ const validationRuleTypeSchema = z.enum(
   VALIDATION_RULE_TYPES,
 ) satisfies z.ZodType<ValidationRuleType>;
 
-const literalOperandSchema = z.object({
+const literalOperandSchema = z.strictObject({
   kind: z.literal('literal'),
   value: z.union([z.string(), z.number(), z.boolean()]).nullable(),
 });
 
-const fieldOperandSchema = z.object({
+const fieldOperandSchema = z.strictObject({
   kind: z.literal('field'),
   fieldId: z.string(),
 });
@@ -26,7 +26,7 @@ const conditionOperandSchema = z.discriminatedUnion('kind', [
   fieldOperandSchema,
 ]);
 
-const conditionSchema = z.object({
+const conditionSchema = z.strictObject({
   fieldId: z.string(),
   fieldType: z.enum(ELEMENT_TYPES).optional(),
   operator: conditionOperatorSchema,
@@ -36,21 +36,21 @@ const conditionSchema = z.object({
 });
 
 const conditionGroupSchema: z.ZodType<ConditionGroup> = z.lazy(() =>
-  z.object({
+  z.strictObject({
     logic: z.union([z.literal('all'), z.literal('any')]),
     conditions: z.array(conditionSchema),
     groups: z.array(conditionGroupSchema),
   }),
 );
 
-const fileValueSchema = z.object({
+const fileValueSchema = z.strictObject({
   name: z.string(),
   size: z.number(),
   mimeType: z.string(),
   dataUrl: z.string().optional(),
 });
 
-const signatureValueSchema = z.object({
+const signatureValueSchema = z.strictObject({
   dataUrl: z.string(),
   width: z.number(),
   height: z.number(),
@@ -68,7 +68,7 @@ export const fieldValueSchema = z
   ])
   .nullable();
 
-const validationRuleSchema = z.object({
+const validationRuleSchema = z.strictObject({
   id: z.string(),
   rule: validationRuleTypeSchema,
   message: z.string().optional(),
@@ -80,15 +80,15 @@ const validationRuleSchema = z.object({
 });
 
 const defaultValueDefSchema = z.union([
-  z.object({ kind: z.literal('static'), value: fieldValueSchema }),
-  z.object({ kind: z.literal('expression'), expression: z.string() }),
-  z.object({ kind: z.literal('fromField'), fieldId: z.string() }),
+  z.strictObject({ kind: z.literal('static'), value: fieldValueSchema }),
+  z.strictObject({ kind: z.literal('expression'), expression: z.string() }),
+  z.strictObject({ kind: z.literal('fromField'), fieldId: z.string() }),
 ]);
 
 // ---------------------------------------------------------------------------
 // Elements
 // ---------------------------------------------------------------------------
-const elementBaseSchema = z.object({
+const elementBaseSchema = z.strictObject({
   id: z.string(),
   type: z.enum(ELEMENT_TYPES),
   label: z.string(),
@@ -97,15 +97,15 @@ const elementBaseSchema = z.object({
   enabledWhen: conditionGroupSchema.optional(),
 }) satisfies z.ZodType<ElementBase>;
 
-const placeholderableSchema = z.object({
+const placeholderableSchema = z.strictObject({
   placeholder: z.string().default(''),
 });
 
-const defaultValueableSchema = z.object({
+const defaultValueableSchema = z.strictObject({
   defaultValue: z.union([defaultValueDefSchema, z.null()]).default(null),
 });
 
-const choiceOptionSchema = z.object({
+const choiceOptionSchema = z.strictObject({
   id: z.string(),
   label: z.string(),
   value: z.union([z.string(), z.number()]),
@@ -120,7 +120,7 @@ const textDisplayElementSchema = elementBaseSchema.extend({
   type: z.literal('textdisplay'),
 });
 
-const formSettingsSchema = z.object({
+const formSettingsSchema = z.strictObject({
   name: z.string().optional(),
   submitLabel: z.string().optional(),
   showProgress: z.boolean().optional(),
@@ -236,7 +236,7 @@ const elementsSchema: z.ZodType<ElementDefinition[]> = z.array(elementDefinition
 // ---------------------------------------------------------------------------
 // Pages & form
 // ---------------------------------------------------------------------------
-const pageDefinitionSchema = z.object({
+const pageDefinitionSchema = z.strictObject({
   id: z.string(),
   title: z.string().optional(),
   subtitle: z.string().optional(),
@@ -244,17 +244,19 @@ const pageDefinitionSchema = z.object({
   elements: elementsSchema,
 });
 
-export const formDefinitionSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  description: z.string().optional(),
-  version: z.number(),
-  schemaVersion: z.literal(1),
-  createdAt: z.string().optional(),
-  updatedAt: z.string().optional(),
-  settings: formSettingsSchema,
-  pages: z.array(pageDefinitionSchema),
-}) satisfies z.ZodType<FormDefinition>;
+export const formDefinitionSchema = z
+  .strictObject({
+    id: z.string(),
+    name: z.string(),
+    description: z.string().optional(),
+    version: z.number(),
+    schemaVersion: z.literal(1),
+    createdAt: z.string().optional(),
+    updatedAt: z.string().optional(),
+    settings: formSettingsSchema,
+    pages: z.array(pageDefinitionSchema),
+  })
+  .strict() satisfies z.ZodType<FormDefinition>;
 
 export function parseFormData(json: string): CatchFnResult<FormDefinition> {
   return catchFn(() => formDefinitionSchema.parse(JSON.parse(json)));
