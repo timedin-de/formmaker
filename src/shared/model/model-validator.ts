@@ -1,10 +1,10 @@
 import { z } from 'zod';
+import { catchFn, type CatchFnResult } from '../helper';
 import type { ConditionGroup } from './conditions.model';
 import { CONDITION_OPERATORS } from './conditions.model';
 import type { ElementBase, ElementDefinition, FormDefinition } from './form.model';
 import { ELEMENT_TYPES, QUESTION_TYPES } from './form.model';
 import { VALIDATION_RULE_TYPES, type ValidationRuleType } from './validation.model';
-import { catchFn, type CatchFnResult } from '../helper';
 
 const conditionOperatorSchema = z.enum(CONDITION_OPERATORS);
 const validationRuleTypeSchema = z.enum(
@@ -215,7 +215,6 @@ const groupElementSchema = elementBaseSchema
   .extend(defaultValueableSchema.shape)
   .extend({
     type: z.literal('group'),
-    legend: z.string().optional(),
     collapsible: z.boolean().optional(),
   })
   .extend({

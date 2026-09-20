@@ -75,7 +75,7 @@ Every element: `id`, `type`, `label` (required); `description` (optional, Markdo
 | `signature`                       | –                              | –                                                                          | SignatureValue                                 |
 | `section`                         | `heading`                      | –                                                                          | –                                              |
 | `textdisplay`                     | –                              | –                                                                          | –                                              |
-| `group`                           | `elements` (recursive array)   | `legend`, `collapsible`, `defaultValue`                                    | –                                              |
+| `group`                           | `elements` (recursive array)   | `collapsible`, `defaultValue`                                              | –                                              |
 
 `section` requires `heading`; `textdisplay` is a static/markdown block (uses `label`).
 `group` nests any elements recursively (including other groups).
@@ -453,7 +453,6 @@ dateDiff yearsBetween msg required`. Identifiers = field ids (null when empty).
           "label": "Address group",
           "width": 1,
           "defaultValue": null,
-          "legend": "Billing address",
           "collapsible": true,
           "elements": [
             {
@@ -482,7 +481,6 @@ dateDiff yearsBetween msg required`. Identifiers = field ids (null when empty).
           "label": "Attestation",
           "width": 1,
           "defaultValue": null,
-          "legend": "Sign below",
           "collapsible": false,
           "elements": [
             {

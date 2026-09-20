@@ -9,7 +9,6 @@
       }
       @case ('group') {
         <fieldset class="grp">
-          <legend [innerHTML]="legendText() | markdown"></legend>
           <p class="desc muted">{{ i18n.t('q.groupCount', { n: groupCount() }) }}</p>
         </fieldset>
       }

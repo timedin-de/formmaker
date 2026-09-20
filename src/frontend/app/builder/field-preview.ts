@@ -1,5 +1,4 @@
 import { Component, inject, input } from '@angular/core';
-import type { ChoiceElement, ElementDefinition, ScaleElement } from '@shared/model/form.model';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -7,9 +6,10 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatRadioModule } from '@angular/material/radio';
 import { MatSelectModule } from '@angular/material/select';
+import { has } from '@shared/helper';
+import type { ChoiceElement, ElementDefinition, ScaleElement } from '@shared/model/form.model';
 import { I18nService } from '../core/i18n';
 import { MarkdownPipe } from '../core/markdown';
-import { has } from '@shared/helper';
 
 @Component({
   selector: 'fm-field-preview',
@@ -35,11 +35,6 @@ export class FieldPreview {
   protected headingText(): string {
     const e = this.el() as ElementDefinition & { heading?: string };
     return e.heading || this.el().label;
-  }
-
-  protected legendText(): string {
-    const e = this.el() as ElementDefinition & { legend?: string };
-    return e.legend || this.el().label;
   }
 
   protected options(): ChoiceElement['options'] {
