@@ -117,7 +117,7 @@ export function createElement(type: ElementType, label: string): ElementDefiniti
     case 'group':
       return { ...base, type: 'group', defaultValue: null, elements: [] };
     case 'section':
-      return { ...base, type: 'section', heading: 'Section heading' };
+      return { ...base, type: 'section' };
     case 'textdisplay':
       return { ...base, type: 'textdisplay' };
   }

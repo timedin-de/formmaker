@@ -113,7 +113,6 @@ const choiceOptionSchema = z.strictObject({
 
 const sectionElementSchema = elementBaseSchema.extend({
   type: z.literal('section'),
-  heading: z.string(),
 });
 
 const textDisplayElementSchema = elementBaseSchema.extend({

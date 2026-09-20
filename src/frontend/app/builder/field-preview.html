@@ -2,7 +2,6 @@
   @if (el(); as el) {
     @switch (el.type) {
       @case ('section') {
-        <h3 class="sec" [innerHTML]="headingText() | markdown"></h3>
         @if (el.description) {
           <div class="desc" [innerHTML]="el.description | markdown: true"></div>
         }

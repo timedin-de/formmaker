@@ -186,13 +186,6 @@
           </mat-checkbox>
         }
 
-        @if (el.type === 'section') {
-          <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-label>{{ i18n.t('panel.heading') }}</mat-label>
-            <input matInput [ngModel]="el.heading" (ngModelChange)="patch({ heading: $event })" />
-          </mat-form-field>
-        }
-
         @if (el.type === 'group') {
           <mat-checkbox
             [checked]="el.collapsible ?? false"

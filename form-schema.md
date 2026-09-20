@@ -73,11 +73,11 @@ Every element: `id`, `type`, `label` (required); `description` (optional, Markdo
 | `scale`                           | `min`, `max`, `step` (numbers) | `minLabel`, `maxLabel`                                                     | number                                         |
 | `file`                            | –                              | `accept`, `multiple`                                                       | FileValue[]                                    |
 | `signature`                       | –                              | –                                                                          | SignatureValue                                 |
-| `section`                         | `heading`                      | –                                                                          | –                                              |
+| `section`                         | –                              | –                                                                          | –                                              |
 | `textdisplay`                     | –                              | –                                                                          | –                                              |
 | `group`                           | `elements` (recursive array)   | `collapsible`, `defaultValue`                                              | –                                              |
 
-`section` requires `heading`; `textdisplay` is a static/markdown block (uses `label`).
+`textdisplay` is a static/markdown block (uses `label`).
 `group` nests any elements recursively (including other groups).
 
 ### choice `options` (choice/dropdown/multiChoice)
@@ -183,8 +183,7 @@ dateDiff yearsBetween msg required`. Identifiers = field ids (null when empty).
           "type": "section",
           "width": 1,
           "label": "",
-          "description": "Primary fields",
-          "heading": "Main section"
+          "description": "Primary fields"
         },
         {
           "id": "q_name",

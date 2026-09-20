@@ -141,7 +141,6 @@ export interface GroupElement extends ElementBase, DefaultValueable {
 
 export interface SectionElement extends ElementBase {
   type: 'section';
-  heading: string;
 }
 
 export interface TextDisplayElement extends ElementBase {
