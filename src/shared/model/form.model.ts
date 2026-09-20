@@ -1,9 +1,9 @@
-import type { ElementId, FormId, PageId } from './ids';
-import type { ConditionGroup } from './conditions.model';
-import type { FieldValue } from './values.model';
-import type { ValidationRule } from './validation.model';
-import { Submission } from './submission.model';
 import { FormControl } from '@angular/forms';
+import type { ConditionGroup } from './conditions.model';
+import type { ElementId, FormId, PageId } from './ids';
+import { Submission } from './submission.model';
+import type { ValidationRule } from './validation.model';
+import type { FieldValue } from './values.model';
 
 export const QUESTION_TYPES = [
   'text',
@@ -134,7 +134,6 @@ export interface LongTextElement extends QuestionBase, Placeholderable {
 
 export interface GroupElement extends ElementBase, DefaultValueable {
   type: 'group';
-  legend?: string;
   elements: Elements;
   elementsRef?: ElementViewRef[];
   collapsible?: boolean;

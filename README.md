@@ -23,7 +23,7 @@ Built with Angular 22 + Angular Material 22 on the frontend and a TypeScript Exp
 - **Default values** — static values, computed expressions (`now()`, `concat('A','B')`), or copy the value from another field.
 - **Calculated fields** — number fields with formulas over other fields (e.g. `(a * b) / 100`) and configurable decimals.
 - **Validation rules** — required, length bounds, min/max, between, regex patterns, date ranges, integers, email/url/phone, file-type and file-count/size rules, plus fully custom expressions — each with a custom error message.
-- **Groups** — nest questions inside collapsible groups; groups carry their own legend.
+- **Groups** — nest questions inside collapsible groups.
 - **Field layout** — full / half / third widths so multi-column forms are possible.
 - **Uploads & signatures** — file fields enforce `accept`/multiple/size/file-type rules; signatures are captured on a device-pixel-correct signature pad.
 - **Markdown titles & descriptions** — question labels, page titles/subtitles and descriptions are rendered as Markdown (**bold**, _italic_, `code`, lists, links) with `markdown-it`; block formatting (paragraphs, lists, headings) works in descriptions.

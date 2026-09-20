@@ -194,14 +194,6 @@
         }
 
         @if (el.type === 'group') {
-          <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-label>{{ i18n.t('panel.legend') }}</mat-label>
-            <input
-              matInput
-              [ngModel]="el.legend ?? ''"
-              (ngModelChange)="patch({ legend: $event })"
-            />
-          </mat-form-field>
           <mat-checkbox
             [checked]="el.collapsible ?? false"
             (change)="patch({ collapsible: $event.checked })"

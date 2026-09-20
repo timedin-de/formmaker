@@ -293,7 +293,6 @@
           "label": "Address group",
           "width": 1,
           "defaultValue": null,
-          "legend": "Billing address",
           "collapsible": true,
           "elements": [
             {
@@ -322,7 +321,6 @@
           "label": "Attestation",
           "width": 1,
           "defaultValue": null,
-          "legend": "Sign below",
           "collapsible": false,
           "elements": [
             {
