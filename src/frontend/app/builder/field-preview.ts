@@ -32,11 +32,6 @@ export class FieldPreview {
 
   protected readonly has = has;
 
-  protected headingText(): string {
-    const e = this.el() as ElementDefinition & { heading?: string };
-    return e.heading || this.el().label;
-  }
-
   protected options(): ChoiceElement['options'] {
     return (this.el() as ChoiceElement).options ?? [];
   }

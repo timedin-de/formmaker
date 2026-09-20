@@ -23,8 +23,7 @@
           "type": "section",
           "width": 1,
           "label": "",
-          "description": "Primary fields",
-          "heading": "Main section"
+          "description": "Primary fields"
         },
         {
           "id": "q_name",
@@ -350,8 +349,7 @@
           "type": "section",
           "width": 1,
           "label": "",
-          "description": "",
-          "heading": "You are done"
+          "description": ""
         },
         {
           "id": "td_end",
