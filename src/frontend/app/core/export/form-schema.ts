@@ -1,15 +1,14 @@
-import {
-  type FormDefinition,
-  type ElementDefinition,
-  type Elements,
-  ELEMENT_TYPES,
-} from '@shared/model/form.model';
-import { CONDITION_OPERATORS } from '@shared/model/conditions.model';
-import { expressionReferences } from '../engine/expression/evaluator';
-import { templateReferences } from '../engine/expression/template';
-import { conditionGroupReferences } from '../engine/condition-engine';
 import { has } from '@shared/helper';
 import { VALIDATION_RULE_TYPES } from '@shared/model';
+import { CONDITION_OPERATORS } from '@shared/model/conditions.model';
+import {
+  type ElementDefinition,
+  type FormDefinition,
+  ELEMENT_TYPES,
+} from '@shared/model/form.model';
+import { conditionGroupReferences } from '../engine/condition-engine';
+import { expressionReferences } from '../engine/expression/evaluator';
+import { templateReferences } from '../engine/expression/template';
 
 export interface ValidationIssue {
   path: string;
@@ -136,7 +135,7 @@ function validateElement(
   }
 
   if (el.type === 'group') {
-    const elements = (el as ElementDefinition & { elements?: Elements }).elements;
+    const elements = el.elements;
     if (!Array.isArray(elements))
       issues.push({ path: `${path}.elements`, message: 'Group needs elements array' });
     else
@@ -223,7 +222,7 @@ function validateReferences(
     }
   }
   if (el.type === 'group') {
-    (el as ElementDefinition & { elements: Elements }).elements.forEach((child, ci) =>
+    el.elements.forEach((child, ci) =>
       validateReferences(child, `${path}.elements[${ci}]`, issues, knownId),
     );
   }

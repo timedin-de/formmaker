@@ -20,7 +20,7 @@
         </button>
       </div>
       <div class="group-children" (click)="$event.stopPropagation()">
-        @for (child of group().elements; track child.id) {
+        @for (child of el.elements; track child.id) {
           <fm-element-row [el]="child" [store]="store()" />
         }
         <button class="add-child" (click)="showPalette.set(true)">

@@ -19,10 +19,6 @@ export function uuid(): string {
   });
 }
 
-export function elementId(prefix: string): ElementId {
+export function elementId(prefix: 'q' | 'submission' | 'page'): ElementId {
   return `${prefix}_${uuid().slice(0, 8)}`;
-}
-
-export function pageId(): PageId {
-  return `page_${uuid().slice(0, 8)}`;
 }

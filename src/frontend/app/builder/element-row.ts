@@ -1,16 +1,17 @@
 import { Component, computed, inject, input, signal } from '@angular/core';
-import { DesignerStore } from '../core/state/designer.store';
-import { fieldMeta } from '../core/model/field-registry';
-import type { ElementDefinition, ElementType, GroupElement } from '@shared/model/form.model';
+import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatToolbarModule } from '@angular/material/toolbar';
-import { FormsModule } from '@angular/forms';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { BuilderPalette } from './palette';
-import { I18nService } from '../core/i18n';
 import { has } from '@shared/helper';
+import type { ElementDefinition, ElementType } from '@shared/model/form.model';
+import { createElement } from '../core';
+import { I18nService } from '../core/i18n';
+import { fieldMeta } from '../core/model/field-registry';
+import { DesignerStore } from '../core/state/designer.store';
+import { BuilderPalette } from './palette';
 
 @Component({
   imports: [
@@ -37,7 +38,6 @@ export class ElementRow {
 
   protected meta = computed(() => fieldMeta(this.el().type));
   protected selected = computed(() => this.store().selectedId() === this.el().id);
-  protected group = computed(() => this.el() as unknown as GroupElement);
   protected elEnabledWhen = computed(
     () => !!this.el().enabledWhen?.conditions?.length || !!this.el().enabledWhen?.groups?.length,
   );
@@ -60,16 +60,10 @@ export class ElementRow {
 
   addChild(type: ElementType = 'text'): void {
     this.showPalette.set(false);
-    const group = this.group();
-    const child = {
-      ...(this.el().type === 'group' ? {} : {}),
-      id: `q_${Math.random().toString(36).slice(2, 10)}`,
-      type,
-      label: this.i18n.t('row.childQuestion'),
-      enabledWhen: undefined,
-      width: 1,
-    };
-    group.elements = [...group.elements, child as ElementDefinition];
+    const group = this.el();
+    if (group.type !== 'group') return;
+    const child = createElement(type, this.i18n.t('row.childQuestion'));
+    group.elements = [...group.elements, child];
     this.store().updateElement(this.el().id, { elements: group.elements } as never);
   }
 }

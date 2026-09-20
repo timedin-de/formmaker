@@ -1,20 +1,21 @@
 import { Component, computed, inject, input, signal } from '@angular/core';
-import { DesignerStore } from '../core/state/designer.store';
-import type { ElementType, PageDefinition } from '@shared/model/form.model';
+import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatToolbarModule } from '@angular/material/toolbar';
-import { FormsModule } from '@angular/forms';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { ElementRow } from './element-row';
-import { ConditionEditor } from './condition-editor';
-import { FieldPreview } from './field-preview';
-import { PropertyPanel } from './property-panel';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ConditionGroup } from '@shared/model';
+import type { ElementType, PageDefinition } from '@shared/model/form.model';
 import { first } from 'rxjs';
-import { BuilderPalette } from './palette';
 import { I18nService } from '../core/i18n';
+import { DesignerStore } from '../core/state/designer.store';
+import { ConditionEditor } from './condition-editor';
+import { ElementRow } from './element-row';
+import { FieldPreview } from './field-preview';
+import { BuilderPalette } from './palette';
+import { PropertyPanel } from './property-panel';
 
 @Component({
   imports: [
@@ -47,7 +48,9 @@ export class BuilderCanvas {
 
   readonly preview = input(false);
   protected page = computed(() => this.store().activePage());
-  protected emptyGroup = computed(() => ({ logic: 'all' as const, conditions: [], groups: [] }));
+  protected emptyGroup = computed(
+    () => ({ logic: 'all', conditions: [], groups: [] }) as ConditionGroup,
+  );
   protected fieldOptions = computed(() =>
     this.pages()
       .flatMap((p) => p.elements)

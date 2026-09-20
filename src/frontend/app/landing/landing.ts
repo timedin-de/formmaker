@@ -54,8 +54,8 @@ export class LandingComponent {
     let n = 0;
     const walk = (els: FormDefinition['pages'][number]['elements']) => {
       for (const el of els) {
-        if ((el.type as string) === 'group') walk((el as { elements: typeof els }).elements);
-        else if ((el.type as string) !== 'section') n += 1;
+        if (el.type === 'group') walk(el.elements);
+        else if (el.type !== 'section') n += 1;
       }
     };
     form.pages.forEach((p) => walk(p.elements));

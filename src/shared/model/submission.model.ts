@@ -1,4 +1,4 @@
-import type { ElementId, FormId } from './ids';
+import { elementId, type ElementId, type FormId } from './ids';
 import type { FieldValue } from './values.model';
 
 export interface Submission {
@@ -17,7 +17,7 @@ export function createSubmission(
   submittedAt = new Date().toISOString(),
 ): Submission {
   return {
-    id: crypto ? crypto.randomUUID() : Math.random().toString(36).slice(2),
+    id: elementId('submission'),
     formId: form.id,
     formName: form.name,
     formVersion: form.version,
