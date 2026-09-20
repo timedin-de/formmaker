@@ -1,3 +1,4 @@
+import { emptyConditionGroup } from '@shared/model/conditions.model';
 import type {
   ElementDefinition,
   Elements,
@@ -7,8 +8,7 @@ import type {
   QuestionDefinition,
   QuestionType,
 } from '@shared/model/form.model';
-import { elementId, pageId, uuid } from '@shared/model/ids';
-import { emptyConditionGroup } from '@shared/model/conditions.model';
+import { elementId, uuid } from '@shared/model/ids';
 
 export function newForm(name = 'Untitled form'): FormDefinition {
   const now = new Date().toISOString();
@@ -32,7 +32,7 @@ export function newForm(name = 'Untitled form'): FormDefinition {
 }
 
 export function createPage(title = 'New page'): PageDefinition {
-  return { id: pageId(), title, elements: [], enabledWhen: emptyConditionGroup() };
+  return { id: elementId('page'), title, elements: [], enabledWhen: emptyConditionGroup() };
 }
 
 export function createElement(type: QuestionType, label: string): QuestionDefinition;
