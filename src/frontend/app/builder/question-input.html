@@ -107,12 +107,24 @@
     }
     @case ('time') {
       <mat-form-field appearance="outline" class="field-host" subscriptSizing="dynamic">
-        <input matInput [id]="vr.id" type="time" [formControl]="vr.control" />
+        <input
+          matInput
+          [id]="vr.id"
+          type="time"
+          [formControl]="vr.control"
+          [step]="timeStep(vr.el)"
+        />
       </mat-form-field>
     }
     @case ('dateTime') {
       <mat-form-field appearance="outline" class="field-host" subscriptSizing="dynamic">
-        <input matInput type="datetime-local" [formControl]="vr.control" />
+        <input
+          matInput
+          [id]="vr.id"
+          type="datetime-local"
+          [formControl]="vr.control"
+          [step]="timeStep(vr.el)"
+        />
       </mat-form-field>
     }
     @case ('file') {

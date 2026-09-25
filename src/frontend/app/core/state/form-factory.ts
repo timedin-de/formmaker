@@ -9,6 +9,7 @@ import type {
   QuestionDefinition,
   QuestionType,
 } from '@shared/model/form.model';
+import { DEFAULT_TIME_INTERVAL } from '@shared/model/form.model';
 import { elementId, uuid } from '@shared/model/ids';
 
 export function newForm(name = 'Untitled form'): FormDefinition {
@@ -70,9 +71,9 @@ export function createElement(type: ElementType, label: string): ElementDefiniti
     case 'date':
       return { ...pBase, type: 'date' };
     case 'time':
-      return { ...pBase, type: 'time' };
+      return { ...pBase, type: 'time', timeInterval: { ...DEFAULT_TIME_INTERVAL } };
     case 'dateTime':
-      return { ...pBase, type: 'dateTime' };
+      return { ...pBase, type: 'dateTime', timeInterval: { ...DEFAULT_TIME_INTERVAL } };
     case 'boolean':
       return { ...qBase, type: 'boolean' };
     case 'choice':

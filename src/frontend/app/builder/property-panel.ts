@@ -1,31 +1,33 @@
 import { Component, computed, inject, input } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { DesignerStore } from '../core/state/designer.store';
-import { fieldMeta } from '../core/model/field-registry';
-import {
-  type ChoiceElement,
-  type DefaultValueDef,
-  type ElementDefinition,
-  type Elements,
-  type GroupElement,
-  type QuestionDefinition,
-} from '@shared/model/form.model';
-import type { ValidationRule, ValidationRuleType } from '@shared/model/validation.model';
-import { VALIDATION_RULE_TYPES, validationRule } from '@shared/model/validation.model';
-import { uuid } from '@shared/model/ids';
-import { ConditionEditor } from './condition-editor';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDividerModule } from '@angular/material/divider';
+import { MatExpansionModule } from '@angular/material/expansion';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatExpansionModule } from '@angular/material/expansion';
-import { I18nService } from '../core/i18n';
 import { has } from '@shared/helper';
+import type {
+  ChoiceElement,
+  DefaultValueDef,
+  ElementDefinition,
+  Elements,
+  GroupElement,
+  QuestionDefinition,
+  TimeElement,
+} from '@shared/model/form.model';
+import { DEFAULT_TIME_INTERVAL, TIME_INTERVAL_UNITS } from '@shared/model/form.model';
+import { uuid } from '@shared/model/ids';
+import type { ValidationRule, ValidationRuleType } from '@shared/model/validation.model';
+import { VALIDATION_RULE_TYPES, validationRule } from '@shared/model/validation.model';
+import { I18nService } from '../core/i18n';
+import { fieldMeta } from '../core/model/field-registry';
+import { DesignerStore } from '../core/state/designer.store';
+import { ConditionEditor } from './condition-editor';
 
 const WIDTHS = Array(12)
   .fill(12)
@@ -59,11 +61,10 @@ export class PropertyPanel {
   protected readonly WIDTHS = WIDTHS;
   protected readonly INPUT_TYPES = INPUT_TYPES;
   protected readonly VALIDATION_RULE_TYPES = VALIDATION_RULE_TYPES;
+  protected readonly TIME_INTERVAL_UNITS = TIME_INTERVAL_UNITS;
   protected readonly has = has;
 
-  protected el = computed(() => {
-    return this.store().selectedElement();
-  });
+  protected el = computed(() => this.store().selectedElement());
   protected meta = computed(() => (this.el() ? fieldMeta(this.el()!.type) : fieldMeta('text')));
   protected emptyGroup = computed(() => ({ logic: 'all' as const, conditions: [], groups: [] }));
   protected pages = computed(() => this.store().form().pages);
@@ -307,5 +308,23 @@ export class PropertyPanel {
       (e): e is GroupElement =>
         e.type === 'group' && e.id !== this.el()?.id && thisElems.length === e.elements.length,
     );
+  }
+
+  // ---- time interval ---------------------------------------------------------
+
+  isTimeElement(el: ElementDefinition): el is TimeElement {
+    return has(el, 'timeInterval');
+  }
+
+  patchTimeInterval(patch: Partial<TimeElement['timeInterval']>): void {
+    const el = this.el();
+    if (!el || !this.isTimeElement(el)) return;
+    this.patch({ timeInterval: { ...el.timeInterval, ...patch } });
+  }
+
+  /** Interval values are whole units ≥ 1 — anything else falls back to the default. */
+  intervalValue(raw: string): number {
+    const n = Number(String(raw).trim());
+    return Number.isFinite(n) && n >= 1 ? Math.floor(n) : DEFAULT_TIME_INTERVAL.value;
   }
 }

@@ -36,6 +36,36 @@
           </mat-form-field>
         }
 
+        @if (isTimeElement(el)) {
+          <div class="sec-label">{{ i18n.t('panel.timeInterval.hint') }}</div>
+          <div class="two-col">
+            <mat-form-field appearance="outline">
+              <mat-label>{{ i18n.t('panel.timeInterval.value') }}</mat-label>
+              <input
+                matInput
+                type="number"
+                min="1"
+                step="1"
+                [ngModel]="el.timeInterval.value"
+                (ngModelChange)="patchTimeInterval({ value: intervalValue($event) })"
+              />
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>{{ i18n.t('panel.unit') }}</mat-label>
+              <mat-select
+                [ngModel]="el.timeInterval.multiplier"
+                (ngModelChange)="patchTimeInterval({ multiplier: $event })"
+              >
+                @for (unit of TIME_INTERVAL_UNITS; track unit.multiplier) {
+                  <mat-option [value]="unit.multiplier">{{
+                    i18n.t(`${unit.key}${el.timeInterval.value === 1 ? '' : 's'}`)
+                  }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          </div>
+        }
+
         @if (el.type === 'text') {
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
             <mat-label>{{ i18n.t('panel.keyboardType') }}</mat-label>
