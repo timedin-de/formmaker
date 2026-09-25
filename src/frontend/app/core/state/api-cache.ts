@@ -14,10 +14,19 @@ interface CacheEntry<T> {
 }
 
 export function readCache<T>(schema: z.ZodType<T>, key: string, maxAgeMs: number): T | null {
-  const { data: entry } = catchFn(
-    () => JSON.parse(localStorage.getItem(key) ?? 'null') as CacheEntry<T> | null,
+  const cacheSchema = z.strictObject({
+    cachedAt: z.number(),
+    value: schema,
+  }) satisfies z.ZodType<CacheEntry<T>>;
+
+  const { data: entry } = catchFn(() =>
+    cacheSchema.parse(JSON.parse(localStorage.getItem(key) ?? '')),
   );
-  return entry && Date.now() - entry.cachedAt < maxAgeMs ? entry.value : null;
+
+  if (entry) return entry && Date.now() - entry.cachedAt < maxAgeMs ? entry.value : null;
+
+  catchFn(() => localStorage.removeItem(key));
+  return null;
 }
 
 export function writeCache<T>(key: string, value: T): void {

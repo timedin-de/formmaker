@@ -1,3 +1,5 @@
+import z from 'zod';
+
 const TOKEN_KEY = 'formmaker.token';
 
 /** Error thrown on non-2xx responses; carries the human-readable server message. */
@@ -10,8 +12,13 @@ export class ApiError extends Error {
     this.name = 'ApiError';
   }
 }
-
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
+async function request(schema: undefined, path: string, init?: RequestInit): Promise<undefined>;
+async function request<T>(schema: z.ZodType<T>, path: string, init?: RequestInit): Promise<T>;
+async function request<T>(
+  schema: z.ZodType<T> | undefined,
+  path: string,
+  init?: RequestInit,
+): Promise<T | undefined> {
   const token = sessionStorage.getItem(TOKEN_KEY);
   const res = await fetch(path, {
     ...init,
@@ -21,8 +28,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     },
   });
   if (!res.ok) throw await errorFrom(res);
-  if (res.status === 204) return undefined as T;
-  return (await res.json()) as T;
+  if (!schema) return;
+
+  const data = schema.parse(await res.json());
+  return data;
 }
 
 async function errorFrom(res: Response): Promise<ApiError> {

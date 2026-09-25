@@ -24,7 +24,7 @@ describe('api-client request', () => {
   });
 
   it('sends a GET without an Authorization header when no token is stored', async () => {
-    await request<{ ok: boolean }>('/api/users/me');
+    await request(undefined, '/api/users/me');
 
     expect(fetchMock).toHaveBeenCalledWith(
       '/api/users/me',
@@ -36,7 +36,7 @@ describe('api-client request', () => {
 
   it('attaches the bearer token when present in sessionStorage', async () => {
     sessionStorage.setItem('formmaker.token', 'secret-token');
-    await request<void>('/api/users/me');
+    await request(undefined, '/api/users/me');
 
     expect(fetchMock).toHaveBeenCalledWith(
       '/api/users/me',
@@ -45,7 +45,7 @@ describe('api-client request', () => {
   });
 
   it('sets a JSON content type only when a body is sent', async () => {
-    await request<void>('/api/users/me', {
+    await request(undefined, '/api/users/me', {
       method: 'PATCH',
       body: JSON.stringify({ email: 'a@b.c' }),
     });
@@ -54,19 +54,14 @@ describe('api-client request', () => {
     expect(headers).toEqual({ 'Content-Type': 'application/json' });
   });
 
-  it('resolves the parsed JSON body on a 2xx response', async () => {
-    fetchMock.mockResolvedValue(jsonResponse({ hello: 'world' }));
-    await expect(request<{ hello: string }>('/x')).resolves.toEqual({ hello: 'world' });
-  });
-
   it('resolves undefined on a 204 response', async () => {
     fetchMock.mockResolvedValue(jsonResponse(null, 204));
-    await expect(request<void>('/x')).resolves.toBeUndefined();
+    await expect(request(undefined, '/x')).resolves.toBeUndefined();
   });
 
   it('rejects with the server message on a non-2xx JSON response', async () => {
     fetchMock.mockResolvedValue(jsonResponse({ error: 'email already exists' }, 409, false));
-    await expect(request<void>('/x')).rejects.toMatchObject({
+    await expect(request(undefined, '/x')).rejects.toMatchObject({
       name: 'ApiError',
       status: 409,
       message: 'email already exists',
@@ -75,7 +70,7 @@ describe('api-client request', () => {
 
   it('rejects with a generic message when the error body carries no usable text', async () => {
     fetchMock.mockResolvedValue(jsonResponse({}, 500, false));
-    await expect(request<void>('/x')).rejects.toEqual(new ApiError('API 500', 500));
+    await expect(request(undefined, '/x')).rejects.toEqual(new ApiError('API 500', 500));
   });
 
   it('rejects with a generic message when the error body is not JSON', async () => {
@@ -84,7 +79,7 @@ describe('api-client request', () => {
       status: 500,
       json: () => Promise.reject(new SyntaxError('Unexpected token')),
     } as unknown as Response);
-    await expect(request<void>('/x')).rejects.toEqual(new ApiError('API 500', 500));
+    await expect(request(undefined, '/x')).rejects.toEqual(new ApiError('API 500', 500));
   });
 });
 

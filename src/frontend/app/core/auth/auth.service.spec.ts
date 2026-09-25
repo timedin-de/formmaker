@@ -1,8 +1,8 @@
 import { TestBed } from '@angular/core/testing';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { PublicUser } from '@shared/model/user.model';
-import { AuthService } from './auth.service';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { UsersRepository } from '../state/users.repository';
+import { AuthService } from './auth.service';
 
 function makeUser(overrides: Partial<PublicUser> = {}): PublicUser {
   return {
@@ -93,7 +93,16 @@ describe('AuthService', () => {
     const auth = await setup();
     fetchMock.mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve({ token: 'fresh-token' }),
+      json: () =>
+        Promise.resolve({
+          token: 'fresh-token',
+          user: {
+            id: '',
+            createdAt: '',
+            role: 'editor',
+            email: 'email@email.com',
+          },
+        }),
     });
 
     await expect(auth.register('new@formmaker.local', 'formmaker')).resolves.toBe(true);

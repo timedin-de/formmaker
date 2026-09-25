@@ -1,14 +1,10 @@
+import { catchFn } from '@shared/helper';
+import { SavedDraft } from '@shared/model';
 import type { FormDefinition } from '@shared/model/form.model';
 import type { ValuesMap } from '@shared/model/values.model';
-import { catchFn } from '@shared/helper';
+import { draftSchema } from '@shared/schemas';
 
 const DRAFT_PREFIX = 'formmaker.draft.';
-
-interface SavedDraft {
-  savedAt: number;
-  formVersion: number;
-  values: ValuesMap;
-}
 
 /** Temporary localStorage autosave of a runner's in-progress answers. */
 export class RunnerDraft {
@@ -25,8 +21,10 @@ export class RunnerDraft {
     const { data } = catchFn(() => {
       const raw = localStorage.getItem(RunnerDraft.key(form));
       if (!raw) return null;
-      const data = JSON.parse(raw) as SavedDraft;
-      if (data.formVersion !== form.version || !data.values || typeof data.values !== 'object') {
+
+      const { data } = catchFn(() => draftSchema.parse(JSON.parse(raw)));
+
+      if (data?.formVersion !== form.version || !data.values || typeof data.values !== 'object') {
         localStorage.removeItem(RunnerDraft.key(form));
         return null;
       }

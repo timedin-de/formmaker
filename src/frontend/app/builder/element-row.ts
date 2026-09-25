@@ -64,6 +64,6 @@ export class ElementRow {
     if (group.type !== 'group') return;
     const child = createElement(type, this.i18n.t('row.childQuestion'));
     group.elements = [...group.elements, child];
-    this.store().updateElement(this.el().id, { elements: group.elements } as never);
+    this.store().updateElement(this.el().id, { elements: group.elements });
   }
 }
