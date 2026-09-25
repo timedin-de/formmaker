@@ -1,12 +1,12 @@
 import { TestBed } from '@angular/core/testing';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatIconRegistry } from '@angular/material/icon';
-import { provideRouter } from '@angular/router';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { DomSanitizer } from '@angular/platform-browser';
+import { provideRouter } from '@angular/router';
+import type { FormWithOwner } from '@shared/model/form.model';
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { FormDefinition } from '@shared/model/form.model';
-import { I18nService } from '../core/i18n';
 import { FormImportService } from '../core/export/import';
+import { I18nService } from '../core/i18n';
 import { FormsRepository } from '../core/state/forms.repository';
 import { LandingComponent } from './landing';
 
@@ -23,8 +23,8 @@ const ICONS = [
   'delete_outline',
 ];
 
-function makeForm(updatedAt?: string): FormDefinition {
-  const base: FormDefinition = {
+function makeForm(updatedAt?: string): FormWithOwner {
+  const base: FormWithOwner = {
     id: '1',
     name: 'Demo',
     description: '',
@@ -40,6 +40,13 @@ function makeForm(updatedAt?: string): FormDefinition {
       enableAutoSave: true,
     },
     pages: [],
+    ownerId: '1',
+    owner: {
+      id: '1',
+      email: 'ada@example.test',
+      role: 'editor',
+      createdAt: '2026-01-01T00:00:00.000Z',
+    },
   };
   return updatedAt ? { ...base, updatedAt } : base;
 }
@@ -89,5 +96,18 @@ describe('LandingComponent.updated', () => {
   it('falls back to the n/a translation when no updatedAt is set', () => {
     const fallback = i18n.t('landing.updated');
     expect(component.updated(makeForm())).toEqual({ date: fallback, time: fallback });
+  });
+
+  it('shows the owner label and initials', () => {
+    const form = makeForm();
+    expect(component.ownerLabel(form)).toBe('ada@example.test');
+    expect(component.ownerInitials(form)).toBe('A');
+  });
+
+  it('falls back when the owner is missing', () => {
+    const form = makeForm();
+    form.owner = null;
+    expect(component.ownerLabel(form)).toBe(i18n.t('landing.ownerUnknown'));
+    expect(component.ownerInitials(form)).toBe('?');
   });
 });

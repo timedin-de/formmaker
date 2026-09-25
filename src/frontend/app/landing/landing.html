@@ -58,6 +58,13 @@
             {{ countQuestions(form) }} {{ i18n.t('landing.questions') }} ·
             <span [matTooltip]="updated(form).time">{{ updated(form).date }}</span>
           </mat-card-subtitle>
+          <mat-card-avatar
+            class="profile-picture"
+            [attr.aria-label]="ownerLabel(form)"
+            [matTooltip]="ownerLabel(form)"
+          >
+            {{ ownerInitials(form) }}
+          </mat-card-avatar>
         </mat-card-header>
         <mat-card-content>
           @if (form.description) {

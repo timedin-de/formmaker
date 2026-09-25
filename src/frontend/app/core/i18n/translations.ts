@@ -60,6 +60,7 @@ const en = {
   'landing.questions': 'questions',
   'landing.imported': 'Imported "{name}"',
   'landing.updated': 'n/a',
+  'landing.ownerUnknown': 'Unknown owner',
 
   // Account
   'account.title': 'My account',
@@ -478,6 +479,7 @@ const de: typeof en = {
   'landing.questions': 'Fragen',
   'landing.imported': '"{name}" importiert',
   'landing.updated': 'k. A.',
+  'landing.ownerUnknown': 'Unbekannter Eigentümer',
 
   // Account
   'account.title': 'Mein Konto',
