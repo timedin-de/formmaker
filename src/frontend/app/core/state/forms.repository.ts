@@ -1,7 +1,7 @@
 import { Injectable, signal } from '@angular/core';
 import { toPortableForm, type FormDefinition, type FormWithOwner } from '@shared/model/form.model';
 import type { Submission } from '@shared/model/submission.model';
-import { request } from './api-client';
+import { formDefinitionSchema, formsWithOwnerSchema, submissionsSchema } from '@shared/schemas';
 import {
   FORM_CACHE_PREFIX,
   FORMS_CACHE_KEY,
@@ -12,6 +12,7 @@ import {
   SUBMISSIONS_CACHE_TTL_MS,
   writeCache,
 } from './api-cache';
+import { request } from './api-client';
 
 /** Server-backed persistence with a short-lived local response cache. */
 @Injectable({ providedIn: 'root' })
@@ -26,7 +27,7 @@ export class FormsRepository {
   }
 
   private async hydrate(): Promise<void> {
-    const cached = readCache<FormWithOwner[]>(FORMS_CACHE_KEY, FORMS_CACHE_TTL_MS);
+    const cached = readCache(formsWithOwnerSchema, FORMS_CACHE_KEY, FORMS_CACHE_TTL_MS);
     if (cached) {
       this.forms.set(cached);
       return;
@@ -44,7 +45,7 @@ export class FormsRepository {
   /** Public share links may load a form without an editor session. */
   async getForm(id: string): Promise<FormDefinition> {
     const key = FORM_CACHE_PREFIX + id;
-    const cached = readCache<FormDefinition>(key, FORMS_CACHE_TTL_MS);
+    const cached = readCache(formDefinitionSchema, key, FORMS_CACHE_TTL_MS);
     if (cached) return toPortableForm(cached);
     const form = await request<FormDefinition>(`/api/forms/${encodeURIComponent(id)}`);
     const portable = toPortableForm(form);
@@ -89,7 +90,7 @@ export class FormsRepository {
     await this.init();
     const key = SUBMISSIONS_CACHE_PREFIX + formId;
     const list =
-      readCache<Submission[]>(key, SUBMISSIONS_CACHE_TTL_MS) ??
+      readCache(submissionsSchema, key, SUBMISSIONS_CACHE_TTL_MS) ??
       (await request<Submission[]>(`/api/forms/${encodeURIComponent(formId)}/submissions`));
     writeCache(key, list);
     this.submissions.set([

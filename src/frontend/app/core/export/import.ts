@@ -1,12 +1,12 @@
 import { inject, Injectable } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import type { FormDefinition } from '@shared/model/form.model';
-import { parseFormData } from '@shared/model/model-validator';
 import { catchFnAsync } from '@shared/helper';
+import type { FormDefinition } from '@shared/model/form.model';
+import { parseFormData } from '@shared/schemas';
 import { I18nService } from '../i18n';
-import { validateFormDefinition } from './form-schema';
-import { readFileAsText } from './file';
 import { FormsRepository } from '../state/forms.repository';
+import { readFileAsText } from './file';
+import { validateFormDefinition } from './form-schema';
 
 @Injectable({ providedIn: 'root' })
 export class FormImportService {

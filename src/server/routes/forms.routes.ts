@@ -1,11 +1,13 @@
 import { Router } from 'express';
+import { toPortableForm, uuid } from '../../shared/model/index.js';
+import {
+  formDefinitionSchema,
+  stripFormOwnership,
+  submissionSchema,
+} from '../../shared/schemas/index.js';
 import { authenticate } from '../auth.js';
 import type { Repository } from '../repository.js';
-import { submissionSchema } from '../schemas.js';
 import { canManageForm, param, validate } from './helpers.js';
-import { toPortableForm } from '../../shared/model/form.model.js';
-import { formDefinitionSchema, stripFormOwnership } from '../../shared/model/model-validator.js';
-import { uuid } from '../../shared/model/ids.js';
 
 export function formsRoutes(repository: Repository): Router {
   const router = Router();
