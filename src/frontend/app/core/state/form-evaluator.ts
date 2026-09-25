@@ -1,9 +1,9 @@
-import type { FormDefinition, ElementDefinition, PageDefinition } from '@shared/model/form.model';
+import { has } from '@shared/helper';
+import type { ElementDefinition, FormDefinition, PageDefinition } from '@shared/model/form.model';
 import type { FieldValue, ValuesMap } from '@shared/model/values.model';
 import { evalConditionGroup } from '../engine/condition-engine';
-import { interpolateTemplate } from '../engine/expression/template';
 import { collectElementRefs } from '../engine/dependencies';
-import { has } from '@shared/helper';
+import { interpolateTemplate } from '../engine/expression/template';
 
 export interface ElementView {
   id: string;
@@ -100,10 +100,15 @@ export class FormEvaluator {
         views.push(view);
         byId.set(el.id, view);
         if (el.type === 'group') {
-          for (const gel of el.elements) {
-            const gview = this.evaluateElement(gel, values);
-            byId.set(gel.id, gview);
-          }
+          const indexNested = (el: ElementDefinition): void => {
+            if (el.type !== 'group') return;
+            for (const child of el.elements) {
+              const childView = this.evaluateElement(child, values);
+              byId.set(child.id, childView);
+              indexNested(child);
+            }
+          };
+          indexNested(el);
         }
       }
       pages.push({ page, visible: pageVisible, elements: views });
