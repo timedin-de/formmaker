@@ -42,6 +42,8 @@ export const formDefinitionSchema = z.strictObject({
   pages: z.array(pageDefinitionSchema),
 }) satisfies z.ZodType<FormDefinition>;
 
+export const formsDefinitionSchema = z.array(formDefinitionSchema);
+
 export const formWithOwnerSchema = formDefinitionSchema.extend({
   ownerId: z.string().min(1).max(128),
   owner: formOwnerSchema.nullable(),

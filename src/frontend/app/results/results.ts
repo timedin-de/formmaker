@@ -41,7 +41,7 @@ export class Results {
   protected readonly i18n = inject(I18nService);
 
   private readonly formId = signal<string | null>(null);
-  protected readonly form = signal<FormDefinition | null>(null);
+  protected readonly form = signal<FormDefinition | undefined>(undefined);
   protected readonly submissions = signal<Submission[]>([]);
   protected readonly columns = computed(() => (this.form() ? buildColumns(this.form()!) : []));
   protected readonly channels = EXPORT_CHANNELS;

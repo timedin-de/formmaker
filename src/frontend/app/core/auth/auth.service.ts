@@ -1,6 +1,8 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { catchFn } from '@shared/helper';
 import type { PublicUser } from '@shared/model/user.model';
+import { publicUserSchema } from '@shared/schemas';
+import z from 'zod';
 import { clearApiCache } from '../state/api-cache';
 import { UsersRepository } from '../state/users.repository';
 
@@ -43,10 +45,10 @@ export class AuthService {
         body: JSON.stringify({ email, password }),
       });
       if (!res.ok) return false;
-      const body = (await res.json()) as { token?: string };
-      if (!body.token) return false;
+      const body = await res.json();
+      const { token } = z.strictObject({ token: z.string(), user: publicUserSchema }).parse(body);
       clearApiCache();
-      writeToken(body.token);
+      writeToken(token);
       this.authenticated.set(true);
       await this.loadUser();
       return true;
