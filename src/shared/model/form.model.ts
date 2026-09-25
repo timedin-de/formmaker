@@ -1,8 +1,8 @@
 import { FormControl } from '@angular/forms';
 import type { ConditionGroup } from './conditions.model';
 import type { ElementId, FormId, PageId } from './ids';
-import type { PublicUser } from './user.model';
 import { Submission } from './submission.model';
+import type { PublicUser } from './user.model';
 import type { ValidationRule } from './validation.model';
 import type { FieldValue } from './values.model';
 
@@ -137,7 +137,7 @@ export interface GroupElement extends ElementBase, DefaultValueable {
   type: 'group';
   elements: Elements;
   elementsRef?: ElementViewRef[];
-  collapsible?: boolean;
+  collapsible: boolean;
 }
 
 export interface SectionElement extends ElementBase {
