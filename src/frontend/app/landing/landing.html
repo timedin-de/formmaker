@@ -67,6 +67,7 @@
           </mat-card-avatar>
         </mat-card-header>
         <mat-card-content>
+          <div class="owner-email">{{ ownerLabel(form) }}</div>
           @if (form.description) {
             <div class="desc" [innerHTML]="form.description | markdown: true"></div>
           } @else {
