@@ -1,16 +1,24 @@
 <mat-form-field appearance="outline" subscriptSizing="dynamic">
-  <mat-select [ngModel]="model" (ngModelChange)="selectChange.emit($event)">
+  <mat-select [value]="model()">
     @for (page of _pages(); track page.id) {
       <mat-optgroup [label]="page.title ?? page.id">
         @for (opt of page.elements; track opt.id) {
           @if (opt.type === 'group') {
             <mat-optgroup [label]="opt.label">
               @for (subOpt of opt.elements; track subOpt.id) {
-                <mat-option [value]="opt">{{ subOpt.label }}</mat-option>
+                <mat-option
+                  [value]="subOpt.id"
+                  (onSelectionChange)="selected($event.source.selected, subOpt)"
+                  >{{ subOpt.label }}</mat-option
+                >
               }
             </mat-optgroup>
           } @else {
-            <mat-option [value]="opt">{{ opt.label }}</mat-option>
+            <mat-option
+              [value]="opt.id"
+              (onSelectionChange)="selected($event.source.selected, opt)"
+              >{{ opt.label }}</mat-option
+            >
           }
         }
       </mat-optgroup>

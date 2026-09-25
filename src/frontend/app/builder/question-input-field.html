@@ -1,15 +1,15 @@
 @if (config(); as config) {
-  @if (config?.type === 'date') {}
-  <mat-form-field appearance="outline" class="field-host" subscriptSizing="dynamic">
-    <input
-      matInput
-      [min]="config.min"
-      [max]="config.max"
-      type="date"
-      [id]="config.id ?? ''"
-      [formControl]="control()"
-      [value]="config.value"
-      (input)="value.emit($event.target.value)"
-    />
-  </mat-form-field>
+  @if (config?.type === 'date') {
+    <mat-form-field appearance="outline" class="field-host" subscriptSizing="dynamic">
+      <input
+        matInput
+        [min]="config.min"
+        [max]="config.max"
+        type="date"
+        [id]="config.id ?? ''"
+        [formControl]="control()"
+        (input)="value.emit($event.target.value)"
+      />
+    </mat-form-field>
+  }
 }
