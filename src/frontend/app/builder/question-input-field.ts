@@ -1,15 +1,15 @@
-import { Component, computed, input, output } from '@angular/core';
+import { Component, computed, effect, input, output } from '@angular/core';
 import { AbstractControl, FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { MatInputModule } from '@angular/material/input';
-import { MatIconModule } from '@angular/material/icon';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
 import {
-  ElementDefinition,
   ChoiceElement,
-  ScaleElement,
-  FileValue,
-  SignatureValue,
+  ElementDefinition,
   FieldValue,
+  FileValue,
+  ScaleElement,
+  SignatureValue,
 } from '@shared/model';
 
 @Component({
@@ -29,6 +29,15 @@ export class QuestionInputField {
   readonly control = computed(() => this.config()?.control ?? new FormControl());
 
   readonly value = output<string>();
+
+  constructor() {
+    effect(() => {
+      const value = this.config()?.value;
+      if (value !== undefined) {
+        this.control().setValue(value);
+      }
+    });
+  }
 
   inputType(el: ElementDefinition): string {
     return (el as { inputType?: string }).inputType ?? 'text';
@@ -146,6 +155,11 @@ export class QuestionInputField {
   onSig(control: FormControl, value: FieldValue): void {
     control.setValue(value);
     control.markAsTouched();
+  }
+
+  date(dateStr?: string) {
+    if (dateStr) return new Date(dateStr);
+    return undefined;
   }
 }
 function readAsDataUrl(file: File): Promise<string> {
