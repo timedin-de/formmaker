@@ -3,7 +3,8 @@ import { authenticate } from '../auth.js';
 import type { Repository } from '../repository.js';
 import { submissionSchema } from '../schemas.js';
 import { canManageForm, param, validate } from './helpers.js';
-import { formDefinitionSchema } from '../../shared/model/model-validator.js';
+import { toPortableForm } from '../../shared/model/form.model.js';
+import { formDefinitionSchema, stripFormOwnership } from '../../shared/model/model-validator.js';
 import { uuid } from '../../shared/model/ids.js';
 
 export function formsRoutes(repository: Repository): Router {
@@ -21,11 +22,11 @@ export function formsRoutes(repository: Repository): Router {
   router.get('/:id', async (req, res) => {
     const item = await repository.form(param(req, 'id'));
     if (!item) return res.status(404).json({ error: 'not found' });
-    res.json(item.form);
+    res.json(toPortableForm(item.form));
   });
 
   router.post('/', authenticate(repository), async (req, res) => {
-    const form = validate(formDefinitionSchema, req.body, res);
+    const form = validate(formDefinitionSchema, stripFormOwnership(req.body), res);
     if (!form) return;
     form.id = uuid();
 
@@ -33,7 +34,7 @@ export function formsRoutes(repository: Repository): Router {
   });
 
   router.put('/', authenticate(repository), async (req, res) => {
-    const form = validate(formDefinitionSchema, req.body, res);
+    const form = validate(formDefinitionSchema, stripFormOwnership(req.body), res);
     if (!form) return;
     const existing = await repository.form(form.id);
     if (existing && !canManageForm(existing.ownerId, req))

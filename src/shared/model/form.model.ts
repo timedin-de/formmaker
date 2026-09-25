@@ -1,6 +1,7 @@
 import { FormControl } from '@angular/forms';
 import type { ConditionGroup } from './conditions.model';
 import type { ElementId, FormId, PageId } from './ids';
+import type { PublicUser } from './user.model';
 import { Submission } from './submission.model';
 import type { ValidationRule } from './validation.model';
 import type { FieldValue } from './values.model';
@@ -192,6 +193,8 @@ export interface FormSettings {
 export interface FormDefinition {
   id: FormId;
   name: string;
+  ownerId?: string;
+  owner?: PublicUser | null;
   description?: string;
   version: number;
   schemaVersion: 1;
@@ -199,6 +202,18 @@ export interface FormDefinition {
   updatedAt?: string;
   settings: FormSettings;
   pages: PageDefinition[];
+}
+
+export type PortableFormDefinition = Omit<FormDefinition, 'ownerId' | 'owner'>;
+
+export interface FormWithOwner extends FormDefinition {
+  ownerId: string;
+  owner: PublicUser | null;
+}
+
+export function toPortableForm(form: FormDefinition): PortableFormDefinition {
+  const { ownerId: _ownerId, owner: _owner, ...portable } = form;
+  return portable;
 }
 
 export interface RunnerPage {
