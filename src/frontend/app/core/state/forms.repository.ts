@@ -1,5 +1,5 @@
 import { Injectable, signal } from '@angular/core';
-import type { FormDefinition } from '@shared/model/form.model';
+import { toPortableForm, type FormDefinition, type FormWithOwner } from '@shared/model/form.model';
 import type { Submission } from '@shared/model/submission.model';
 import { request } from './api-client';
 import {
@@ -16,7 +16,7 @@ import {
 /** Server-backed persistence with a short-lived local response cache. */
 @Injectable({ providedIn: 'root' })
 export class FormsRepository {
-  readonly forms = signal<FormDefinition[]>([]);
+  readonly forms = signal<FormWithOwner[]>([]);
   readonly submissions = signal<Submission[]>([]);
   private hydratePromise: Promise<void> | null = null;
 
@@ -26,17 +26,17 @@ export class FormsRepository {
   }
 
   private async hydrate(): Promise<void> {
-    const cached = readCache<FormDefinition[]>(FORMS_CACHE_KEY, FORMS_CACHE_TTL_MS);
+    const cached = readCache<FormWithOwner[]>(FORMS_CACHE_KEY, FORMS_CACHE_TTL_MS);
     if (cached) {
       this.forms.set(cached);
       return;
     }
-    const forms = await request<FormDefinition[]>('/api/forms');
+    const forms = await request<FormWithOwner[]>('/api/forms');
     this.forms.set(forms);
     writeCache(FORMS_CACHE_KEY, forms);
   }
 
-  async listForms(): Promise<FormDefinition[]> {
+  async listForms(): Promise<FormWithOwner[]> {
     await this.init();
     return this.forms();
   }
@@ -45,32 +45,33 @@ export class FormsRepository {
   async getForm(id: string): Promise<FormDefinition> {
     const key = FORM_CACHE_PREFIX + id;
     const cached = readCache<FormDefinition>(key, FORMS_CACHE_TTL_MS);
-    if (cached) return cached;
+    if (cached) return toPortableForm(cached);
     const form = await request<FormDefinition>(`/api/forms/${encodeURIComponent(id)}`);
-    writeCache(key, form);
-    return form;
+    const portable = toPortableForm(form);
+    writeCache(key, portable);
+    return portable;
   }
 
-  async newForm(form: FormDefinition): Promise<FormDefinition> {
+  async newForm(form: FormDefinition): Promise<FormWithOwner> {
     await this.init();
-    const saved = await request<FormDefinition>('/api/forms', {
+    const saved = await request<FormWithOwner>('/api/forms', {
       method: 'POST',
       body: JSON.stringify(form),
     });
     this.upsert([saved]);
-    writeCache(FORM_CACHE_PREFIX + saved.id, saved);
+    writeCache(FORM_CACHE_PREFIX + saved.id, toPortableForm(saved));
     writeCache(FORMS_CACHE_KEY, this.forms());
     return saved;
   }
 
-  async saveForm(form: FormDefinition): Promise<FormDefinition> {
+  async saveForm(form: FormDefinition): Promise<FormWithOwner> {
     await this.init();
-    const saved = await request<FormDefinition>('/api/forms', {
+    const saved = await request<FormWithOwner>('/api/forms', {
       method: 'PUT',
       body: JSON.stringify(form),
     });
     this.upsert([saved]);
-    writeCache(FORM_CACHE_PREFIX + saved.id, saved);
+    writeCache(FORM_CACHE_PREFIX + saved.id, toPortableForm(saved));
     writeCache(FORMS_CACHE_KEY, this.forms());
     return saved;
   }
@@ -127,7 +128,7 @@ export class FormsRepository {
     removeCache(SUBMISSIONS_CACHE_PREFIX + formId);
   }
 
-  private upsert(updated: FormDefinition[]): void {
+  private upsert(updated: FormWithOwner[]): void {
     this.forms.update((existing) => {
       const byId = new Map(existing.map((form) => [form.id, form]));
       for (const form of updated) byId.set(form.id, form);

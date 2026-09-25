@@ -8,7 +8,7 @@ import {
 import { MatButton, MatIconButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
 import { catchFn } from '@shared/helper';
-import { formDefinitionSchema } from '@shared/model/model-validator';
+import { formDefinitionSchema, stripFormOwnership } from '@shared/model/model-validator';
 import { I18nService } from '../../i18n';
 
 @Component({
@@ -87,7 +87,9 @@ function jsonValidatorAsync(): AsyncValidatorFn {
           return resolve({ invalidJson: { message: 'errors.invalidJson' } });
         }
 
-        const { error: parseError } = catchFn(() => formDefinitionSchema.parse(data));
+        const { error: parseError } = catchFn(() =>
+          formDefinitionSchema.parse(stripFormOwnership(data)),
+        );
         if (parseError) {
           return resolve({
             invalidJson: { message: 'errors.invalidDefinition', error: parseError },

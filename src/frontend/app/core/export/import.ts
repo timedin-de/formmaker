@@ -44,9 +44,9 @@ export class FormImportService {
       this.report(this.i18n.t('import.failed', { message: issues[0].message }));
       return;
     }
-    await this.repo.newForm(form);
+    const saved = await this.repo.newForm(form);
 
-    return form;
+    return saved;
   }
 
   private report(message: string): void {

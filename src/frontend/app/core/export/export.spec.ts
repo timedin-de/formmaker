@@ -5,7 +5,12 @@ import { EXPORT_CHANNELS } from './channels';
 import { toCsv, submissionsToCsv } from './csv-exporter';
 import { validateFormDefinition } from './form-schema';
 import { newForm, createElement, createPage } from '../state/form-factory';
-import type { FormDefinition, QuestionDefinition } from '@shared/model/form.model';
+import {
+  toPortableForm,
+  type FormDefinition,
+  type FormWithOwner,
+  type QuestionDefinition,
+} from '@shared/model/form.model';
 import type { Submission } from '@shared/model/submission.model';
 
 function demoForm(): FormDefinition {
@@ -17,6 +22,26 @@ function demoForm(): FormDefinition {
   form.pages = [p1];
   return form;
 }
+
+describe('toPortableForm', () => {
+  it('removes ownership metadata before export', () => {
+    const form = {
+      ...demoForm(),
+      ownerId: 'owner-1',
+      owner: {
+        id: 'owner-1',
+        email: 'owner@example.test',
+        role: 'editor',
+        createdAt: '2026-01-01T00:00:00.000Z',
+      },
+    } as FormWithOwner;
+
+    const portable = toPortableForm(form);
+
+    expect(portable).not.toHaveProperty('ownerId');
+    expect(portable).not.toHaveProperty('owner');
+  });
+});
 
 describe('buildColumns', () => {
   it('flattens questions into columns', () => {
