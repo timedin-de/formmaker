@@ -1,54 +1,76 @@
 @for (vr of elements(); track vr.id) {
   @if (vr.visible) {
-    <div class="question-wrapper" [style.width]="`${(vr.el.width ?? 1) * 100}%`">
-      <div
-        class="question"
-        [class.question-group]="!!group()"
-        [class.compact]="vr.el.type === 'section'"
-      >
-        @if (vr.el.type === 'section') {
-          <mat-divider class="thin"></mat-divider>
-          <div class="section-head">
-            <h2 [innerHTML]="vr.label | markdown"></h2>
+    @if (vr.el; as el) {
+      <div class="question-wrapper" [style.width]="`${(el.width ?? 1) * 100}%`">
+        @if (!(has(el, 'collapsible') && el.collapsible)) {
+          <div
+            class="question"
+            [class.question-group]="!!group()"
+            [class.compact]="el.type === 'section'"
+          >
+            @if (el.type === 'section') {
+              <mat-divider class="thin"></mat-divider>
+              <div class="section-head">
+                <h2 [innerHTML]="vr.label | markdown"></h2>
+              </div>
+            } @else {
+              <ng-container *ngTemplateOutlet="header"></ng-container>
+              <ng-container *ngTemplateOutlet="description"></ng-container>
+              <ng-container *ngTemplateOutlet="content"></ng-container>
+            }
           </div>
         } @else {
-          @if (vr.label) {
-            <label class="label" [for]="vr.id">
-              @if (group()) {
-                <h4>
-                  <span [innerHTML]="vr.label | markdown"></span>
-                  @if (has(vr.el, 'required') && vr.el.required) {
-                    <span class="req">*</span>
-                  }
-                </h4>
-              } @else {
-                <h3>
-                  <span [innerHTML]="vr.label | markdown"></span>
-                  @if (has(vr.el, 'required') && vr.el.required) {
-                    <span class="req">*</span>
-                  }
-                </h3>
-              }
-            </label>
-          }
-          @if (vr.description) {
-            <div class="desc" [innerHTML]="vr.description | markdown: true"></div>
-          }
-
-          @switch (vr.el.type) {
-            @case ('group') {
-              @if (vr.el.elementsRef) {
-                <div class="group">
-                  <fm-question-list group="true" [elements]="vr.el.elementsRef"></fm-question-list>
-                </div>
-              }
-            }
-            @default {
-              <fm-question-input [vr]="vr"></fm-question-input>
-            }
-          }
+          <mat-accordion>
+            <mat-expansion-panel>
+              <mat-expansion-panel-header>
+                <ng-container *ngTemplateOutlet="header"></ng-container>
+              </mat-expansion-panel-header>
+              <div class="question" [class.question-group]="!!group()">
+                <ng-container *ngTemplateOutlet="description"></ng-container>
+                <ng-container *ngTemplateOutlet="content"></ng-container>
+              </div>
+            </mat-expansion-panel>
+          </mat-accordion>
         }
       </div>
-    </div>
+      <ng-template #header>
+        <label class="label" [for]="vr.id">
+          @if (group()) {
+            <h4>
+              <span [innerHTML]="vr.label | markdown"></span>
+              @if (has(el, 'required') && el.required) {
+                <span class="req">*</span>
+              }
+            </h4>
+          } @else {
+            <h3>
+              <span [innerHTML]="vr.label | markdown"></span>
+              @if (has(el, 'required') && el.required) {
+                <span class="req">*</span>
+              }
+            </h3>
+          }
+        </label>
+      </ng-template>
+      <ng-template #description>
+        @if (vr.description) {
+          <div class="desc" [innerHTML]="vr.description | markdown: true"></div>
+        }
+      </ng-template>
+      <ng-template #content>
+        @switch (el.type) {
+          @case ('group') {
+            @if (el.elementsRef) {
+              <div class="group">
+                <fm-question-list group="true" [elements]="el.elementsRef"></fm-question-list>
+              </div>
+            }
+          }
+          @default {
+            <fm-question-input [vr]="vr"></fm-question-input>
+          }
+        }
+      </ng-template>
+    }
   }
 }

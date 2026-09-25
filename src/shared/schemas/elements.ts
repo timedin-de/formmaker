@@ -117,7 +117,7 @@ const groupElementSchema = elementBaseSchema
   .extend(defaultValueableSchema.shape)
   .extend({
     type: z.literal('group'),
-    collapsible: z.boolean().optional(),
+    collapsible: z.boolean().default(false),
   })
   .extend({
     elements: z.lazy(() => elementsSchema),

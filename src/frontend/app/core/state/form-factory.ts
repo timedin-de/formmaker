@@ -117,7 +117,7 @@ export function createElement(type: ElementType, label: string): ElementDefiniti
     case 'signature':
       return { ...qBase, type: 'signature' };
     case 'group':
-      return { ...base, type: 'group', defaultValue: null, elements: [] };
+      return { ...base, type: 'group', defaultValue: null, elements: [], collapsible: false };
     case 'section':
       return { ...base, type: 'section' };
     case 'textdisplay':
