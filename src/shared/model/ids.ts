@@ -20,5 +20,5 @@ export function uuid(): string {
 }
 
 export function elementId(prefix: 'q' | 'submission' | 'page'): ElementId {
-  return `${prefix}_${uuid().slice(0, 8)}`;
+  return `${prefix}_${uuid()}`;
 }

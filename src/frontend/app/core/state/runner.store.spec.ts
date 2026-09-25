@@ -122,4 +122,109 @@ describe('RunnerStore submission', () => {
     expect(result?.visibleAnswerKeys).toContain(member1.id);
     expect(result?.visibleAnswerKeys).toContain(member2.id);
   });
+
+  it('does not require hidden fields', () => {
+    const form = newForm('Conditional');
+    const page = createPage('Details');
+    const trigger = createElement('text', 'Trigger');
+    const conditional = createElement('text', 'Conditional');
+    conditional.required = true;
+    conditional.enabledWhen = {
+      logic: 'all',
+      conditions: [
+        { fieldId: trigger.id, operator: 'eq', operand: { kind: 'literal', value: 'yes' } },
+      ],
+      groups: [],
+    };
+    page.elements = [trigger, conditional];
+    form.pages = [page];
+
+    const store = new RunnerStore();
+    store.init(form);
+
+    expect(store.submit()).not.toBeNull();
+
+    store.setAnswer(trigger.id, 'yes');
+    expect(store.submit()).toBeNull();
+
+    store.setAnswer(conditional.id, 'filled');
+    expect(store.submit()).not.toBeNull();
+  });
+
+  it('does not require fields that were touched while visible but are now hidden', () => {
+    const form = newForm('Conditional');
+    const page = createPage('Details');
+    const trigger = createElement('text', 'Trigger');
+    const conditional = createElement('text', 'Conditional');
+    conditional.required = true;
+    conditional.enabledWhen = {
+      logic: 'all',
+      conditions: [
+        { fieldId: trigger.id, operator: 'eq', operand: { kind: 'literal', value: 'yes' } },
+      ],
+      groups: [],
+    };
+    page.elements = [trigger, conditional];
+    form.pages = [page];
+
+    const store = new RunnerStore();
+    store.init(form);
+
+    store.setAnswer(trigger.id, 'yes');
+    store.answers.get(conditional.id)?.markAsTouched();
+    expect(store.answers.get(conditional.id)?.touched).toBe(true);
+    expect(store.submit()).toBeNull();
+
+    store.setAnswer(trigger.id, '');
+    expect(store.submit()).not.toBeNull();
+  });
+
+  it('enforces required fields nested inside groups', () => {
+    const form = newForm('Grouped');
+    const page = createPage('Details');
+    const member = createElement('text', 'Member');
+    member.required = true;
+    const group = createElement('group', 'Team');
+    group.elements = [member];
+    page.elements = [group];
+    form.pages = [page];
+
+    const store = new RunnerStore();
+    store.init(form);
+
+    expect(store.submit()).toBeNull();
+
+    store.setAnswer(member.id, 'Sam');
+    expect(store.submit()).not.toBeNull();
+  });
+
+  it('does not require fields hidden inside groups', () => {
+    const form = newForm('Grouped Conditional');
+    const page = createPage('Details');
+    const trigger = createElement('text', 'Trigger');
+    const member = createElement('text', 'Member');
+    member.required = true;
+    member.enabledWhen = {
+      logic: 'all',
+      conditions: [
+        { fieldId: trigger.id, operator: 'eq', operand: { kind: 'literal', value: 'yes' } },
+      ],
+      groups: [],
+    };
+    const group = createElement('group', 'Team');
+    group.elements = [member];
+    page.elements = [trigger, group];
+    form.pages = [page];
+
+    const store = new RunnerStore();
+    store.init(form);
+
+    expect(store.submit()).not.toBeNull();
+
+    store.setAnswer(trigger.id, 'yes');
+    expect(store.submit()).toBeNull();
+
+    store.setAnswer(member.id, 'Sam');
+    expect(store.submit()).not.toBeNull();
+  });
 });

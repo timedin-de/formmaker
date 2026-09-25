@@ -1,5 +1,5 @@
 import { expect, test, type Page } from './fixtures';
-import { uniqueName, login, loginApi, deleteForm } from './helpers';
+import { deleteForm, login, loginApi, uniqueName } from './helpers';
 
 async function addField(page: Page, paletteLabel: string): Promise<void> {
   await page.getByRole('tab', { name: 'Basic' }).click();
@@ -64,7 +64,7 @@ test('builds a form in the designer, fills it out in the runner and exports resu
   await card.getByRole('button', { name: 'Results' }).click();
   await page.waitForURL(/\/results\//);
   await expect(page.getByText('Ada Lovelace')).toBeVisible();
-  await expect(page.getByText('36')).toBeVisible();
+  await expect(page.getByText('36', { exact: true })).toBeVisible();
 
   const formId = page.url().split('/').pop() ?? '';
 

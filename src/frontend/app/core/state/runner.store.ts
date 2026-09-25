@@ -1,23 +1,23 @@
 import { computed, signal } from '@angular/core';
 import { FormControl, FormGroup } from '@angular/forms';
 import {
-  type FormDefinition,
-  type ElementDefinition,
+  ElementViewRef,
   QUESTION_TYPES,
   QuestionDefinition,
   QuestionType,
-  ElementViewRef,
   RunnerPage,
   SubmissionResult,
+  type ElementDefinition,
+  type FormDefinition,
 } from '@shared/model/form.model';
+import { uuid } from '@shared/model/ids';
+import type { Submission } from '@shared/model/submission.model';
 import type { FieldValue, ValuesMap } from '@shared/model/values.model';
-import { FormEvaluator, type FormEvaluation } from './form-evaluator';
+import { debounceTime, filter } from 'rxjs';
+import { collectElementRefs } from '../engine/dependencies';
 import { evalExpression } from '../engine/expression/evaluator';
 import { validateElementValue } from '../engine/validators';
-import type { Submission } from '@shared/model/submission.model';
-import { collectElementRefs } from '../engine/dependencies';
-import { uuid } from '@shared/model/ids';
-import { filter, debounceTime } from 'rxjs';
+import { FormEvaluator, type FormEvaluation } from './form-evaluator';
 import { RunnerDraft } from './runner-draft';
 
 export class RunnerStore {
@@ -86,12 +86,9 @@ export class RunnerStore {
     this.rebuildControls(form, restoreValues);
 
     this.changeSub?.unsubscribe();
-    this.changeSub = this.answers.valueChanges
-      .pipe(
-        debounceTime(0),
-        filter(() => !!this.form()),
-      )
-      .subscribe(() => this.onValuesChanged());
+    this.changeSub = this.answers.valueChanges.pipe(filter(() => !!this.form())).subscribe(() => {
+      this.onValuesChanged();
+    });
 
     this.draftSub?.unsubscribe();
     this.draftSub = this.answers.valueChanges
@@ -269,17 +266,40 @@ export class RunnerStore {
   }
 
   markPageTouched(page: RunnerPage): void {
-    for (const ref of page.elements) ref.control.markAsTouched({ onlySelf: true });
+    for (const ref of page.elements) this.touchRef(ref, true);
   }
 
   private validatePage(page: RunnerPage): boolean {
     let valid = true;
     for (const ref of page.elements) {
-      const control = ref.control;
-      if (control.disabled) continue;
-      control.markAsTouched({ onlySelf: true });
-      control.updateValueAndValidity({ onlySelf: true });
-      if (control.errors) valid = false;
+      if (!this.validateRef(ref, true)) valid = false;
+    }
+    return valid;
+  }
+
+  /** Mark a visible element (and its visible group children) as touched. */
+  private touchRef(ref: ElementViewRef, parentVisible: boolean): void {
+    const visible = parentVisible && ref.visible;
+    if (!visible) return;
+    ref.control.markAsTouched({ onlySelf: true });
+    if (ref.el.type === 'group') {
+      for (const child of ref.el.elementsRef ?? []) this.touchRef(child, visible);
+    }
+  }
+
+  /** Validate one element; hidden elements (incl. hidden groups) are skipped. */
+  private validateRef(ref: ElementViewRef, parentVisible: boolean): boolean {
+    const visible = parentVisible && ref.visible;
+    if (!visible) return true;
+    const control = ref.control;
+    if (control.disabled) return true;
+    control.markAsTouched({ onlySelf: true });
+    control.updateValueAndValidity({ onlySelf: true });
+    let valid = !control.errors;
+    if (ref.el.type === 'group') {
+      for (const child of ref.el.elementsRef ?? []) {
+        if (!this.validateRef(child, visible)) valid = false;
+      }
     }
     return valid;
   }
