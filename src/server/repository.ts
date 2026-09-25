@@ -1,10 +1,14 @@
 import type { DataSource } from 'typeorm';
 
-import { FormDefinition } from '../shared/model/form.model.js';
-import { formDefinitionSchema } from '../shared/model/model-validator.js';
-import { Submission } from '../shared/model/submission.model.js';
-import { UserRole } from '../shared/model/user.model.js';
-import { FormEntity, SubmissionEntity } from './entities/form.js';
+import {
+  toPortableForm,
+  type FormDefinition,
+  type FormWithOwner,
+} from '../shared/model/form.model.js';
+import { formDefinitionSchema, stripFormOwnership } from '../shared/model/model-validator.js';
+import type { Submission } from '../shared/model/submission.model.js';
+import type { PublicUser, UserRole } from '../shared/model/user.model.js';
+import { FormEntity, SubmissionEntity, type FormEntityModel } from './entities/form.js';
 import { SessionEntity, UserEntity, type UserEntityModel } from './entities/user.js';
 import { submissionSchema } from './schemas.js';
 
@@ -108,17 +112,22 @@ export class Repository {
     await query.execute();
   }
 
-  async forms(ownerId: string): Promise<FormDefinition[]> {
+  async forms(ownerId: string): Promise<FormWithOwner[]> {
     const rows = await this.source.getRepository(FormEntity).find({
       where: { ownerId },
       order: { updatedAt: 'DESC' },
+      relations: { owner: true },
     });
-    return rows.map((row) => formDefinitionSchema.parse(JSON.parse(row.document)));
+
+    return rows.map(toFormWithOwner);
   }
 
-  async allForms(): Promise<FormDefinition[]> {
-    const rows = await this.source.getRepository(FormEntity).find({ order: { updatedAt: 'DESC' } });
-    return rows.map((row) => formDefinitionSchema.parse(JSON.parse(row.document)));
+  async allForms(): Promise<FormWithOwner[]> {
+    const rows = await this.source.getRepository(FormEntity).find({
+      order: { updatedAt: 'DESC' },
+      relations: { owner: true },
+    });
+    return rows.map(toFormWithOwner);
   }
 
   async formCount(): Promise<number> {
@@ -128,16 +137,28 @@ export class Repository {
   async form(id: string): Promise<{ form: FormDefinition; ownerId: string } | null> {
     const row = await this.source.getRepository(FormEntity).findOneBy({ id });
     if (!row?.document) return null;
-    const form = formDefinitionSchema.parse(JSON.parse(row.document));
+    const form = toPortableForm(
+      formDefinitionSchema.parse(stripFormOwnership(JSON.parse(row.document))),
+    );
 
     return { form, ownerId: row.ownerId };
   }
 
-  async saveForm(ownerId: string, form: FormDefinition): Promise<FormDefinition> {
+  async ownedForm(id: string): Promise<FormWithOwner | null> {
+    const row = await this.source.getRepository(FormEntity).findOne({
+      where: { id },
+      relations: { owner: true },
+    });
+    if (!row?.document) return null;
+    return toFormWithOwner(row);
+  }
+
+  async saveForm(ownerId: string, form: FormDefinition): Promise<FormWithOwner> {
     const existing = await this.form(form.id);
     const now = new Date().toISOString();
     const saved: FormDefinition = {
-      ...form,
+      ...toPortableForm(form),
+      ownerId,
       createdAt: existing?.form.createdAt ?? form.createdAt ?? now,
       updatedAt: now,
     };
@@ -148,7 +169,9 @@ export class Repository {
       createdAt: saved.createdAt ?? now,
       updatedAt: now,
     });
-    return saved;
+    const owned = await this.ownedForm(form.id);
+    if (!owned) throw new Error('form was not saved');
+    return owned;
   }
 
   async deleteForm(id: string): Promise<boolean> {
@@ -187,4 +210,20 @@ export class Repository {
 
 function toUser(row: UserEntityModel): User {
   return row;
+}
+
+function toPublicUser(row: UserEntityModel): PublicUser {
+  const { id, email, role, createdAt } = row;
+  return { id, email, role, createdAt };
+}
+
+function toFormWithOwner(row: FormEntityModel): FormWithOwner {
+  const form = toPortableForm(
+    formDefinitionSchema.parse(stripFormOwnership(JSON.parse(row.document))),
+  );
+  return {
+    ...form,
+    ownerId: row.ownerId,
+    owner: row.owner ? toPublicUser(row.owner) : null,
+  };
 }
