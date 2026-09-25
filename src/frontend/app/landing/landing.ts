@@ -7,7 +7,7 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltip } from '@angular/material/tooltip';
 import { RouterLink } from '@angular/router';
-import type { FormDefinition } from '@shared/model/form.model';
+import { toPortableForm, type FormDefinition, type FormWithOwner } from '@shared/model/form.model';
 import { FormImportModal } from '../core/components';
 import { downloadJSON } from '../core/export/file';
 import { FormImportService } from '../core/export/import';
@@ -36,7 +36,7 @@ export class LandingComponent {
   private readonly repo = inject(FormsRepository);
   private readonly snack = inject(MatSnackBar);
   protected readonly i18n = inject(I18nService);
-  readonly forms = signal<FormDefinition[]>([]);
+  readonly forms = signal<FormWithOwner[]>([]);
   private readonly importService = inject(FormImportService);
 
   private timedOutCloser: number | undefined;
@@ -71,7 +71,21 @@ export class LandingComponent {
   }
 
   exportJson(form: FormDefinition): void {
-    downloadJSON(form, toSlug(form.name) + '.json');
+    downloadJSON(toPortableForm(form), toSlug(form.name) + '.json');
+  }
+
+  ownerLabel(form: FormWithOwner): string {
+    return form.owner?.email ?? this.i18n.t('landing.ownerUnknown');
+  }
+
+  ownerInitials(form: FormWithOwner): string {
+    const localPart = form.owner?.email.split('@')[0]?.trim() ?? '';
+    const parts = localPart.split(/[._-]+/).filter(Boolean);
+    const initials = parts
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase() ?? '')
+      .join('');
+    return initials || '?';
   }
 
   async copyShareLink(form: FormDefinition): Promise<void> {
