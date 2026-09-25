@@ -8,7 +8,7 @@ import {
 import { MatButton, MatIconButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
 import { catchFn } from '@shared/helper';
-import { formDefinitionSchema, stripFormOwnership } from '@shared/model/model-validator';
+import { formDefinitionSchema, stripFormOwnership } from '@shared/schemas';
 import { I18nService } from '../../i18n';
 
 @Component({

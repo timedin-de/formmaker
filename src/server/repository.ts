@@ -5,12 +5,15 @@ import {
   type FormDefinition,
   type FormWithOwner,
 } from '../shared/model/form.model.js';
-import { formDefinitionSchema, stripFormOwnership } from '../shared/model/model-validator.js';
 import type { Submission } from '../shared/model/submission.model.js';
 import type { PublicUser, UserRole } from '../shared/model/user.model.js';
+import {
+  formDefinitionSchema,
+  stripFormOwnership,
+  submissionSchema,
+} from '../shared/schemas/index.js';
 import { FormEntity, SubmissionEntity, type FormEntityModel } from './entities/form.js';
 import { SessionEntity, UserEntity, type UserEntityModel } from './entities/user.js';
-import { submissionSchema } from './schemas.js';
 
 export interface User {
   id: string;

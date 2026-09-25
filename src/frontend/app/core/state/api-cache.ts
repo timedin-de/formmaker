@@ -1,4 +1,5 @@
 import { catchFn } from '@shared/helper';
+import z from 'zod';
 
 export const FORMS_CACHE_KEY = 'formmaker.cache.forms.v1';
 export const FORM_CACHE_PREFIX = 'formmaker.cache.form.v1.';
@@ -12,7 +13,7 @@ interface CacheEntry<T> {
   value: T;
 }
 
-export function readCache<T>(key: string, maxAgeMs: number): T | null {
+export function readCache<T>(schema: z.ZodType<T>, key: string, maxAgeMs: number): T | null {
   const { data: entry } = catchFn(
     () => JSON.parse(localStorage.getItem(key) ?? 'null') as CacheEntry<T> | null,
   );

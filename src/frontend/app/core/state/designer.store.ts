@@ -8,7 +8,7 @@ import type {
   PageDefinition,
 } from '@shared/model/form.model';
 import { uuid } from '@shared/model/ids';
-import { parseFormData } from '@shared/model/model-validator';
+import { parseFormData } from '@shared/schemas';
 import { I18nService } from '../i18n/translation.service';
 import { createElement, createPage, insertElementAfter, newForm } from './form-factory';
 

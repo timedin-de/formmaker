@@ -1,6 +1,13 @@
 import { Router } from 'express';
 import crypto from 'node:crypto';
 import {
+  accountDeleteSchema,
+  emailUpdateSchema,
+  passwordChangeSchema,
+  passwordUpdateSchema,
+  userCreateSchema,
+} from '../../shared/schemas/index.js';
+import {
   authenticate,
   bearerToken,
   hashPassword,
@@ -10,13 +17,6 @@ import {
   verifyPassword,
 } from '../auth.js';
 import type { Repository } from '../repository.js';
-import {
-  accountDeleteSchema,
-  emailUpdateSchema,
-  passwordChangeSchema,
-  passwordUpdateSchema,
-  userCreateSchema,
-} from '../schemas.js';
 import { param, validate } from './helpers.js';
 
 export function usersRoutes(repository: Repository): Router {

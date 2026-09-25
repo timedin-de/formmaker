@@ -1,8 +1,8 @@
-import crypto from 'node:crypto';
 import { Router } from 'express';
+import crypto from 'node:crypto';
+import { loginSchema, registrationSchema } from '../../shared/schemas/index.js';
 import { authenticate, hashPassword, login, logout, publicUser } from '../auth.js';
 import type { Repository } from '../repository.js';
-import { loginSchema, registrationSchema } from '../schemas.js';
 import { validate } from './helpers.js';
 
 export function authRoutes(repository: Repository): Router {
