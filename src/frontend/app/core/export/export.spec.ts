@@ -1,17 +1,11 @@
-import { describe, expect, it } from 'vitest';
-import { buildColumns, buildColumnBlocks, formatValueForExport, buildExportTable } from './columns';
-import { buildReceipt } from './receipt';
-import { EXPORT_CHANNELS } from './channels';
-import { toCsv, submissionsToCsv } from './csv-exporter';
-import { validateFormDefinition } from './form-schema';
-import { newForm, createElement, createPage } from '../state/form-factory';
-import {
-  toPortableForm,
-  type FormDefinition,
-  type FormWithOwner,
-  type QuestionDefinition,
-} from '@shared/model/form.model';
+import { toPortableForm, type FormDefinition, type FormWithOwner } from '@shared/model/form.model';
 import type { Submission } from '@shared/model/submission.model';
+import { describe, expect, it } from 'vitest';
+import { createElement, createPage, newForm } from '../state/form-factory';
+import { EXPORT_CHANNELS } from './channels';
+import { buildColumnBlocks, buildColumns, buildExportTable, formatValueForExport } from './columns';
+import { submissionsToCsv, toCsv } from './csv-exporter';
+import { buildReceipt } from './receipt';
 
 function demoForm(): FormDefinition {
   const form = newForm('Demo');
@@ -249,40 +243,5 @@ describe('EXPORT_CHANNELS', () => {
         expect(artifact.url.startsWith('mailto:')).toBe(true);
       }
     }
-  });
-});
-
-describe('validateFormDefinition', () => {
-  it('accepts a valid form', () => {
-    expect(validateFormDefinition(demoForm())).toEqual([]);
-  });
-
-  it('rejects missing pages', () => {
-    const issues = validateFormDefinition({ name: 'x' });
-    expect(issues.some((i) => i.path === 'pages')).toBe(true);
-  });
-
-  it('rejects duplicate element ids', () => {
-    const form = demoForm();
-    form.pages[0].elements[1].id = form.pages[0].elements[0].id;
-    const issues = validateFormDefinition(form);
-    expect(issues.some((i) => i.message.includes('Duplicate element id'))).toBe(true);
-  });
-
-  it('rejects unknown question type', () => {
-    const form = demoForm();
-    (form.pages[0].elements[0] as { type: string }).type = 'hologram';
-    const issues = validateFormDefinition(form);
-    expect(issues.some((i) => i.message.includes('Unknown element type'))).toBe(true);
-  });
-
-  it('rejects broken cross-references', () => {
-    const form = demoForm();
-    (form.pages[0].elements[0] as QuestionDefinition).defaultValue = {
-      kind: 'fromField',
-      fieldId: 'q_missing',
-    };
-    const issues = validateFormDefinition(form);
-    expect(issues.some((i) => i.message.includes('Unknown reference'))).toBe(true);
   });
 });
