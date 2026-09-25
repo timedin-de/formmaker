@@ -1,12 +1,11 @@
-import { inject, Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { catchFnAsync } from '@shared/helper';
-import type { FormDefinition } from '@shared/model/form.model';
+import { FormDefinition } from '@shared/model';
 import { parseFormData } from '@shared/schemas';
 import { I18nService } from '../i18n';
 import { FormsRepository } from '../state/forms.repository';
 import { readFileAsText } from './file';
-import { validateFormDefinition } from './form-schema';
 
 @Injectable({ providedIn: 'root' })
 export class FormImportService {
@@ -39,11 +38,6 @@ export class FormImportService {
       return;
     }
 
-    const issues = validateFormDefinition(form);
-    if (issues.length > 0) {
-      this.report(this.i18n.t('import.failed', { message: issues[0].message }));
-      return;
-    }
     const saved = await this.repo.newForm(form);
 
     return saved;
