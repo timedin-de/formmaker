@@ -111,6 +111,7 @@
           "label": "Preferred call time",
           "width": 0.5,
           "defaultValue": { "kind": "static", "value": "14:30" },
+          "timeInterval": { "value": 15, "multiplier": "60" },
           "placeholder": "HH:mm"
         },
         {
@@ -119,6 +120,7 @@
           "label": "Event start",
           "width": 1,
           "defaultValue": null,
+          "timeInterval": { "value": 30, "multiplier": "60" },
           "placeholder": "yyyy-mm-dd HH:mm"
         },
         {

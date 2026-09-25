@@ -1,5 +1,13 @@
 import z from 'zod';
-import { ELEMENT_TYPES, ElementBase, ElementDefinition, QUESTION_TYPES } from '../model';
+import {
+  DEFAULT_TIME_INTERVAL,
+  ELEMENT_TYPES,
+  ElementBase,
+  ElementDefinition,
+  QUESTION_TYPES,
+  TIME_INTERVAL_MULTIPLIERS,
+  TimeElement,
+} from '../model';
 import { conditionGroupSchema } from './conditions';
 import { defaultValueableSchema } from './defaultValue';
 import { validationRuleSchema } from './validations';
@@ -78,8 +86,18 @@ const booleanElementSchema = questionBaseSchema.extend({
 });
 
 const dateElementSchema = questionBaseSchema.extend(placeholderableSchema.shape).extend({
-  type: z.union([z.literal('date'), z.literal('time'), z.literal('dateTime')]),
+  type: z.literal('date'),
 });
+
+const timeIntervalSchema = z.strictObject({
+  value: z.number().int().min(1),
+  multiplier: z.enum(TIME_INTERVAL_MULTIPLIERS),
+});
+
+const timeElementSchema = questionBaseSchema.extend(placeholderableSchema.shape).extend({
+  type: z.union([z.literal('time'), z.literal('dateTime')]),
+  timeInterval: timeIntervalSchema.default({ ...DEFAULT_TIME_INTERVAL }),
+}) satisfies z.ZodType<TimeElement>;
 
 const textElementSchema = questionBaseSchema.extend(placeholderableSchema.shape).extend({
   type: z.literal('text'),
@@ -106,6 +124,7 @@ const questionDefinitionSchema = z.discriminatedUnion('type', [
   longTextElementSchema,
   numberElementSchema,
   dateElementSchema,
+  timeElementSchema,
   booleanElementSchema,
   choiceElementSchema,
   scaleElementSchema,

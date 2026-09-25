@@ -6,6 +6,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatRadioModule } from '@angular/material/radio';
 import { MatOption, MatSelectModule } from '@angular/material/select';
+import { has } from '@shared/helper';
 import {
   ChoiceElement,
   ElementDefinition,
@@ -161,6 +162,15 @@ export class QuestionInput {
   onSig(control: FormControl, value: FieldValue): void {
     control.setValue(value);
     control.markAsTouched();
+  }
+
+  /** `step` in seconds for the native time pickers. */
+  timeStep(el: ElementDefinition): number {
+    if (has(el, 'timeInterval')) {
+      const { value, multiplier } = el.timeInterval;
+      return Number(multiplier) * Math.floor(value);
+    }
+    return 60;
   }
 }
 function readAsDataUrl(file: File): Promise<string> {

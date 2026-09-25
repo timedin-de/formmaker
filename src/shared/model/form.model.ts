@@ -1,4 +1,5 @@
 import { FormControl } from '@angular/forms';
+import { TranslationKey } from '../../frontend/app/core/i18n';
 import type { ConditionGroup } from './conditions.model';
 import type { ElementId, FormId, PageId } from './ids';
 import { Submission } from './submission.model';
@@ -118,7 +119,34 @@ export interface BooleanElement extends QuestionBase {
 }
 
 export interface DateElement extends QuestionBase, Placeholderable {
-  type: 'date' | 'time' | 'dateTime';
+  type: 'date';
+}
+
+// ---------------------------------------------------------------------------
+// Time interval
+// ---------------------------------------------------------------------------
+export const TIME_INTERVAL_UNITS = [
+  { multiplier: '1', key: 'panel.timeInterval.unit.second' },
+  { multiplier: '60', key: 'panel.timeInterval.unit.minute' },
+  { multiplier: '3600', key: 'panel.timeInterval.unit.hour' },
+] as const satisfies readonly { multiplier: TimeInterval['multiplier']; key: TranslationKey }[];
+
+/** Unit factors a time interval can be expressed in. */
+export const TIME_INTERVAL_MULTIPLIERS = ['1', '60', '3600'] as const;
+
+export type TimeIntervalMultiplier = (typeof TIME_INTERVAL_MULTIPLIERS)[number];
+
+/** Granularity of a time picker: selectable times are `value` × `multiplier` apart. */
+export interface TimeInterval {
+  value: number;
+  multiplier: TimeIntervalMultiplier;
+}
+
+export const DEFAULT_TIME_INTERVAL: TimeInterval = { value: 1, multiplier: '60' };
+
+export interface TimeElement extends QuestionBase, Placeholderable {
+  type: 'time' | 'dateTime';
+  timeInterval: TimeInterval;
 }
 
 export interface TextElement extends QuestionBase, Placeholderable {
@@ -152,6 +180,7 @@ export type QuestionDefinition =
   | LongTextElement
   | NumberElement
   | DateElement
+  | TimeElement
   | BooleanElement
   | ChoiceElement
   | ScaleElement

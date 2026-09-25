@@ -67,7 +67,8 @@ Every element: `id`, `type`, `label` (required); `description` (optional, Markdo
 | `text`                            | –                              | `inputType`: `text\|email\|url\|phone\|number`; `maxLength`; `placeholder` | string                                         |
 | `longText`                        | –                              | `rows`; `maxLength`; `placeholder`                                         | string                                         |
 | `number`                          | –                              | `min`, `max`, `step`, `unit`, `decimals`; `placeholder`                    | number                                         |
-| `date`/`time`/`dateTime`          | –                              | `placeholder`                                                              | string (ISO `yyyy-MM-dd` / `HH:mm` / ISO)      |
+| `date`                            | –                              | `placeholder`                                                              | string (ISO `yyyy-MM-dd`)                      |
+| `time`/`dateTime`                 | `timeInterval` (default 1 min) | `placeholder`                                                              | string (ISO `HH:mm` / ISO)                     |
 | `boolean`                         | –                              | –                                                                          | boolean                                        |
 | `choice`/`dropdown`/`multiChoice` | `options` (≥1, non-empty)      | –                                                                          | value string/number (`multiChoice` → string[]) |
 | `scale`                           | `min`, `max`, `step` (numbers) | `minLabel`, `maxLabel`                                                     | number                                         |
@@ -85,6 +86,17 @@ Every element: `id`, `type`, `label` (required); `description` (optional, Markdo
 ```jsonc
 { "id": "string", "label": "string", "value": "string | number" }
 ```
+
+### `timeInterval` (time/dateTime, optional)
+
+Granularity of the native time picker — the `step` in seconds is `value × multiplier`.
+
+```jsonc
+{ "value": 15, "multiplier": "60" } // every 15 minutes
+```
+
+`value` = whole number ≥ 1, `multiplier` ∈ `"1"` (seconds) | `"60"` (minutes) | `"3600"` (hours).
+Missing on import ⇒ `{ "value": 1, "multiplier": "60" }`.
 
 ### `defaultValue` (DefaultValueDef, default null)
 
@@ -271,6 +283,7 @@ dateDiff yearsBetween msg required`. Identifiers = field ids (null when empty).
           "label": "Preferred call time",
           "width": 0.5,
           "defaultValue": { "kind": "static", "value": "14:30" },
+          "timeInterval": { "value": 15, "multiplier": "60" },
           "placeholder": "HH:mm"
         },
         {
