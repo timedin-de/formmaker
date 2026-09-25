@@ -1,4 +1,5 @@
 import { Component, effect, inject, signal } from '@angular/core';
+import { toPortableForm } from '@shared/model/form.model';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { DesignerStore } from '../core/state/designer.store';
@@ -111,7 +112,7 @@ export class BuilderComponent {
   }
 
   export(): void {
-    downloadJSON(this.store.form(), toSlug(this.store.form().name) + '.json');
+    downloadJSON(toPortableForm(this.store.form()), toSlug(this.store.form().name) + '.json');
   }
 }
 

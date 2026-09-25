@@ -242,20 +242,33 @@ const pageDefinitionSchema = z.strictObject({
   elements: elementsSchema,
 });
 
-export const formDefinitionSchema = z
-  .strictObject({
-    id: z.string(),
-    name: z.string(),
-    description: z.string().optional(),
-    version: z.number(),
-    schemaVersion: z.literal(1),
-    createdAt: z.string().optional(),
-    updatedAt: z.string().optional(),
-    settings: formSettingsSchema,
-    pages: z.array(pageDefinitionSchema),
-  })
-  .strict() satisfies z.ZodType<FormDefinition>;
+const formOwnerSchema = z.strictObject({
+  id: z.string(),
+  email: z.string(),
+  role: z.enum(['admin', 'editor']),
+  createdAt: z.string(),
+});
+
+export const formDefinitionSchema = z.strictObject({
+  id: z.string(),
+  name: z.string(),
+  ownerId: z.string().min(1).max(128).optional(),
+  owner: formOwnerSchema.nullable().optional(),
+  description: z.string().optional(),
+  version: z.number(),
+  schemaVersion: z.literal(1),
+  createdAt: z.string().optional(),
+  updatedAt: z.string().optional(),
+  settings: formSettingsSchema,
+  pages: z.array(pageDefinitionSchema),
+}) satisfies z.ZodType<FormDefinition>;
+
+export function stripFormOwnership(value: unknown): unknown {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return value;
+  const { ownerId: _ownerId, owner: _owner, ...form } = value as Record<string, unknown>;
+  return form;
+}
 
 export function parseFormData(json: string): CatchFnResult<FormDefinition> {
-  return catchFn(() => formDefinitionSchema.parse(JSON.parse(json)));
+  return catchFn(() => formDefinitionSchema.parse(stripFormOwnership(JSON.parse(json))));
 }

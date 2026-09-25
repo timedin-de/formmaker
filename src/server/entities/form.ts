@@ -1,8 +1,10 @@
 import { EntitySchema } from 'typeorm';
+import type { UserEntityModel } from './user';
 
 export interface FormEntityModel {
   id: string;
   ownerId: string;
+  owner?: UserEntityModel | null;
   document: string;
   createdAt: string;
   updatedAt: string;
@@ -46,4 +48,12 @@ export const FormEntity = new EntitySchema<FormEntityModel>({
     updatedAt: { name: 'updated_at', type: String },
   },
   indices: [{ columns: ['ownerId', 'updatedAt'] }],
+  relations: {
+    owner: {
+      type: 'many-to-one',
+      target: 'User',
+      joinColumn: { name: 'owner_id' },
+      onDelete: 'CASCADE',
+    },
+  },
 });
