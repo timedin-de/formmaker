@@ -4,6 +4,7 @@ import type {
   Elements,
   ElementType,
   FormDefinition,
+  GroupElement,
   PageDefinition,
   QuestionDefinition,
   QuestionType,
@@ -36,6 +37,7 @@ export function createPage(title = 'New page'): PageDefinition {
 }
 
 export function createElement(type: QuestionType, label: string): QuestionDefinition;
+export function createElement(type: 'group', label: string): GroupElement;
 export function createElement(type: ElementType, label: string): ElementDefinition;
 export function createElement(type: ElementType, label: string): ElementDefinition {
   const base = {
