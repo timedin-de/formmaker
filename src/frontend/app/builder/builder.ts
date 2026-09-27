@@ -1,26 +1,25 @@
 import { Component, effect, inject, signal } from '@angular/core';
-import { toPortableForm } from '@shared/model/form.model';
-import { ActivatedRoute, Router } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { DesignerStore } from '../core/state/designer.store';
-import { FormsRepository } from '../core/state/forms.repository';
-import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSidenavModule } from '@angular/material/sidenav';
-import { MatTabsModule } from '@angular/material/tabs';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { downloadJSON } from '../core/export/file';
+import { MatTabsModule } from '@angular/material/tabs';
+import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { ActivatedRoute, Router } from '@angular/router';
+import { toPortableForm } from '@shared/model/form.model';
+import { pairwise, startWith } from 'rxjs';
+import { downloadJSON } from '../core/export/file';
+import { I18nService } from '../core/i18n';
+import { DesignerStore } from '../core/state/designer.store';
+import { FormsRepository } from '../core/state/forms.repository';
 import { BuilderCanvas } from './canvas';
 import { BuilderPalette } from './palette';
 import { PropertyPanel } from './property-panel';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { pairwise, startWith } from 'rxjs';
-import { I18nService } from '../core/i18n';
-import { FormImportService } from '../core/export/import';
 
 @Component({
   imports: [
@@ -45,7 +44,6 @@ import { FormImportService } from '../core/export/import';
 })
 export class BuilderComponent {
   readonly store = inject(DesignerStore);
-  private readonly importService = inject(FormImportService);
   private readonly repo = inject(FormsRepository);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -78,18 +76,21 @@ export class BuilderComponent {
             this.save();
             this.router.navigate([], {
               relativeTo: this.route,
-              queryParams: { id: this.store.form().id },
+              queryParams: { id: this.store.form().id, page: this.store.activePageId() },
             });
+            return;
           }
         }
         if (oldParams.page !== q.page) {
           this.store.selectPage(q.page);
         }
-        this.router.navigate([], {
-          relativeTo: this.route,
-          queryParams: { page: this.store.activePageId() },
-          queryParamsHandling: 'merge',
-        });
+        if (!q.page || oldParams.id !== q.id || oldParams.page !== q.page) {
+          this.router.navigate([], {
+            relativeTo: this.route,
+            queryParams: { page: this.store.activePageId() },
+            queryParamsHandling: 'merge',
+          });
+        }
       });
 
     effect(() => {
