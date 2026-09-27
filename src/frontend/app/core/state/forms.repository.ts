@@ -42,9 +42,12 @@ export class FormsRepository {
     writeCache(FORMS_CACHE_KEY, forms);
   }
 
+  /**Get Users visible forms, ordered by update-date*/
   async listForms(): Promise<FormWithOwner[]> {
     await this.init();
-    return this.forms();
+    return [...this.forms()].sort((a, b) =>
+      a.updatedAt === b.updatedAt ? 0 : (a.updatedAt ?? '') > (b.updatedAt ?? '') ? -1 : 1,
+    );
   }
 
   /** Public share links may load a form without an editor session. */
