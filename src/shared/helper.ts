@@ -1,3 +1,5 @@
+import { Condition, ConditionGroup, ElementDefinition } from './model';
+
 // Helper function that checks if the value exists in the object
 export function has<T extends object, K extends PropertyKey>(
   object: T,
@@ -23,4 +25,22 @@ export async function catchFnAsync<T>(fn: () => Promise<T>): Promise<CatchFnResu
   } catch (error) {
     return { data: null, error };
   }
+}
+
+export function walkGroup(
+  elements: ElementDefinition[],
+  callback: (element: ElementDefinition) => ElementDefinition,
+): ElementDefinition[] {
+  return elements.map((e) => {
+    callback(e);
+    if (e.type === 'group') {
+      e.elements = walkGroup(e.elements, callback);
+    }
+    return e;
+  });
+}
+
+export function walkConditionGroup(condition: ConditionGroup, callback: (cg: Condition) => void) {
+  condition.conditions.forEach(callback);
+  if (condition.groups.length) condition.groups.forEach((c) => walkConditionGroup(c, callback));
 }
