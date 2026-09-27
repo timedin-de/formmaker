@@ -156,9 +156,22 @@ export class DesignerStore {
     if (!src) return;
     const copy = cloneElementWithFreshId(src);
     const pages = this.form().pages.map((p) => {
-      const container = findContainer(p, elementId);
-      if (!container) return p;
-      return { ...p, elements: insertInto(container, elementId, copy) };
+      const walkGroups = (elements: ElementDefinition[]) => {
+        const idx = elements.findIndex((e) => e.id === elementId);
+        if (idx >= 0) {
+          const next = [...elements];
+          next.splice(idx + 1, 0, copy);
+          return next;
+        }
+        return elements.map((e): ElementDefinition => {
+          if (e.type === 'group') {
+            return { ...e, elements: walkGroups(e.elements) };
+          }
+          return e;
+        });
+      };
+
+      return { ...p, elements: walkGroups(p.elements) };
     });
     this.patchForm({ pages });
     this.selectedId.set(copy.id);
@@ -257,28 +270,6 @@ function normalizeForm(def: unknown): FormDefinition {
   form.schemaVersion = 1;
   form.settings = { ...form.settings };
   return form;
-}
-
-/** Locate the elements array holding `id` (top-level page array or a group's). */
-function findContainer(page: PageDefinition, id: string): ElementDefinition[] | null {
-  const hunt = (els: ElementDefinition[]): ElementDefinition[] | null => {
-    if (els.some((e) => e.id === id)) return els;
-    for (const e of els) {
-      if (e.type === 'group') {
-        const found = hunt(e.elements);
-        if (found) return found;
-      }
-    }
-    return null;
-  };
-  return hunt(page.elements);
-}
-
-function insertInto<T extends ElementDefinition>(container: T[], afterId: string, el: T): T[] {
-  const idx = container.findIndex((e) => e.id === afterId);
-  const next = [...container];
-  next.splice(idx + 1, 0, el);
-  return next;
 }
 
 function cloneElementWithFreshId(el: ElementDefinition): ElementDefinition {
