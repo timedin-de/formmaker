@@ -7,7 +7,7 @@ import type {
   FormSettings,
   PageDefinition,
 } from '@shared/model/form.model';
-import { uuid } from '@shared/model/ids';
+import { elementId, uuid } from '@shared/model/ids';
 import { parseFormData } from '@shared/schemas';
 import { I18nService } from '../i18n/translation.service';
 import { createElement, createPage, insertElementAfter, newForm } from './form-factory';
@@ -274,14 +274,19 @@ function normalizeForm(def: unknown): FormDefinition {
 
 function cloneElementWithFreshId(el: ElementDefinition): ElementDefinition {
   const cloned = structuredCloneSafe(el);
-  cloned.id = uuid();
   cloned.label = `${el.label} (copy)`;
-  if ('options' in cloned) {
-    cloned.options = cloned.options.map((o) => ({ ...o, id: uuid() }));
-  }
-  if (cloned.type === 'group') {
-    cloned.elements = cloned.elements.map((c) => ({ ...c, id: uuid() }));
-  }
+
+  const clone = (e: ElementDefinition) => {
+    e.id = elementId('q');
+    if ('options' in e) {
+      e.options = e.options.map((o) => ({ ...o, id: uuid() }));
+    }
+    return e;
+  };
+
+  if (has(cloned, 'elements')) walkGroup(cloned.elements, clone);
+  clone(cloned);
+
   return cloned;
 }
 
