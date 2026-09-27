@@ -1,5 +1,5 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { catchFn } from '@shared/helper';
+import { catchFn, has, walkConditionGroup, walkGroup } from '@shared/helper';
 import type {
   ElementDefinition,
   ElementType,
@@ -7,7 +7,7 @@ import type {
   FormSettings,
   PageDefinition,
 } from '@shared/model/form.model';
-import { elementId, uuid } from '@shared/model/ids';
+import { ElementId, elementId, uuid } from '@shared/model/ids';
 import { parseFormData } from '@shared/schemas';
 import { I18nService } from '../i18n/translation.service';
 import { createElement, createPage, insertElementAfter, newForm } from './form-factory';
@@ -154,7 +154,11 @@ export class DesignerStore {
   duplicateElement(elementId: string): void {
     const src = this.findElement(elementId);
     if (!src) return;
-    const copy = cloneElementWithFreshId(src);
+    // Only ids inside the duplicated subtree are mapped, so references to other
+    // fields keep pointing at the originals.
+    const idMap: Record<ElementId, ElementId> = {};
+    const copy = cloneElementWithFreshId(src, idMap);
+    remapElementReferences([copy], idMap);
     const pages = this.form().pages.map((p) => {
       const walkGroups = (elements: ElementDefinition[]) => {
         const idx = elements.findIndex((e) => e.id === elementId);
@@ -272,12 +276,22 @@ function normalizeForm(def: unknown): FormDefinition {
   return form;
 }
 
-function cloneElementWithFreshId(el: ElementDefinition): ElementDefinition {
+/**
+ * Deep-clone an element with fresh ids. When `idMap` is given, every element of
+ * the cloned tree (group children included) records its old id → new id so that
+ * references can be remapped afterwards.
+ */
+function cloneElementWithFreshId(
+  el: ElementDefinition,
+  idMap?: Record<ElementId, ElementId>,
+): ElementDefinition {
   const cloned = structuredCloneSafe(el);
   cloned.label = `${el.label} (copy)`;
 
   const clone = (e: ElementDefinition) => {
-    e.id = elementId('q');
+    const id = elementId('q');
+    if (idMap) idMap[e.id] = id;
+    e.id = id;
     if ('options' in e) {
       e.options = e.options.map((o) => ({ ...o, id: uuid() }));
     }
@@ -290,15 +304,63 @@ function cloneElementWithFreshId(el: ElementDefinition): ElementDefinition {
   return cloned;
 }
 
+/**
+ * Point `defaultValue` / condition field references at their cloned counterparts.
+ * Ids missing from `idMap` (i.e. fields outside the cloned tree) stay untouched.
+ */
+function remapElementReferences(
+  elements: ElementDefinition[],
+  idMap: Record<ElementId, ElementId>,
+): void {
+  function map<T extends object>(
+    e: T,
+    attribute: { [K in keyof T]: T[K] extends ElementId ? K : never }[keyof T],
+  ) {
+    if (idMap[e[attribute] as ElementId]) {
+      (e[attribute] as string) = idMap[e[attribute] as ElementId];
+    }
+  }
+
+  const patchDeps = (e: ElementDefinition) => {
+    if (has(e, 'defaultValue') && e.defaultValue?.kind === 'fromField') {
+      if (idMap[e.defaultValue.fieldId]) {
+        e.defaultValue.fieldId = idMap[e.defaultValue.fieldId];
+      }
+    }
+
+    if (e.enabledWhen) {
+      walkConditionGroup(e.enabledWhen, (condition) => {
+        map(condition, 'fieldId');
+        if (condition.operand?.kind === 'field') {
+          map(condition.operand, 'fieldId');
+        }
+        if (condition.operandTo?.kind === 'field') {
+          map(condition.operandTo, 'fieldId');
+        }
+      });
+    }
+    return e;
+  };
+
+  for (const e of elements) {
+    if (has(e, 'elements')) walkGroup(e.elements, patchDeps);
+    patchDeps(e);
+  }
+}
+
 function clonePageWithFreshId(el: PageDefinition): PageDefinition {
   const cloned = structuredCloneSafe(el);
   cloned.id = uuid();
   cloned.title = `${el.title} (copy)`;
   cloned.subtitle = `${el.subtitle ?? ''}`;
 
-  if ('elements' in cloned) {
-    cloned.elements = cloned.elements.map((e) => cloneElementWithFreshId(e));
-  }
+  if (!has(cloned, 'elements')) return cloned;
+
+  // Collect old → new ids for the whole tree first, then remap references.
+  const idMap: Record<ElementId, ElementId> = {};
+  cloned.elements = cloned.elements.map((e) => cloneElementWithFreshId(e, idMap));
+  remapElementReferences(cloned.elements, idMap);
+
   return cloned;
 }
 
