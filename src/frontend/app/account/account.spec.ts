@@ -13,7 +13,7 @@ import { UsersRepository } from '../core/state/users.repository';
 import { Account } from './account';
 
 /** `svgIcon` names referenced by the account template. */
-const ICONS = ['account_circle', 'lock', 'save', 'delete_outline'];
+const ICONS = ['account_circle', 'visibility', 'lock', 'save', 'delete_outline'];
 
 function makeUser(overrides: Partial<PublicUser> = {}): PublicUser {
   return {
