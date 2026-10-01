@@ -24,12 +24,28 @@
       </div>
       <span class="spacer"></span>
       <div class="ops">
-        <button mat-icon-button (click)="move(-1)" [matTooltip]="i18n.t('row.moveUp')">
-          <mat-icon svgIcon="arrow_upward"></mat-icon>
-        </button>
-        <button mat-icon-button (click)="move(1)" [matTooltip]="i18n.t('row.moveDown')">
-          <mat-icon svgIcon="arrow_downward"></mat-icon>
-        </button>
+        @if (neighbours()?.before) {
+          <button
+            mat-icon-button
+            (click)="move(-1, $event)"
+            [matTooltip]="
+              i18n.t(neighbours()?.before?.type === 'group' ? 'row.moveInGroup' : 'row.moveUp')
+            "
+          >
+            <mat-icon svgIcon="arrow_upward"></mat-icon>
+          </button>
+        }
+        @if (neighbours()?.after) {
+          <button
+            mat-icon-button
+            (click)="move(1, $event)"
+            [matTooltip]="
+              i18n.t(neighbours()?.after?.type === 'group' ? 'row.moveInGroup' : 'row.moveDown')
+            "
+          >
+            <mat-icon svgIcon="arrow_downward"></mat-icon>
+          </button>
+        }
         <button mat-icon-button (click)="duplicate()" [matTooltip]="i18n.t('row.duplicate')">
           <mat-icon svgIcon="content_copy"></mat-icon>
         </button>
@@ -43,7 +59,15 @@
         <div (click)="$event.stopPropagation()">
           @for (child of el.elements; track child.id) {
             <div class="group-drag-container" cdkDrag>
-              <fm-element-row [el]="child" [store]="store()" />
+              <fm-element-row
+                [el]="child"
+                [neighbours]="{
+                  before: el.elements[$index - 1],
+                  after: el.elements[$index + 1],
+                  parent: el,
+                }"
+                [store]="store()"
+              />
             </div>
           }
         </div>
