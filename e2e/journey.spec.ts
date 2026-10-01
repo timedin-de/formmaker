@@ -25,7 +25,7 @@ test('builds a form in the designer, fills it out in the runner and exports resu
 
   // Add a short-text question and rename it via the property panel.
   await addField(page, 'Short text');
-  const rows = page.locator('.canvas .row-wrap .row');
+  const rows = page.locator('.canvas .list > .cdk-drag > fm-element-row > .row');
   await expect(rows).toHaveCount(1);
   await rows.click();
   await page.getByLabel('Label').fill('Your name');

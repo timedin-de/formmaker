@@ -55,26 +55,36 @@
       </div>
     </div>
     @if (el.type === 'group') {
-      <div class="group-children">
-        <div (click)="$event.stopPropagation()">
-          @for (child of el.elements; track child.id) {
-            <div class="group-drag-container" cdkDrag>
-              <fm-element-row
-                [el]="child"
-                [neighbours]="{
-                  before: el.elements[$index - 1],
-                  after: el.elements[$index + 1],
-                  parent: el,
-                }"
-                [store]="store()"
-              />
-            </div>
-          }
-        </div>
-        <button class="add-child" (click)="showPalette.set(true)">
-          <mat-icon svgIcon="add"></mat-icon> {{ i18n.t('row.addChild') }}
-        </button>
+      <!-- Sort and enter predicates: see drop-sort.ts. -->
+      <div
+        class="group-children"
+        (click)="$event.stopPropagation()"
+        [cdkDropListSortPredicate]="canSortAt"
+        [cdkDropListEnterPredicate]="canEnter"
+        (cdkDropListDropped)="dropElement.emit($event)"
+        [cdkDropListData]="el.elements"
+        [cdkDropListConnectedTo]="dropLists()"
+        cdkDropList
+        [id]="`dropList_${el.id}`"
+      >
+        @for (child of el.elements; track child.id) {
+          <div class="group-drag-container" cdkDrag [cdkDragData]="child.id">
+            <fm-element-row
+              [el]="child"
+              [neighbours]="{
+                before: el.elements[$index - 1],
+                after: el.elements[$index + 1],
+              }"
+              [dropLists]="dropLists()"
+              (dropElement)="dropElement.emit($event)"
+              [store]="store()"
+            />
+          </div>
+        }
       </div>
+      <button class="add-child" (click)="showPalette.set(true)">
+        <mat-icon svgIcon="add"></mat-icon> {{ i18n.t('row.addChild') }}
+      </button>
     }
   </div>
 }

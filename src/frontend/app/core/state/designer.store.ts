@@ -1,7 +1,8 @@
-import { Injectable, computed, inject, signal } from '@angular/core';
+import { computed, inject, Injectable, signal } from '@angular/core';
 import { catchFn, has, walkConditionGroup, walkGroup } from '@shared/helper';
 import type {
   ElementDefinition,
+  Elements,
   ElementType,
   FormDefinition,
   FormSettings,
@@ -151,6 +152,35 @@ export class DesignerStore {
     this.patchForm({ pages });
   }
 
+  /**
+   * Move an element to an arbitrary position of an arbitrary container, wherever
+   * it currently lives. `parentId === null` targets the root element list of the
+   * page holding the element, otherwise the children of the group with that id.
+   *
+   * `index` follows CDK drop semantics: it is resolved against the destination
+   * array *after* the element has been detached from its source, so the same
+   * value works for both reorders and transfers.
+   */
+  moveElementTo(elementId: string, parentId: string | null, index: number): void {
+    const source = this.findElement(elementId);
+    if (!source) return;
+    // A group may not be dropped into itself or one of its own descendants.
+    if (parentId !== null && containsElement(source, parentId)) return;
+
+    let moved = false;
+    const pages = this.form().pages.map((page) => {
+      const detached = detachFrom(page.elements, elementId);
+      if (!detached.removed) return page;
+      const attached = attachTo(detached.elements, parentId, detached.removed, index);
+      // `attachTo` returns its input untouched when `parentId` is not on this page.
+      if (attached === detached.elements) return page;
+      moved = true;
+      return { ...page, elements: attached };
+    });
+    if (!moved) return;
+    this.patchForm({ pages });
+  }
+
   duplicateElement(elementId: string): void {
     const src = this.findElement(elementId);
     if (!src) return;
@@ -249,6 +279,75 @@ function findIn(els: ElementDefinition[], id: string): ElementDefinition | null 
     }
   }
   return null;
+}
+
+/** True when `id` is `el` itself or lives anywhere inside its subtree. */
+function containsElement(el: ElementDefinition, id: string): boolean {
+  if (el.id === id) return true;
+  return el.type === 'group' && el.elements.some((child) => containsElement(child, id));
+}
+
+/** Removes `id` from the tree. Returns the untouched input when `id` is absent. */
+function detachFrom(
+  els: Elements,
+  id: string,
+): { elements: Elements; removed: ElementDefinition | null } {
+  const idx = els.findIndex((e) => e.id === id);
+  if (idx >= 0) {
+    const next = [...els];
+    const [removed] = next.splice(idx, 1);
+    return { elements: next, removed };
+  }
+  for (let i = 0; i < els.length; i++) {
+    const el = els[i];
+    if (el.type !== 'group') continue;
+    const nested = detachFrom(el.elements, id);
+    if (!nested.removed) continue;
+    const next = [...els];
+    next[i] = { ...el, elements: nested.elements };
+    return { elements: next, removed: nested.removed };
+  }
+  return { elements: els, removed: null };
+}
+
+/** Inserts `el` at `index` of the group `parentId`, or of the root when `parentId` is null. */
+function attachTo(
+  els: Elements,
+  parentId: string | null,
+  el: ElementDefinition,
+  index: number,
+): Elements {
+  if (parentId === null) {
+    const next = [...els];
+    next.splice(clamp(index, 0, els.length), 0, el);
+    return next;
+  }
+  for (let i = 0; i < els.length; i++) {
+    const candidate = els[i];
+    if (candidate.type !== 'group') continue;
+    if (candidate.id === parentId) {
+      const next = [...els];
+      next[i] = { ...candidate, elements: insertAt(candidate.elements, el, index) };
+      return next;
+    }
+    const next = attachTo(candidate.elements, parentId, el, index);
+    if (next !== candidate.elements) {
+      const copy = [...els];
+      copy[i] = { ...candidate, elements: next };
+      return copy;
+    }
+  }
+  return els;
+}
+
+function insertAt(els: Elements, el: ElementDefinition, index: number): Elements {
+  const next = [...els];
+  next.splice(clamp(index, 0, els.length), 0, el);
+  return next;
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), max);
 }
 
 function moveIn(els: ElementDefinition[], id: string, dir: -1 | 1): ElementDefinition[] {

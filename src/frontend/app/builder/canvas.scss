@@ -1,3 +1,6 @@
+@use '../core/styles/mixins.scss';
+@include mixins.dragable('.list', '.cdk-drag');
+
 .canvas {
   display: flex;
   flex-direction: column;
@@ -72,12 +75,6 @@
   overflow: auto;
   padding: 14px;
   box-sizing: border-box;
-}
-.row-wrap {
-  padding-bottom: 8px;
-}
-.muted {
-  color: var(--mat-sys-on-surface-variant);
 }
 .page-actions {
   padding: 10px 16px;

@@ -1,5 +1,7 @@
-.row,
-.group-box {
+@use '../core/styles/mixins.scss';
+@include mixins.dragable('.group-children', '.group-drag-container');
+
+.row {
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -12,13 +14,12 @@
   transition:
     border-color 0.12s ease,
     box-shadow 0.12s ease;
-  margin-bottom: 8px;
+  margin-bottom: 16px;
 }
 .row:hover {
   border-color: var(--mat-sys-outline);
 }
-.row.selected,
-.group-box.selected {
+.row.selected {
   border-color: var(--mat-sys-primary);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--mat-sys-primary) 25%, transparent);
 }
@@ -69,8 +70,7 @@
   opacity: 0;
   transition: opacity 0.12s ease;
 }
-.row:hover .ops,
-.group-box:hover .ops {
+.row:hover .ops {
   opacity: 1;
 }
 .row-head {
@@ -80,9 +80,25 @@
   padding: 4px 0;
 }
 .group-children {
+  min-height: 40px;
   margin: 8px 0 4px 18px;
   border-left: 2px dashed var(--mat-sys-outline-variant);
   padding-left: 14px;
+}
+// While this zone receives a drag, CDK has moved the placeholder out of the list the
+// drag came from. Every row below that placeholder moves up by its height, so the zone
+// slides up out of the pointer that just entered it and CDK leaves again on the next
+// pointer event. This transparent area keeps the pointer over the zone until the drop.
+.group-children.cdk-drop-list-receiving {
+  position: relative;
+}
+.group-children.cdk-drop-list-receiving::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  height: 240px;
 }
 .add-child {
   display: flex;
