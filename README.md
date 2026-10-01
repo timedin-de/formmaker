@@ -7,7 +7,6 @@ Built with Angular 22 + Angular Material 22 on the frontend and a TypeScript Exp
 ## What it can do
 
 - **Visual form designer** — build multi-page forms by dragging nothing at all: pick a field from the palette and tune it in the property panel.
-- **Two editing layouts** — the classic split view (palette / canvas / property panel) or a stacked **WYSIWYG** view where fields render exactly as respondents will see them, with the property editor inline under each selected field.
 - **16 field types**
   - Basic (10): short text, long text, number, yes/no, single choice, dropdown, multiple choice, date, time, date-time
   - Advanced (3): rating scale, file upload, signature pad

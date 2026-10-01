@@ -13,9 +13,7 @@ import { I18nService } from '../core/i18n';
 import { DesignerStore } from '../core/state/designer.store';
 import { ConditionEditor } from './condition-editor';
 import { ElementRow } from './element-row';
-import { FieldPreview } from './field-preview';
 import { BuilderPalette } from './palette';
-import { PropertyPanel } from './property-panel';
 
 @Component({
   imports: [
@@ -27,8 +25,6 @@ import { PropertyPanel } from './property-panel';
     MatTooltipModule,
     ElementRow,
     ConditionEditor,
-    FieldPreview,
-    PropertyPanel,
     RouterLink,
     BuilderPalette,
   ],
@@ -46,7 +42,6 @@ export class BuilderCanvas {
   readonly showPalette = signal(false);
   protected readonly pages = () => this.store().form().pages;
 
-  readonly preview = input(false);
   protected page = computed(() => this.store().activePage());
   protected emptyGroup = computed(
     () => ({ logic: 'all', conditions: [], groups: [] }) as ConditionGroup,

@@ -13,22 +13,6 @@
       <span class="muted">{{ i18n.t('builder.pages', { n: store.form().pages.length }) }}</span>
     </div>
     <div class="actions">
-      <mat-button-toggle-group
-        class="mode-toggle"
-        [value]="mode()"
-        (valueChange)="setMode($event)"
-        [attr.aria-label]="i18n.t('builder.splitTooltip')"
-      >
-        <mat-button-toggle value="split" [matTooltip]="i18n.t('builder.splitTooltip')">
-          <mat-icon svgIcon="view_column"></mat-icon>
-        </mat-button-toggle>
-        <mat-button-toggle value="wysiwyg" [matTooltip]="i18n.t('builder.wysiwygTooltip')">
-          <mat-icon svgIcon="view_agenda"></mat-icon>
-        </mat-button-toggle>
-      </mat-button-toggle-group>
-
-      <span class="divider"></span>
-
       <button mat-button (click)="export()">
         <mat-icon svgIcon="download"></mat-icon>
         <span class="btn-label">{{ i18n.t('builder.export') }}</span>
@@ -45,17 +29,9 @@
       </button>
     </div>
   </mat-toolbar>
-
-  @if (mode() === 'split') {
-    <div class="layout">
-      <fm-builder-palette class="palette" [store]="store" />
-      <fm-builder-canvas class="canvas" [store]="store" />
-      <fm-property-panel class="panel" [store]="store" />
-    </div>
-  } @else {
-    <div class="layout-stack">
-      <fm-builder-palette [store]="store" [horizontal]="true" />
-      <fm-builder-canvas [store]="store" [preview]="true" />
-    </div>
-  }
+  <div class="layout">
+    <fm-builder-palette class="palette" [store]="store" />
+    <fm-builder-canvas class="canvas" [store]="store" />
+    <fm-property-panel class="panel" [store]="store" />
+  </div>
 </div>

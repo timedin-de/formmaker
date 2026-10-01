@@ -1,4 +1,4 @@
-import { mkdirSync, copyFileSync, existsSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -59,8 +59,6 @@ const icons = [
   'table_view',
   'toggle_on',
   'upload_file',
-  'view_agenda',
-  'view_column',
   'text_snippet',
   'visibility',
   'visibility_off',

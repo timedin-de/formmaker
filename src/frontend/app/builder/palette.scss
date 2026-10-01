@@ -9,37 +9,6 @@
   font-size: 15px;
   height: 52px;
 }
-.palette-chips {
-  padding: 6px 10px 10px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-.chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  border: 1px solid var(--mat-sys-outline-variant);
-  background: var(--mat-sys-surface);
-  border-radius: 999px;
-  padding: 6px 12px;
-  cursor: pointer;
-  font-size: 13px;
-  color: var(--mat-sys-on-surface);
-}
-.chip:hover {
-  border-color: var(--mat-sys-primary);
-  color: var(--mat-sys-primary);
-}
-.chip mat-icon {
-  font-size: 18px;
-  height: 18px;
-  width: 18px;
-}
-:host ::ng-deep .mat-mdc-tab-header {
-  --mat-tab-header-active-label-text-color: var(--mat-sys-primary);
-  --mat-tab-header-label-text-color: var(--mat-sys-on-surface-variant);
-}
 .palette-items {
   padding: 10px;
   display: flex;
