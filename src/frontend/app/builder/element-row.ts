@@ -34,6 +34,11 @@ export class ElementRow {
 
   protected readonly has = has;
 
+  readonly neighbours = input<{
+    before?: ElementDefinition;
+    after?: ElementDefinition;
+    parent?: ElementDefinition;
+  }>();
   readonly showPalette = signal(false);
 
   protected meta = computed(() => fieldMeta(this.el().type));
@@ -46,7 +51,8 @@ export class ElementRow {
     this.store().select(this.el().id);
   }
 
-  move(dir: -1 | 1): void {
+  move(dir: -1 | 1, event?: Event): void {
+    event?.stopImmediatePropagation();
     this.store().moveElement(this.el().id, dir);
   }
 

@@ -263,8 +263,17 @@ function moveIn(els: ElementDefinition[], id: string, dir: -1 | 1): ElementDefin
   const target = idx + dir;
   if (target < 0 || target >= out.length) return out;
   const next = [...out];
+  const oldItem = next[target];
   const [item] = next.splice(idx, 1);
-  next.splice(target, 0, item);
+  if (oldItem?.type === 'group') {
+    const groupIdx = next.indexOf(oldItem);
+    next[groupIdx] = {
+      ...oldItem,
+      elements: dir === 1 ? [item, ...oldItem.elements] : [...oldItem.elements, item],
+    };
+  } else {
+    next.splice(target, 0, item);
+  }
   return next;
 }
 

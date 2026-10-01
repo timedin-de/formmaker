@@ -67,7 +67,14 @@
         @for (el of page.elements; track el.id) {
           <div class="row-wrap">
             <div class="row-card">
-              <fm-element-row [el]="el" [store]="store()" />
+              <fm-element-row
+                [el]="el"
+                [neighbours]="{
+                  before: page.elements[$index - 1],
+                  after: page.elements[$index + 1],
+                }"
+                [store]="store()"
+              />
             </div>
           </div>
         }
