@@ -1,40 +1,11 @@
 @if (el(); as el) {
-  @if (el.type === 'group') {
-    <div class="group-box" [class.selected]="selected()" (click)="select()">
-      <div class="row-head">
-        <mat-icon class="icon" [svgIcon]="meta().icon"></mat-icon>
-        <span class="name">{{ el.label }}</span>
-        <span class="type-badge">{{ i18n.t('row.group') }}</span>
-        <span class="spacer"></span>
-        <button mat-icon-button (click)="move(-1)" [matTooltip]="i18n.t('row.moveUp')">
-          <mat-icon svgIcon="arrow_upward"></mat-icon>
-        </button>
-        <button mat-icon-button (click)="move(1)" [matTooltip]="i18n.t('row.moveDown')">
-          <mat-icon svgIcon="arrow_downward"></mat-icon>
-        </button>
-        <button mat-icon-button (click)="duplicate()" [matTooltip]="i18n.t('row.duplicate')">
-          <mat-icon svgIcon="content_copy"></mat-icon>
-        </button>
-        <button mat-icon-button (click)="remove()" [matTooltip]="i18n.t('row.delete')">
-          <mat-icon svgIcon="delete_outline"></mat-icon>
-        </button>
-      </div>
-      <div class="group-children" (click)="$event.stopPropagation()">
-        @for (child of el.elements; track child.id) {
-          <fm-element-row [el]="child" [store]="store()" />
-        }
-        <button class="add-child" (click)="showPalette.set(true)">
-          <mat-icon svgIcon="add"></mat-icon> {{ i18n.t('row.addChild') }}
-        </button>
-      </div>
-    </div>
-  } @else {
-    <div
-      class="row"
-      [class.selected]="selected()"
-      [class.muted]="el.type === 'section'"
-      (click)="select()"
-    >
+  <div
+    class="row"
+    [class.selected]="selected()"
+    [class.muted]="el.type === 'section'"
+    (click)="select()"
+  >
+    <div class="row-head">
       <mat-icon class="icon" [svgIcon]="meta().icon"></mat-icon>
       <div class="body">
         <div class="name">{{ el.label }}</div>
@@ -67,7 +38,21 @@
         </button>
       </div>
     </div>
-  }
+    @if (el.type === 'group') {
+      <div class="group-children">
+        <div (click)="$event.stopPropagation()">
+          @for (child of el.elements; track child.id) {
+            <div class="group-drag-container" cdkDrag>
+              <fm-element-row [el]="child" [store]="store()" />
+            </div>
+          }
+        </div>
+        <button class="add-child" (click)="showPalette.set(true)">
+          <mat-icon svgIcon="add"></mat-icon> {{ i18n.t('row.addChild') }}
+        </button>
+      </div>
+    }
+  </div>
 }
 @if (showPalette()) {
   <div class="palette-modal">
