@@ -134,8 +134,6 @@ const en = {
   // builder
   'builder.formName': 'Form name',
   'builder.pages': '{n} pages',
-  'builder.splitTooltip': 'Split layout',
-  'builder.wysiwygTooltip': 'Everything stacked (WYSIWYG)',
   'builder.import': 'Import',
   'builder.export': 'Export',
   'builder.save': 'Save',
@@ -562,8 +560,6 @@ const de: typeof en = {
   // builder
   'builder.formName': 'Formularname',
   'builder.pages': '{n} Seiten',
-  'builder.splitTooltip': 'Geteilte Ansicht',
-  'builder.wysiwygTooltip': 'Alles gestapelt (WYSIWYG)',
   'builder.import': 'Importieren',
   'builder.export': 'Exportieren',
   'builder.save': 'Speichern',

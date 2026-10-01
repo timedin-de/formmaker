@@ -68,18 +68,7 @@
           <div class="row-wrap">
             <div class="row-card">
               <fm-element-row [el]="el" [store]="store()" />
-              @if (preview()) {
-                <fm-field-preview [el]="el" />
-                <div class="inline-actions">
-                  <span class="muted">{{ i18n.t('canvas.clickToEdit') }}</span>
-                </div>
-              }
             </div>
-            @if (preview() && store().selectedId() === el.id) {
-              <div class="inline-editor">
-                <fm-property-panel [store]="store()" />
-              </div>
-            }
           </div>
         }
       </div>

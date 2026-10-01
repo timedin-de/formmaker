@@ -41,21 +41,6 @@
   flex: 1;
   min-height: 0;
 }
-.layout-stack {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 16px;
-  flex: 1;
-  min-height: 0;
-  max-width: 860px;
-  width: 100%;
-  margin: 0 auto;
-}
-.layout-stack fm-builder-canvas {
-  flex: 1;
-  min-height: 0;
-}
 .palette {
   overflow: auto;
   background: var(--mat-sys-surface);

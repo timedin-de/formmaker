@@ -50,11 +50,6 @@ export class BuilderComponent {
   private readonly snack = inject(MatSnackBar);
   protected readonly i18n = inject(I18nService);
   readonly saved = signal(false);
-  readonly mode = signal<'split' | 'wysiwyg'>('split');
-
-  setMode(value: string): void {
-    if (value === 'split' || value === 'wysiwyg') this.mode.set(value);
-  }
 
   constructor() {
     // Load the working form: ?id= opens an existing form, ?new=1 a blank one.

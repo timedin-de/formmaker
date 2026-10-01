@@ -1,13 +1,13 @@
 import { Component, inject, input, output } from '@angular/core';
-import { DesignerStore } from '../core/state/designer.store';
-import { FIELD_TYPES } from '../core/model/field-registry';
+import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { FormsModule } from '@angular/forms';
-import type { ElementType } from '@shared/model/form.model';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatToolbarModule } from '@angular/material/toolbar';
+import type { ElementType } from '@shared/model/form.model';
 import { I18nService } from '../core/i18n';
+import { FIELD_TYPES } from '../core/model/field-registry';
+import { DesignerStore } from '../core/state/designer.store';
 
 const CATEGORIES = [{ key: 'basic' }, { key: 'advanced' }, { key: 'layout' }] as const;
 
@@ -19,7 +19,6 @@ const CATEGORIES = [{ key: 'basic' }, { key: 'advanced' }, { key: 'layout' }] as
 })
 export class BuilderPalette {
   readonly store = input<DesignerStore>();
-  readonly horizontal = input(false);
   public readonly isModal = input(false);
   public readonly addModule = output<ElementType>();
   protected readonly i18n = inject(I18nService);
