@@ -53,6 +53,19 @@ export async function createForm(session: ApiSession, form: unknown): Promise<st
   return body.id as string;
 }
 
+/** Structural view of a stored form, enough to assert element order. */
+export interface StoredForm {
+  pages: { elements: { label: string; elements?: { label: string }[] }[] }[];
+}
+
+export async function getForm(session: ApiSession, formId: string): Promise<StoredForm> {
+  const res = await session.request.get(`/api/forms/${formId}`, {
+    headers: editorHeaders(session),
+  });
+  expect(res.ok()).toBeTruthy();
+  return (await res.json()) as StoredForm;
+}
+
 export async function deleteForm(session: ApiSession, formId: string): Promise<void> {
   await session.request.delete(`/api/forms/${formId}`, { headers: editorHeaders(session) });
   await session.request.delete(`/api/forms/${formId}/submissions`, {
@@ -104,5 +117,20 @@ export function seedField(type: string, id: string, label: string): Record<strin
     width: 1,
     enabledWhen: EMPTY_GROUP,
     ...(type === 'text' ? { inputType: 'text', maxLength: 255 } : {}),
+  };
+}
+
+export function seedGroup(
+  id: string,
+  label: string,
+  children: Record<string, unknown>[],
+): Record<string, unknown> {
+  return {
+    id,
+    type: 'group',
+    label,
+    width: 1,
+    enabledWhen: EMPTY_GROUP,
+    elements: children,
   };
 }

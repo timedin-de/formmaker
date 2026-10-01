@@ -63,19 +63,29 @@
         <p>{{ i18n.t('canvas.addFieldHint') }}</p>
       </div>
     } @else {
-      <div class="list">
+      <!-- Sort and enter predicates: see drop-sort.ts. -->
+      <div
+        cdkDropList
+        [cdkDropListSortPredicate]="canSortAt"
+        [cdkDropListEnterPredicate]="canEnter"
+        [cdkDropListData]="page.elements"
+        (cdkDropListDropped)="drop($event)"
+        [cdkDropListConnectedTo]="dropLists()"
+        [id]="mainDropList"
+        class="list"
+      >
         @for (el of page.elements; track el.id) {
-          <div class="row-wrap">
-            <div class="row-card">
-              <fm-element-row
-                [el]="el"
-                [neighbours]="{
-                  before: page.elements[$index - 1],
-                  after: page.elements[$index + 1],
-                }"
-                [store]="store()"
-              />
-            </div>
+          <div cdkDrag [cdkDragData]="el.id">
+            <fm-element-row
+              [neighbours]="{
+                before: page.elements[$index - 1],
+                after: page.elements[$index + 1],
+              }"
+              [dropLists]="dropLists()"
+              (dropElement)="drop($event)"
+              [el]="el"
+              [store]="store()"
+            />
           </div>
         }
       </div>

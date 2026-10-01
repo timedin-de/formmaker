@@ -1,28 +1,19 @@
-import { Component, computed, inject, input, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { CdkDrag, CdkDragDrop, CdkDropList } from '@angular/cdk/drag-drop';
+import { Component, computed, inject, input, output, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatInputModule } from '@angular/material/input';
-import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { has } from '@shared/helper';
-import type { ElementDefinition, ElementType } from '@shared/model/form.model';
+import type { ElementDefinition, Elements, ElementType } from '@shared/model/form.model';
 import { createElement } from '../core';
 import { I18nService } from '../core/i18n';
 import { fieldMeta } from '../core/model/field-registry';
 import { DesignerStore } from '../core/state/designer.store';
+import { canSortAt, DropDragState } from './drop-sort';
 import { BuilderPalette } from './palette';
 
 @Component({
-  imports: [
-    MatButtonModule,
-    MatIconModule,
-    MatInputModule,
-    MatToolbarModule,
-    FormsModule,
-    MatTooltipModule,
-    BuilderPalette,
-  ],
+  imports: [MatButtonModule, MatIconModule, MatTooltipModule, BuilderPalette, CdkDrag, CdkDropList],
   selector: 'fm-element-row',
   templateUrl: './element-row.html',
   styleUrl: './element-row.scss',
@@ -32,12 +23,16 @@ export class ElementRow {
   readonly store = input.required<DesignerStore>();
   protected readonly i18n = inject(I18nService);
 
+  readonly dropLists = input<string[]>([]);
+  readonly dropElement = output<CdkDragDrop<Elements, Elements, string>>();
+
   protected readonly has = has;
+  protected readonly canSortAt = canSortAt;
+  protected readonly canEnter = inject(DropDragState).canEnter;
 
   readonly neighbours = input<{
     before?: ElementDefinition;
     after?: ElementDefinition;
-    parent?: ElementDefinition;
   }>();
   readonly showPalette = signal(false);
 
@@ -69,7 +64,6 @@ export class ElementRow {
     const group = this.el();
     if (group.type !== 'group') return;
     const child = createElement(type, this.i18n.t('row.childQuestion'));
-    group.elements = [...group.elements, child];
-    this.store().updateElement(this.el().id, { elements: group.elements });
+    this.store().updateElement(group.id, { elements: [...group.elements, child] });
   }
 }

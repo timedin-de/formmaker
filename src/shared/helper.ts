@@ -44,3 +44,7 @@ export function walkConditionGroup(condition: ConditionGroup, callback: (cg: Con
   condition.conditions.forEach(callback);
   if (condition.groups.length) condition.groups.forEach((c) => walkConditionGroup(c, callback));
 }
+
+export function flattenElements(elements: ElementDefinition[]): ElementDefinition[] {
+  return elements.flatMap((e) => (e.type === 'group' ? [e, ...flattenElements(e.elements)] : e));
+}
