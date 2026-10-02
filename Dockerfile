@@ -11,6 +11,9 @@ FROM node:26-alpine AS build
 WORKDIR /app
 
 # Install dependencies first so the layer can be cached.
+# better-sqlite3 compiles from source when no prebuilt binary matches (musl/new Node),
+# which needs python3 + make + g++ on Alpine.
+RUN apk add --no-cache python3 make g++
 COPY package.json package-lock.json ./
 RUN npm ci
 
@@ -33,8 +36,12 @@ ENV PORT=3000
 ENV SQLITE_PATH=server/data/formmaker.sqlite
 
 # Production dependencies for the Express API.
+# The toolchain is only needed to compile better-sqlite3; drop it afterwards.
 COPY package.json package-lock.json ./
-RUN npm ci --omit=dev && npm cache clean --force
+RUN apk add --no-cache --virtual .build-deps python3 make g++ \
+  && npm ci --omit=dev \
+  && npm cache clean --force \
+  && apk del .build-deps
 
 # Built SPA + bundled server.
 COPY --from=build /app/dist ./dist
