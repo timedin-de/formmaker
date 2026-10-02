@@ -49,7 +49,7 @@ SQLite is used by default at `src/server/data/formmaker.sqlite`. To use MySQL in
 
 - Angular 22 (zoneless change detection, signals, new control flow, lazy routes)
 - Angular Material 22 (Theming from Material 3 design tokens)
-- Express 5 + `tsx` (TypeScript server with `cors`)
+- NestJS 12 on Express 5 + `tsx` (TypeScript server with `cors`); legacy routes are being ported from Express routers to Nest modules
 - `signature_pad` for capturing signatures
 - `exceljs` for `.xlsx` export, `jspdf` for receipt/summary PDFs
 - `markdown-it` for Markdown rendering of titles and descriptions
@@ -63,7 +63,7 @@ Requires Node ≥ 24.15 (see the wrapper notes in `AGENTS.md` if you run into CL
 ```bash
 npm install
 npm start        # dev UI on http://localhost:4200 (proxies /api → :3000)
-npm run start:api   # Express API on http://localhost:3000
+npm run start:api   # Nest/Express API on http://localhost:3000
 npm run start:all   # both at once
 ```
 
@@ -72,7 +72,7 @@ Other scripts:
 ```bash
 npm run lint        # ESLint
 npm run typecheck   # tsc for app + specs
-npm run typecheck:server  # tsc for the Express API
+npm run typecheck:server  # tsc for the API
 npm run test:ci     # unit tests (Vitest)
 npm run e2e         # Playwright end-to-end tests (chromium/firefox/webkit)
 npm run build       # production build into dist/
@@ -96,7 +96,7 @@ src/app/
   results/        # submissions & CSV/Excel/PDF/mail export
   login/          # password login screen
 shared/model/     # element definitions, conditions, validation, values, submission
-server/           # Express API: TypeORM datasource, entities, auth, user/form/submission endpoints (lives under src/)
+server/           # Nest + Express API: TypeORM datasource, entities, auth, user/form/submission endpoints (lives under src/)
 e2e/              # Playwright specs + coverage collection
 deploy/           # optional nginx reverse-proxy config
 ```
