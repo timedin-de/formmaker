@@ -71,8 +71,15 @@ export function requireRole(...roles: UserRole[]): RequestHandler {
 }
 
 export function bearerToken(header: string | undefined): string | undefined {
-  const match = header && /^Bearer\s+(.+)$/i.exec(header.trim());
-  return match?.[1];
+  if (!header || typeof header !== 'string') {
+    return;
+  }
+  const parts = header.trim().split(' ');
+
+  if (parts.length === 2 && parts[0].toLowerCase() === 'bearer') {
+    const token = parts[1].trim();
+    return token;
+  }
 }
 
 export async function logout(repository: Repository, req: Request): Promise<void> {
