@@ -7,12 +7,22 @@ const angular = require('angular-eslint');
 module.exports = defineConfig([
   {
     files: ['**/*.ts'],
-    extends: [
-      eslint.configs.recommended,
-      tseslint.configs.recommended,
-      tseslint.configs.stylistic,
-      angular.configs.tsRecommended,
-    ],
+    extends: [eslint.configs.recommended, tseslint.configs.recommended, tseslint.configs.stylistic],
+    rules: {
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+        },
+      ],
+      '@typescript-eslint/no-namespace': ['error', { allowDeclarations: true }],
+    },
+  },
+  {
+    files: ['src/frontend/**/*.ts'],
+    extends: [angular.configs.tsRecommended],
     processor: angular.processInlineTemplates,
     rules: {
       '@angular-eslint/directive-selector': [
@@ -31,15 +41,6 @@ module.exports = defineConfig([
           style: 'kebab-case',
         },
       ],
-      '@typescript-eslint/no-unused-vars': [
-        'error',
-        {
-          argsIgnorePattern: '^_',
-          varsIgnorePattern: '^_',
-          caughtErrorsIgnorePattern: '^_',
-        },
-      ],
-      '@typescript-eslint/no-namespace': ['error', { allowDeclarations: true }],
     },
   },
   {

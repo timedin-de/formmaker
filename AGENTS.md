@@ -92,7 +92,15 @@ scripts/            copy-icons.mjs (icon bundling)
   `tsconfig.server.json` (tsx: `--tsconfig`) and `vitest.server.config.ts`.
 - Body parsing is done once in `app.ts` (50mb limit); Nest's parser is off. Anything registered on
   the Express app before `nest.init()` runs ahead of Nest routes and Nest's 404 handler.
-- Providers: `DatabaseModule` (global) exposes `DataSource` and `Repository`.
+- Providers: `DatabaseModule` (global) exposes `DataSource` and `Repository`. `AuthModule`
+  (`src/server/auth/`) owns `/api/auth/*` and exports `AuthGuard`; use `@UseGuards(AuthGuard)` +
+  `@CurrentUser()` on Nest routes. Session/password helpers still live in `src/server/auth.ts`
+  (shared with the legacy routers until they are ported).
+- Validate input with `@Body(new ZodValidationPipe(schema))` using the shared zod schemas
+  (`src/shared/schemas`), not class-validator. Errors keep the API contract `{ error, details? }`:
+  throw Nest exceptions with an object body, e.g. `new ConflictException({ error: '...' })`;
+  `ApiExceptionFilter` formats everything else. Status codes are part of the contract
+  (`@HttpCode(200)` on login, 201 on register, 204 on logout).
 - Server specs are excluded from `tsconfig.spec.json` (they are typechecked by `typecheck:server` and
   run by `test:server`, not `ng test`).
 
