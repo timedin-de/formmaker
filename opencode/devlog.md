@@ -193,3 +193,16 @@ ctx.t }` into a download `Blob` or link artifact. The toolbar is now a single
 - Server-side tokens are in-memory only; restart invalidates all sessions. Offline mode relies on
   localStorage and the fallback password.
 - Stale/docs hygiene: opencode/ docs should be refreshed alongside any major feature commit.
+
+## 2026-10-02 — backend rework, phase 1a
+
+- Decided to rework the backend (server-authoritative logic/IDs, normalized form tables, orgs,
+  webhooks, email). Plan and rationale: `opencode/backend-plan.md`.
+- First PR is deliberately small: TypeORM migrations. Baseline migration reproduces the
+  `synchronize`-era schema, is a no-op on existing databases (guarded by `hasTable`) and uses the
+  dialect-neutral `Table` API. `synchronize` is gone; migrations run on startup.
+- Verified on SQLite: fresh DB, legacy synchronize-built DB (data kept), zero schema drift, revert.
+  MySQL path is not exercised by tests.
+- Added `test:server` (plain vitest; `ng test` only sees `src/frontend`), wired into `check` and CI.
+  Known gap: `src/shared/model/model-validator.spec.ts` is not run by either runner (`@shared`
+  alias unresolved in plain vitest).

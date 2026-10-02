@@ -30,3 +30,7 @@
 - [x] Markdown in titles/descriptions (`markdown-it`, `core/markdown` pipe, demo + UI hints + docs + e2e test)
 - [ ] (Optional) Retry "understand-everything" (Mor-Li) or `graftmap` MCP as a richer AGENTS alternative
 - [ ] (Optional) End-to-end demo walkthrough + browser-based regression pass
+- [x] Backend phase 1a: TypeORM migrations (baseline), `synchronize` removed, `test:server` (see backend-plan.md)
+- [ ] Backend phase 1b: NestJS scaffold alongside Express, port routes module by module
+- [ ] Backend phase 1c: move `core/engine` to `src/shared` for server-side use
+- [ ] Backend phases 2-6: schema split, operation API, trusted submissions, orgs, outbox/webhooks/mail

@@ -6,7 +6,7 @@ Express API. This file helps AI/agent tools navigate the repo. Full docs: [openc
 ## Commands / verification gate
 
 Alwyays run the full gate before finishing: `npm run check`
-(= `lint` + `format:check` + `typecheck` + `typecheck:server` + `test:ci` + `build`).
+(= `lint` + `format:check` + `typecheck` + `typecheck:server` + `test:ci` + `test:server` + `build`).
 
 | Task             | Command                                                               |
 | ---------------- | --------------------------------------------------------------------- |
@@ -14,6 +14,7 @@ Alwyays run the full gate before finishing: `npm run check`
 | Dev API          | `npm run start:api`                                                   |
 | Run both at once | `npm run start:all`                                                   |
 | Unit tests       | `npm run test:ci`                                                     |
+| Server tests     | `npm run test:server` (plain vitest, `src/server/**/*.spec.ts`)       |
 | Unit coverage    | `npx ng test --watch=false --coverage` (thresholds in `angular.json`) |
 | E2E tests        | `npm run e2e` / `e2e:headed` / `e2e:ui` (Playwright, 3 browsers)      |
 | E2E coverage     | collected automatically in the `e2e` run → `coverage/e2e/index.html`  |
@@ -21,6 +22,7 @@ Alwyays run the full gate before finishing: `npm run check`
 | Format           | `npm run format` / `format:check`                                     |
 | Typecheck app    | `npm run typecheck`                                                   |
 | Typecheck API    | `npm run typecheck:server`                                            |
+| DB migrations    | `npm run migration:run` / `:revert` / `:generate -- <path>`           |
 | Full gate        | `npm run check`                                                       |
 
 - Node v24.15.0 is required by the Angular 22 CLI — via wrappers in `/home/user/.opencode/bin`.
@@ -79,6 +81,18 @@ scripts/            copy-icons.mjs (icon bundling)
   Default password: `formmaker` (in `src/server/auth.ts` and `core/auth/auth.service.ts`).
 - **Conditions** (`conditions.model`): `ConditionGroup` = `{ logic: all|any, conditions[], groups[] }`.
   Operators need either `operand` (literal or field ref), `list`, `range`, or `none`.
+
+## Database & migrations
+
+- The schema changes **only** through TypeORM migrations in `src/server/migrations` — never
+  `synchronize`. Change an entity in `src/server/entities`, then
+  `npm run migration:generate -- src/server/migrations/<Name>` and review the SQL.
+- Register every migration in `src/server/migrations/index.ts` (explicit list: the server is bundled
+  with ncc, so globbing files at runtime does not work). Keep migrations dialect-neutral (TypeORM
+  `Table` API) because SQLite and MySQL are both supported.
+- Pending migrations run on server start (`TYPEORM_MIGRATIONS_RUN=false` disables). Server specs sit
+  beside the code and run with `npm run test:server`; `ng test` only covers `src/frontend`.
+- Planned backend direction (NestJS, normalized tables, orgs, webhooks): `opencode/backend-plan.md`.
 
 ## Conventions
 
