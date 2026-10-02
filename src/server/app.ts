@@ -23,7 +23,10 @@ import { usersRoutes } from './routes/users.routes.js';
 export async function createApp(): Promise<NestExpressApplication> {
   const app = express();
   app.disable('x-powered-by');
-  app.use(cors({ origin: process.env.CORS_ORIGIN?.split(',') ?? true }));
+  const corsOrigins = process.env.CORS_ORIGIN?.split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+  app.use(cors({ origin: corsOrigins?.length ? corsOrigins : false }));
   // Body parsing stays here (Nest's parser is disabled) so the 50mb limit covers all routes.
   app.use(express.json({ limit: '50mb' }));
   app.use((_req, res, next) => {
