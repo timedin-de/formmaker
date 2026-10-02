@@ -11,9 +11,13 @@
     "start": "concurrently 'npm run start:frontend' 'npm run start:api'",
     "build": "ng build",
     "build:server": "node scripts/build-server.mjs",
+    "migration:run": "tsx node_modules/typeorm/cli.js migration:run -d src/server/data-source.ts",
+    "migration:revert": "tsx node_modules/typeorm/cli.js migration:revert -d src/server/data-source.ts",
+    "migration:generate": "tsx node_modules/typeorm/cli.js migration:generate -d src/server/data-source.ts",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "test:ci": "ng test --watch=false",
+    "test:server": "vitest run src/server",
     "e2e": "playwright test",
     "e2e:headed": "playwright test --headed",
     "e2e:ui": "playwright test --ui",
@@ -23,7 +27,7 @@
     "format:check": "prettier --check .",
     "typecheck": "tsc -p tsconfig.app.json --noEmit && tsc -p tsconfig.spec.json --noEmit",
     "typecheck:server": "tsc -p tsconfig.server.json --noEmit",
-    "check": "npm run lint && npm run format:check && npm run typecheck && npm run typecheck:server && npm run test:ci && npm run build"
+    "check": "npm run lint && npm run format:check && npm run typecheck && npm run typecheck:server && npm run test:ci && npm run test:server && npm run build"
   },
   "private": true,
   "packageManager": "npm@11.12.1",
