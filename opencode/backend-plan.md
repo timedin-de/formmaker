@@ -1,6 +1,6 @@
 # Backend rework plan
 
-Status: phase 1a (migrations) and 1b-i (Nest bootstrap) done. Decided 2026-10-02.
+Status: phases 1a (migrations), 1b-i (Nest bootstrap) and 1b-ii (auth module) done. Decided 2026-10-02.
 
 ## Goals
 
@@ -43,7 +43,7 @@ UUIDv7 ids, `org_id` on forms from day one (existing `owner_id` becomes a person
 ## Phases (each is its own small PR)
 
 1. **Foundation** — (a) migrations ✅ · (b) Nest: (i) bootstrap around the Express app, health +
-   `DatabaseModule` ✅, then port auth, users, forms/submissions one PR each · (c) move
+   `DatabaseModule` ✅, auth ✅, then users, forms/submissions one PR each · (c) move
    `core/engine` into `src/shared`.
 2. **Schema split** — pages/elements/versions + data migration of existing `document` blobs, with a
    read adapter so the frontend keeps working.

@@ -217,3 +217,12 @@ ctx.t }` into a download `Blob` or link artifact. The toolbar is now a single
   (`oxc.decorator.legacy`); neither emits decorator metadata, hence explicit `@Inject` everywhere.
 - Verified under tsx, vitest (`app.spec.ts` boots the real app on in-memory SQLite) and the ncc
   bundle (Nest is externalized with the other dependencies).
+
+## 2026-10-02 — backend rework, phase 1b-ii (auth module)
+
+- `/api/auth/{login,register,logout,me}` moved from an Express router to `AuthModule`
+  (controller, thin service, `AuthGuard`, `@CurrentUser`). API contract unchanged: same status
+  codes and `{ error }` bodies, enforced by `auth/auth.spec.ts` (6 tests through the real app).
+- Added `ZodValidationPipe` (own 10-line pipe instead of `nestjs-zod`: keeps the existing 422 body
+  and avoids a dependency) and a global `ApiExceptionFilter` keeping the `{ error }` shape.
+- Legacy `authenticate`/`requireRole` middleware stays until users and forms are ported.

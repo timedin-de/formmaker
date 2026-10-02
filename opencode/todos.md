@@ -32,6 +32,7 @@
 - [ ] (Optional) End-to-end demo walkthrough + browser-based regression pass
 - [x] Backend phase 1a: TypeORM migrations (baseline), `synchronize` removed, `test:server` (see backend-plan.md)
 - [x] Backend phase 1b-i: NestJS bootstrap around the Express app, `DatabaseModule`, health controller
-- [ ] Backend phase 1b-ii..iv: port auth, users, forms/submissions routers to Nest modules (one PR each)
+- [x] Backend phase 1b-ii: `/api/auth/*` ported to `AuthModule` (+ `AuthGuard`, zod pipe, error filter)
+- [ ] Backend phase 1b-iii..iv: port users, then forms/submissions routers to Nest modules (one PR each)
 - [ ] Backend phase 1c: move `core/engine` to `src/shared` for server-side use
 - [ ] Backend phases 2-6: schema split, operation API, trusted submissions, orgs, outbox/webhooks/mail

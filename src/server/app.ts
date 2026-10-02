@@ -9,8 +9,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { AppModule } from './app.module.js';
 import { ensureInitialAdmin } from './auth.js';
+import { ApiExceptionFilter } from './common/api-exception.filter.js';
 import { Repository } from './repository.js';
-import { authRoutes } from './routes/auth.routes.js';
 import { formsRoutes } from './routes/forms.routes.js';
 import { usersRoutes } from './routes/users.routes.js';
 
@@ -51,10 +51,10 @@ export async function createApp(): Promise<NestExpressApplication> {
     },
   );
   nest.setGlobalPrefix('api');
+  nest.useGlobalFilters(new ApiExceptionFilter());
   const repository = nest.get(Repository);
   await ensureInitialAdmin(repository);
 
-  app.use('/api/auth', authRoutes(repository));
   app.use('/api/users', usersRoutes(repository));
   app.use('/api/forms', formsRoutes(repository));
 
