@@ -1,11 +1,12 @@
 import { NestFactory } from '@nestjs/core';
 import { ExpressAdapter, type NestExpressApplication } from '@nestjs/platform-express';
 import cors from 'cors';
+import type { NextFunction, Request, Response } from 'express';
+import express from 'express';
+import rateLimit from 'express-rate-limit';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import express from 'express';
-import type { NextFunction, Request, Response } from 'express';
 import { AppModule } from './app.module.js';
 import { ensureInitialAdmin } from './auth.js';
 import { Repository } from './repository.js';
@@ -29,6 +30,14 @@ export async function createApp(): Promise<NestExpressApplication> {
     res.setHeader('X-Request-Id', crypto.randomUUID());
     next();
   });
+
+  const rateLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 300,
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+  app.use(rateLimiter);
 
   const nest = await NestFactory.create<NestExpressApplication>(
     AppModule,
