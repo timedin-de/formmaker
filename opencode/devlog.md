@@ -206,3 +206,14 @@ ctx.t }` into a download `Blob` or link artifact. The toolbar is now a single
 - Added `test:server` (plain vitest; `ng test` only sees `src/frontend`), wired into `check` and CI.
   Known gap: `src/shared/model/model-validator.spec.ts` is not run by either runner (`@shared`
   alias unresolved in plain vitest).
+
+## 2026-10-02 — backend rework, phase 1b-i (Nest bootstrap)
+
+- Nest 12 (ESM) now wraps the existing Express app (`src/server/app.ts`); legacy routers are mounted
+  unchanged, `/api/health` is the first Nest controller, DB/Repository come from a global
+  `DatabaseModule`. No API behavior change except unknown `/api/*` paths now return Nest's JSON 404.
+- Gotchas found: tsx only applies a tsconfig to files its `include` matches (root tsconfig has
+  `files: []`), so `start:api` passes `--tsconfig tsconfig.server.json`; vitest 4 uses oxc, not esbuild
+  (`oxc.decorator.legacy`); neither emits decorator metadata, hence explicit `@Inject` everywhere.
+- Verified under tsx, vitest (`app.spec.ts` boots the real app on in-memory SQLite) and the ncc
+  bundle (Nest is externalized with the other dependencies).

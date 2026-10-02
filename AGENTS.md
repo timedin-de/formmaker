@@ -82,6 +82,20 @@ scripts/            copy-icons.mjs (icon bundling)
 - **Conditions** (`conditions.model`): `ConditionGroup` = `{ logic: all|any, conditions[], groups[] }`.
   Operators need either `operand` (literal or field ref), `list`, `range`, or `none`.
 
+## Server (NestJS on Express)
+
+- `src/server/app.ts` `createApp()` wraps the Express instance in a Nest app (`AppModule`); `index.ts`
+  only listens. Routes not yet ported stay as Express routers in `routes/`; port them module by
+  module into `src/server/<feature>/` (module + controller + service) and delete the router.
+- **Always use `@Inject(Token)` in constructors.** tsx and vitest (esbuild/oxc) do not emit
+  decorator metadata, so Nest cannot infer constructor types. Legacy decorators are enabled via
+  `tsconfig.server.json` (tsx: `--tsconfig`) and `vitest.server.config.ts`.
+- Body parsing is done once in `app.ts` (50mb limit); Nest's parser is off. Anything registered on
+  the Express app before `nest.init()` runs ahead of Nest routes and Nest's 404 handler.
+- Providers: `DatabaseModule` (global) exposes `DataSource` and `Repository`.
+- Server specs are excluded from `tsconfig.spec.json` (they are typechecked by `typecheck:server` and
+  run by `test:server`, not `ng test`).
+
 ## Database & migrations
 
 - The schema changes **only** through TypeORM migrations in `src/server/migrations` — never
