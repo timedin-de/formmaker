@@ -1,5 +1,4 @@
-import { Body, Controller, HttpCode, Inject, Post, Put, Req, UseGuards } from '@nestjs/common';
-import type { Request } from 'express';
+import { Body, Controller, HttpCode, Inject, Post, Put, UseGuards } from '@nestjs/common';
 import type { z } from 'zod';
 import {
   emailUpdateSchema,
@@ -37,8 +36,8 @@ export class AuthController {
   @Post('logout')
   @HttpCode(204)
   @UseGuards(AuthGuard)
-  logout(@Req() req: Request): Promise<void> {
-    return this.auth.logout(req);
+  logout(@CurrentTokenHash() tokenHash: string): Promise<void> {
+    return this.auth.logout(tokenHash);
   }
 
   @Put('password')

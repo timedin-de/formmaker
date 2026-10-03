@@ -1,10 +1,9 @@
-import type { Request, RequestHandler } from 'express';
+import type { RequestHandler } from 'express';
 import crypto from 'node:crypto';
 import { PublicUser, UserRole } from '../shared/model/user.model.js';
 import type { Repository, User } from './repository.js';
 
 export const DEFAULT_PASSWORD = 'formmaker';
-const SESSION_TTL_MS = 24 * 60 * 60 * 1000;
 
 export function publicUser(user: User): PublicUser {
   const { id, email, role, createdAt } = user;
@@ -22,25 +21,6 @@ export async function ensureInitialAdmin(repository: Repository): Promise<void> 
     role: 'admin',
     createdAt: new Date().toISOString(),
   });
-}
-
-export async function login(
-  repository: Repository,
-  email: string,
-  password: string,
-): Promise<{ token: string; user: PublicUser } | null> {
-  const normalizedEmail = email.trim().toLowerCase();
-  const user = await repository.userByEmail(normalizedEmail);
-  if (!user || !(await verifyPassword(password, user.passwordHash))) return null;
-
-  await repository.pruneSessions();
-  const token = crypto.randomBytes(32).toString('base64url');
-  await repository.createSession(
-    tokenHash(token),
-    user.id,
-    new Date(Date.now() + SESSION_TTL_MS).toISOString(),
-  );
-  return { token, user: publicUser(user) };
 }
 
 export function authenticate(repository: Repository): RequestHandler {
@@ -80,11 +60,6 @@ export function bearerToken(header: string | undefined): string | undefined {
     const token = parts[1].trim();
     return token;
   }
-}
-
-export async function logout(repository: Repository, req: Request): Promise<void> {
-  const token = bearerToken(req.headers.authorization);
-  if (token) await repository.deleteSession(tokenHash(token));
 }
 
 export async function hashPassword(password: string): Promise<string> {

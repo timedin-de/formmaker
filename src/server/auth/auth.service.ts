@@ -5,16 +5,16 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
-import type { Request } from 'express';
 import crypto from 'node:crypto';
 import type { PublicUser, UserRole } from '../../shared/model/user.model.js';
-import { hashPassword, login, logout, verifyPassword } from '../auth.js';
+import { hashPassword, publicUser, tokenHash, verifyPassword } from '../auth.js';
 import { Repository, User } from '../repository.js';
 
 export interface AuthResult {
   token: string;
   user: PublicUser;
 }
+const SESSION_TTL_MS = 24 * 60 * 60 * 1000;
 
 /** Thin wrapper over the session helpers in `../auth.ts` (shared with the legacy routers). */
 @Injectable()
@@ -22,9 +22,19 @@ export class AuthService {
   constructor(@Inject(Repository) private readonly repository: Repository) {}
 
   async login(email: string, password: string): Promise<AuthResult> {
-    const result = await login(this.repository, email, password);
-    if (!result) throw new UnauthorizedException({ error: 'invalid credentials' });
-    return result;
+    const normalizedEmail = email.trim().toLowerCase();
+    const user = await this.repository.userByEmail(normalizedEmail);
+    if (!user || !(await verifyPassword(password, user.passwordHash)))
+      throw new UnauthorizedException({ error: 'invalid credentials' });
+
+    await this.repository.pruneSessions();
+    const token = crypto.randomBytes(32).toString('base64url');
+    await this.repository.createSession(
+      tokenHash(token),
+      user.id,
+      new Date(Date.now() + SESSION_TTL_MS).toISOString(),
+    );
+    return { token, user: publicUser(user) };
   }
 
   async register(rawEmail: string, password: string, role: UserRole = 'editor') {
@@ -41,8 +51,8 @@ export class AuthService {
     });
   }
 
-  logout(req: Request): Promise<void> {
-    return logout(this.repository, req);
+  async logout(tokenHash: string): Promise<void> {
+    await this.repository.deleteSession(tokenHash);
   }
 
   /**
