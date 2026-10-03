@@ -1,6 +1,6 @@
-import 'reflect-metadata';
 import type { NestExpressApplication } from '@nestjs/platform-express';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import 'reflect-metadata';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { createApp } from './app.js';
 
 describe('app', () => {
@@ -9,6 +9,7 @@ describe('app', () => {
 
   beforeAll(async () => {
     process.env.SQLITE_PATH = ':memory:';
+    vi.stubEnv('FORMMAKER_PASSWORD', 'formmaker');
     app = await createApp();
     await app.listen(0);
     base = await app.getUrl();
