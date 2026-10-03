@@ -81,6 +81,7 @@
                 before: page.elements[$index - 1],
                 after: page.elements[$index + 1],
               }"
+              (paletteTarget)="paleteTarget.set($event)"
               [dropLists]="dropLists()"
               (dropElement)="drop($event)"
               [el]="el"
@@ -92,7 +93,7 @@
     }
 
     <div class="page-actions">
-      <button mat-stroked-button (click)="showPalette.set(true)">
+      <button mat-stroked-button (click)="paleteTarget.set((e) => append(e))">
         <mat-icon svgIcon="add"></mat-icon> {{ i18n.t('canvas.addQuestion') }}
       </button>
     </div>
@@ -103,12 +104,24 @@
     </div>
   }
 </div>
-@if (showPalette()) {
-  <div class="palette-modal">
-    <fm-builder-palette
-      class="palette"
-      (addModule)="append($event); showPalette.set(false)"
-      [isModal]="true"
-    ></fm-builder-palette>
-  </div>
+@if (paleteTarget(); as target) {
+  <dialog #palette (click)="onDialogClick($event)" (cancel)="paleteTarget.set(false)">
+    <div class="modal-head">
+      <button
+        type="button"
+        mat-icon-button
+        [attr.aria-label]="i18n.t('landing.import.close')"
+        (click)="paleteTarget.set(false)"
+      >
+        <mat-icon svgIcon="close"></mat-icon>
+      </button>
+    </div>
+    <div class="palette-modal">
+      <fm-builder-palette
+        class="palette"
+        (addModule)="target($event); paleteTarget.set(false)"
+        [isModal]="true"
+      ></fm-builder-palette>
+    </div>
+  </dialog>
 }

@@ -1,5 +1,14 @@
 import { CdkDrag, CdkDragDrop, CdkDropList } from '@angular/cdk/drag-drop';
-import { Component, computed, inject, input, signal } from '@angular/core';
+import {
+  Component,
+  computed,
+  effect,
+  ElementRef,
+  inject,
+  input,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -69,7 +78,17 @@ export class BuilderCanvas {
       .map((el) => ({ id: el.id, label: el.label })),
   );
 
-  readonly showPalette = signal(false);
+  readonly paletteDialog = viewChild<ElementRef<HTMLDialogElement>>('palette');
+  readonly paleteTarget = signal<false | ((type: ElementType) => void)>(false);
+
+  constructor() {
+    effect(() => {
+      const dialog = this.paletteDialog();
+      if (!dialog) return;
+      const el = dialog.nativeElement;
+      if (!el.open && typeof el.showModal === 'function') el.showModal();
+    });
+  }
 
   clonePage(page: PageDefinition) {
     this.store().clonePage(page.id);
@@ -100,4 +119,9 @@ export class BuilderCanvas {
     this.store().moveElementTo(event.item.data, parentId, event.currentIndex);
   }
   readonly emptyGroup: () => ConditionGroup = () => ({ logic: 'all', conditions: [], groups: [] });
+
+  onDialogClick(event: MouseEvent): void {
+    const dialog = this.paletteDialog();
+    if (dialog && event.target === dialog.nativeElement) this.paleteTarget.set(false);
+  }
 }

@@ -1,5 +1,5 @@
 import { CdkDrag, CdkDragDrop, CdkDropList } from '@angular/cdk/drag-drop';
-import { Component, computed, inject, input, output, signal } from '@angular/core';
+import { Component, computed, inject, input, output } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -10,10 +10,9 @@ import { I18nService } from '../core/i18n';
 import { fieldMeta } from '../core/model/field-registry';
 import { DesignerStore } from '../core/state/designer.store';
 import { canSortAt, DropDragState } from './drop-sort';
-import { BuilderPalette } from './palette';
 
 @Component({
-  imports: [MatButtonModule, MatIconModule, MatTooltipModule, BuilderPalette, CdkDrag, CdkDropList],
+  imports: [MatButtonModule, MatIconModule, MatTooltipModule, CdkDrag, CdkDropList],
   selector: 'fm-element-row',
   templateUrl: './element-row.html',
   styleUrl: './element-row.scss',
@@ -34,7 +33,7 @@ export class ElementRow {
     before?: ElementDefinition;
     after?: ElementDefinition;
   }>();
-  readonly showPalette = signal(false);
+  readonly paletteTarget = output<false | ((type: ElementType) => void)>();
 
   protected meta = computed(() => fieldMeta(this.el().type));
   protected selected = computed(() => this.store().selectedId() === this.el().id);
@@ -60,7 +59,7 @@ export class ElementRow {
   }
 
   addChild(type: ElementType = 'text'): void {
-    this.showPalette.set(false);
+    this.paletteTarget.emit(false);
     const group = this.el();
     if (group.type !== 'group') return;
     const child = createElement(type, this.i18n.t('row.childQuestion'));
