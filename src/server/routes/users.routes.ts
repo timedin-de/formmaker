@@ -3,19 +3,10 @@ import crypto from 'node:crypto';
 import {
   accountDeleteSchema,
   emailUpdateSchema,
-  passwordChangeSchema,
   passwordUpdateSchema,
   userCreateSchema,
 } from '../../shared/schemas/index.js';
-import {
-  authenticate,
-  bearerToken,
-  hashPassword,
-  publicUser,
-  requireRole,
-  tokenHash,
-  verifyPassword,
-} from '../auth.js';
+import { authenticate, hashPassword, publicUser, requireRole, verifyPassword } from '../auth.js';
 import type { Repository } from '../repository.js';
 import { param, validate } from './helpers.js';
 
@@ -38,21 +29,6 @@ export function usersRoutes(repository: Repository): Router {
       return res.status(409).json({ error: 'email already exists' });
     await repository.updateUserEmail(user.id, email);
     res.json(publicUser({ ...user, email }));
-  });
-
-  router.patch('/me/password', authenticate(repository), async (req, res) => {
-    const body = validate(passwordChangeSchema, req.body, res);
-    if (!body) return;
-    const user = req.user!;
-    if (!(await verifyPassword(body.currentPassword, user.passwordHash)))
-      return res.status(403).json({ error: 'invalid password' });
-    await repository.updateUserPassword(user.id, await hashPassword(body.newPassword));
-    const currentToken = bearerToken(req.headers.authorization);
-    await repository.clearUsersSessions(
-      user.id,
-      currentToken ? tokenHash(currentToken) : undefined,
-    );
-    res.status(204).end();
   });
 
   router.delete('/me', authenticate(repository), async (req, res) => {

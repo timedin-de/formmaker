@@ -1,5 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { PublicUser } from '@shared/model/user.model';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { UsersRepository } from './users.repository';
 
 function makeUser(overrides: Partial<PublicUser> = {}): PublicUser {
@@ -56,9 +56,9 @@ describe('UsersRepository', () => {
     const user = await repo.updateEmail('new@formmaker.local', 'formmaker');
 
     expect(fetchMock).toHaveBeenCalledWith(
-      '/api/users/me',
+      '/api/auth/email',
       expect.objectContaining({
-        method: 'PATCH',
+        method: 'PUT',
         body: JSON.stringify({ email: 'new@formmaker.local', currentPassword: 'formmaker' }),
       }),
     );
@@ -72,9 +72,9 @@ describe('UsersRepository', () => {
     await repo.changePassword('formmaker', 'newpassword');
 
     expect(fetchMock).toHaveBeenCalledWith(
-      '/api/users/me/password',
+      '/api/auth/password',
       expect.objectContaining({
-        method: 'PATCH',
+        method: 'PUT',
         body: JSON.stringify({ currentPassword: 'formmaker', newPassword: 'newpassword' }),
       }),
     );

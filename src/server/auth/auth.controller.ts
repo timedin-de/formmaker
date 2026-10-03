@@ -1,13 +1,17 @@
-import { Body, Controller, Get, HttpCode, Inject, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, HttpCode, Inject, Post, Put, Req, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
-import type { PublicUser } from '../../shared/model/user.model.js';
-import { loginSchema, registrationSchema } from '../../shared/schemas/index.js';
 import type { z } from 'zod';
-import { publicUser } from '../auth.js';
+import {
+  emailUpdateSchema,
+  loginSchema,
+  passwordChangeSchema,
+  registrationSchema,
+} from '../../shared/schemas/index.js';
 import { ZodValidationPipe } from '../common/zod-validation.pipe.js';
-import type { User } from '../repository.js';
+import { User } from '../repository.js';
 import { AuthGuard } from './auth.guard.js';
 import { AuthService, type AuthResult } from './auth.service.js';
+import { CurrentTokenHash } from './current-token.decorator.js';
 import { CurrentUser } from './current-user.decorator.js';
 
 @Controller('auth')
@@ -36,9 +40,26 @@ export class AuthController {
     return this.auth.logout(req);
   }
 
-  @Get('me')
+  @Put('password')
   @UseGuards(AuthGuard)
-  me(@CurrentUser() user: User): PublicUser {
-    return publicUser(user);
+  @HttpCode(204)
+  async changePassword(
+    @CurrentUser() user: User,
+    @CurrentTokenHash() token: string,
+    @Body(new ZodValidationPipe(passwordChangeSchema)) body: z.infer<typeof passwordChangeSchema>,
+  ) {
+    return this.auth.changePassword(user, body.currentPassword, body.newPassword, token);
+  }
+
+  @Put('email')
+  @UseGuards(AuthGuard)
+  @HttpCode(200)
+  async changeEmail(
+    @CurrentUser() user: User,
+    @Body(new ZodValidationPipe(emailUpdateSchema)) body: z.infer<typeof emailUpdateSchema>,
+  ) {
+    if (await this.auth.changeEmail(user, body.currentPassword, body.email)) {
+      return { ...user, email: body.email };
+    }
   }
 }

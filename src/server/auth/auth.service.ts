@@ -1,9 +1,15 @@
-import { ConflictException, Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  Inject,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import type { Request } from 'express';
 import crypto from 'node:crypto';
 import type { PublicUser } from '../../shared/model/user.model.js';
-import { hashPassword, login, logout } from '../auth.js';
-import { Repository } from '../repository.js';
+import { hashPassword, login, logout, verifyPassword } from '../auth.js';
+import { Repository, User } from '../repository.js';
 
 export interface AuthResult {
   token: string;
@@ -38,5 +44,36 @@ export class AuthService {
 
   logout(req: Request): Promise<void> {
     return logout(this.repository, req);
+  }
+
+  /**
+   * Method for the user to change his own password
+   */
+  async changePassword(user: User, currentPassword: string, newPassword: string, token: string) {
+    if (!(await verifyPassword(currentPassword, user.passwordHash))) {
+      throw new ForbiddenException({ error: 'invalid password' });
+    }
+    return await this.updatePassword(user, newPassword, token);
+  }
+
+  async changeEmail(user: User, currentPassword: string, email: string) {
+    if (!(await verifyPassword(currentPassword, user.passwordHash))) {
+      throw new ForbiddenException({ error: 'invalid password' });
+    }
+    const normalizedEmail = email.trim().toLowerCase();
+    const existingUser = await this.repository.userByEmail(normalizedEmail);
+    if (existingUser && existingUser.id !== user.id) {
+      throw new ConflictException({ error: 'email already exists' });
+    }
+    return await this.repository.updateUserEmail(user.id, normalizedEmail);
+  }
+
+  /**
+   * Admin/Internal method to change users password
+   */
+  async updatePassword(user: User, newPassword: string, token?: string) {
+    await this.repository.clearUsersSessions(user.id, token);
+
+    await this.repository.updateUserPassword(user.id, await hashPassword(newPassword));
   }
 }
