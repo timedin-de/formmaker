@@ -1,6 +1,6 @@
 import { createParamDecorator, type ExecutionContext } from '@nestjs/common';
 import type { Request } from 'express';
-import { bearerToken, tokenHash } from '../auth.js';
+import { bearerToken, tokenHash } from './auth-helper';
 
 /** The token used by the authenticated user; only valid on routes behind `AuthGuard`. */
 export const CurrentTokenHash = createParamDecorator(

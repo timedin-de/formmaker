@@ -8,8 +8,8 @@ import {
 import { uuid } from '@shared/model/ids.js';
 import crypto from 'node:crypto';
 import type { PublicUser, UserRole } from '../../shared/model/user.model.js';
-import { hashPassword, publicUser, tokenHash, verifyPassword } from '../auth.js';
 import { Repository, User } from '../repository.js';
+import { hashPassword, publicUser, tokenHash, verifyPassword } from './auth-helper.js';
 
 export interface AuthResult {
   token: string;

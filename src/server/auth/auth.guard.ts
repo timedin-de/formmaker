@@ -7,8 +7,8 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import type { Request } from 'express';
-import { bearerToken, tokenHash } from '../auth.js';
 import { Repository } from '../repository.js';
+import { bearerToken, tokenHash } from './auth-helper.js';
 
 /** Requires a valid session token and exposes the user as `req.user`. */
 @Injectable()
