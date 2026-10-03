@@ -198,8 +198,8 @@ export type Elements = ElementDefinition[];
 
 export interface PageDefinition {
   id: PageId;
-  title?: string;
-  subtitle?: string;
+  title: string;
+  subtitle: string;
   /**
    * Page-based condition. An empty/falsy group means the page is always in the
    * flow. If a page becomes inactive, the navigation skips it automatically —
