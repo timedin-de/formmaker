@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { ExpressAdapter, type NestExpressApplication } from '@nestjs/platform-express';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import cors from 'cors';
 import type { NextFunction, Request, Response } from 'express';
 import express from 'express';
@@ -7,6 +8,7 @@ import rateLimit from 'express-rate-limit';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import { description, name, version } from '../../package.json';
 import { AppModule } from './app.module.js';
 import { ensureInitialAdmin } from './auth.js';
 import { ApiExceptionFilter } from './common/api-exception.filter.js';
@@ -77,6 +79,17 @@ export async function createApp(): Promise<NestExpressApplication> {
       .json({ error: 'internal server error' });
   });
 
+  initOpenapi(nest);
   await nest.init();
   return nest;
+}
+
+function initOpenapi(app: NestExpressApplication) {
+  const config = new DocumentBuilder()
+    .setTitle(name)
+    .setVersion(version)
+    .setDescription(description)
+    .build();
+  const documentFactory = () => SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api', app, documentFactory);
 }

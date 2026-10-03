@@ -1,5 +1,6 @@
 {
   "name": "form-maker",
+  "description": "A visual, no-code style form builder with a live designer, a runner for respondents, and a results view with spreadsheets. Design a form, preview it exactly as respondents see it, share a link, and collect submissions.",
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
@@ -44,6 +45,7 @@
     "@nestjs/common": "^12.1.2",
     "@nestjs/core": "^12.1.2",
     "@nestjs/platform-express": "^12.1.2",
+    "@nestjs/swagger": "^12.0.2",
     "better-sqlite3": "^13.0.3",
     "cors": "^2.8.6",
     "exceljs": "^4.4.0",
