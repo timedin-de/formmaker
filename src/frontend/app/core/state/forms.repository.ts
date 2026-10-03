@@ -1,10 +1,11 @@
-import { Injectable, inject, signal } from '@angular/core';
+import { inject, Injectable, signal } from '@angular/core';
 import { toPortableForm, type FormDefinition, type FormWithOwner } from '@shared/model/form.model';
-import type { Submission } from '@shared/model/submission.model';
+import type { Submission, SubmissionCreate } from '@shared/model/submission.model';
 import {
   formDefinitionSchema,
   formsWithOwnerSchema,
   formWithOwnerSchema,
+  submissionSchema,
   submissionsSchema,
 } from '@shared/schemas';
 import {
@@ -115,9 +116,9 @@ export class FormsRepository {
     return list;
   }
 
-  async addSubmission(submission: Submission): Promise<void> {
-    await this.api.request(
-      undefined,
+  async addSubmission(submission: SubmissionCreate): Promise<Submission> {
+    const serverSubmission = await this.api.request<Submission>(
+      submissionSchema,
       `/api/forms/${encodeURIComponent(submission.formId)}/submissions`,
       {
         method: 'POST',
@@ -125,10 +126,11 @@ export class FormsRepository {
       },
     );
     this.submissions.update((current) => [
-      submission,
-      ...current.filter((item) => item.id !== submission.id),
+      serverSubmission,
+      ...current.filter((item) => item.id !== serverSubmission.id),
     ]);
     removeCache(SUBMISSIONS_CACHE_PREFIX + submission.formId);
+    return serverSubmission;
   }
 
   async deleteSubmission(formId: string, submissionId: string): Promise<void> {

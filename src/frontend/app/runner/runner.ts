@@ -1,10 +1,6 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { Router, ActivatedRoute } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { first, switchMap, tap } from 'rxjs';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { RunnerStore } from '../core/state/runner.store';
-import { FormsRepository } from '../core/state/forms.repository';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDividerModule } from '@angular/material/divider';
@@ -16,13 +12,17 @@ import { MatRadioModule } from '@angular/material/radio';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatToolbarModule } from '@angular/material/toolbar';
-import { QuestionList } from './questionList/question-list';
+import { MatTooltip } from '@angular/material/tooltip';
+import { ActivatedRoute, Router } from '@angular/router';
+import { RunnerPage } from '@shared/model';
+import type { Submission } from '@shared/model/submission.model';
+import { first, switchMap, tap } from 'rxjs';
+import { downloadBlob, submissionToPdf, toSlug } from '../core/export';
 import { I18nService } from '../core/i18n';
 import { MarkdownPipe } from '../core/markdown';
-import { MatTooltip } from '@angular/material/tooltip';
-import { submissionToPdf, downloadBlob, toSlug } from '../core/export';
-import type { Submission } from '@shared/model/submission.model';
-import { RunnerPage } from '@shared/model';
+import { FormsRepository } from '../core/state/forms.repository';
+import { RunnerStore } from '../core/state/runner.store';
+import { QuestionList } from './questionList/question-list';
 
 @Component({
   imports: [
@@ -59,6 +59,8 @@ export class Runner {
   protected readonly Math = Math;
   protected readonly formLoaded = signal(false);
   protected lastSubmission = signal<Submission | null>(null);
+  protected readonly submitted = signal(false);
+  protected readonly submitting = signal(false);
 
   protected pageSignal = computed<RunnerPage | null>(() => this.store.currentPage());
   protected submitLabel = computed(
@@ -87,6 +89,7 @@ export class Runner {
         tap((form) => {
           if (form) {
             this.store.init(form);
+            this.submitted.set(false);
             this.formLoaded.set(true);
             if (this.store.restoredDraft()) {
               this.snack.open(this.i18n.t('runner.draftRestored'), 'OK', { duration: 4000 });
@@ -127,7 +130,8 @@ export class Runner {
     });
   }
 
-  submit(): void {
+  async submit(): Promise<void> {
+    if (this.submitting()) return;
     const result = this.store.submit();
     if (!result) {
       for (const page of this.store.pages()) {
@@ -135,9 +139,21 @@ export class Runner {
       }
       return;
     }
-    this.lastSubmission.set(result.submission);
-    void this.repo.addSubmission(result.submission);
-    this.snack.open(this.i18n.t('runner.submitted'), 'OK', { duration: 2000 });
+    this.submitting.set(true);
+    try {
+      const submission = await this.repo.addSubmission(result.submission);
+      if (!submission) {
+        this.snack.open(this.i18n.t('errors.unknown'), 'OK', { duration: 2000 });
+        return;
+      }
+      this.submitted.set(true);
+      this.lastSubmission.set(submission);
+      this.snack.open(this.i18n.t('runner.submitted'), 'OK', { duration: 2000 });
+    } catch {
+      this.snack.open(this.i18n.t('errors.unknown'), 'OK', { duration: 2000 });
+    } finally {
+      this.submitting.set(false);
+    }
   }
 
   async downloadReceipt(): Promise<void> {
@@ -150,6 +166,7 @@ export class Runner {
 
   fillAgain(): void {
     this.store.reset();
+    this.submitted.set(false);
     void this.router.navigate([], { relativeTo: this.route, queryParams: { page: 0 } });
   }
 
