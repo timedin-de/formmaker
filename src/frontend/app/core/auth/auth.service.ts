@@ -1,8 +1,9 @@
 import { Injectable, inject, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { catchFn } from '@shared/helper';
 import type { PublicUser } from '@shared/model/user.model';
 import { clearApiCache } from '../state/api-cache';
-import { request } from '../state/api-client';
+import { ApiClient } from '../state/api-client';
 import { UsersRepository } from '../state/users.repository';
 
 const TOKEN_KEY = 'formmaker.token';
@@ -12,6 +13,8 @@ export class AuthService {
   readonly authenticated = signal<boolean>(!!readToken());
   readonly user = signal<PublicUser | null>(null);
   private readonly users = inject(UsersRepository);
+  private readonly api = inject(ApiClient);
+  private readonly router = inject(Router);
 
   token(): string | null {
     return readToken();
@@ -65,15 +68,21 @@ export class AuthService {
     }
   }
 
-  async logout(clearSession = true): Promise<void> {
+  async logout(): Promise<void> {
     try {
-      if (clearSession) await request(undefined, '/api/auth/logout', { method: 'POST' });
+      await this.api.request(undefined, '/api/auth/logout', { method: 'POST' });
     } finally {
-      clearApiCache();
-      clearToken();
-      this.authenticated.set(false);
-      this.user.set(null);
+      await this.expireSession();
     }
+  }
+
+  async expireSession(): Promise<void> {
+    if (!this.authenticated()) return;
+    clearApiCache();
+    clearToken();
+    this.authenticated.set(false);
+    this.user.set(null);
+    if (!this.router.url.startsWith('/runner')) await this.router.navigate(['/login']);
   }
 }
 
