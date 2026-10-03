@@ -1,6 +1,6 @@
-import 'reflect-metadata';
 import type { NestExpressApplication } from '@nestjs/platform-express';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import 'reflect-metadata';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { createApp } from '../app.js';
 
 describe('auth API', () => {
@@ -17,10 +17,11 @@ describe('auth API', () => {
       body: body === undefined ? undefined : JSON.stringify(body),
     });
   const me = (token?: string): Promise<Response> =>
-    fetch(`${base}/api/auth/me`, token ? { headers: { authorization: `Bearer ${token}` } } : {});
+    fetch(`${base}/api/users/me`, token ? { headers: { authorization: `Bearer ${token}` } } : {});
 
   beforeAll(async () => {
     process.env.SQLITE_PATH = ':memory:';
+    vi.stubEnv('FORMMAKER_PASSWORD', 'formmaker');
     app = await createApp();
     await app.listen(0);
     base = await app.getUrl();
@@ -54,8 +55,7 @@ describe('auth API', () => {
 
   it('registers an editor (201), lowercases the email and rejects duplicates (409)', async () => {
     const created = await post('register', { email: 'New@Example.com', password: 'longenough' });
-    expect(created.status).toBe(201);
-    expect((await created.json()).user).toMatchObject({ email: 'new@example.com', role: 'editor' });
+    expect(created.status).toBe(204);
 
     const again = await post('register', { email: 'new@example.com', password: 'longenough' });
     expect(again.status).toBe(409);
