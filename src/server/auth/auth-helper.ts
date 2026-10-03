@@ -1,53 +1,10 @@
-import type { RequestHandler } from 'express';
+import { PublicUser } from '@shared/model';
 import crypto from 'node:crypto';
-import { PublicUser, UserRole } from '../shared/model/user.model.js';
-import type { Repository, User } from './repository.js';
-
-export const DEFAULT_PASSWORD = 'formmaker';
+import { User } from '../repository';
 
 export function publicUser(user: User): PublicUser {
   const { id, email, role, createdAt } = user;
   return { id, email, role, createdAt };
-}
-
-// TODO ADMIN CREDS
-export async function ensureInitialAdmin(repository: Repository): Promise<void> {
-  if ((await repository.users()).length > 0) return;
-  const email = (process.env.FORMMAKER_ADMIN_EMAIL ?? 'admin@formmaker.local').toLowerCase();
-  await repository.createUser({
-    id: crypto.randomUUID(),
-    email,
-    passwordHash: await hashPassword(process.env.FORMMAKER_PASSWORD ?? DEFAULT_PASSWORD),
-    role: 'admin',
-    createdAt: new Date().toISOString(),
-  });
-}
-
-export function authenticate(repository: Repository): RequestHandler {
-  return async (req, res, next) => {
-    try {
-      const token = bearerToken(req.headers.authorization);
-      const user = token ? await repository.userBySession(tokenHash(token)) : null;
-      if (!user) {
-        res.status(401).json({ error: 'authentication required' });
-        return;
-      }
-      req.user = user;
-      next();
-    } catch (error) {
-      next(error);
-    }
-  };
-}
-
-export function requireRole(...roles: UserRole[]): RequestHandler {
-  return (req, res, next) => {
-    if (!req.user || !roles.includes(req.user.role)) {
-      res.status(403).json({ error: 'insufficient permissions' });
-      return;
-    }
-    next();
-  };
 }
 
 export function bearerToken(header: string | undefined): string | undefined {
@@ -84,11 +41,9 @@ function scrypt(password: string, salt: string): Promise<Buffer> {
   });
 }
 
-function tokenHash(token: string): string {
+export function tokenHash(token: string): string {
   return crypto.createHash('sha256').update(token).digest('hex');
 }
-
-export { tokenHash };
 
 declare global {
   namespace Express {

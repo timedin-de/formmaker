@@ -17,7 +17,7 @@ import {
 import { PublicUser } from '@shared/model';
 import { accountDeleteSchema, userCreateSchema } from '@shared/schemas';
 import z from 'zod';
-import { hashPassword, publicUser, verifyPassword } from '../auth';
+import { hashPassword, publicUser, verifyPassword } from '../auth/auth-helper';
 import { AdminGuard, AuthGuard } from '../auth/auth.guard';
 import { AuthService } from '../auth/auth.service';
 import { CurrentUser } from '../auth/current-user.decorator';
