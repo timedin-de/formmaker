@@ -1,6 +1,12 @@
 import { elementId, type ElementId, type FormId } from './ids';
 import type { FieldValue } from './values.model';
 
+export interface SubmissionCreate {
+  formId: FormId;
+  durationMs: number;
+  values: Record<ElementId, FieldValue>;
+}
+
 export interface Submission {
   id: string;
   formId: FormId;

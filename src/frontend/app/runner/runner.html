@@ -25,7 +25,7 @@
   }
 </mat-toolbar>
 
-@if (store.submitted()) {
+@if (submitted()) {
   <div class="thanks">
     <mat-icon svgIcon="check" class="tick"></mat-icon>
     <h1>{{ i18n.t('runner.thanks.title') }}</h1>

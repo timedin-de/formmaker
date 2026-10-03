@@ -130,6 +130,7 @@ const en = {
   'errors.minLength': 'Minimal length of {requiredLength} characters.',
   'errors.passwordMismatch': 'Passwords must match.',
   'errors.email': 'Input must be a valid email.',
+  'errors.unknown': 'Unknown Error',
 
   // builder
   'builder.formName': 'Form name',
@@ -559,6 +560,7 @@ const de: typeof en = {
   'errors.minLength': 'Mindestlänge von {requiredLength} Zeichen.',
   'errors.passwordMismatch': 'Passwörter müssen übereinstimmen.',
   'errors.email': 'Eingabe muss eine gültige E-Mail-Adresse sein.',
+  'errors.unknown': 'Unbekannter Fehler',
 
   // builder
   'builder.formName': 'Formularname',

@@ -10,8 +10,7 @@ import {
   type ElementDefinition,
   type FormDefinition,
 } from '@shared/model/form.model';
-import { uuid } from '@shared/model/ids';
-import type { Submission } from '@shared/model/submission.model';
+import type { SubmissionCreate } from '@shared/model/submission.model';
 import type { FieldValue, ValuesMap } from '@shared/model/values.model';
 import { debounceTime, filter } from 'rxjs';
 import { collectElementRefs } from '../engine/dependencies';
@@ -24,7 +23,6 @@ export class RunnerStore {
   readonly form = signal<FormDefinition | null>(null);
   readonly answers = new FormGroup({});
   readonly pageIndex = signal(0);
-  readonly submitted = signal(false);
   readonly evaluation = signal<FormEvaluation | null>(null);
   readonly restoredDraft = signal(false);
 
@@ -76,7 +74,6 @@ export class RunnerStore {
     this.form.set(form);
     this.evaluator.setForm(form);
     this.pageIndex.set(0);
-    this.submitted.set(false);
     this.startedAt.set(Date.now());
 
     const draft = this.loadDraft(form);
@@ -355,18 +352,13 @@ export class RunnerStore {
       }
     }
 
-    const submission: Submission = {
-      id: uuid(),
+    const submission: SubmissionCreate = {
       formId: form.id,
-      formVersion: form.version,
-      formName: form.name,
-      submittedAt: new Date().toISOString(),
       durationMs: Date.now() - this.startedAt(),
       values,
     };
 
     this.durationMs.set(submission.durationMs);
-    this.submitted.set(true);
     this.clearDraft();
     return { submission, visibleAnswerKeys };
   }
@@ -378,7 +370,6 @@ export class RunnerStore {
       ctrl.markAsUntouched();
     }
     this.pageIndex.set(0);
-    this.submitted.set(false);
     this.startedAt.set(Date.now());
     this.previousValues = {};
     this.clearDraft();
