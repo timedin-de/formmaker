@@ -2,6 +2,7 @@ import { Injectable, inject, signal } from '@angular/core';
 import { catchFn } from '@shared/helper';
 import type { PublicUser } from '@shared/model/user.model';
 import { clearApiCache } from '../state/api-cache';
+import { request } from '../state/api-client';
 import { UsersRepository } from '../state/users.repository';
 
 const TOKEN_KEY = 'formmaker.token';
@@ -64,9 +65,9 @@ export class AuthService {
     }
   }
 
-  async logout(): Promise<void> {
+  async logout(clearSession = true): Promise<void> {
     try {
-      await fetch('/api/auth/logout', { method: 'POST' });
+      if (clearSession) await request(undefined, '/api/auth/logout', { method: 'POST' });
     } finally {
       clearApiCache();
       clearToken();
