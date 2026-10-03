@@ -1,8 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
 import { E2E_SQLITE_PATH } from './e2e/db';
 
-const PORT = 4200;
-const API_PORT = 3000;
+const PORT = 4300;
+const API_PORT = 4000;
 
 export default defineConfig({
   testDir: './e2e',
@@ -30,18 +30,21 @@ export default defineConfig({
       command: 'npm run start:api',
       url: `http://localhost:${API_PORT}/api/health`,
       timeout: 60_000,
-      reuseExistingServer: !process.env.CI,
       env: {
         DATABASE_PROVIDER: 'sqlite',
         SQLITE_PATH: E2E_SQLITE_PATH,
         RATELIMIT: '10000',
+        FORMMAKER_PASSWORD: 'formmaker',
+        PORT: `${API_PORT}`,
       },
     },
     {
-      command: `npm start -- --port ${PORT}`,
+      command: `npm run start:frontend -- --port ${PORT}`,
       url: `http://localhost:${PORT}`,
       timeout: 180_000,
-      reuseExistingServer: !process.env.CI,
+      env: {
+        API_URL: `http://localhost:${API_PORT}/`,
+      },
     },
   ],
 });
