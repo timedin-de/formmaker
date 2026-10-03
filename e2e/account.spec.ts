@@ -28,7 +28,7 @@ test('manages email, password and deletion over the account API', async ({ reque
   expect((me as { email: string }).email).toBe(email);
 
   const newEmail = `renamed-${uuid()}@formmaker.local`;
-  const renamed = await request.patch('/api/users/me', {
+  const renamed = await request.put('/api/auth/email', {
     headers: auth(token),
     data: { email: newEmail, currentPassword: password },
   });
@@ -36,7 +36,7 @@ test('manages email, password and deletion over the account API', async ({ reque
   expect(((await renamed.json()) as { email: string }).email).toBe(newEmail);
 
   const newPassword = 'newpassword9';
-  const changed = await request.patch('/api/users/me/password', {
+  const changed = await request.put('/api/auth/password', {
     headers: auth(token),
     data: { currentPassword: password, newPassword: newPassword },
   });
@@ -56,7 +56,7 @@ test('manages email, password and deletion over the account API', async ({ reque
     data: { currentPassword: newPassword },
   });
   expect(removed.status()).toBe(204);
-  expect((await request.get('/api/auth/me', { headers: auth(token) })).status()).toBe(401);
+  expect((await request.get('/api/users/me', { headers: auth(token) })).status()).toBe(401);
 });
 
 test('changes email, password and deletes the account from the account page', async ({ page }) => {

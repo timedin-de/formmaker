@@ -11,15 +11,15 @@ export class UsersRepository {
   }
 
   updateEmail(email: string, currentPassword: string): Promise<PublicUser> {
-    return request(publicUserSchema, '/api/users/me', {
-      method: 'PATCH',
+    return request(publicUserSchema, '/api/auth/email', {
+      method: 'PUT',
       body: JSON.stringify({ email, currentPassword }),
     });
   }
 
   changePassword(currentPassword: string, newPassword: string): Promise<void> {
-    return request(undefined, '/api/users/me/password', {
-      method: 'PATCH',
+    return request(undefined, '/api/auth/password', {
+      method: 'PUT',
       body: JSON.stringify({ currentPassword, newPassword }),
     });
   }
