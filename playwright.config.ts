@@ -34,6 +34,7 @@ export default defineConfig({
       env: {
         DATABASE_PROVIDER: 'sqlite',
         SQLITE_PATH: E2E_SQLITE_PATH,
+        RATELIMIT: '10000',
       },
     },
     {
