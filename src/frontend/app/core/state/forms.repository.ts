@@ -1,4 +1,4 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { toPortableForm, type FormDefinition, type FormWithOwner } from '@shared/model/form.model';
 import type { Submission } from '@shared/model/submission.model';
 import {
@@ -17,11 +17,12 @@ import {
   SUBMISSIONS_CACHE_TTL_MS,
   writeCache,
 } from './api-cache';
-import { request } from './api-client';
+import { ApiClient } from './api-client';
 
 /** Server-backed persistence with a short-lived local response cache. */
 @Injectable({ providedIn: 'root' })
 export class FormsRepository {
+  private readonly api = inject(ApiClient);
   readonly forms = signal<FormWithOwner[]>([]);
   readonly submissions = signal<Submission[]>([]);
   private hydratePromise: Promise<void> | null = null;
@@ -37,7 +38,7 @@ export class FormsRepository {
       this.forms.set(cached);
       return;
     }
-    const forms = await request(formsWithOwnerSchema, '/api/forms');
+    const forms = await this.api.request(formsWithOwnerSchema, '/api/forms');
     this.forms.set(forms);
     writeCache(FORMS_CACHE_KEY, forms);
   }
@@ -55,7 +56,10 @@ export class FormsRepository {
     const key = FORM_CACHE_PREFIX + id;
     const cached = readCache(formDefinitionSchema, key, FORMS_CACHE_TTL_MS);
     if (cached) return toPortableForm(cached);
-    const form = await request(formDefinitionSchema, `/api/forms/${encodeURIComponent(id)}`);
+    const form = await this.api.request(
+      formDefinitionSchema,
+      `/api/forms/${encodeURIComponent(id)}`,
+    );
     const portable = toPortableForm(form);
     writeCache(key, portable);
     return portable;
@@ -63,7 +67,7 @@ export class FormsRepository {
 
   async newForm(form: FormDefinition): Promise<FormWithOwner> {
     await this.init();
-    const saved = await request(formWithOwnerSchema, '/api/forms', {
+    const saved = await this.api.request(formWithOwnerSchema, '/api/forms', {
       method: 'POST',
       body: JSON.stringify(form),
     });
@@ -75,7 +79,7 @@ export class FormsRepository {
 
   async saveForm(form: FormDefinition): Promise<FormWithOwner> {
     await this.init();
-    const saved = await request(formWithOwnerSchema, '/api/forms', {
+    const saved = await this.api.request(formWithOwnerSchema, '/api/forms', {
       method: 'PUT',
       body: JSON.stringify(form),
     });
@@ -87,7 +91,7 @@ export class FormsRepository {
 
   async deleteForm(id: string): Promise<void> {
     await this.init();
-    await request(undefined, `/api/forms/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    await this.api.request(undefined, `/api/forms/${encodeURIComponent(id)}`, { method: 'DELETE' });
     this.forms.set(this.forms().filter((form) => form.id !== id));
     writeCache(FORMS_CACHE_KEY, this.forms());
     removeCache(FORM_CACHE_PREFIX + id);
@@ -99,7 +103,10 @@ export class FormsRepository {
     const key = SUBMISSIONS_CACHE_PREFIX + formId;
     const list =
       readCache(submissionsSchema, key, SUBMISSIONS_CACHE_TTL_MS) ??
-      (await request(submissionsSchema, `/api/forms/${encodeURIComponent(formId)}/submissions`));
+      (await this.api.request(
+        submissionsSchema,
+        `/api/forms/${encodeURIComponent(formId)}/submissions`,
+      ));
     writeCache(key, list);
     this.submissions.set([
       ...list,
@@ -109,10 +116,14 @@ export class FormsRepository {
   }
 
   async addSubmission(submission: Submission): Promise<void> {
-    await request(undefined, `/api/forms/${encodeURIComponent(submission.formId)}/submissions`, {
-      method: 'POST',
-      body: JSON.stringify(submission),
-    });
+    await this.api.request(
+      undefined,
+      `/api/forms/${encodeURIComponent(submission.formId)}/submissions`,
+      {
+        method: 'POST',
+        body: JSON.stringify(submission),
+      },
+    );
     this.submissions.update((current) => [
       submission,
       ...current.filter((item) => item.id !== submission.id),
@@ -121,7 +132,7 @@ export class FormsRepository {
   }
 
   async deleteSubmission(formId: string, submissionId: string): Promise<void> {
-    await request(
+    await this.api.request(
       undefined,
       `/api/forms/${encodeURIComponent(formId)}/submissions/${encodeURIComponent(submissionId)}`,
       { method: 'DELETE' },
@@ -131,7 +142,7 @@ export class FormsRepository {
   }
 
   async clearSubmissions(formId: string): Promise<void> {
-    await request(undefined, `/api/forms/${encodeURIComponent(formId)}/submissions`, {
+    await this.api.request(undefined, `/api/forms/${encodeURIComponent(formId)}/submissions`, {
       method: 'DELETE',
     });
     this.submissions.set(this.submissions().filter((item) => item.formId !== formId));
