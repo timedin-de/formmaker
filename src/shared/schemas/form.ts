@@ -6,8 +6,8 @@ import { elementsSchema } from './elements';
 
 const pageDefinitionSchema = z.strictObject({
   id: z.string(),
-  title: z.string().optional(),
-  subtitle: z.string().optional(),
+  title: z.string(),
+  subtitle: z.string().default(''),
   enabledWhen: conditionGroupSchema.optional(),
   elements: elementsSchema,
 });

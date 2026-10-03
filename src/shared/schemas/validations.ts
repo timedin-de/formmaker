@@ -1,5 +1,5 @@
 import z from 'zod';
-import { VALIDATION_RULE_TYPES, ValidationRuleType } from '../model';
+import { VALIDATION_RULE_TYPES, ValidationRule, ValidationRuleType } from '../model';
 
 const validationRuleTypeSchema = z.enum(
   VALIDATION_RULE_TYPES,
@@ -14,4 +14,4 @@ export const validationRuleSchema = z.strictObject({
   pattern: z.string().optional(),
   expression: z.string().optional(),
   accept: z.string().optional(),
-});
+}) satisfies z.ZodType<ValidationRule>;

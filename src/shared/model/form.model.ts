@@ -198,7 +198,7 @@ export type Elements = ElementDefinition[];
 
 export interface PageDefinition {
   id: PageId;
-  title?: string;
+  title: string;
   subtitle?: string;
   /**
    * Page-based condition. An empty/falsy group means the page is always in the
