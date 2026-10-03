@@ -75,6 +75,7 @@
                 before: el.elements[$index - 1],
                 after: el.elements[$index + 1],
               }"
+              (paletteTarget)="paletteTarget.emit($event)"
               [dropLists]="dropLists()"
               (dropElement)="dropElement.emit($event)"
               [store]="store()"
@@ -82,18 +83,9 @@
           </div>
         }
       </div>
-      <button class="add-child" (click)="showPalette.set(true)">
+      <button class="add-child" (click)="paletteTarget.emit((e) => addChild(e))">
         <mat-icon svgIcon="add"></mat-icon> {{ i18n.t('row.addChild') }}
       </button>
     }
-  </div>
-}
-@if (showPalette()) {
-  <div class="palette-modal">
-    <fm-builder-palette
-      class="palette"
-      (addModule)="addChild($event)"
-      [isModal]="true"
-    ></fm-builder-palette>
   </div>
 }

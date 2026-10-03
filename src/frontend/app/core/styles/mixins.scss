@@ -51,3 +51,34 @@
     background-position: 16px 0;
   }
 }
+
+@mixin dialog() {
+  dialog {
+    z-index: 2;
+    border: 1px solid var(--mat-sys-outline-variant);
+    border-radius: 16px;
+    background: var(--mat-sys-surface);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+    padding: 16px;
+    max-height: calc(100vh - var(--mat-toolbar-standad-height, 64px));
+
+    .modal-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .modal-head h2 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--mat-sys-on-surface);
+    }
+
+    &::backdrop {
+      background-color: rgba(0, 0, 0, 0.1);
+    }
+  }
+}
