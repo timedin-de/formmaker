@@ -128,7 +128,7 @@ export class Account {
 
     try {
       await this.users.deleteAccount(value);
-      await this.auth.logout(false);
+      await this.auth.expireSession();
       this.snack.open(this.i18n.t('account.accountDeleted'), 'OK', { duration: 3000 });
       await this.router.navigate(['/login']);
     } catch (error) {

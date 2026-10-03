@@ -1,3 +1,4 @@
+import { TestBed } from '@angular/core/testing';
 import type { PublicUser } from '@shared/model/user.model';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { UsersRepository } from './users.repository';
@@ -31,7 +32,7 @@ describe('UsersRepository', () => {
   });
 
   it('me() GETs the current user', async () => {
-    const repo = new UsersRepository();
+    const repo = TestBed.inject(UsersRepository);
     fetchMock.mockResolvedValue({
       ok: true,
       status: 200,
@@ -45,7 +46,7 @@ describe('UsersRepository', () => {
   });
 
   it('updateEmail() PATCHes the new email with the current password', async () => {
-    const repo = new UsersRepository();
+    const repo = TestBed.inject(UsersRepository);
     const updated = makeUser({ email: 'new@formmaker.local' });
     fetchMock.mockResolvedValue({
       ok: true,
@@ -66,7 +67,7 @@ describe('UsersRepository', () => {
   });
 
   it('changePassword() PATCHes the password endpoint', async () => {
-    const repo = new UsersRepository();
+    const repo = TestBed.inject(UsersRepository);
     fetchMock.mockResolvedValue({ ok: true, status: 204, json: () => Promise.reject() });
 
     await repo.changePassword('formmaker', 'newpassword');
@@ -81,7 +82,7 @@ describe('UsersRepository', () => {
   });
 
   it('deleteAccount() DELETEs the account with the current password', async () => {
-    const repo = new UsersRepository();
+    const repo = TestBed.inject(UsersRepository);
     fetchMock.mockResolvedValue({ ok: true, status: 204, json: () => Promise.reject() });
 
     await repo.deleteAccount('formmaker');
@@ -96,7 +97,7 @@ describe('UsersRepository', () => {
   });
 
   it('propagates server errors', async () => {
-    const repo = new UsersRepository();
+    const repo = TestBed.inject(UsersRepository);
     fetchMock.mockResolvedValue({
       ok: false,
       status: 409,

@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { Router } from '@angular/router';
 import type { PublicUser } from '@shared/model/user.model';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { UsersRepository } from '../state/users.repository';
@@ -29,9 +30,16 @@ describe('AuthService', () => {
     vi.unstubAllGlobals();
   });
 
+  const router = { url: '/', navigate: vi.fn(() => Promise.resolve(true)) };
+
   async function setup(): Promise<AuthService> {
+    router.url = '/';
+    router.navigate.mockClear();
     await TestBed.configureTestingModule({
-      providers: [{ provide: UsersRepository, useValue: { me: meMock } }],
+      providers: [
+        { provide: UsersRepository, useValue: { me: meMock } },
+        { provide: Router, useValue: router },
+      ],
     }).compileComponents();
     return TestBed.inject(AuthService);
   }
@@ -145,5 +153,37 @@ describe('AuthService', () => {
     expect(auth.user()).toBeNull();
     expect(sessionStorage.getItem('formmaker.token')).toBeNull();
     expect(auth.token()).toBeNull();
+  });
+
+  it('expireSession clears the session locally and redirects to the login', async () => {
+    const auth = await setup();
+    sessionStorage.setItem('formmaker.token', 'stale');
+    auth.authenticated.set(true);
+
+    await auth.expireSession();
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(auth.authenticated()).toBe(false);
+    expect(sessionStorage.getItem('formmaker.token')).toBeNull();
+    expect(router.navigate).toHaveBeenCalledWith(['/login']);
+  });
+
+  it('expireSession does not redirect from a public runner route', async () => {
+    const auth = await setup();
+    auth.authenticated.set(true);
+    router.url = '/runner/abc';
+
+    await auth.expireSession();
+
+    expect(auth.authenticated()).toBe(false);
+    expect(router.navigate).not.toHaveBeenCalled();
+  });
+
+  it('expireSession is a no-op when not authenticated', async () => {
+    const auth = await setup();
+
+    await auth.expireSession();
+
+    expect(router.navigate).not.toHaveBeenCalled();
   });
 });
