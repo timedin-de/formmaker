@@ -5,6 +5,7 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
+import { uuid } from '@shared/model/ids.js';
 import crypto from 'node:crypto';
 import type { PublicUser, UserRole } from '../../shared/model/user.model.js';
 import { hashPassword, publicUser, tokenHash, verifyPassword } from '../auth.js';
@@ -84,5 +85,25 @@ export class AuthService {
     await this.repository.clearUsersSessions(user.id, token);
 
     await this.repository.updateUserPassword(user.id, await hashPassword(newPassword));
+  }
+
+  async ensureInitialAdmin(): Promise<void> {
+    if ((await this.repository.users()).length > 0) return;
+    const email = (process.env.FORMMAKER_ADMIN_EMAIL ?? 'admin@formmaker.local').toLowerCase();
+
+    let password = process.env.FORMMAKER_PASSWORD;
+
+    if (!password || (password?.length ?? 0) < 8) {
+      console.warn('No or to short password for initial admin provided, generating random:');
+      password = crypto.randomUUID();
+      console.log(password);
+    }
+    await this.repository.createUser({
+      id: uuid(),
+      email,
+      passwordHash: await hashPassword(password),
+      role: 'admin',
+      createdAt: new Date().toISOString(),
+    });
   }
 }

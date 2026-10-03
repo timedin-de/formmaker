@@ -8,9 +8,8 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { AppModule } from './app.module.js';
-import { ensureInitialAdmin } from './auth.js';
+import { AuthService } from './auth/auth.service';
 import { ApiExceptionFilter } from './common/api-exception.filter.js';
-import { Repository } from './repository.js';
 
 /**
  * Nest app wrapping the Express instance. Routes not yet ported to Nest
@@ -52,8 +51,8 @@ export async function createApp(): Promise<NestExpressApplication> {
   );
   nest.setGlobalPrefix('api');
   nest.useGlobalFilters(new ApiExceptionFilter());
-  const repository = nest.get(Repository);
-  await ensureInitialAdmin(repository);
+  const authService = nest.get(AuthService);
+  await authService.ensureInitialAdmin();
 
   const dist = path.resolve('dist/form-maker/browser');
   if (fs.existsSync(dist)) {
