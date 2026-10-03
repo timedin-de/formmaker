@@ -33,9 +33,11 @@ export async function createApp(): Promise<NestExpressApplication> {
     next();
   });
 
+  const parsedLimit = parseInt(process.env.RATELIMIT ?? '');
+
   const rateLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    limit: 300,
+    limit: parsedLimit >= 1 ? parsedLimit : 300,
     standardHeaders: true,
     legacyHeaders: false,
   });
