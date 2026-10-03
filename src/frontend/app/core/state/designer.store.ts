@@ -460,7 +460,7 @@ function clonePageWithFreshId(el: PageDefinition): PageDefinition {
   const cloned = structuredCloneSafe(el);
   cloned.id = uuid();
   cloned.title = `${el.title} (copy)`;
-  cloned.subtitle = `${el.subtitle ?? ''}`;
+  cloned.subtitle = el.subtitle;
 
   if (!has(cloned, 'elements')) return cloned;
 

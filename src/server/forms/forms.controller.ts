@@ -14,13 +14,14 @@ import {
   UnprocessableEntityException,
   UseGuards,
 } from '@nestjs/common';
-import { FormDefinition, Submission, toPortableForm, uuid } from '@shared/model';
-import { formDefinitionSchema, stripFormOwnership, submissionSchema } from '@shared/schemas';
+import { FormDefinition, SubmissionCreate, toPortableForm, uuid } from '@shared/model';
+import { formDefinitionSchema, stripFormOwnership, submissionCreateSchema } from '@shared/schemas';
 import type { Response } from 'express';
 import { AuthGuard } from '../auth/auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import { Repository, User } from '../repository';
+import { FormService } from './form.service';
 
 /** Strips client-supplied ownership fields before validating the form schema. */
 class FormBodyPipe extends ZodValidationPipe<FormDefinition> {
@@ -39,7 +40,10 @@ function canManage(ownerId: string, user: User): boolean {
 
 @Controller('forms')
 export class FormsController {
-  constructor(@Inject(Repository) private readonly repository: Repository) {}
+  constructor(
+    @Inject(Repository) private readonly repository: Repository,
+    @Inject(FormService) private readonly formService: FormService,
+  ) {}
 
   /** Loads a form the user may manage, or throws 404 / 403. */
   private async managedForm(id: string, user: User) {
@@ -104,14 +108,12 @@ export class FormsController {
   @HttpCode(201)
   async addSubmission(
     @Param('id') id: string,
-    @Body(new ZodValidationPipe(submissionSchema)) submission: Submission,
+    @Body(new ZodValidationPipe(submissionCreateSchema)) submission: SubmissionCreate,
   ) {
     if (submission.formId !== id)
       throw new UnprocessableEntityException({ error: 'submission must match the form id' });
-    if (!(await this.repository.form(submission.formId)))
-      throw new NotFoundException({ error: 'not found' });
-    await this.repository.addSubmission(submission);
-    return submission;
+
+    return await this.formService.addSubmission(submission);
   }
 
   @Delete(':id/submissions')

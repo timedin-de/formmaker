@@ -2,7 +2,7 @@ import { FormControl } from '@angular/forms';
 import { TranslationKey } from '../../frontend/app/core/i18n';
 import type { ConditionGroup } from './conditions.model';
 import type { ElementId, FormId, PageId } from './ids';
-import { Submission } from './submission.model';
+import { SubmissionCreate } from './submission.model';
 import type { PublicUser } from './user.model';
 import type { ValidationRule } from './validation.model';
 import type { FieldValue } from './values.model';
@@ -265,6 +265,6 @@ export interface ElementViewRef {
 }
 
 export interface SubmissionResult {
-  submission: Submission;
+  submission: SubmissionCreate;
   visibleAnswerKeys: string[];
 }
