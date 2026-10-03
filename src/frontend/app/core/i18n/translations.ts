@@ -433,6 +433,9 @@ const en = {
 
   // PDF
   'pdf.receipt': '{name}-receipt',
+
+  // API errors
+  'error.rateLimited': "You're being rate limited. Please wait a moment and try again.",
 };
 
 const de: typeof en = {
@@ -866,5 +869,8 @@ const de: typeof en = {
 
   // PDF
   'pdf.receipt': '{name}-beleg',
+
+  // API errors
+  'error.rateLimited': 'Zu viele Anfragen. Bitte warte einen Moment und versuche es erneut.',
 };
 export const TRANSLATIONS: Record<Lang, Dict> = { en, de };
