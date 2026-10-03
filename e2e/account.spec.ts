@@ -12,9 +12,11 @@ async function registerAccount(request: APIRequestContext): Promise<{
   const password = 'formmaker1';
   const res = await request.post('/api/auth/register', { data: { email, password } });
   expect(res.ok()).toBeTruthy();
-  const body = (await res.json()) as { token?: string };
+  const res2 = await request.post('/api/auth/login', { data: { email, password } });
+  expect(res2.ok()).toBeTruthy();
+  const body = await res2.json();
   expect(body.token).toBeTruthy();
-  return { email, password, token: body.token as string };
+  return { email, password, token: body.token };
 }
 
 function auth(token: string): Record<string, string> {

@@ -12,7 +12,6 @@ import { ensureInitialAdmin } from './auth.js';
 import { ApiExceptionFilter } from './common/api-exception.filter.js';
 import { Repository } from './repository.js';
 import { formsRoutes } from './routes/forms.routes.js';
-import { usersRoutes } from './routes/users.routes.js';
 
 /**
  * Nest app wrapping the Express instance. Routes not yet ported to Nest
@@ -55,7 +54,6 @@ export async function createApp(): Promise<NestExpressApplication> {
   const repository = nest.get(Repository);
   await ensureInitialAdmin(repository);
 
-  app.use('/api/users', usersRoutes(repository));
   app.use('/api/forms', formsRoutes(repository));
 
   const dist = path.resolve('dist/form-maker/browser');

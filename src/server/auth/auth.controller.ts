@@ -27,9 +27,10 @@ export class AuthController {
   }
 
   @Post('register')
+  @HttpCode(204)
   register(
     @Body(new ZodValidationPipe(registrationSchema)) body: z.infer<typeof registrationSchema>,
-  ): Promise<AuthResult> {
+  ): Promise<void> {
     return this.auth.register(body.email, body.password);
   }
 

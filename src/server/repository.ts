@@ -62,6 +62,10 @@ export class Repository {
     return (await this.source.getRepository(UserEntity).update(id, { email })).affected === 1;
   }
 
+  async patchUser(id: string, patch: Partial<Omit<UserEntityModel, 'createdAt' | 'id'>>) {
+    return (await this.source.getRepository(UserEntity).update(id, patch)).affected === 1;
+  }
+
   async deleteUser(id: string): Promise<boolean> {
     return (await this.source.getRepository(UserEntity).delete(id)).affected === 1;
   }
