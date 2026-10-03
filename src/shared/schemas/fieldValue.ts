@@ -1,3 +1,4 @@
+import { FieldValue, FileValue, SignatureValue } from '@shared/model';
 import z from 'zod';
 
 const fileValueSchema = z.strictObject({
@@ -5,14 +6,14 @@ const fileValueSchema = z.strictObject({
   size: z.number(),
   mimeType: z.string(),
   dataUrl: z.string().optional(),
-});
+}) satisfies z.ZodType<FileValue>;
 
 const signatureValueSchema = z.strictObject({
   dataUrl: z.string(),
   width: z.number(),
   height: z.number(),
   mimeType: z.literal('image/png'),
-});
+}) satisfies z.ZodType<SignatureValue>;
 
 export const fieldValueSchema = z
   .union([
@@ -23,4 +24,4 @@ export const fieldValueSchema = z
     z.array(fileValueSchema),
     signatureValueSchema,
   ])
-  .nullable();
+  .nullable() satisfies z.ZodType<FieldValue>;

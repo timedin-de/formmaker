@@ -34,7 +34,13 @@ export function newForm(name = 'Untitled form'): FormDefinition {
 }
 
 export function createPage(title = 'New page'): PageDefinition {
-  return { id: elementId('page'), title, elements: [], enabledWhen: emptyConditionGroup() };
+  return {
+    id: elementId('page'),
+    title,
+    subtitle: '',
+    elements: [],
+    enabledWhen: emptyConditionGroup(),
+  };
 }
 
 export function createElement(type: QuestionType, label: string): QuestionDefinition;

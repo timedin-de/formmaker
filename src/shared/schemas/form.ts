@@ -1,16 +1,16 @@
 import z from 'zod';
 import { CatchFnResult, catchFn } from '../helper';
-import { FormDefinition, FormSettings, FormWithOwner } from '../model';
+import { FormDefinition, FormSettings, FormWithOwner, PageDefinition } from '../model';
 import { conditionGroupSchema } from './conditions';
 import { elementsSchema } from './elements';
 
 const pageDefinitionSchema = z.strictObject({
   id: z.string(),
-  title: z.string().optional(),
-  subtitle: z.string().optional(),
+  title: z.string(),
+  subtitle: z.string().default(''),
   enabledWhen: conditionGroupSchema.optional(),
   elements: elementsSchema,
-});
+}) satisfies z.ZodType<PageDefinition>;
 
 export const formSettingsSchema = z.strictObject({
   name: z.string().optional(),
