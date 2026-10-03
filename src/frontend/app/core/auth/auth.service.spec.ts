@@ -137,7 +137,10 @@ describe('AuthService', () => {
 
     await auth.logout();
 
-    expect(fetchMock).toHaveBeenCalledWith('/api/auth/logout', { method: 'POST' });
+    expect(fetchMock).toHaveBeenCalledWith('/api/auth/logout', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer abc123' },
+    });
     expect(auth.authenticated()).toBe(false);
     expect(auth.user()).toBeNull();
     expect(sessionStorage.getItem('formmaker.token')).toBeNull();
