@@ -31,6 +31,9 @@ export async function createApp(): Promise<NestExpressApplication> {
     next();
   });
 
+  const tp = process.env.TRUST_PROXY;
+  if (tp) app.set('trust proxy', /^\d+$/.test(tp) ? Number(tp) : tp || false);
+
   const parsedLimit = parseInt(process.env.RATELIMIT ?? '');
 
   const rateLimiter = rateLimit({
