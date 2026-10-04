@@ -1,16 +1,16 @@
 import type { QuestionDefinition } from '@shared/model/form.model';
 import type { ValidationRule, ValidationRuleType } from '@shared/model/validation.model';
+import type { FieldValue } from '@shared/model/values.model';
 import { evalExpression } from './expression/evaluator';
 import { interpolateTemplate } from './expression/template';
-import type { FieldValue } from '@shared/model/values.model';
 
-export interface ValidationFailure {
+interface ValidationFailure {
   ruleId: string;
   type: ValidationRuleType;
   message: string;
 }
 
-export interface ValidationResult {
+interface ValidationResult {
   valid: boolean;
   failures: ValidationFailure[];
 }
@@ -216,7 +216,7 @@ function dateValue(value: FieldValue): Date | null {
 function fileList(value: FieldValue): Extract<FieldValue, object[]> | null {
   if (Array.isArray(value) && value.length === 0) return [];
   if (Array.isArray(value) && typeof value[0] === 'object' && 'name' in value[0]) {
-    return value as unknown as Extract<FieldValue, object[]>;
+    return value as Extract<FieldValue, object[]>;
   }
   return null;
 }

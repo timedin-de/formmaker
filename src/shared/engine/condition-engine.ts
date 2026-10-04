@@ -1,8 +1,8 @@
 import type { Condition, ConditionGroup, ConditionOperand } from '@shared/model/conditions.model';
 import type { FieldValue } from '@shared/model/values.model';
-import { isEmptyValue, truthy } from './expression/evaluator';
+import { isEmptyValue } from './expression/evaluator';
 
-export type ConditionValues = Readonly<Record<string, FieldValue>>;
+type ConditionValues = Readonly<Record<string, FieldValue | undefined>>;
 
 export function evalCondition(condition: Condition, values: ConditionValues): boolean {
   const { fieldId } = condition;
@@ -141,8 +141,4 @@ export function conditionGroupReferences(group: ConditionGroup | undefined | nul
   };
   visit(group);
   return [...refs];
-}
-
-export function isConditionTruthy(value: unknown): boolean {
-  return truthy(value as never);
 }

@@ -147,6 +147,7 @@ test('enforces required fields nested inside groups', async ({ page, request }) 
     makeForm(formName, [
       {
         title: 'Details',
+        subtitle: '',
         elements: [
           {
             id: uuid(),
