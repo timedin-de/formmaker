@@ -1,7 +1,5 @@
-import { ExpressionSyntaxError, tokenize, type Token } from './lexer';
 import type { BinaryOp, Expr, UnaryOp } from './ast';
-
-export { ExpressionSyntaxError } from './lexer';
+import { ExpressionSyntaxError, tokenize, type Token } from './lexer';
 
 const BINARY_PRECEDENCE: Record<string, number> = {
   '||': 1,

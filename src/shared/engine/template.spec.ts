@@ -1,11 +1,6 @@
-import { describe, expect, it } from 'vitest';
-import {
-  interpolateTemplate,
-  templateReferences,
-  isPiped,
-  parseTemplate,
-} from './expression/template';
 import type { FieldValue } from '@shared/model/values.model';
+import { describe, expect, it } from 'vitest';
+import { interpolateTemplate, parseTemplate, templateReferences } from './expression/template';
 
 const values: Record<string, FieldValue> = {
   first_name: 'Alice',
@@ -48,14 +43,6 @@ describe('templateReferences', () => {
   });
   it('returns empty when no pipes', () => {
     expect(templateReferences('hello world')).toEqual([]);
-  });
-});
-
-describe('isPiped', () => {
-  it('detects pipes', () => {
-    expect(isPiped('{{x}}')).toBe(true);
-    expect(isPiped('hello')).toBe(false);
-    expect(isPiped(undefined)).toBe(false);
   });
 });
 

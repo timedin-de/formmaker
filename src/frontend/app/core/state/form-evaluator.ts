@@ -1,9 +1,8 @@
+import { evalConditionGroup, interpolateTemplate } from '@shared/engine';
 import { has } from '@shared/helper';
 import type { ElementDefinition, FormDefinition, PageDefinition } from '@shared/model/form.model';
 import type { FieldValue, ValuesMap } from '@shared/model/values.model';
-import { evalConditionGroup } from '../engine/condition-engine';
 import { collectElementRefs } from '../engine/dependencies';
-import { interpolateTemplate } from '../engine/expression/template';
 
 export interface ElementView {
   id: string;

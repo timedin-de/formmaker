@@ -1,9 +1,9 @@
 import { FieldValue } from '@shared/model';
 
-export const TEMPLATE_PATTERN =
+const TEMPLATE_PATTERN =
   /\{\{\s*([A-Za-z][A-Za-z0-9_.-]*)\s*(?:\|\s*([A-Za-z]+)(?:\s*:\s*([^}]*))?)?\s*\}\}/g;
 
-export type TemplateFilter = (value: FieldValue, arg: string | undefined) => string;
+type TemplateFilter = (value: FieldValue, arg: string | undefined) => string;
 
 function formatValue(value: FieldValue): string {
   if (value === null || value === undefined) return '';
@@ -45,7 +45,7 @@ const FILTERS: Record<string, TemplateFilter> = {
   },
 };
 
-export interface TemplateSegment {
+interface TemplateSegment {
   kind: 'text' | 'ref';
   value: string;
   filter?: string;
@@ -92,9 +92,4 @@ export function templateReferences(template: string): string[] {
   let m: RegExpExecArray | null;
   while ((m = TEMPLATE_PATTERN.exec(template))) refs.add(m[1]);
   return [...refs];
-}
-
-/** True when text contains pipes (`{{...}}`). */
-export function isPiped(template: string | undefined): boolean {
-  return template !== undefined && template.includes('{{');
 }

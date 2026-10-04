@@ -1,14 +1,14 @@
-import { collectReferences, parse } from './parser';
-import type { Expr, ExprValue, Primitive } from './ast';
 import type { FieldValue } from '@shared/model/values.model';
+import type { Expr, ExprValue, Primitive } from './ast';
+import { collectReferences, parse } from './parser';
 
 export type EvalContext = Readonly<Record<string, FieldValue>>;
 
-export type ExprFunction = (...args: ExprValue[]) => ExprValue | string[] | number[];
+type ExprFunction = (...args: ExprValue[]) => ExprValue | string[] | number[];
 
-export type FunctionLibrary = Record<string, ExprFunction>;
+type FunctionLibrary = Record<string, ExprFunction>;
 
-export const DEFAULT_FUNCTIONS: FunctionLibrary = {
+const DEFAULT_FUNCTIONS: FunctionLibrary = {
   // -- aggregation / arithmetic -------------------------------------------------
   sum: (...ns) => sumNum(numbers(flatten(ns))),
   avg: (...ns) => {
@@ -131,7 +131,7 @@ function sumNum(values: number[]): number {
   return values.reduce((a, b) => a + b, 0);
 }
 
-export function toNumber(value: unknown): number | null {
+function toNumber(value: unknown): number | null {
   if (typeof value === 'number' && Number.isFinite(value)) return value;
   if (typeof value === 'boolean') return value ? 1 : 0;
   if (typeof value === 'string') {
@@ -143,14 +143,14 @@ export function toNumber(value: unknown): number | null {
   return null;
 }
 
-function parseDate(value: unknown): Date | null {
+function parseDate(value: Primitive | Primitive[]): Date | null {
   if (value == null) return null;
   const date = new Date(value as string | number | Date);
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
 /** Maps a FieldValue (which may hold objects) onto engine-safe primitives/arrays. */
-export function toExprValue(value: FieldValue): ExprValue {
+function toExprValue(value: FieldValue): ExprValue {
   if (value === null) return null;
   const simple =
     typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean';
@@ -186,7 +186,7 @@ export function truthy(value: ExprValue): boolean {
 
 const EPS = 1e-10;
 
-export class ExpressionEvaluator {
+class ExpressionEvaluator {
   constructor(
     private readonly context: EvalContext,
     private readonly functions: FunctionLibrary = DEFAULT_FUNCTIONS,
