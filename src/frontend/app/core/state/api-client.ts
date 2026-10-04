@@ -1,4 +1,4 @@
-import { Injectable, Injector, inject } from '@angular/core';
+import { InjectionToken, Injectable, Injector, inject } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import type z from 'zod';
 import { AuthService } from '../auth/auth.service';
@@ -7,6 +7,9 @@ import { I18nService } from '../i18n/translation.service';
 
 const TOKEN_KEY = 'formmaker.token';
 const LOGOUT_PATH = '/api/auth/logout';
+
+/** Origin prepended to every API path; empty means same-origin (the SPA). */
+export const API_BASE_URL = new InjectionToken<string>('API_BASE_URL', { factory: () => '' });
 
 /** Error thrown on non-2xx responses; carries the human-readable server message. */
 export class ApiError extends Error {
@@ -30,6 +33,7 @@ export class ApiClient {
   private readonly injector = inject(Injector);
   private readonly snack = inject(MatSnackBar);
   private readonly i18n = inject(I18nService);
+  private readonly baseUrl = inject(API_BASE_URL).replace(/\/+$/, '');
 
   request(schema: undefined, path: string, init?: RequestInit): Promise<undefined>;
   request<T>(schema: z.ZodType<T>, path: string, init?: RequestInit): Promise<T>;
@@ -39,7 +43,7 @@ export class ApiClient {
     init?: RequestInit,
   ): Promise<T | undefined> {
     const sentToken = sessionStorage.getItem(TOKEN_KEY);
-    const res = await fetch(path, {
+    const res = await fetch(this.baseUrl + path, {
       ...init,
       headers: {
         ...(init?.body ? { 'Content-Type': 'application/json' } : undefined),

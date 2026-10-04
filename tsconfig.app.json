@@ -5,6 +5,6 @@
   "compilerOptions": {
     "types": []
   },
-  "include": ["src/frontend/**/*.ts"],
-  "exclude": ["src/frontend/**/*.spec.ts"]
+  "include": ["src/frontend/**/*.ts", "src/elements/**/*.ts"],
+  "exclude": ["src/frontend/**/*.spec.ts", "src/elements/**/*.spec.ts"]
 }

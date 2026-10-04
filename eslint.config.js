@@ -43,7 +43,7 @@ module.exports = defineConfig([
     },
   },
   {
-    files: ['src/frontend/**/*.ts'],
+    files: ['src/frontend/**/*.ts', 'src/elements/**/*.ts'],
     extends: [angular.configs.tsRecommended],
     processor: angular.processInlineTemplates,
     rules: {
