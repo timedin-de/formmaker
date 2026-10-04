@@ -97,6 +97,75 @@
           }
         }
       }
+    },
+    "elements": {
+      "projectType": "application",
+      "schematics": {},
+      "root": "src/elements",
+      "sourceRoot": "src/elements/src",
+      "prefix": "app",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:application",
+          "options": {
+            "browser": "src/elements/src/main.ts",
+            "tsConfig": "src/elements/tsconfig.app.json",
+            "assets": [
+              {
+                "glob": "**/*",
+                "input": "src/elements/public"
+              }
+            ],
+            "styles": ["src/elements/src/styles.scss"]
+          },
+          "configurations": {
+            "production": {
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "500kB",
+                  "maximumError": "10MB"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "4kB",
+                  "maximumError": "8kB"
+                }
+              ],
+              "outputHashing": "all"
+            },
+            "development": {
+              "optimization": false,
+              "extractLicenses": false,
+              "outputHashing": "none",
+              "sourceMap": true
+            }
+          },
+          "defaultConfiguration": "development"
+        },
+        "serve": {
+          "builder": "@angular/build:dev-server",
+          "configurations": {
+            "production": {
+              "buildTarget": "elements:build:production"
+            },
+            "development": {
+              "buildTarget": "elements:build:development"
+            }
+          },
+          "defaultConfiguration": "development"
+        },
+        "test": {
+          "builder": "@angular/build:unit-test"
+        },
+        "lint": {
+          "builder": "@angular-eslint/builder:lint",
+          "options": {
+            "lintFilePatterns": ["projects/elements/**/*.ts", "projects/elements/**/*.html"],
+            "eslintConfig": "projects/elements/eslint.config.js"
+          }
+        }
+      }
     }
   }
 }

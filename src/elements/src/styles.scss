@@ -1,0 +1,84 @@
+@use '@angular/material' as mat;
+
+my-greeting  {
+  @include mat.theme(
+    (
+      color: (
+        primary: mat.$violet-palette,
+        tertiary: mat.$chartreuse-palette,
+      ),
+      typography: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+      density: 0,
+      shape: (
+        small: 8px,
+        medium: 14px,
+        large: 20px,
+        extra-large: 28px,
+      ),
+    )
+  );
+
+  $border_radius: 8px;
+  @include mat.button-overrides(
+    (
+      filled-container-shape: $border_radius,
+      outlined-container-shape: $border_radius,
+      protected-container-shape: $border_radius,
+      text-container-shape: $border_radius,
+      tonal-container-shape: $border_radius,
+    )
+  );
+  @include mat.button-toggle-overrides(
+    (
+      shape: $border_radius,
+    )
+  );
+  @include mat.form-field-overrides(
+    (
+      filled-container-shape: $border_radius,
+
+      outlined-container-shape: $border_radius,
+    )
+  );
+}
+
+my-greeting  {
+  background: linear-gradient(
+    135deg,
+    var(--mat-sys-surface-container-lowest) 0%,
+    var(--mat-sys-surface-container-low) 50%,
+    var(--mat-sys-surface) 100%
+  );
+  color: var(--mat-sys-on-surface);
+  font:
+    400 14px/1.5 system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    'Helvetica Neue',
+    Arial,
+    sans-serif;
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@media (prefers-color-scheme: dark) {
+  my-greeting  {
+    color-scheme: dark;
+  }
+}
+
+.mdc-button {
+  line-height: normal !important;
+}
+.mat-mdc-form-field {
+  width: 100%;
+}
+
+.non-visual-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+}
