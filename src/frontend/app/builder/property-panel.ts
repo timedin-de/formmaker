@@ -17,6 +17,7 @@ import type {
   ElementDefinition,
   Elements,
   GroupElement,
+  PageDefinition,
   QuestionDefinition,
   TimeElement,
 } from '@shared/model/form.model';
@@ -28,6 +29,7 @@ import { I18nService } from '../core/i18n';
 import { fieldMeta } from '../core/model/field-registry';
 import { DesignerStore } from '../core/state/designer.store';
 import { ConditionEditor } from './condition-editor';
+import { QuestionSelector } from './question-selector';
 
 const WIDTHS = Array(12)
   .fill(12)
@@ -49,6 +51,7 @@ const INPUT_TYPES = ['text', 'email', 'url', 'phone', 'number'] as const;
     MatTooltipModule,
     MatExpansionModule,
     ConditionEditor,
+    QuestionSelector,
   ],
   selector: 'fm-property-panel',
   templateUrl: './property-panel.html',
@@ -199,28 +202,28 @@ export class PropertyPanel {
     return q.defaultValue?.kind === 'fromField' ? q.defaultValue.fieldId : '';
   }
 
-  setFromField(fieldId: string): void {
-    this.patch({ defaultValue: { kind: 'fromField', fieldId } });
+  setFromField(field: ElementDefinition): void {
+    this.patch({ defaultValue: { kind: 'fromField', fieldId: field.id } });
     const selected = this.el();
     if (selected?.type === 'group') {
-      const selectedGroup = this.store()
-        .form()
-        .pages.flatMap((p) => p.elements)
-        .find((f): f is GroupElement => f.id === fieldId);
-      const values = selectedGroup?.elements;
+      const values = (field as GroupElement)?.elements;
 
-      const elements = selected.elements
-        .map((e, i) => {
-          if (!has(e, 'defaultValue')) return e;
-          const fieldId = values?.[i].id;
-          if (fieldId)
-            return {
-              ...e,
-              defaultValue: { kind: 'fromField' as const, fieldId },
-            };
-          return e;
-        })
-        .filter((x) => !!x);
+      const mapElement = (
+        e: ElementDefinition,
+        i: number,
+        values: Elements | undefined,
+      ): ElementDefinition => {
+        const source = values?.[i];
+        let next: ElementDefinition = e;
+        if (e.type === 'group') {
+          const srcChildren = source?.type === 'group' ? source.elements : undefined;
+          next = { ...e, elements: e.elements.map((ec, ic) => mapElement(ec, ic, srcChildren)) };
+        }
+        if (!has(next, 'defaultValue') || !source?.id) return next;
+        return { ...next, defaultValue: { kind: 'fromField' as const, fieldId: source.id } };
+      };
+
+      const elements = selected.elements.map((e, i) => mapElement(e, i, values)).filter(Boolean);
       this.patch({ elements });
     }
   }
@@ -299,16 +302,12 @@ export class PropertyPanel {
     });
   }
 
-  isSameGroup(otherGroups: Elements) {
+  isSameGroup = (element: ElementDefinition | PageDefinition) => {
+    if (!has(element, 'type')) return true;
     const thisGroup = this.el();
-    if (thisGroup?.type !== 'group') return;
-    const thisElems = thisGroup.elements;
-
-    return otherGroups.filter(
-      (e): e is GroupElement =>
-        e.type === 'group' && e.id !== this.el()?.id && thisElems.length === e.elements.length,
-    );
-  }
+    if (thisGroup?.type !== 'group') return false;
+    return element.type === 'group' && thisGroup.elements.length === element.elements.length;
+  };
 
   // ---- time interval ---------------------------------------------------------
 

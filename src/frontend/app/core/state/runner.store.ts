@@ -1,11 +1,10 @@
 import { computed, signal } from '@angular/core';
 import { FormControl, FormGroup } from '@angular/forms';
 import { evalExpression, validateElementValue } from '@shared/engine';
+import { isQuestion } from '@shared/helper';
 import {
   ElementViewRef,
-  QUESTION_TYPES,
   QuestionDefinition,
-  QuestionType,
   RunnerPage,
   SubmissionResult,
   type ElementDefinition,
@@ -141,12 +140,11 @@ export class RunnerStore {
       }
       const initial = initialValues?.[el.id] ?? this.evalInitialDefault(el, initialValues ?? {});
 
-      if (QUESTION_TYPES.includes(el.type as QuestionType)) {
-        const q = el as QuestionDefinition;
+      if (isQuestion(el)) {
         const control = new FormControl(initial, (c: { value: FieldValue }) =>
-          this.validateControl(q, c.value),
+          this.validateControl(el, c.value),
         );
-        if (q.readonly) control.disable({ emitEvent: false });
+        if (el.readonly) control.disable({ emitEvent: false });
         incoming.set(el.id, control);
       } else {
         // Dummy FormControl

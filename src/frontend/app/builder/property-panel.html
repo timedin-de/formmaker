@@ -348,36 +348,23 @@
               </mat-form-field>
             }
             @case ('fromField') {
-              <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                <mat-select [ngModel]="fieldRef(el)" (ngModelChange)="setFromField($event)">
-                  @for (page of pages(); track page.id) {
-                    <mat-optgroup [label]="page.title ?? page.id">
-                      @if (el.type === 'group') {
-                        @for (opt of isSameGroup(page.elements); track opt.id) {
-                          <mat-option [value]="opt.id">{{ opt.label }}</mat-option>
-                        }
-                      } @else {
-                        @for (
-                          opt of page.elements.filter(
-                            (field) => field.id !== el?.id && field.type !== 'section'
-                          );
-                          track opt.id
-                        ) {
-                          @if (opt.type === 'group') {
-                            <mat-optgroup [label]="opt.label">
-                              @for (subOpt of opt.elements; track subOpt.id) {
-                                <mat-option [value]="opt.id">{{ subOpt.label }}</mat-option>
-                              }
-                            </mat-optgroup>
-                          } @else {
-                            <mat-option [value]="opt.id">{{ opt.label }}</mat-option>
-                          }
-                        }
-                      }
-                    </mat-optgroup>
-                  }
-                </mat-select>
-              </mat-form-field>
+              @if (el.type === 'group') {
+                <fm-question-selector
+                  [pages]="pages()"
+                  [model]="fieldRef(el)"
+                  [selfId]="el.id"
+                  [questionType]="'group'"
+                  [filterFn]="isSameGroup"
+                  (selectChange)="setFromField($event)"
+                ></fm-question-selector>
+              } @else {
+                <fm-question-selector
+                  [pages]="pages()"
+                  [selfId]="el.id"
+                  (selectChange)="setFromField($event)"
+                  [model]="fieldRef(el)"
+                ></fm-question-selector>
+              }
             }
           }
         </div>
