@@ -1,3 +1,4 @@
+import { has } from '@shared/helper';
 import type { QuestionDefinition } from '@shared/model/form.model';
 import type { ValidationRule, ValidationRuleType } from '@shared/model/validation.model';
 import type { FieldValue } from '@shared/model/values.model';
@@ -31,6 +32,22 @@ export function validateElementValue(
   if (element.required) {
     const hasRequired = rules.some((r) => r.rule === 'required');
     if (!hasRequired) rules.unshift({ id: '__required__', rule: 'required' });
+  }
+
+  if (has(element, 'options') && !isEmpty(value)) {
+    const allowed = element.options.map((o) => o.value);
+    if (Array.isArray(value) !== (element.type === 'multiChoice')) {
+      failures.push({ ruleId: '__option__', type: 'custom', message: 'Select valid option count' });
+    }
+    const picked = Array.isArray(value) ? value : [value];
+    if (
+      picked.some(
+        // Reject options with value not string or number
+        (v) => !allowed.some((a) => (typeof v === 'string' || typeof v === 'number') && a == v),
+      )
+    ) {
+      failures.push({ ruleId: '__option__', type: 'custom', message: 'Select a valid option' });
+    }
   }
 
   for (const rule of rules) {
