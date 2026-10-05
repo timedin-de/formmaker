@@ -1,4 +1,12 @@
-import { Condition, ConditionGroup, ElementDefinition } from './model';
+import {
+  Condition,
+  ConditionGroup,
+  ElementDefinition,
+  GroupElement,
+  QUESTION_TYPES,
+  QuestionDefinition,
+  QuestionType,
+} from './model';
 
 // Helper function that checks if the value exists in the object
 export function has<T extends object, K extends PropertyKey>(
@@ -45,6 +53,32 @@ export function walkConditionGroup(condition: ConditionGroup, callback: (cg: Con
   if (condition.groups.length) condition.groups.forEach((c) => walkConditionGroup(c, callback));
 }
 
+export function flattenQuestions(elements: ElementDefinition[]): QuestionDefinition[] {
+  return filterQuestions(flattenElements(elements));
+}
+
 export function flattenElements(elements: ElementDefinition[]): ElementDefinition[] {
   return elements.flatMap((e) => (e.type === 'group' ? [e, ...flattenElements(e.elements)] : e));
+}
+
+export function filterQuestions(elements: ElementDefinition[]): QuestionDefinition[] {
+  return elements.filter((e): e is QuestionDefinition =>
+    QUESTION_TYPES.includes(e.type as QuestionType),
+  );
+}
+
+export type QuestionGroupElement = GroupElement & {
+  elements: (QuestionDefinition | QuestionGroupElement)[];
+};
+
+export function isQuestion<T extends ElementDefinition>(
+  object: T,
+): object is Extract<T, QuestionDefinition> {
+  return QUESTION_TYPES.includes(object.type as QuestionType);
+}
+
+export function isQuestionOrGroup<T extends ElementDefinition>(
+  object: T,
+): object is Extract<T, QuestionDefinition | GroupElement> {
+  return QUESTION_TYPES.includes(object.type as QuestionType) || object.type === 'group';
 }

@@ -2,7 +2,21 @@ import { Component, computed, input, output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MatSelectModule } from '@angular/material/select';
-import { ElementDefinition, PageDefinition } from '@shared/model';
+import { isQuestionOrGroup } from '@shared/helper';
+import {
+  ElementDefinition,
+  GroupElement,
+  PageDefinition,
+  QuestionDefinition,
+  QuestionType,
+} from '@shared/model';
+
+interface OptionRow {
+  el: QuestionDefinition | GroupElement;
+  depth: number;
+  // false = heading only (a group in question mode, or a group failing the filter)
+  selectable: boolean;
+}
 
 @Component({
   selector: 'fm-question-selector',
@@ -12,7 +26,9 @@ import { ElementDefinition, PageDefinition } from '@shared/model';
 export class QuestionSelector {
   readonly pages = input.required<PageDefinition[]>();
   readonly model = input.required<string>();
-  readonly selfId = input.required<string>();
+  readonly selfId = input<string>();
+  readonly questionType = input<QuestionType | 'group'>();
+  readonly filterFn = input<(e: ElementDefinition) => boolean>();
 
   readonly selectChange = output<ElementDefinition>();
 
@@ -22,24 +38,27 @@ export class QuestionSelector {
     }
   }
 
+  // Options are a flat, depth-indented list per page: mat-select only registers mat-options
+  // declared directly in its content, so nested groups can't be rendered via a recursive template.
+  // Self and its subtree are skipped; subtrees without anything selectable are dropped. Rows keep
+  // the original elements (a picked group's full `elements` is needed by callers).
   readonly _pages = computed(() => {
     const self = this.selfId();
+    const questionType = this.questionType();
+    const groupMode = questionType === 'group';
+    const filterFn =
+      this.filterFn() ?? ((e: ElementDefinition) => !questionType || questionType === e.type);
 
-    function filterFn<T extends ElementDefinition | PageDefinition>(e: T[]): T[] {
-      return e
-        .filter((e) => !(e.id === self || ('type' in e && e.type === 'section')))
-        .map((e) => {
-          if ('elements' in e) {
-            return {
-              ...e,
-              elements: filterFn(e.elements),
-            };
-          }
-          return e;
-        })
-        .filter((e) => !('elements' in e) || !!e.elements.length);
-    }
+    const walk = (elements: ElementDefinition[], depth: number): OptionRow[] =>
+      elements.flatMap((e) => {
+        if (!isQuestionOrGroup(e) || e.id === self) return [];
+        const children = e.type === 'group' ? walk(e.elements, depth + 1) : [];
+        const selectable = groupMode === (e.type === 'group') && filterFn(e);
+        return selectable || children.length ? [{ el: e, depth, selectable }, ...children] : [];
+      });
 
-    return filterFn(this.pages());
+    return this.pages()
+      .map((page) => ({ page, rows: walk(page.elements, 0) }))
+      .filter((p) => !!p.rows.length);
   });
 }
