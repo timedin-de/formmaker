@@ -1,5 +1,5 @@
 import z from 'zod';
-import { Submission, SubmissionCreate } from '../model';
+import { type Submission, type SubmissionCreate } from '../model';
 import { fieldValueSchema } from './fieldValue';
 
 export const submissionCreateSchema = z.strictObject({

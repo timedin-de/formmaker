@@ -1,6 +1,11 @@
 import z from 'zod';
-import { CatchFnResult, catchFn } from '../helper';
-import { FormDefinition, FormSettings, FormWithOwner, PageDefinition } from '../model';
+import { type CatchFnResult, catchFn } from '../helper';
+import {
+  type FormDefinition,
+  type FormSettings,
+  type FormWithOwner,
+  type PageDefinition,
+} from '../model';
 import { conditionGroupSchema } from './conditions';
 import { elementsSchema } from './elements';
 

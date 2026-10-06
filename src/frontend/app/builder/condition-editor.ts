@@ -16,7 +16,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDividerModule } from '@angular/material/divider';
 import { QuestionSelector } from './question-selector';
-import { PageDefinition } from '@shared/model';
+import { type PageDefinition } from '@shared/model';
 import { QuestionInputField } from './question-input-field';
 import { I18nService } from '../core/i18n';
 

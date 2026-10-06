@@ -1,5 +1,5 @@
 import { EntitySchema } from 'typeorm';
-import { UserRole } from '../../shared/model';
+import { type UserRole } from '../../shared/model';
 
 export interface UserEntityModel {
   id: string;

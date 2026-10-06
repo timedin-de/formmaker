@@ -1,5 +1,10 @@
 import { Component, inject, input } from '@angular/core';
-import { AbstractControl, FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
+import {
+  type AbstractControl,
+  type FormControl,
+  FormsModule,
+  ReactiveFormsModule,
+} from '@angular/forms';
 import { MatButton } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatIconModule } from '@angular/material/icon';
@@ -8,13 +13,13 @@ import { MatRadioModule } from '@angular/material/radio';
 import { MatOption, MatSelectModule } from '@angular/material/select';
 import { has } from '@shared/helper';
 import {
-  ChoiceElement,
-  ElementDefinition,
-  ElementViewRef,
-  FieldValue,
-  FileValue,
-  ScaleElement,
-  SignatureValue,
+  type ChoiceElement,
+  type ElementDefinition,
+  type ElementViewRef,
+  type FieldValue,
+  type FileValue,
+  type ScaleElement,
+  type SignatureValue,
 } from '@shared/model';
 import { I18nService } from '../core/i18n';
 import { MarkdownPipe } from '../core/markdown';

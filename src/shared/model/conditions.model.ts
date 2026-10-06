@@ -1,4 +1,4 @@
-import { ElementType } from './form.model';
+import { type ElementType } from './form.model';
 import type { ElementId } from './ids';
 
 export type ConditionOperator =

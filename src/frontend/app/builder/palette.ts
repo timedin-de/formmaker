@@ -7,7 +7,7 @@ import { MatToolbarModule } from '@angular/material/toolbar';
 import type { ElementType } from '@shared/model/form.model';
 import { I18nService } from '../core/i18n';
 import { FIELD_TYPES } from '../core/model/field-registry';
-import { DesignerStore } from '../core/state/designer.store';
+import { type DesignerStore } from '../core/state/designer.store';
 
 const CATEGORIES = [{ key: 'basic' }, { key: 'advanced' }, { key: 'layout' }] as const;
 

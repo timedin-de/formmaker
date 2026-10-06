@@ -1,7 +1,7 @@
-import { Component, effect, ElementRef, inject, output, viewChild } from '@angular/core';
+import { Component, effect, type ElementRef, inject, output, viewChild } from '@angular/core';
 import {
-  AbstractControl,
-  AsyncValidatorFn,
+  type AbstractControl,
+  type AsyncValidatorFn,
   FormControl,
   ReactiveFormsModule,
 } from '@angular/forms';

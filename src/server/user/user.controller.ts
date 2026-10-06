@@ -14,15 +14,15 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { PublicUser } from '@shared/model';
+import { type PublicUser } from '@shared/model';
 import { accountDeleteSchema, userCreateSchema } from '@shared/schemas';
-import z from 'zod';
+import type z from 'zod';
 import { hashPassword, publicUser, verifyPassword } from '../auth/auth-helper';
 import { AdminGuard, AuthGuard } from '../auth/auth.guard';
 import { AuthService } from '../auth/auth.service';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
-import { Repository, User } from '../repository';
+import { Repository, type User } from '../repository';
 
 @Controller('users')
 export class UserController {

@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { catchFnAsync } from '@shared/helper';
-import { FormDefinition } from '@shared/model';
+import { type FormDefinition } from '@shared/model';
 import { parseFormData } from '@shared/schemas';
 import { I18nService } from '../i18n';
 import { FormsRepository } from '../state/forms.repository';

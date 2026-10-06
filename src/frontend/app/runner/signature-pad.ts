@@ -1,10 +1,10 @@
 import { Component, effect, inject, input, output, signal, viewChild } from '@angular/core';
-import { ElementRef, OnDestroy } from '@angular/core';
+import { type ElementRef, type OnDestroy } from '@angular/core';
 import SignaturePad from 'signature_pad';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { I18nService } from '../core/i18n';
-import { SignatureValue } from '@shared/model';
+import { type SignatureValue } from '@shared/model';
 
 @Component({
   selector: 'fm-signature-pad',

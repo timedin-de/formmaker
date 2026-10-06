@@ -1,5 +1,5 @@
 import { catchFn } from '@shared/helper';
-import { SavedDraft } from '@shared/model';
+import { type SavedDraft } from '@shared/model';
 import type { FormDefinition } from '@shared/model/form.model';
 import type { ValuesMap } from '@shared/model/values.model';
 import { draftSchema } from '@shared/schemas';

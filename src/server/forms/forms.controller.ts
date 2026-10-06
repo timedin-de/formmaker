@@ -14,13 +14,13 @@ import {
   UnprocessableEntityException,
   UseGuards,
 } from '@nestjs/common';
-import { FormDefinition, SubmissionCreate, toPortableForm, uuid } from '@shared/model';
+import { type FormDefinition, type SubmissionCreate, toPortableForm, uuid } from '@shared/model';
 import { formDefinitionSchema, stripFormOwnership, submissionCreateSchema } from '@shared/schemas';
 import type { Response } from 'express';
 import { AuthGuard } from '../auth/auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
-import { Repository, User } from '../repository';
+import { Repository, type User } from '../repository';
 import { FormService } from './form.service';
 
 /** Strips client-supplied ownership fields before validating the form schema. */

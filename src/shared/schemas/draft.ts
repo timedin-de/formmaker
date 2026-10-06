@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { SavedDraft } from '../model/draft';
+import { type SavedDraft } from '../model/draft';
 import { fieldValueSchema } from './fieldValue';
 
 export const valuesMapSchema = z.record(z.string(), fieldValueSchema);

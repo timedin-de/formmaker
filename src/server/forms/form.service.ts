@@ -2,7 +2,12 @@ import { BadRequestException, Inject, Injectable, NotFoundException } from '@nes
 import { FORM_VERSION } from '@shared/consts';
 import { evalConditionGroup, validateElementValue } from '@shared/engine';
 import { has, isQuestionOrGroup } from '@shared/helper';
-import { ElementDefinition, elementId, PageDefinition, SubmissionCreate } from '@shared/model';
+import {
+  type ElementDefinition,
+  elementId,
+  type PageDefinition,
+  type SubmissionCreate,
+} from '@shared/model';
 import { Repository } from '../repository';
 
 @Injectable()

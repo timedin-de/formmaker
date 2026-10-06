@@ -1,4 +1,4 @@
-import { DefaultValueDef } from '@shared/model';
+import { type DefaultValueDef } from '@shared/model';
 import z from 'zod';
 import { fieldValueSchema } from './fieldValue';
 

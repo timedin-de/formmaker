@@ -1,5 +1,10 @@
 import { Component, inject, input, model, output, signal } from '@angular/core';
-import { ControlValueAccessor, FormControl, NgControl, ReactiveFormsModule } from '@angular/forms';
+import {
+  type ControlValueAccessor,
+  type FormControl,
+  NgControl,
+  ReactiveFormsModule,
+} from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';

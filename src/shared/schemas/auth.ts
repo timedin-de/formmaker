@@ -1,4 +1,4 @@
-import { PublicUser } from '@shared/model';
+import { type PublicUser } from '@shared/model';
 import { z } from 'zod';
 
 const roles = ['admin', 'editor'] as const;
