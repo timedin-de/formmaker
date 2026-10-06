@@ -4,11 +4,11 @@ import { MatExpansionModule } from '@angular/material/expansion';
 import { MatSelectModule } from '@angular/material/select';
 import { isQuestionOrGroup } from '@shared/helper';
 import {
-  ElementDefinition,
-  GroupElement,
-  PageDefinition,
-  QuestionDefinition,
-  QuestionType,
+  type ElementDefinition,
+  type GroupElement,
+  type PageDefinition,
+  type QuestionDefinition,
+  type QuestionType,
 } from '@shared/model';
 
 interface OptionRow {

@@ -1,12 +1,12 @@
 import z from 'zod';
 import {
-  Condition,
+  type Condition,
   CONDITION_OPERATORS,
-  ConditionGroup,
-  ConditionOperand,
+  type ConditionGroup,
+  type ConditionOperand,
   ELEMENT_TYPES,
-  FieldOperand,
-  LiteralOperand,
+  type FieldOperand,
+  type LiteralOperand,
 } from '../model';
 
 const conditionOperatorSchema = z.enum(CONDITION_OPERATORS);

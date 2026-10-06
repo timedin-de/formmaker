@@ -1,6 +1,6 @@
 import { Injectable, Injector, inject } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import z from 'zod';
+import type z from 'zod';
 import { AuthService } from '../auth/auth.service';
 import { I18nService } from '../i18n/translation.service';
 

@@ -1,11 +1,11 @@
 import {
-  Condition,
-  ConditionGroup,
-  ElementDefinition,
-  GroupElement,
+  type Condition,
+  type ConditionGroup,
+  type ElementDefinition,
+  type GroupElement,
   QUESTION_TYPES,
-  QuestionDefinition,
-  QuestionType,
+  type QuestionDefinition,
+  type QuestionType,
 } from './model';
 
 // Helper function that checks if the value exists in the object

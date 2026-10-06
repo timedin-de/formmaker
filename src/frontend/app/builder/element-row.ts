@@ -1,4 +1,4 @@
-import { CdkDrag, CdkDragDrop, CdkDropList } from '@angular/cdk/drag-drop';
+import { CdkDrag, type CdkDragDrop, CdkDropList } from '@angular/cdk/drag-drop';
 import { Component, computed, inject, input, output } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -8,7 +8,7 @@ import type { ElementDefinition, Elements, ElementType } from '@shared/model/for
 import { createElement } from '../core';
 import { I18nService } from '../core/i18n';
 import { fieldMeta } from '../core/model/field-registry';
-import { DesignerStore } from '../core/state/designer.store';
+import { type DesignerStore } from '../core/state/designer.store';
 import { canSortAt, DropDragState } from './drop-sort';
 
 @Component({

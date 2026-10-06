@@ -1,5 +1,5 @@
 import { Injectable, signal } from '@angular/core';
-import { ValidationErrors } from '@angular/forms';
+import { type ValidationErrors } from '@angular/forms';
 import { catchFn } from '@shared/helper';
 import type { Lang, TranslationKey } from './translations';
 import { SUPPORTED_LANGS, TRANSLATIONS } from './translations';

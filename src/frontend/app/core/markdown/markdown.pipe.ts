@@ -1,4 +1,4 @@
-import { Pipe, PipeTransform } from '@angular/core';
+import { Pipe, type PipeTransform } from '@angular/core';
 import { renderMarkdown, renderMarkdownInline } from './render';
 
 @Pipe({ name: 'markdown', standalone: true })

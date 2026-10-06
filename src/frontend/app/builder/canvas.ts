@@ -1,9 +1,9 @@
-import { CdkDrag, CdkDragDrop, CdkDropList } from '@angular/cdk/drag-drop';
+import { CdkDrag, type CdkDragDrop, CdkDropList } from '@angular/cdk/drag-drop';
 import {
   Component,
   computed,
   effect,
-  ElementRef,
+  type ElementRef,
   inject,
   input,
   signal,
@@ -17,11 +17,11 @@ import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { flattenElements } from '@shared/helper';
-import { ConditionGroup } from '@shared/model';
+import { type ConditionGroup } from '@shared/model';
 import type { Elements, ElementType, PageDefinition } from '@shared/model/form.model';
 import { first } from 'rxjs';
 import { I18nService } from '../core/i18n';
-import { DesignerStore } from '../core/state/designer.store';
+import { type DesignerStore } from '../core/state/designer.store';
 import { ConditionEditor } from './condition-editor';
 import { canSortAt, DropDragState } from './drop-sort';
 import { ElementRow } from './element-row';

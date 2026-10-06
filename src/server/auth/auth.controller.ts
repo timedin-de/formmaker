@@ -7,7 +7,7 @@ import {
   registrationSchema,
 } from '../../shared/schemas/index.js';
 import { ZodValidationPipe } from '../common/zod-validation.pipe.js';
-import { User } from '../repository.js';
+import { type User } from '../repository.js';
 import { AuthGuard } from './auth.guard.js';
 import { AuthService, type AuthResult } from './auth.service.js';
 import { CurrentTokenHash } from './current-token.decorator.js';

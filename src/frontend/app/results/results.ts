@@ -16,7 +16,7 @@ import {
   rowForSubmission,
   type ExportChannel,
 } from '../core/export';
-import { I18nService, TranslationKey } from '../core/i18n';
+import { I18nService, type TranslationKey } from '../core/i18n';
 import { FormsRepository } from '../core/state/forms.repository';
 
 @Component({

@@ -3,10 +3,10 @@ import { FormControl, FormGroup } from '@angular/forms';
 import { evalExpression, validateElementValue } from '@shared/engine';
 import { isQuestion } from '@shared/helper';
 import {
-  ElementViewRef,
-  QuestionDefinition,
-  RunnerPage,
-  SubmissionResult,
+  type ElementViewRef,
+  type QuestionDefinition,
+  type RunnerPage,
+  type SubmissionResult,
   type ElementDefinition,
   type FormDefinition,
 } from '@shared/model/form.model';
@@ -14,7 +14,7 @@ import type { SubmissionCreate } from '@shared/model/submission.model';
 import type { FieldValue, ValuesMap } from '@shared/model/values.model';
 import { debounceTime, filter } from 'rxjs';
 import { collectElementRefs } from '../engine/dependencies';
-import { FormEvaluation, FormEvaluator } from './form-evaluator';
+import { type FormEvaluation, FormEvaluator } from './form-evaluator';
 import { RunnerDraft } from './runner-draft';
 
 export class RunnerStore {

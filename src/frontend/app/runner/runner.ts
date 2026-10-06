@@ -14,7 +14,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatTooltip } from '@angular/material/tooltip';
 import { ActivatedRoute, Router } from '@angular/router';
-import { RunnerPage } from '@shared/model';
+import { type RunnerPage } from '@shared/model';
 import type { Submission } from '@shared/model/submission.model';
 import { first, switchMap, tap } from 'rxjs';
 import { downloadBlob, submissionToPdf, toSlug } from '../core/export';

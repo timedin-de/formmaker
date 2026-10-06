@@ -2,7 +2,7 @@ import { Component, inject, signal } from '@angular/core';
 import {
   FormBuilder,
   FormControl,
-  FormGroupDirective,
+  type FormGroupDirective,
   FormsModule,
   ReactiveFormsModule,
   Validators,

@@ -1,15 +1,20 @@
 import { Component, computed, effect, input, output } from '@angular/core';
-import { AbstractControl, FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
+import {
+  type AbstractControl,
+  FormControl,
+  FormsModule,
+  ReactiveFormsModule,
+} from '@angular/forms';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import {
-  ChoiceElement,
-  ElementDefinition,
-  FieldValue,
-  FileValue,
-  ScaleElement,
-  SignatureValue,
+  type ChoiceElement,
+  type ElementDefinition,
+  type FieldValue,
+  type FileValue,
+  type ScaleElement,
+  type SignatureValue,
 } from '@shared/model';
 
 @Component({

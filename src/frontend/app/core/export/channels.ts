@@ -1,6 +1,6 @@
 import type { FormDefinition } from '@shared/model/form.model';
 import type { Submission } from '@shared/model/submission.model';
-import { TranslationKey } from '../i18n';
+import { type TranslationKey } from '../i18n';
 import { submissionsToCsv } from './csv-exporter';
 import { submissionsToExcel } from './excel-exporter';
 import { toSlug } from './file';

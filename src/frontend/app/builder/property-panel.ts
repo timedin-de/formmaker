@@ -27,7 +27,7 @@ import type { ValidationRule, ValidationRuleType } from '@shared/model/validatio
 import { VALIDATION_RULE_TYPES, validationRule } from '@shared/model/validation.model';
 import { I18nService } from '../core/i18n';
 import { fieldMeta } from '../core/model/field-registry';
-import { DesignerStore } from '../core/state/designer.store';
+import { type DesignerStore } from '../core/state/designer.store';
 import { ConditionEditor } from './condition-editor';
 import { QuestionSelector } from './question-selector';
 

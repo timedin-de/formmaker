@@ -1,6 +1,6 @@
-import { PublicUser } from '@shared/model';
+import { type PublicUser } from '@shared/model';
 import crypto from 'node:crypto';
-import { User } from '../repository';
+import { type User } from '../repository';
 
 export function publicUser(user: User): PublicUser {
   const { id, email, role, createdAt } = user;

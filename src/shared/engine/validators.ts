@@ -43,7 +43,12 @@ export function validateElementValue(
     if (
       picked.some(
         // Reject options with value not string or number
-        (v) => !allowed.some((a) => (typeof v === 'string' || typeof v === 'number') && a == v),
+        (v) =>
+          !allowed.some(
+            (a) =>
+              (typeof v === 'string' || typeof v === 'number') &&
+              (a === v || String(a) === String(v)),
+          ),
       )
     ) {
       failures.push({ ruleId: '__option__', type: 'custom', message: 'Select a valid option' });

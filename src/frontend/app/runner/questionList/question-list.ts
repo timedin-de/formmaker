@@ -7,7 +7,7 @@ import {
   MatExpansionPanelHeader,
 } from '@angular/material/expansion';
 import { has } from '@shared/helper';
-import { ElementViewRef } from '@shared/model';
+import { type ElementViewRef } from '@shared/model';
 import { QuestionInput } from '../../builder/question-input';
 import { MarkdownPipe } from '../../core/markdown';
 
