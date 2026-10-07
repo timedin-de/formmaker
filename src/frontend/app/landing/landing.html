@@ -97,6 +97,7 @@
             mat-icon-button
             (click)="copyShareLink(form)"
             [matTooltip]="i18n.t('landing.share')"
+            [attr.aria-label]="i18n.t('landing.share')"
           >
             <mat-icon svgIcon="link"></mat-icon>
           </button>
@@ -104,10 +105,16 @@
             mat-icon-button
             (click)="exportJson(form)"
             [matTooltip]="i18n.t('landing.exportJson')"
+            [attr.aria-label]="i18n.t('landing.exportJson')"
           >
             <mat-icon svgIcon="download"></mat-icon>
           </button>
-          <button mat-icon-button (click)="remove(form)" [matTooltip]="i18n.t('landing.delete')">
+          <button
+            mat-icon-button
+            (click)="remove(form)"
+            [matTooltip]="i18n.t('landing.delete')"
+            [attr.aria-label]="i18n.t('landing.delete')"
+          >
             <mat-icon svgIcon="delete_outline"></mat-icon>
           </button>
         </mat-card-actions>

@@ -73,6 +73,18 @@ body {
 .mdc-button {
   line-height: normal !important;
 }
+// Unstyled native button, e.g. for clickable text that should stay keyboard-accessible.
+.btn-reset {
+  appearance: none;
+  background: none;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  text-align: inherit;
+  cursor: pointer;
+}
 .mat-mdc-form-field {
   width: 100%;
 }

@@ -20,7 +20,9 @@ test('configures the time interval in the designer and applies it as picker step
   await page.getByLabel('Form name').fill(formName);
 
   await addField(page, 'Time picker');
-  const row = page.locator('.canvas #dropList_main > .cdk-drag > fm-element-row > .row');
+  const row = page.locator(
+    '.canvas #dropList_main > .cdk-drag > fm-element-row > .row > .row-head > .row-select',
+  );
   await expect(row).toHaveCount(1);
   await row.click();
 
@@ -46,9 +48,13 @@ test('configures the time interval in the designer and applies it as picker step
   await card.getByRole('button', { name: 'Edit' }).click();
   await page.waitForURL(/\?id=/);
   await expect(
-    page.locator('.canvas #dropList_main > .cdk-drag > fm-element-row > .row'),
+    page.locator(
+      '.canvas #dropList_main > .cdk-drag > fm-element-row > .row > .row-head > .row-select',
+    ),
   ).toHaveCount(1);
-  await page.locator('.canvas #dropList_main > .cdk-drag > fm-element-row > .row').click();
+  await page
+    .locator('.canvas #dropList_main > .cdk-drag > fm-element-row > .row > .row-head > .row-select')
+    .click();
   await expect(page.getByLabel('Every')).toHaveValue('15');
   await expect(page.getByLabel('Unit')).toContainText('Seconds');
 

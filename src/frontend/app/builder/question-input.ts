@@ -11,6 +11,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatRadioModule } from '@angular/material/radio';
 import { MatOption, MatSelectModule } from '@angular/material/select';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { has } from '@shared/helper';
 import {
   type ChoiceElement,
@@ -43,6 +44,7 @@ import { QuestionInputField } from './question-input-field';
     MatRadioModule,
     MarkdownPipe,
     MatButton,
+    MatTooltipModule,
   ],
 })
 export class QuestionInput {

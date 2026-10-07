@@ -23,11 +23,11 @@
       @if (auth.authenticated()) {
         <button class="top-button" mat-button [matMenuTriggerFor]="langMenu">
           <mat-icon svgIcon="language"></mat-icon>
-          <span class="top-button-label">{{ i18n.lang() === 'de' ? 'DE' : 'EN' }}</span>
+          <span class="btn-label">{{ i18n.t('app.menu') }}</span>
         </button>
         <button class="top-button" mat-button (click)="logout()">
           <mat-icon svgIcon="logout"></mat-icon>
-          <span class="top-button-label">{{ i18n.t('app.logout') }}</span>
+          <span class="btn-label">{{ i18n.t('app.logout') }}</span>
         </button>
       }
     </div>
