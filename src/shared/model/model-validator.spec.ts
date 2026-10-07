@@ -10,7 +10,7 @@ const formJson = (element: Record<string, unknown>): string =>
     version: 1,
     schemaVersion: 1,
     settings: { navigation: 'auto' },
-    pages: [{ id: 'p1', elements: [element] }],
+    pages: [{ id: 'p1', title: 'Page', elements: [element] }],
   });
 
 const parse = (element: Record<string, unknown>) => {
