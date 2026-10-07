@@ -143,6 +143,7 @@ const en = {
   'builder.editing': 'Editing "{name}"',
   'builder.saveMsg': 'Form saved',
   'builder.untitled': 'Untitled form ({date})',
+  'builder.properties': 'Properties',
 
   // import
   'import.failed': 'Import failed: {message}',
@@ -578,8 +579,8 @@ const de: typeof en = {
   'builder.preview': 'Vorschau',
   'builder.editing': 'Bearbeite "{name}"',
   'builder.saveMsg': 'Formular gespeichert',
-
   'builder.untitled': 'Unbenanntes Formular ({date})',
+  'builder.properties': 'Eigenschaften bearbeiten',
 
   // Import
   'import.failed': 'Import fehlgeschlagen: {message}',

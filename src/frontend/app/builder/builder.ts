@@ -1,4 +1,4 @@
-import { Component, effect, inject, signal } from '@angular/core';
+import { Component, effect, type ElementRef, inject, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -19,6 +19,7 @@ import { DesignerStore } from '../core/state/designer.store';
 import { FormsRepository } from '../core/state/forms.repository';
 import { BuilderCanvas } from './canvas';
 import { BuilderPalette } from './palette';
+import { PropertiesModal } from './properties-modal';
 import { PropertyPanel } from './property-panel';
 
 @Component({
@@ -37,7 +38,7 @@ import { PropertyPanel } from './property-panel';
     BuilderPalette,
     PropertyPanel,
   ],
-  providers: [DesignerStore],
+  providers: [DesignerStore, PropertiesModal],
   selector: 'fm-builder',
   templateUrl: './builder.html',
   styleUrl: './builder.scss',
@@ -49,9 +50,17 @@ export class BuilderComponent {
   private readonly router = inject(Router);
   private readonly snack = inject(MatSnackBar);
   protected readonly i18n = inject(I18nService);
+  protected readonly modal = inject(PropertiesModal);
+
+  private readonly propertiesDialog = viewChild<ElementRef<HTMLDialogElement>>('properties');
+
   readonly saved = signal(false);
 
   constructor() {
+    effect(() => {
+      const el = this.propertiesDialog()?.nativeElement;
+      if (el && !el.open && typeof el.showModal === 'function') el.showModal();
+    });
     // Load the working form: ?id= opens an existing form, ?new=1 a blank one.
     this.route.queryParams
       .pipe(startWith({ id: undefined, page: undefined }), pairwise(), takeUntilDestroyed())
@@ -96,6 +105,12 @@ export class BuilderComponent {
     });
   }
 
+  protected onDialogClick(event: MouseEvent): void {
+    if (event.target === this.propertiesDialog()?.nativeElement) {
+      this.closePropertiesDialog();
+    }
+  }
+
   async save(): Promise<void> {
     await this.repo.saveForm(this.store.form());
     this.saved.set(true);
@@ -109,6 +124,12 @@ export class BuilderComponent {
 
   export(): void {
     downloadJSON(toPortableForm(this.store.form()), toSlug(this.store.form().name) + '.json');
+  }
+
+  protected closePropertiesDialog(): void {
+    const el = this.propertiesDialog()?.nativeElement;
+    if (el?.open) el.close();
+    this.modal.close();
   }
 }
 
