@@ -51,11 +51,15 @@ function firstGroupRow(page: Page, groupId: string): Locator {
  * because dropping near the top of an item is what CDK resolves to index 0.
  */
 async function dragInto(page: Page, label: Locator, target: Locator): Promise<void> {
-  const from = await label.boundingBox();
+  // Rows are only draggable by their handle, the first element of the row head.
+  const handle = label.locator(
+    'xpath=ancestor::div[contains(@class,"row-head")][1]/*[contains(@class,"drag-handle")]',
+  );
+  const from = await handle.boundingBox();
   const to = await target.boundingBox();
   if (!from || !to) throw new Error('drag endpoints are not visible');
 
-  const start = { x: from.x + Math.min(from.width / 2, 40), y: from.y + from.height / 2 };
+  const start = { x: from.x + from.width / 2, y: from.y + from.height / 2 };
 
   await page.mouse.move(start.x, start.y);
   await page.mouse.down();

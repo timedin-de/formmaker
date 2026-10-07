@@ -146,7 +146,13 @@
           <div class="file-chip">
             <mat-icon svgIcon="description"></mat-icon>
             <span class="fname">{{ f.name }}</span>
-            <button mat-icon-button type="button" (click)="removeFile(vr.control, f)">
+            <button
+              mat-icon-button
+              type="button"
+              [matTooltip]="i18n.t('q.removeFile')"
+              [attr.aria-label]="i18n.t('q.removeFile')"
+              (click)="removeFile(vr.control, f)"
+            >
               <mat-icon svgIcon="close"></mat-icon>
             </button>
           </div>

@@ -12,10 +12,22 @@
           [queryParams]="{ page: page.id }"
         >
           {{ page.title ?? i18n.t('canvas.untitledPage') }}
-          <mat-icon class="del" (click)="removePage(page)" svgIcon="close"></mat-icon>
+          <button
+            class="btn-reset"
+            [matTooltip]="i18n.t('canvas.removePage')"
+            [attr.aria-label]="i18n.t('canvas.removePage')"
+            (click)="removePage(page)"
+          >
+            <mat-icon class="del" svgIcon="close"></mat-icon>
+          </button>
         </a>
       }
-      <button class="page-add" [matTooltip]="i18n.t('canvas.addPage')" (click)="store().addPage()">
+      <button
+        class="page-add"
+        [matTooltip]="i18n.t('canvas.addPage')"
+        [attr.aria-label]="i18n.t('canvas.addPage')"
+        (click)="store().addPage()"
+      >
         <mat-icon svgIcon="add"></mat-icon>
       </button>
     </span>
@@ -105,6 +117,7 @@
   }
 </div>
 @if (paleteTarget(); as target) {
+  <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -- backdrop click is a mouse shortcut; Esc and the close button cover keyboards -->
   <dialog #palette (click)="onDialogClick($event)" (cancel)="paleteTarget.set(false)">
     <div class="modal-head">
       <button

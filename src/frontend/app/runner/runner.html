@@ -1,5 +1,10 @@
 <mat-toolbar color="surface" class="top">
-  <button mat-icon-button (click)="back()" [matTooltip]="i18n.t('runner.back')">
+  <button
+    mat-icon-button
+    (click)="back()"
+    [matTooltip]="i18n.t('runner.back')"
+    [attr.aria-label]="i18n.t('runner.back')"
+  >
     <mat-icon svgIcon="arrow_back"></mat-icon>
   </button>
   <div class="info">

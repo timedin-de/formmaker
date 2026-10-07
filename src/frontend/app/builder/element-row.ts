@@ -1,4 +1,4 @@
-import { CdkDrag, type CdkDragDrop, CdkDropList } from '@angular/cdk/drag-drop';
+import { CdkDrag, type CdkDragDrop, CdkDragHandle, CdkDropList } from '@angular/cdk/drag-drop';
 import { Component, computed, inject, input, output } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -12,7 +12,7 @@ import { type DesignerStore } from '../core/state/designer.store';
 import { canSortAt, DropDragState } from './drop-sort';
 
 @Component({
-  imports: [MatButtonModule, MatIconModule, MatTooltipModule, CdkDrag, CdkDropList],
+  imports: [MatButtonModule, MatIconModule, MatTooltipModule, CdkDrag, CdkDragHandle, CdkDropList],
   selector: 'fm-element-row',
   templateUrl: './element-row.html',
   styleUrl: './element-row.scss',

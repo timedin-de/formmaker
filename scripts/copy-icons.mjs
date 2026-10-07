@@ -28,6 +28,7 @@ const icons = [
   'description',
   'download',
   'draw',
+  'drag_indicator',
   'edit',
   'edit_calendar',
   'event',

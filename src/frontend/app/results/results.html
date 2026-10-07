@@ -1,5 +1,10 @@
 <mat-toolbar color="surface" class="top">
-  <button mat-icon-button (click)="back()" [matTooltip]="i18n.t('results.back')">
+  <button
+    mat-icon-button
+    (click)="back()"
+    [matTooltip]="i18n.t('results.back')"
+    [attr.aria-label]="i18n.t('results.back')"
+  >
     <mat-icon svgIcon="arrow_back"></mat-icon>
   </button>
   <div class="info">
@@ -39,6 +44,7 @@
             <button
               mat-icon-button
               [matTooltip]="i18n.t('landing.delete')"
+              [attr.aria-label]="i18n.t('landing.delete')"
               (click)="deleteOne(sub.id)"
             >
               <mat-icon svgIcon="delete_outline"></mat-icon>
@@ -49,9 +55,13 @@
               @for (col of columns(); track col.fieldId) {
                 <div class="cell">
                   <span class="cell-label">{{ col.label }}</span>
-                  <a class="cell-value" (click)="clickValueFor(sub, col.fieldId)">{{
-                    valueFor(sub, col.fieldId)
-                  }}</a>
+                  <button
+                    type="button"
+                    class="btn-reset cell-value"
+                    (click)="clickValueFor(sub, col.fieldId)"
+                  >
+                    {{ valueFor(sub, col.fieldId) }}
+                  </button>
                 </div>
               } @empty {
                 <div class="muted">{{ i18n.t('results.noQuestions') }}</div>

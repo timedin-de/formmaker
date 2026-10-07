@@ -96,7 +96,12 @@
         }
       }
 
-      <button mat-icon-button [matTooltip]="i18n.t('cond.remove')" (click)="removeCond($index)">
+      <button
+        mat-icon-button
+        [matTooltip]="i18n.t('cond.remove')"
+        [attr.aria-label]="i18n.t('cond.remove')"
+        (click)="removeCond($index)"
+      >
         <mat-icon svgIcon="close"></mat-icon>
       </button>
     </div>
@@ -112,7 +117,12 @@
         [indent]="true"
         (changed)="setGroup(gi, $event)"
       />
-      <button mat-icon-button [matTooltip]="i18n.t('cond.removeGroup')" (click)="removeGroup(gi)">
+      <button
+        mat-icon-button
+        [matTooltip]="i18n.t('cond.removeGroup')"
+        [attr.aria-label]="i18n.t('cond.removeGroup')"
+        (click)="removeGroup(gi)"
+      >
         <mat-icon svgIcon="close"></mat-icon>
       </button>
     </div>
