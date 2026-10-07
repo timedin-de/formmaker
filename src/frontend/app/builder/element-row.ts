@@ -10,6 +10,7 @@ import { I18nService } from '../core/i18n';
 import { fieldMeta } from '../core/model/field-registry';
 import { type DesignerStore } from '../core/state/designer.store';
 import { canSortAt, DropDragState } from './drop-sort';
+import { PropertiesModal } from './properties-modal';
 
 @Component({
   imports: [MatButtonModule, MatIconModule, MatTooltipModule, CdkDrag, CdkDragHandle, CdkDropList],
@@ -21,6 +22,7 @@ export class ElementRow {
   readonly el = input.required<ElementDefinition>();
   readonly store = input.required<DesignerStore>();
   protected readonly i18n = inject(I18nService);
+  protected readonly modal = inject(PropertiesModal);
 
   readonly dropLists = input<string[]>([]);
   readonly dropElement = output<CdkDragDrop<Elements, Elements, string>>();
@@ -43,6 +45,7 @@ export class ElementRow {
 
   select(): void {
     this.store().select(this.el().id);
+    this.modal.show();
   }
 
   move(dir: -1 | 1, event?: Event): void {

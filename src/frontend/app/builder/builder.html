@@ -35,3 +35,26 @@
     <fm-property-panel class="panel" [store]="store" />
   </div>
 </div>
+@if (modal.open()) {
+  <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -- backdrop click is a mouse shortcut; Esc and the close button cover keyboards -->
+  <dialog
+    #properties
+    (click)="onDialogClick($event)"
+    (cancel)="closePropertiesDialog()"
+    aria-labelledby="properties-modal-header"
+  >
+    <div class="modal-head">
+      <h2 id="properties-modal-header">{{ i18n.t('builder.properties') }}</h2>
+      <button
+        type="button"
+        mat-icon-button
+        [attr.aria-label]="i18n.t('landing.import.close')"
+        (click)="closePropertiesDialog()"
+      >
+        <mat-icon svgIcon="close"></mat-icon>
+      </button>
+    </div>
+
+    <fm-property-panel class="panel-modal" [store]="store" />
+  </dialog>
+}

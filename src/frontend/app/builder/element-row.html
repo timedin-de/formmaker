@@ -8,6 +8,7 @@
         type="button"
         class="btn-reset row-select"
         [attr.aria-pressed]="selected()"
+        [attr.aria-haspopup]="modal.narrow() ? 'dialog' : null"
         (click)="select()"
       >
         <mat-icon class="icon" [svgIcon]="meta().icon"></mat-icon>
