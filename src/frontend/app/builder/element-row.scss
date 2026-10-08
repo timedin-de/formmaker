@@ -15,7 +15,8 @@
     box-shadow 0.12s ease;
   margin-bottom: 16px;
 }
-.row:hover {
+.row:hover,
+.row:focus-within {
   border-color: var(--mat-sys-outline);
 }
 .row.selected {
@@ -86,7 +87,8 @@
   opacity: 0;
   transition: opacity 0.12s ease;
 }
-.row:hover .ops {
+.row:hover .ops,
+.row:focus-within .ops {
   opacity: 1;
 }
 .row-head {
