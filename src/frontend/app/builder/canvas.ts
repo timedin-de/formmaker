@@ -124,4 +124,13 @@ export class BuilderCanvas {
     const dialog = this.paletteDialog();
     if (dialog && event.target === dialog.nativeElement) this.paleteTarget.set(false);
   }
+
+  addPage() {
+    const { id } = this.store().addPage();
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { page: id },
+      queryParamsHandling: 'merge',
+    });
+  }
 }

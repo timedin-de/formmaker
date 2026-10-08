@@ -2,16 +2,17 @@
   <mat-toolbar class="block-title">
     <span class="clicks">
       @for (page of store().form().pages; track page.id) {
-        <a
-          class="page-chip"
-          [class.active]="store().activePageId() === page.id"
-          [routerLink]="[]"
-          queryParamsHandling="merge"
-          rel="button"
-          style="text-decoration: none"
-          [queryParams]="{ page: page.id }"
-        >
-          {{ page.title ?? i18n.t('canvas.untitledPage') }}
+        <span class="page-chip" [class.active]="store().activePageId() === page.id">
+          <a
+            class="page-name"
+            [routerLink]="[]"
+            queryParamsHandling="merge"
+            rel="button"
+            style="text-decoration: none"
+            [queryParams]="{ page: page.id }"
+          >
+            {{ page.title ?? i18n.t('canvas.untitledPage') }}
+          </a>
           <button
             class="btn-reset"
             [matTooltip]="i18n.t('canvas.removePage')"
@@ -20,13 +21,13 @@
           >
             <mat-icon class="del" svgIcon="close"></mat-icon>
           </button>
-        </a>
+        </span>
       }
       <button
         class="page-add"
         [matTooltip]="i18n.t('canvas.addPage')"
         [attr.aria-label]="i18n.t('canvas.addPage')"
-        (click)="store().addPage()"
+        (click)="addPage()"
       >
         <mat-icon svgIcon="add"></mat-icon>
       </button>
