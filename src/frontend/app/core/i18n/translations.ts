@@ -122,6 +122,7 @@ const en = {
   'runner.home': 'Home',
   'runner.draftRestored': 'Draft restored from an earlier session.',
   'runner.downloadPdf': 'Download PDF',
+  'runner.progress': 'Progress',
 
   // Errors
   'errors.required': 'Required',
@@ -133,6 +134,7 @@ const en = {
   'errors.unknown': 'Unknown Error',
 
   // builder
+  'builder.title': 'Form Builder',
   'builder.formName': 'Form name',
   'builder.pages': '{n} pages',
   'builder.import': 'Import',
@@ -559,6 +561,7 @@ const de: typeof en = {
   'runner.home': 'Start',
   'runner.draftRestored': 'Entwurf aus einer früheren Sitzung wiederhergestellt.',
   'runner.downloadPdf': 'PDF herunterladen',
+  'runner.progress': 'Fortschritt',
 
   // Errors
   'errors.required': 'Pflichtfeld',
@@ -570,6 +573,7 @@ const de: typeof en = {
   'errors.unknown': 'Unbekannter Fehler',
 
   // builder
+  'builder.title': 'Formular Editor',
   'builder.formName': 'Formularname',
   'builder.pages': '{n} Seiten',
   'builder.import': 'Importieren',

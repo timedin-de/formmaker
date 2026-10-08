@@ -50,7 +50,7 @@
     }
     @case ('dropdown') {
       <mat-form-field appearance="outline" class="field-host" subscriptSizing="dynamic">
-        <mat-select [formControl]="vr.control">
+        <mat-select [formControl]="vr.control" [aria-labelledby]="`${vr.id}-title`">
           @for (opt of options(vr.el); track opt.id) {
             <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
           }

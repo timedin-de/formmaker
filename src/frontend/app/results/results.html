@@ -23,8 +23,9 @@
     <span class="btn-label">{{ i18n.t('results.clear') }}</span>
   </button>
 </mat-toolbar>
-
 <div class="body">
+  <h1>{{ i18n.t('results.title') }}</h1>
+
   @if (submissions().length === 0) {
     <div class="empty">
       <mat-icon svgIcon="quiz"></mat-icon>

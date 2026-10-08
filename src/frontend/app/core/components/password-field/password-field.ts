@@ -37,7 +37,7 @@ export class PasswordField implements ControlValueAccessor {
   readonly placeholder = input<string>('');
   readonly required = input<string | boolean>(false);
 
-  readonly autocomplete = input<string>('current-password');
+  readonly inputAutocomplete = input<string>('current-password');
   /** Fired when the user presses Enter inside the input. */
   readonly enter = output<void>();
 

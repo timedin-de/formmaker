@@ -1,37 +1,39 @@
 <div class="shell">
-  <mat-toolbar class="shell-toolbar">
-    <span class="brand" routerLink="/">FormMaker</span>
-    @if (auth.authenticated()) {
-      <nav>
-        <a
-          mat-button
-          routerLink="/"
-          routerLinkActive="active"
-          [routerLinkActiveOptions]="{ exact: true }"
-        >
-          {{ i18n.t('app.forms') }}
-        </a>
-        <a mat-button routerLink="/builder" routerLinkActive="active">
-          {{ i18n.t('app.builder') }}
-        </a>
-        <a mat-button routerLink="/account" routerLinkActive="active">
-          {{ i18n.t('app.account') }}
-        </a>
-      </nav>
-    }
-    <div class="buttons">
+  <header>
+    <mat-toolbar class="shell-toolbar">
+      <a class="brand" routerLink="/">FormMaker</a>
       @if (auth.authenticated()) {
-        <button class="top-button" mat-button [matMenuTriggerFor]="langMenu">
-          <mat-icon svgIcon="language"></mat-icon>
-          <span class="btn-label">{{ i18n.t('app.menu') }}</span>
-        </button>
-        <button class="top-button" mat-button (click)="logout()">
-          <mat-icon svgIcon="logout"></mat-icon>
-          <span class="btn-label">{{ i18n.t('app.logout') }}</span>
-        </button>
+        <nav>
+          <a
+            mat-button
+            routerLink="/"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: true }"
+          >
+            {{ i18n.t('app.forms') }}
+          </a>
+          <a mat-button routerLink="/builder" routerLinkActive="active">
+            {{ i18n.t('app.builder') }}
+          </a>
+          <a mat-button routerLink="/account" routerLinkActive="active">
+            {{ i18n.t('app.account') }}
+          </a>
+        </nav>
       }
-    </div>
-  </mat-toolbar>
+      <div class="buttons">
+        @if (auth.authenticated()) {
+          <button class="top-button" mat-button [matMenuTriggerFor]="langMenu">
+            <mat-icon svgIcon="language"></mat-icon>
+            <span class="btn-label">{{ i18n.t('app.menu') }}</span>
+          </button>
+          <button class="top-button" mat-button (click)="logout()">
+            <mat-icon svgIcon="logout"></mat-icon>
+            <span class="btn-label">{{ i18n.t('app.logout') }}</span>
+          </button>
+        }
+      </div>
+    </mat-toolbar>
+  </header>
   <main class="shell-content">
     <router-outlet />
   </main>

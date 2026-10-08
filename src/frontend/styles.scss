@@ -1,4 +1,6 @@
+@use 'sass:map';
 @use '@angular/material' as mat;
+@use './app/core/styles/mixins';
 
 html {
   @include mat.theme(
@@ -15,6 +17,26 @@ html {
         large: 20px,
         extra-large: 28px,
       ),
+    )
+  );
+
+  // M3 uses tone 40 for primary/tertiary/error in light mode, which only reaches AA (~6.5:1 on
+  // white). Tone 30 meets AAA (7:1) for text such as links, text buttons, badges and labels on
+  // filled buttons. The dark half keeps M3's tone 80, which already passes on dark surfaces;
+  // there, on-primary drops from tone 20 to 10 so filled-button labels stay above 7:1 even
+  // under the focus/hover state layer.
+  @include mat.theme-overrides(
+    (
+      primary: light-dark(map.get(mat.$violet-palette, 30), map.get(mat.$violet-palette, 80)),
+      on-primary: light-dark(map.get(mat.$violet-palette, 100), map.get(mat.$violet-palette, 10)),
+      tertiary: light-dark(
+          map.get(mat.$chartreuse-palette, 30),
+          map.get(mat.$chartreuse-palette, 80)
+        ),
+      error: light-dark(
+          map.get(mat.$violet-palette, error, 30),
+          map.get(mat.$violet-palette, error, 80)
+        ),
     )
   );
 
@@ -87,4 +109,8 @@ body {
 }
 .mat-mdc-form-field {
   width: 100%;
+}
+
+.visually-hidden {
+  @include mixins.visually-hidden;
 }

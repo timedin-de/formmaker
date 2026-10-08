@@ -25,6 +25,7 @@
     <mat-progress-bar
       mode="determinate"
       class="bar"
+      [ariaLabel]="i18n.t('runner.progress')"
       [value]="(store.progress().index / Math.max(1, store.progress().total - 1)) * 100"
     />
   }
