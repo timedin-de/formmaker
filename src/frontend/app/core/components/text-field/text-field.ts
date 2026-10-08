@@ -38,7 +38,7 @@ export class TextField implements ControlValueAccessor {
 
   readonly required = input<string | boolean>(false);
 
-  readonly autocomplete = input<string>('');
+  readonly inputAutocomplete = input<string>('');
   /** Fired when the user presses Enter inside the input. */
   readonly enter = output<void>();
 

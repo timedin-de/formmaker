@@ -11,7 +11,7 @@
             @if (el.type === 'section') {
               <mat-divider class="thin"></mat-divider>
               <div class="section-head">
-                <h2 [innerHTML]="vr.label | markdown"></h2>
+                <h2 [attr.aria-level]="levels().get(vr.id)" [innerHTML]="vr.label | markdown"></h2>
               </div>
             } @else {
               <ng-container *ngTemplateOutlet="header"></ng-container>
@@ -34,16 +34,16 @@
         }
       </div>
       <ng-template #header>
-        <label class="label" [for]="vr.id">
+        <label class="label" [for]="vr.id" [id]="`${vr.id}-title`">
           @if (group()) {
-            <h4>
+            <h4 [attr.aria-level]="levels().get(vr.id)">
               <span [innerHTML]="vr.label | markdown"></span>
               @if (has(el, 'required') && el.required) {
                 <span class="req">*</span>
               }
             </h4>
           } @else {
-            <h3>
+            <h3 [attr.aria-level]="levels().get(vr.id)">
               <span [innerHTML]="vr.label | markdown"></span>
               @if (has(el, 'required') && el.required) {
                 <span class="req">*</span>
@@ -62,7 +62,11 @@
           @case ('group') {
             @if (el.elementsRef) {
               <div class="group">
-                <fm-question-list group="true" [elements]="el.elementsRef"></fm-question-list>
+                <fm-question-list
+                  group="true"
+                  [level]="(levels().get(vr.id) ?? level()) + 1"
+                  [elements]="el.elementsRef"
+                ></fm-question-list>
               </div>
             }
           }

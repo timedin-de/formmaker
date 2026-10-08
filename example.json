@@ -1,7 +1,7 @@
 {
   "id": "form_order",
   "name": "Order registration",
-  "description": "### Setup\nFill **all** sections to complete the order.",
+  "description": "",
   "version": 1,
   "schemaVersion": 1,
   "settings": {
@@ -22,8 +22,8 @@
           "id": "sec_main",
           "type": "section",
           "width": 1,
-          "label": "",
-          "description": "Primary fields"
+          "label": "Primary fields",
+          "description": ""
         },
         {
           "id": "q_name",

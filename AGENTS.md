@@ -92,6 +92,12 @@ scripts/            copy-icons.mjs (icon bundling), build-server.mjs (ncc bundle
   The PDF receipt and the results summary both render blocks from `buildReceipt`
   (`core/export/receipt.ts`).
 
+## E2E
+
+- `e2e/a11y.spec.ts` runs axe over every page and its notable states (dialogs,
+  validation errors, results with submissions, …). When you add a feature (with an e2e test) that
+  introduces a new page, dialog or UI state, add a matching case to `a11y.spec.ts`.
+
 ## Code conventions
 
 Strict TypeScript: no `any` (use `unknown` + guards), no unused imports. Don't leave `console.log`

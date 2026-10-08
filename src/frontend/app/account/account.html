@@ -19,13 +19,13 @@
             <fm-text
               [label]="i18n.t('account.email')"
               type="email"
-              autocomplete="email"
+              inputAutocomplete="email"
               formControlName="email"
             ></fm-text>
 
             <fm-password
               [label]="i18n.t('account.currentPassword')"
-              autocomplete="current-password"
+              inputAutocomplete="current-password"
               formControlName="password"
               (enter)="saveEmail(emailDir)"
               required
@@ -54,19 +54,19 @@
               formControlName="currentPassword"
               required
               [label]="i18n.t('account.currentPassword')"
-              autocomplete="current-password"
+              inputAutocomplete="current-password"
             />
             <fm-password
               formControlName="newPassword"
               required
               [label]="i18n.t('account.newPassword')"
-              autocomplete="new-password"
+              inputAutocomplete="new-password"
             />
 
             <fm-password
               formControlName="confirmPassword"
               [label]="i18n.t('account.confirmPassword')"
-              autocomplete="new-password"
+              inputAutocomplete="new-password"
             />
             <mat-error>
               @if (passwordForm.dirty && passwordForm.invalid) {
@@ -96,7 +96,7 @@
             <fm-password
               [formControl]="deletePassword"
               [label]="i18n.t('account.currentPassword')"
-              autocomplete="current-password"
+              inputAutocomplete="current-password"
             />
             <p class="hint">{{ i18n.t('account.deleteConfirmHint') }}</p>
           </mat-card-content>
