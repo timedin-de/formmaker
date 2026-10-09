@@ -92,5 +92,6 @@ export class UserController {
     if (body.password !== undefined) patch.passwordHash = await hashPassword(body.password);
     if (!(await this.repository.patchUser(id, patch)))
       throw new NotFoundException({ error: 'not found' });
+    if (patch.passwordHash !== undefined) await this.repository.clearUsersSessions(id);
   }
 }
