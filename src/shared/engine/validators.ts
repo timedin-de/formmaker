@@ -70,6 +70,9 @@ function checkRule(
   value: FieldValue,
   allValues: Readonly<Record<string, FieldValue>>,
 ): string | null {
+  // Not required and empty
+  if (rule.rule !== 'required' && isEmpty(value)) return null;
+
   switch (rule.rule) {
     case 'required':
       return isEmpty(value) ? defaultMessage('required', element.label) : null;
