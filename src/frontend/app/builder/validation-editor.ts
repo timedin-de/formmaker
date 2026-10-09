@@ -1,4 +1,4 @@
-import { Component, inject, input } from '@angular/core';
+import { Component, computed, inject, input } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatOption } from '@angular/material/core';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
@@ -6,13 +6,15 @@ import { MatIcon } from '@angular/material/icon';
 import { MatInput } from '@angular/material/input';
 import { MatSelect, type MatSelectChange } from '@angular/material/select';
 import { MatTooltip } from '@angular/material/tooltip';
+import { isQuestion } from '@shared/helper';
 import {
   type ElementDefinition,
   type QuestionDefinition,
-  VALIDATION_RULE_TYPES,
-  validationRule,
+  REPEATABLE_RULES,
+  uuid,
   type ValidationRule,
   type ValidationRuleType,
+  ValidationsByQuestionType,
 } from '@shared/model';
 import { DesignerStore } from '../core';
 import { I18nService } from '../core/i18n';
@@ -33,12 +35,21 @@ import { I18nService } from '../core/i18n';
   ],
 })
 export class ValidationEditor {
-  protected readonly VALIDATION_RULE_TYPES = VALIDATION_RULE_TYPES;
   protected readonly i18n = inject(I18nService);
   private readonly store = inject(DesignerStore);
 
   readonly validations = input.required<ValidationRule[]>();
   readonly element = input.required<ElementDefinition>();
+
+  /** Rules offered for this question type, minus non-repeatable rules it already has. */
+  protected readonly validationRuleTypes = computed(() => {
+    const element = this.element();
+    if (!isQuestion(element)) return [];
+    const used = new Set(this.validations().map((r) => r.rule));
+    return ValidationsByQuestionType[element.type].filter(
+      (r) => REPEATABLE_RULES.includes(r) || !used.has(r),
+    );
+  });
 
   patch(patch: Partial<ElementDefinition>): void {
     this.store.updateElement(this.element().id, patch);
@@ -46,7 +57,7 @@ export class ValidationEditor {
 
   addRule(event: MatSelectChange): void {
     const el = this.element() as QuestionDefinition;
-    this.patch({ validations: [...(el.validations ?? []), validationRule(event.value)] });
+    this.patch({ validations: [...(el.validations ?? []), this.validationRule(event.value)] });
     event.source.value = undefined;
   }
 
@@ -117,5 +128,9 @@ export class ValidationEditor {
     if (s === '') return '';
     const n = Number(s);
     return s !== '' && !Number.isNaN(n) && /^-?\d*\.?\d+$/.test(s) ? n : s;
+  }
+
+  validationRule(rule: ValidationRuleType): ValidationRule {
+    return { id: uuid(), rule, message: this.i18n.t(`errors.${rule}`) };
   }
 }

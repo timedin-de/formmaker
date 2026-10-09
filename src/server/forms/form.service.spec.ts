@@ -154,7 +154,11 @@ describe('FormService.addSubmission', () => {
 
     it('rejects a value failing a validation rule', async () => {
       form = formOf([
-        page('p1', [text('q1', { validations: [{ id: 'r1', rule: 'minLength', value: 5 }] })]),
+        page('p1', [
+          text('q1', {
+            validations: [{ id: 'r1', rule: 'minLength', value: 5, message: 'Error' }],
+          }),
+        ]),
       ]);
       await expectRejected({ q1: 'abc' });
     });
