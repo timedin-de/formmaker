@@ -76,7 +76,7 @@ export class Repository {
     for (const form of forms) {
       await this.source.getRepository(SubmissionEntity).delete({ formId: form.id });
     }
-    this.source.transaction(async (em) => {
+    await this.source.transaction(async (em) => {
       await em.getRepository(FormEntity).delete({ ownerId: id });
       await em.getRepository(SessionEntity).delete({ userId: id });
       await em.getRepository(UserEntity).delete({ id });
