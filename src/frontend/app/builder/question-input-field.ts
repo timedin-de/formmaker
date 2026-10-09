@@ -19,6 +19,7 @@ import {
 
 @Component({
   templateUrl: './question-input-field.html',
+  styleUrl: './question-input-field.scss',
   selector: 'fm-question-input-field',
   imports: [MatInputModule, FormsModule, ReactiveFormsModule, MatIconModule, MatCheckboxModule],
 })
