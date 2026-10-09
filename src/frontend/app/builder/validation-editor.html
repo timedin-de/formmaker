@@ -1,0 +1,124 @@
+<div class="section">
+  <div class="sec-title">{{ i18n.t('panel.validation') }}</div>
+  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+    <mat-select [placeholder]="i18n.t('panel.addRule')" (selectionChange)="addRule($event)">
+      @for (r of VALIDATION_RULE_TYPES; track r) {
+        <mat-option [value]="r">{{ i18n.t(`val.${r}`) }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+
+  <div class="rules">
+    @for (rule of validations(); track rule.id; let i = $index) {
+      <div class="rule">
+        <div class="rule-top">
+          <span class="rule-name">{{ ruleLabel(rule.rule) }}</span>
+          <button
+            mat-icon-button
+            [matTooltip]="i18n.t('panel.remove')"
+            [attr.aria-label]="i18n.t('panel.remove')"
+            (click)="removeRule(rule.id)"
+          >
+            <mat-icon svgIcon="close"></mat-icon>
+          </button>
+        </div>
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>{{ i18n.t('panel.message') }}</mat-label>
+          <input
+            matInput
+            [value]="rule.message ?? defaultRuleMessage(rule.rule)"
+            (change)="patchRule(rule.id, { message: $event.target.value })"
+          />
+        </mat-form-field>
+
+        @switch (ruleInputKind(rule.rule)) {
+          @case ('number') {
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+              <mat-label>{{ i18n.t('panel.value') }}</mat-label>
+              <input
+                matInput
+                type="number"
+                [value]="str(rule.value)"
+                (change)="patchRule(rule.id, { value: stringOrNum($event.target.value) })"
+              />
+            </mat-form-field>
+          }
+          @case ('text') {
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+              <mat-label>{{ i18n.t('panel.value') }}</mat-label>
+              <input
+                matInput
+                [value]="str(rule.value)"
+                (change)="patchRule(rule.id, { value: $event.target.value })"
+              />
+            </mat-form-field>
+          }
+          @case ('range') {
+            <div class="two-col">
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-label>{{ i18n.t('panel.from') }}</mat-label>
+                <input
+                  matInput
+                  type="number"
+                  [value]="str(rule.value)"
+                  (chaneg)="patchRule(rule.id, { value: stringOrNum($event.target.value) })"
+                />
+              </mat-form-field>
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-label>{{ i18n.t('panel.to') }}</mat-label>
+                <input
+                  matInput
+                  type="number"
+                  [value]="str(rule.valueTo)"
+                  (change)="patchRule(rule.id, { valueTo: stringOrNum($event.target.value) })"
+                />
+              </mat-form-field>
+            </div>
+          }
+          @case ('pattern') {
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+              <mat-label>{{ i18n.t('panel.regex') }}</mat-label>
+              <input
+                matInput
+                [value]="rule.pattern ?? ''"
+                (change)="patchRule(rule.id, { pattern: $event.target.value })"
+              />
+            </mat-form-field>
+          }
+          @case ('date') {
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+              <mat-label>{{ i18n.t('panel.date') }}</mat-label>
+              <input
+                matInput
+                type="date"
+                [value]="str(rule.value)"
+                (change)="patchRule(rule.id, { value: $event.target.value })"
+              />
+            </mat-form-field>
+          }
+          @case ('accept') {
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+              <mat-label>{{ i18n.t('panel.allowedTypes') }}</mat-label>
+              <input
+                matInput
+                [value]="rule.accept ?? ''"
+                (change)="patchRule(rule.id, { accept: $event.target.value })"
+              />
+            </mat-form-field>
+          }
+          @case ('expression') {
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+              <mat-label>{{ i18n.t('panel.exprOrMsg') }}</mat-label>
+              <textarea
+                matInput
+                rows="2"
+                [value]="rule.expression ?? ''"
+                (change)="patchRule(rule.id, { expression: $any($event.currentTarget).value })"
+              ></textarea>
+            </mat-form-field>
+          }
+        }
+      </div>
+    }
+  </div>
+</div>

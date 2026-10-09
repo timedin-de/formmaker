@@ -23,13 +23,13 @@ import type {
 } from '@shared/model/form.model';
 import { DEFAULT_TIME_INTERVAL, TIME_INTERVAL_UNITS } from '@shared/model/form.model';
 import { uuid } from '@shared/model/ids';
-import type { ValidationRule, ValidationRuleType } from '@shared/model/validation.model';
-import { VALIDATION_RULE_TYPES, validationRule } from '@shared/model/validation.model';
+import { VALIDATION_RULE_TYPES } from '@shared/model/validation.model';
 import { I18nService } from '../core/i18n';
 import { fieldMeta } from '../core/model/field-registry';
 import { type DesignerStore } from '../core/state/designer.store';
 import { ConditionEditor } from './condition-editor';
 import { QuestionSelector } from './question-selector';
+import { ValidationEditor } from './validation-editor';
 
 const WIDTHS = Array(12)
   .fill(12)
@@ -52,6 +52,7 @@ const INPUT_TYPES = ['text', 'email', 'url', 'phone', 'number'] as const;
     MatExpansionModule,
     ConditionEditor,
     QuestionSelector,
+    ValidationEditor,
   ],
   selector: 'fm-property-panel',
   templateUrl: './property-panel.html',
@@ -239,69 +240,6 @@ export class PropertyPanel {
   clearGroup(): void {
     this.patch({ enabledWhen: undefined });
   }
-
-  // ---- validation -------------------------------------------------------------
-
-  ruleLabel(rule: ValidationRuleType): string {
-    return this.i18n.t(`val.${rule}`);
-  }
-
-  ruleInputKind(
-    rule: ValidationRuleType,
-  ): 'number' | 'text' | 'range' | 'pattern' | 'date' | 'accept' | 'expression' | 'none' {
-    switch (rule) {
-      case 'minLength':
-      case 'maxLength':
-      case 'min':
-      case 'max':
-      case 'minFiles':
-      case 'maxFiles':
-      case 'fileSizeMaxMb':
-        return 'number';
-      case 'between':
-        return 'range';
-      case 'pattern':
-        return 'pattern';
-      case 'dateMin':
-      case 'dateMax':
-        return 'date';
-      case 'fileType':
-        return 'accept';
-      case 'custom':
-        return 'expression';
-      case 'required':
-      case 'email':
-      case 'url':
-      case 'phone':
-      case 'integer':
-      case 'number':
-        return 'none';
-      default:
-        return 'text';
-    }
-  }
-
-  defaultRuleMessage(rule: ValidationRuleType): string {
-    return this.i18n.t('panel.defaultMessage', { rule: this.i18n.t(`val.${rule}`) });
-  }
-
-  addRule(type: ValidationRuleType): void {
-    const el = this.sel() as QuestionDefinition;
-    this.patch({ validations: [...(el.validations ?? []), validationRule(type)] });
-  }
-
-  removeRule(id: string): void {
-    const el = this.sel() as QuestionDefinition;
-    this.patch({ validations: (el.validations ?? []).filter((r) => r.id !== id) });
-  }
-
-  patchRule(id: string, patch: Partial<ValidationRule>): void {
-    const el = this.sel() as QuestionDefinition;
-    this.patch({
-      validations: (el.validations ?? []).map((r) => (r.id === id ? { ...r, ...patch } : r)),
-    });
-  }
-
   isSameGroup = (element: ElementDefinition | PageDefinition) => {
     if (!has(element, 'type')) return true;
     const thisGroup = this.el();
