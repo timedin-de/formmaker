@@ -11,7 +11,7 @@
             style="text-decoration: none"
             [queryParams]="{ page: page.id }"
           >
-            {{ page.title ?? i18n.t('canvas.untitledPage') }}
+            {{ page.title?.trim() || i18n.t('canvas.untitledPage') }}
           </a>
           <button
             class="btn-reset"
