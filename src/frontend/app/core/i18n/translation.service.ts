@@ -1,4 +1,5 @@
-import { Injectable, signal } from '@angular/core';
+import { DOCUMENT } from '@angular/common';
+import { effect, inject, Injectable, signal } from '@angular/core';
 import { type ValidationErrors } from '@angular/forms';
 import { catchFn } from '@shared/helper';
 import type { Lang, TranslationKey } from './translations';
@@ -10,6 +11,11 @@ const STORAGE_KEY = 'formmaker.lang';
 @Injectable({ providedIn: 'root' })
 export class I18nService {
   readonly lang = signal<Lang>(readInitial());
+
+  constructor() {
+    const document = inject(DOCUMENT);
+    effect(() => document.documentElement.setAttribute('lang', this.lang()));
+  }
 
   /** Reactive translate: reads `this.lang()` so template calls re-render on switch. */
   t(key: TranslationKey, params?: Record<string, string | number>): string {
