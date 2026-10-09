@@ -1,4 +1,5 @@
 import type { FieldValue } from '@shared/model/values.model';
+import { compileRegex } from '../regex';
 import type { Expr, ExprValue, Primitive } from './ast';
 import { collectReferences, parse } from './parser';
 
@@ -69,7 +70,7 @@ const DEFAULT_FUNCTIONS: FunctionLibrary = {
   endsWith: (x, needle) => x != null && String(x).endsWith(String(needle)),
   matches: (x, re) => {
     try {
-      return x != null && new RegExp(String(re), 'i').test(String(x));
+      return x != null && compileRegex(String(re), 'i').test(String(x));
     } catch {
       return false;
     }

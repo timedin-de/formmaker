@@ -10,6 +10,7 @@ import path from 'node:path';
 import { AppModule } from './app.module.js';
 import { AuthService } from './auth/auth.service';
 import { ApiExceptionFilter } from './common/api-exception.filter.js';
+import { useRe2Regex } from './common/re2-regex.js';
 
 /**
  * Nest app wrapping the Express instance. Routes not yet ported to Nest
@@ -18,6 +19,8 @@ import { ApiExceptionFilter } from './common/api-exception.filter.js';
  * `nest.init()` runs ahead of Nest's routes and of Nest's own 404 handler.
  */
 export async function createApp(): Promise<NestExpressApplication> {
+  useRe2Regex();
+
   const app = express();
   app.disable('x-powered-by');
   const corsOrigins = process.env.CORS_ORIGIN?.split(',')
