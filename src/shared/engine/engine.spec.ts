@@ -87,6 +87,12 @@ describe('ExpressionEvaluator', () => {
     expect(evalExpression('2 ^ 3', {})).toBe(8);
   });
 
+  it('ignores inherited object properties', () => {
+    expect(() => evalExpression('constructor(1)', {})).toThrow(/Unknown function/);
+    expect(() => evalExpression('__proto__(1)', {})).toThrow(/Unknown function/);
+    expect(evalExpression('constructor', {})).toBeNull();
+  });
+
   it('evaluates unary', () => {
     expect(evalExpression('-5', {})).toBe(-5);
     expect(evalExpression('!true', {})).toBe(false);

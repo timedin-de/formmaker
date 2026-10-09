@@ -208,7 +208,7 @@ class ExpressionEvaluator {
   }
 
   private resolve(name: string): ExprValue {
-    return toExprValue(this.context[name] ?? null);
+    return toExprValue(Object.hasOwn(this.context, name) ? (this.context[name] ?? null) : null);
   }
 
   private evaluateUnary(expr: Extract<Expr, { type: 'unary' }>): ExprValue {
@@ -219,7 +219,8 @@ class ExpressionEvaluator {
   }
 
   private evaluateCall(expr: Extract<Expr, { type: 'call' }>): ExprValue {
-    const fn = this.functions[expr.name.toLowerCase()];
+    const name = expr.name.toLowerCase();
+    const fn = Object.hasOwn(this.functions, name) ? this.functions[name] : undefined;
     if (!fn) throw new Error(`Unknown function '${expr.name}'`);
     const args = expr.args.map((a) => this.evaluate(a));
     return fn(...args) as ExprValue;
