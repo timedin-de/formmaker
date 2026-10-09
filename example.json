@@ -35,12 +35,12 @@
           "readonly": false,
           "validations": [
             { "id": "v1", "rule": "minLength", "value": 2, "message": "Name too short" },
-            { "id": "v2", "rule": "pattern", "pattern": "^[A-Za-z ,.'-]+$" }
+            { "id": "v2", "rule": "pattern", "pattern": "^[A-Za-z ,.'-]+$" },
+            { "id": "v25", "rule": "maxLength", "value": 120 }
           ],
           "defaultValue": { "kind": "static", "value": "Jane Doe" },
           "placeholder": "e.g. Jane Doe",
-          "inputType": "text",
-          "maxLength": 120
+          "inputType": "text"
         },
         {
           "id": "q_email",
@@ -208,8 +208,7 @@
           ],
           "defaultValue": null,
           "placeholder": "1",
-          "inputType": "number",
-          "maxLength": 2
+          "inputType": "number"
         },
         {
           "id": "q_bio",
@@ -223,7 +222,6 @@
           "defaultValue": null,
           "placeholder": "About you…",
           "rows": 6,
-          "maxLength": 1000,
           "enabledWhen": {
             "logic": "any",
             "conditions": [

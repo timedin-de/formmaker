@@ -78,15 +78,6 @@
               }
             </mat-select>
           </mat-form-field>
-          <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-label>{{ i18n.t('panel.maxLength') }}</mat-label>
-            <input
-              matInput
-              type="number"
-              [ngModel]="el.maxLength ?? ''"
-              (ngModelChange)="patch({ maxLength: numOrUndef($event) })"
-            />
-          </mat-form-field>
         }
         @if (el.type === 'longText') {
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
@@ -96,15 +87,6 @@
               type="number"
               [ngModel]="el.rows ?? ''"
               (ngModelChange)="patch({ rows: numOrUndef($event) })"
-            />
-          </mat-form-field>
-          <mat-form-field appearance="outline" subscriptSizing="dynamic">
-            <mat-label>{{ i18n.t('panel.maxLength') }}</mat-label>
-            <input
-              matInput
-              type="number"
-              [ngModel]="el.maxLength ?? ''"
-              (ngModelChange)="patch({ maxLength: numOrUndef($event) })"
             />
           </mat-form-field>
         }

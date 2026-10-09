@@ -116,7 +116,7 @@ export function seedField(type: string, id: string, label: string): Record<strin
     label,
     width: 1,
     enabledWhen: EMPTY_GROUP,
-    ...(type === 'text' ? { inputType: 'text', maxLength: 255 } : {}),
+    ...(type === 'text' ? { inputType: 'text' } : {}),
   };
 }
 

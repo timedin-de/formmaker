@@ -62,21 +62,21 @@ Every element: `id`, `type`, `label` (required); `description` (optional, Markdo
 
 `type` ∈ `text | longText | number | date | time | dateTime | boolean | choice | dropdown | multiChoice | scale | file | signature` (13), plus layout `group | section | textdisplay`.
 
-| type                              | extra (required)               | extra (optional)                                                           | value stored                                   |
-| --------------------------------- | ------------------------------ | -------------------------------------------------------------------------- | ---------------------------------------------- |
-| `text`                            | –                              | `inputType`: `text\|email\|url\|phone\|number`; `maxLength`; `placeholder` | string                                         |
-| `longText`                        | –                              | `rows`; `maxLength`; `placeholder`                                         | string                                         |
-| `number`                          | –                              | `min`, `max`, `step`, `unit`, `decimals`; `placeholder`                    | number                                         |
-| `date`                            | –                              | `placeholder`                                                              | string (ISO `yyyy-MM-dd`)                      |
-| `time`/`dateTime`                 | `timeInterval` (default 1 min) | `placeholder`                                                              | string (ISO `HH:mm` / ISO)                     |
-| `boolean`                         | –                              | –                                                                          | boolean                                        |
-| `choice`/`dropdown`/`multiChoice` | `options` (≥1, non-empty)      | –                                                                          | value string/number (`multiChoice` → string[]) |
-| `scale`                           | `min`, `max`, `step` (numbers) | `minLabel`, `maxLabel`                                                     | number                                         |
-| `file`                            | –                              | `accept`, `multiple`                                                       | FileValue[]                                    |
-| `signature`                       | –                              | –                                                                          | SignatureValue                                 |
-| `section`                         | –                              | –                                                                          | –                                              |
-| `textdisplay`                     | –                              | –                                                                          | –                                              |
-| `group`                           | `elements` (recursive array)   | `collapsible`, `defaultValue`                                              | –                                              |
+| type                              | extra (required)               | extra (optional)                                              | value stored                                   |
+| --------------------------------- | ------------------------------ | ------------------------------------------------------------- | ---------------------------------------------- |
+| `text`                            | –                              | `inputType`: `text\|email\|url\|phone\|number`; `placeholder` | string                                         |
+| `longText`                        | –                              | `rows`; `placeholder`                                         | string                                         |
+| `number`                          | –                              | `min`, `max`, `step`, `unit`, `decimals`; `placeholder`       | number                                         |
+| `date`                            | –                              | `placeholder`                                                 | string (ISO `yyyy-MM-dd`)                      |
+| `time`/`dateTime`                 | `timeInterval` (default 1 min) | `placeholder`                                                 | string (ISO `HH:mm` / ISO)                     |
+| `boolean`                         | –                              | –                                                             | boolean                                        |
+| `choice`/`dropdown`/`multiChoice` | `options` (≥1, non-empty)      | –                                                             | value string/number (`multiChoice` → string[]) |
+| `scale`                           | `min`, `max`, `step` (numbers) | `minLabel`, `maxLabel`                                        | number                                         |
+| `file`                            | –                              | `accept`, `multiple`                                          | FileValue[]                                    |
+| `signature`                       | –                              | –                                                             | SignatureValue                                 |
+| `section`                         | –                              | –                                                             | –                                              |
+| `textdisplay`                     | –                              | –                                                             | –                                              |
+| `group`                           | `elements` (recursive array)   | `collapsible`, `defaultValue`                                 | –                                              |
 
 `textdisplay` is a static/markdown block (uses `label`).
 `group` nests any elements recursively (including other groups).
@@ -207,12 +207,12 @@ dateDiff yearsBetween msg required`. Identifiers = field ids (null when empty).
           "readonly": false,
           "validations": [
             { "id": "v1", "rule": "minLength", "value": 2, "message": "Name too short" },
-            { "id": "v2", "rule": "pattern", "pattern": "^[A-Za-z ,.'-]+$" }
+            { "id": "v2", "rule": "pattern", "pattern": "^[A-Za-z ,.'-]+$" },
+            { "id": "v25", "rule": "maxLength", "value": 120 }
           ],
           "defaultValue": { "kind": "static", "value": "Jane Doe" },
           "placeholder": "e.g. Jane Doe",
-          "inputType": "text",
-          "maxLength": 120
+          "inputType": "text"
         },
         {
           "id": "q_email",
@@ -379,8 +379,7 @@ dateDiff yearsBetween msg required`. Identifiers = field ids (null when empty).
           ],
           "defaultValue": null,
           "placeholder": "1",
-          "inputType": "number",
-          "maxLength": 2
+          "inputType": "number"
         },
         {
           "id": "q_bio",
@@ -394,7 +393,6 @@ dateDiff yearsBetween msg required`. Identifiers = field ids (null when empty).
           "defaultValue": null,
           "placeholder": "About you…",
           "rows": 6,
-          "maxLength": 1000,
           "enabledWhen": {
             "logic": "any",
             "conditions": [
