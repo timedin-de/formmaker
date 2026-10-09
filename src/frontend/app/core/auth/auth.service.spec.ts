@@ -113,17 +113,25 @@ describe('AuthService', () => {
         }),
     });
 
-    await expect(auth.register('new@formmaker.local', 'formmaker')).resolves.toBe(true);
+    await expect(auth.register('new@formmaker.local', 'formmaker')).resolves.toBe('ok');
     expect(sessionStorage.getItem('formmaker.token')).toBe('fresh-token');
     expect(auth.authenticated()).toBe(true);
     expect(auth.user()?.email).toBe('demo@formmaker.local');
   });
 
-  it('returns false on a failed registration', async () => {
+  it('reports a failed registration', async () => {
     const auth = await setup();
-    fetchMock.mockResolvedValue({ ok: false, json: () => Promise.resolve({}) });
+    fetchMock.mockResolvedValue({ ok: false, status: 409, json: () => Promise.resolve({}) });
 
-    await expect(auth.register('new@formmaker.local', 'formmaker')).resolves.toBe(false);
+    await expect(auth.register('new@formmaker.local', 'formmaker')).resolves.toBe('failed');
+    expect(auth.authenticated()).toBe(false);
+  });
+
+  it('reports disabled registration on 403', async () => {
+    const auth = await setup();
+    fetchMock.mockResolvedValue({ ok: false, status: 403, json: () => Promise.resolve({}) });
+
+    await expect(auth.register('new@formmaker.local', 'formmaker')).resolves.toBe('disabled');
     expect(auth.authenticated()).toBe(false);
   });
 

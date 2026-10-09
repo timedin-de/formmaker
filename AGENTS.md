@@ -62,7 +62,8 @@ scripts/            copy-icons.mjs (icon bundling), build-server.mjs (ncc bundle
 - **Auth.** Users with roles (`admin` / `editor`). Durable sessions with hashed bearer tokens
   and a 24h TTL. Forms are scoped to their owner, and admins see everything. The first start
   creates `admin@formmaker.local` (override with `FORMMAKER_ADMIN_EMAIL`) with the password from
-  `FORMMAKER_PASSWORD`, or a random one printed to the log if unset or shorter than 8 characters. Protect Nest routes with `@UseGuards(AuthGuard)` + `@CurrentUser()`.
+  `FORMMAKER_PASSWORD`, or a random one printed to the log if unset or shorter than 8 characters.
+  Self-registration is off (403) unless `ALLOW_REGISTRATION=true`. Protect Nest routes with `@UseGuards(AuthGuard)` + `@CurrentUser()`.
 
 ## Server rules
 

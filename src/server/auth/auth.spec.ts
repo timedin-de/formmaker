@@ -22,6 +22,7 @@ describe('auth API', () => {
   beforeAll(async () => {
     process.env.SQLITE_PATH = ':memory:';
     vi.stubEnv('FORMMAKER_PASSWORD', 'formmaker');
+    vi.stubEnv('ALLOW_REGISTRATION', 'true');
     app = await createApp();
     await app.listen(0);
     base = await app.getUrl();
@@ -60,6 +61,17 @@ describe('auth API', () => {
     const again = await post('register', { email: 'new@example.com', password: 'longenough' });
     expect(again.status).toBe(409);
     expect(await again.json()).toEqual({ error: 'email already exists' });
+  });
+
+  it('rejects registration with 403 unless ALLOW_REGISTRATION is true', async () => {
+    vi.stubEnv('ALLOW_REGISTRATION', '');
+    try {
+      const res = await post('register', { email: 'blocked@example.com', password: 'longenough' });
+      expect(res.status).toBe(403);
+      expect(await res.json()).toEqual({ error: 'registration disabled' });
+    } finally {
+      vi.stubEnv('ALLOW_REGISTRATION', 'true');
+    }
   });
 
   it('requires a token for /me and returns the user with one', async () => {

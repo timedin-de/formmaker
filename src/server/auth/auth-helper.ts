@@ -7,6 +7,11 @@ export function publicUser(user: User): PublicUser {
   return { id, email, role, createdAt };
 }
 
+/** Self-registration is off unless `ALLOW_REGISTRATION=true`; admins can always create users. */
+export function registrationEnabled(): boolean {
+  return process.env.ALLOW_REGISTRATION?.trim().toLowerCase() === 'true';
+}
+
 export function bearerToken(header: string | undefined): string | undefined {
   if (!header || typeof header !== 'string') {
     return;
