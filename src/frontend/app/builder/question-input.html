@@ -7,6 +7,8 @@
           [id]="vr.id"
           [formControl]="vr.control"
           [placeholder]="vr.placeholder ?? ''"
+          [minLength]="validation('minLength')"
+          [maxLength]="validation('maxLength')"
           [type]="inputType(vr.el)"
         />
       </mat-form-field>
@@ -19,6 +21,8 @@
           [formControl]="vr.control"
           [placeholder]="vr.placeholder ?? ''"
           [rows]="rows(vr.el)"
+          [minLength]="validation('minLength')"
+          [maxLength]="validation('maxLength')"
         ></textarea>
       </mat-form-field>
     }
@@ -99,8 +103,8 @@
         [config]="{
           id: vr.id,
           type: 'date',
-          min: date(vr.el.validations?.find((v) => v.rule === 'dateMin')?.value),
-          max: date(vr.el.validations?.find((v) => v.rule === 'dateMax')?.value),
+          min: date(validation('dateMin')),
+          max: date(validation('dateMax')),
           control: vr.control,
         }"
       ></fm-question-input-field>

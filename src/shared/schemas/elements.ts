@@ -128,13 +128,11 @@ const textElementSchema = questionBaseSchema.extend(placeholderableSchema.shape)
       z.literal('number'),
     ])
     .optional(),
-  maxLength: z.number().optional(),
 }) satisfies z.ZodType<TextElement>;
 
 const longTextElementSchema = questionBaseSchema.extend(placeholderableSchema.shape).extend({
   type: z.literal('longText'),
   rows: z.number().optional(),
-  maxLength: z.number().optional(),
 }) satisfies z.ZodType<LongTextElement>;
 
 const questionDefinitionSchema = z.discriminatedUnion('type', [
