@@ -86,6 +86,7 @@ export class UserController {
       if (existingUser && existingUser.id !== id) {
         throw new ConflictException({ error: 'email already exists' });
       }
+      patch.email = normalizedEmail;
     }
     if (body.role !== undefined) patch.role = body.role;
     if (body.password !== undefined) patch.passwordHash = await hashPassword(body.password);
