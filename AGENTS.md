@@ -85,6 +85,8 @@ scripts/            copy-icons.mjs (icon bundling), build-server.mjs (ncc bundle
 - **Icons are bundled SVGs.** A new `mat-icon svgIcon="..."` must be added to
   `scripts/copy-icons.mjs` and regenerated with `npm run icons:copy` (manifest:
   `core/icon-names.ts`). This runs automatically on `prestart` and `prebuild`.
+- **Styles use nested SCSS.** Nest child selectors, `&:` states and `@media` queries inside their
+  parent block instead of writing flat `.parent .child` rules.
 - Labels/titles and descriptions render Markdown via the `markdown` pipe: inline `| markdown` for
   labels, block `| markdown: true` for descriptions.
 - Exports: add a channel to `EXPORT_CHANNELS` (`core/export/channels.ts`) to get a results-toolbar
