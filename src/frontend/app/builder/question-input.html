@@ -7,8 +7,8 @@
           [id]="vr.id"
           [formControl]="vr.control"
           [placeholder]="vr.placeholder ?? ''"
-          [minLength]="validation('minLength')"
-          [maxLength]="validation('maxLength')"
+          [minlength]="validation('minLength')"
+          [maxlength]="validation('maxLength')"
           [type]="inputType(vr.el)"
         />
       </mat-form-field>
@@ -21,8 +21,8 @@
           [formControl]="vr.control"
           [placeholder]="vr.placeholder ?? ''"
           [rows]="rows(vr.el)"
-          [minLength]="validation('minLength')"
-          [maxLength]="validation('maxLength')"
+          [minlength]="validation('minLength')"
+          [maxlength]="validation('maxLength')"
         ></textarea>
       </mat-form-field>
     }
@@ -32,6 +32,8 @@
           matInput
           [id]="vr.id"
           type="number"
+          [min]="validation('min')"
+          [max]="validation('max')"
           [formControl]="vr.control"
           [placeholder]="vr.placeholder ?? ''"
         />

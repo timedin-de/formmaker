@@ -69,7 +69,7 @@ export function createElement(type: ElementType, label: string): ElementDefiniti
   };
   switch (type) {
     case 'text':
-      return { ...pBase, type: 'text', inputType: 'text', maxLength: 255 };
+      return { ...pBase, type: 'text', inputType: 'text' };
     case 'longText':
       return { ...pBase, type: 'longText', rows: 4 };
     case 'number':

@@ -190,8 +190,6 @@
           ],
           "defaultValue": { "kind": "static", "value": 49.99 },
           "placeholder": "0.00",
-          "min": 0,
-          "max": 1000,
           "step": 0.01,
           "unit": "USD",
           "decimals": 2

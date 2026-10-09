@@ -73,8 +73,6 @@ const choiceElementSchema = questionBaseSchema.extend({
 
 const numberElementSchema = questionBaseSchema.extend(placeholderableSchema.shape).extend({
   type: z.literal('number'),
-  min: z.number().optional(),
-  max: z.number().optional(),
   step: z.number().optional(),
   unit: z.string().optional(),
   decimals: z.number().optional(),

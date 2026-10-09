@@ -1,9 +1,9 @@
 import { Component, inject, input } from '@angular/core';
 import {
-  type AbstractControl,
-  type FormControl,
   FormsModule,
   ReactiveFormsModule,
+  type AbstractControl,
+  type FormControl,
 } from '@angular/forms';
 import { MatButton } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -13,14 +13,15 @@ import { MatRadioModule } from '@angular/material/radio';
 import { MatOption, MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { has } from '@shared/helper';
-import {
-  type ChoiceElement,
-  type ElementDefinition,
-  type ElementViewRef,
-  type FieldValue,
-  type FileValue,
-  type ScaleElement,
-  type SignatureValue,
+import type {
+  ChoiceElement,
+  ElementDefinition,
+  ElementViewRef,
+  FieldValue,
+  FileValue,
+  ScaleElement,
+  SignatureValue,
+  ValidationRuleType,
 } from '@shared/model';
 import { I18nService } from '../core/i18n';
 import { MarkdownPipe } from '../core/markdown';
@@ -178,6 +179,15 @@ export class QuestionInput {
       return Number(multiplier) * Math.floor(value);
     }
     return 60;
+  }
+
+  validation(type: ValidationRuleType) {
+    const el = this.vr()?.el;
+    if (!el || !has(el, 'validations'))
+      throw new Error('Called validations on non Question Element');
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return el.validations.find((v) => v.rule === type)?.value as any | undefined;
   }
 }
 function readAsDataUrl(file: File): Promise<string> {
