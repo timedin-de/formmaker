@@ -76,12 +76,14 @@ function checkRule(
   switch (rule.rule) {
     case 'required':
       return isEmpty(value) ? defaultMessage('required', element.label) : null;
-    case 'minLength': {
+    case 'minLength':
+    case 'minCount': {
       const min = num(rule.value, 0);
       const len = lengthOf(value);
       return len !== null && len < min ? defaultMessage('minLength', `${min}`) : null;
     }
-    case 'maxLength': {
+    case 'maxLength':
+    case 'maxCount': {
       const max = num(rule.value, Infinity);
       const len = lengthOf(value);
       return len !== null && len > max ? defaultMessage('maxLength', `${max}`) : null;

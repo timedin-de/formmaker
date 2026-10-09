@@ -123,6 +123,18 @@ export class QuestionInput {
     control.markAsTouched();
   }
 
+  /** Disables unchecked options once the `maxLength` rule's selection limit is reached. */
+  multiDisabled(control: FormControl, value: string | number): boolean {
+    const max = Number(this.validation('maxCount'));
+    if (!Number.isFinite(max) || max <= 0 || this.multiChecked(control, value)) return false;
+    return this.multiCount(control) >= max;
+  }
+
+  multiCount(control: FormControl): number {
+    const current = (control.value as (string | number)[] | null) ?? [];
+    return current.length;
+  }
+
   fileMultiple(el: ElementDefinition): boolean {
     return (el as { multiple?: boolean }).multiple ?? false;
   }

@@ -150,6 +150,7 @@ Each rule: `id` (required, unique within element), `rule`, optional `message`
 | ---------------------------------------- | -------------------------------------------------------------------- |
 | `required`                               | – (redundant with `required:true`, but lets you set a message)       |
 | `minLength` `maxLength`                  | `value` = number                                                     |
+| `minCount` `maxCount`                    | `value` = number                                                     |
 | `min` `max`                              | `value` = number                                                     |
 | `between`                                | `value`, `valueTo` = numbers                                         |
 | `pattern`                                | `pattern` = regex source                                             |
