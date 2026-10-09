@@ -118,6 +118,16 @@ describe('toCsv', () => {
     expect(csv).toContain('"x, y"');
     expect(csv).toContain('"he said ""hi"""');
   });
+
+  it('neutralizes formula cells but keeps numbers', async () => {
+    const blob = toCsv(['a'], [['=1+1'], ['@SUM(A1)'], ['-5'], ['+2.5']]);
+    const csv = await blob.text();
+    expect(csv).toContain("'=1+1");
+    expect(csv).toContain("'@SUM(A1)");
+    expect(csv).toContain('\r\n-5\r\n');
+    expect(csv).toContain('\r\n+2.5');
+    expect(csv).not.toContain("'-5");
+  });
 });
 
 describe('submissionsToCsv', () => {
