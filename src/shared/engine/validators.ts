@@ -3,7 +3,6 @@ import type { QuestionDefinition } from '@shared/model/form.model';
 import type { ValidationRule, ValidationRuleType } from '@shared/model/validation.model';
 import type { FieldValue } from '@shared/model/values.model';
 import { evalExpression } from './expression/evaluator';
-import { interpolateTemplate } from './expression/template';
 
 interface ValidationFailure {
   ruleId: string;
@@ -31,7 +30,8 @@ export function validateElementValue(
 
   if (element.required) {
     const hasRequired = rules.some((r) => r.rule === 'required');
-    if (!hasRequired) rules.unshift({ id: '__required__', rule: 'required' });
+    if (!hasRequired)
+      rules.unshift({ id: '__required__', rule: 'required', message: 'This field is required' });
   }
 
   if (has(element, 'options') && !isEmpty(value)) {
@@ -56,9 +56,8 @@ export function validateElementValue(
   }
 
   for (const rule of rules) {
-    const message = rule.message ? interpolateTemplate(rule.message, allValues) : undefined;
     const failure = checkRule(element, rule, value, allValues);
-    if (failure) failures.push({ ruleId: rule.id, type: rule.rule, message: message ?? failure });
+    if (failure) failures.push({ ruleId: rule.id, type: rule.rule, message: failure });
   }
 
   return { valid: failures.length === 0, failures };
@@ -75,34 +74,34 @@ function checkRule(
 
   switch (rule.rule) {
     case 'required':
-      return isEmpty(value) ? defaultMessage('required', element.label) : null;
+      return isEmpty(value) ? errorMessage(rule, element.label) : null;
     case 'minLength':
     case 'minCount': {
       const min = num(rule.value, 0);
       const len = lengthOf(value);
-      return len !== null && len < min ? defaultMessage('minLength', `${min}`) : null;
+      return len !== null && len < min ? errorMessage(rule, `${min}`) : null;
     }
     case 'maxLength':
     case 'maxCount': {
       const max = num(rule.value, Infinity);
       const len = lengthOf(value);
-      return len !== null && len > max ? defaultMessage('maxLength', `${max}`) : null;
+      return len !== null && len > max ? errorMessage(rule, `${max}`) : null;
     }
     case 'min': {
       const n = number(value);
       const min = num(rule.value, -Infinity);
-      return n !== null && n < min ? defaultMessage('min', `${min}`) : null;
+      return n !== null && n < min ? errorMessage(rule, `${min}`) : null;
     }
     case 'max': {
       const n = number(value);
       const max = num(rule.value, Infinity);
-      return n !== null && n > max ? defaultMessage('max', `${max}`) : null;
+      return n !== null && n > max ? errorMessage(rule, `${max}`) : null;
     }
     case 'between': {
       const n = number(value);
       const lo = num(rule.value, -Infinity);
       const hi = num(rule.valueTo, Infinity);
-      return n !== null && (n < lo || n > hi) ? defaultMessage('between', `${lo}-${hi}`) : null;
+      return n !== null && (n < lo || n > hi) ? errorMessage(rule, `${lo}-${hi}`) : null;
     }
     case 'pattern': {
       if (typeof value !== 'string' || value === '') return null;
@@ -112,50 +111,46 @@ function checkRule(
       } catch {
         return null;
       }
-      return re.test(value) ? null : defaultMessage('pattern', rule.pattern ?? '');
+      return re.test(value) ? null : errorMessage(rule, rule.pattern);
     }
     case 'email':
-      return stringValue(value) && !EMAIL_RE.test(String(value))
-        ? defaultMessage('email', '')
-        : null;
+      return stringValue(value) && !EMAIL_RE.test(String(value)) ? errorMessage(rule) : null;
     case 'url':
-      return stringValue(value) && !URL_RE.test(String(value)) ? defaultMessage('url', '') : null;
+      return stringValue(value) && !URL_RE.test(String(value)) ? errorMessage(rule) : null;
     case 'phone':
-      return stringValue(value) && !PHONE_RE.test(String(value))
-        ? defaultMessage('phone', '')
-        : null;
+      return stringValue(value) && !PHONE_RE.test(String(value)) ? errorMessage(rule) : null;
     case 'integer':
-      return number(value) !== null && !Number.isInteger(number(value))
-        ? defaultMessage('integer', '')
-        : null;
+      return number(value) !== null && !Number.isInteger(number(value)) ? errorMessage(rule) : null;
     case 'number':
-      return number(value) === null && stringValue(value) ? defaultMessage('number', '') : null;
+      return number(value) === null && stringValue(value) ? errorMessage(rule) : null;
+    // Compared by calendar day, so the bound day itself passes for date and
+    // dateTime values alike and the result does not depend on the time zone.
     case 'dateMin': {
-      const dv = dateValue(value);
-      const limit = typeof rule.value === 'string' ? new Date(rule.value) : null;
-      return dv && limit && dv < limit ? defaultMessage('dateMin', formatDate(limit)) : null;
+      const day = dayOf(value);
+      const limit = dayOf(rule.value);
+      return day && limit && day < limit ? errorMessage(rule, limit) : null;
     }
     case 'dateMax': {
-      const dv = dateValue(value);
-      const limit = typeof rule.value === 'string' ? new Date(rule.value) : null;
-      return dv && limit && dv > limit ? defaultMessage('dateMax', formatDate(limit)) : null;
+      const day = dayOf(value);
+      const limit = dayOf(rule.value);
+      return day && limit && day > limit ? errorMessage(rule, limit) : null;
     }
     case 'minFiles': {
       const files = fileList(value);
       const min = num(rule.value, 0);
-      return files !== null && files.length < min ? defaultMessage('minFiles', `${min}`) : null;
+      return files !== null && files.length < min ? errorMessage(rule, `${min}`) : null;
     }
     case 'maxFiles': {
       const files = fileList(value);
       const max = num(rule.value, Infinity);
-      return files !== null && files.length > max ? defaultMessage('maxFiles', `${max}`) : null;
+      return files !== null && files.length > max ? errorMessage(rule, `${max}`) : null;
     }
     case 'fileSizeMaxMb': {
       const files = fileList(value);
       const limitMb = num(rule.value, Infinity);
       if (!files) return null;
       const oversize = files.some((f) => 'size' in f && f.size > limitMb * 1024 * 1024);
-      return oversize ? defaultMessage('fileSizeMaxMb', `${limitMb}`) : null;
+      return oversize ? errorMessage(rule, `${limitMb}`) : null;
     }
     case 'fileType': {
       const files = fileList(value);
@@ -170,42 +165,21 @@ function checkRule(
           'name' in f &&
           !accepted.some((a) => a === f.mimeType || f.name.toLowerCase().endsWith(a)),
       );
-      return wrong ? defaultMessage('fileType', accepted.join(', ')) : null;
+      return wrong ? errorMessage(rule, accepted.join(', ')) : null;
     }
     case 'custom': {
       if (!rule.expression) return null;
       const result = evalExpression(rule.expression, allValues as never);
       if (typeof result === 'string') return result === '' ? null : result;
-      return result === true || result === null ? null : defaultMessage('custom', '');
+      return result === true || result === null ? null : errorMessage(rule, '');
     }
     default:
       return null;
   }
 }
 
-function defaultMessage(type: ValidationRuleType, detail = ''): string {
-  const base: Record<string, string> = {
-    required: 'This field is required',
-    minLength: `Must be at least ${detail} characters`,
-    maxLength: `Must be at most ${detail} characters`,
-    min: `Must be at least ${detail}`,
-    max: `Must be at most ${detail}`,
-    between: `Must be between ${detail}`,
-    pattern: `Does not match the required format (${detail})`,
-    email: 'Enter a valid email address',
-    url: 'Enter a valid URL',
-    phone: 'Enter a valid phone number',
-    integer: 'Enter a whole number',
-    number: 'Enter a number',
-    dateMin: `Must be after ${detail}`,
-    dateMax: `Must be before ${detail}`,
-    minFiles: `Select at least ${detail} file(s)`,
-    maxFiles: `Select at most ${detail} file(s)`,
-    fileSizeMaxMb: `Files must be at most ${detail} MB`,
-    fileType: `Unsupported file type. Allowed: ${detail}`,
-    custom: 'This value is invalid',
-  };
-  return base[type] ?? 'Invalid value';
+function errorMessage(rule: ValidationRule, detail = ''): string {
+  return rule.message.replaceAll('{detail}', detail);
 }
 
 function isEmpty(value: FieldValue): boolean {
@@ -234,10 +208,11 @@ function stringValue(value: FieldValue): boolean {
   return value !== null && value !== undefined && String(value) !== '';
 }
 
-function dateValue(value: FieldValue): Date | null {
-  if (!stringValue(value)) return null;
-  const d = new Date(String(value));
-  return Number.isNaN(d.getTime()) ? null : d;
+/** The `YYYY-MM-DD` day of a date or `datetime-local` string, or null if it has none. */
+function dayOf(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const day = /^\d{4}-\d{2}-\d{2}/.exec(value.trim())?.[0];
+  return day && !Number.isNaN(Date.parse(day)) ? day : null;
 }
 
 function fileList(value: FieldValue): Extract<FieldValue, object[]> | null {
@@ -251,10 +226,6 @@ function fileList(value: FieldValue): Extract<FieldValue, object[]> | null {
 function num(value: unknown, fallback: number): number {
   const n = typeof value === 'number' ? value : Number(value);
   return Number.isFinite(n) ? n : fallback;
-}
-
-function formatDate(d: Date): string {
-  return d.toISOString().slice(0, 10);
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
