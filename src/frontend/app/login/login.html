@@ -18,14 +18,14 @@
         <fm-password
           [label]="i18n.t('login.password')"
           formControlName="password"
-          inputAutocomplete="current-password"
+          [inputAutocomplete]="registering() ? 'new-password' : 'current-password'"
           required
           (enter)="registering() || submit()"
         />
         @if (registering()) {
           <fm-password
             [label]="i18n.t('login.passwordRepeat')"
-            inputAutocomplete="current-password"
+            inputAutocomplete="new-password"
             formControlName="passwordRepeat"
             required
             (enter)="submit()"
