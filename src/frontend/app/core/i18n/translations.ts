@@ -45,6 +45,7 @@ const en = {
   'landing.import.submit': 'Import',
 
   'landing.newForm': 'New form',
+  'landing.loading': 'Loading forms…',
   'landing.empty.title': 'No forms yet',
   'landing.empty.text': 'Create your first form or import an existing JSON definition.',
   'landing.createForm': 'Create form',
@@ -502,6 +503,7 @@ const de: typeof en = {
   'landing.import.close': 'Schließen',
   'landing.import.submit': 'Importieren',
   'landing.newForm': 'Neues Formular',
+  'landing.loading': 'Formulare werden geladen…',
   'landing.empty.title': 'Noch keine Formulare',
   'landing.empty.text':
     'Erstelle dein erstes Formular oder importiere eine vorhandene JSON-Definition.',

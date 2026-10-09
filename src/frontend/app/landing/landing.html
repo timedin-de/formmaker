@@ -35,7 +35,16 @@
   </div>
 </div>
 
-@if (forms().length === 0) {
+@if (forms() === undefined) {
+  <div class="loading" role="status">
+    <div class="spinners" aria-hidden="true">
+      <div></div>
+      <div></div>
+      <div></div>
+    </div>
+    <span>{{ i18n.t('landing.loading') }}</span>
+  </div>
+} @else if (forms()?.length === 0) {
   <div class="empty">
     <mat-icon
       svgIcon="note_add"
