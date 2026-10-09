@@ -67,6 +67,7 @@
       <div class="choice-group">
         @for (opt of options(vr.el); track opt.id) {
           <mat-checkbox
+            [disabled]="multiDisabled(vr.control, opt.value)"
             [value]="strOpt(opt.value)"
             [checked]="multiChecked(vr.control, opt.value)"
             (change)="toggleMulti(vr.control, opt.value, $event.checked)"

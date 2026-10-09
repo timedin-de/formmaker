@@ -9,6 +9,8 @@ export const VALIDATION_RULE_TYPES = [
   'required',
   'minLength',
   'maxLength',
+  'minCount',
+  'maxCount',
   'min',
   'max',
   'between',

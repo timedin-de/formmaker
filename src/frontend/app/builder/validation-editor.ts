@@ -72,6 +72,8 @@ export class ValidationEditor {
     switch (rule) {
       case 'minLength':
       case 'maxLength':
+      case 'minCount':
+      case 'maxCount':
       case 'min':
       case 'max':
       case 'minFiles':
