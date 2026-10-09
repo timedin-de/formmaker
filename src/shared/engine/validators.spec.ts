@@ -151,6 +151,31 @@ describe('validateElementValue', () => {
     expect(ok(max, '2026-01-10')).toBe(true);
   });
 
+  it('dateMin and dateMax include the whole bound day for dateTime values', () => {
+    const min = withRule({ rule: 'dateMin', value: '2026-01-10' }, { type: 'dateTime' });
+    expect(ok(min, '2026-01-10T00:30')).toBe(true);
+    expect(ok(min, '2026-01-09T23:59')).toBe(false);
+
+    const max = withRule({ rule: 'dateMax', value: '2026-01-10' }, { type: 'dateTime' });
+    expect(ok(max, '2026-01-10T23:30')).toBe(true);
+    expect(ok(max, '2026-01-11T00:00')).toBe(false);
+  });
+
+  it('min/maxLength count selected options on multiChoice with an option message', () => {
+    const options = ['a', 'b', 'c'].map((v) => ({ id: v, label: v, value: v }));
+    const el = textEl({
+      type: 'multiChoice',
+      options,
+      validations: [
+        { id: 'min', rule: 'minLength', value: 2 },
+        { id: 'max', rule: 'maxLength', value: 2 },
+      ],
+    });
+    expect(ok(el, ['a', 'b'])).toBe(true);
+    expect(validateElementValue(el, ['a'], {}).failures[0].message).toContain('option');
+    expect(validateElementValue(el, ['a', 'b', 'c'], {}).failures[0].message).toContain('2 option');
+  });
+
   it('maxFiles, fileSizeMaxMb and fileType by mime type', () => {
     const file = (name: string, size: number, mimeType = 'text/plain') => ({
       name,
