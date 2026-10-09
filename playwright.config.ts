@@ -36,6 +36,7 @@ export default defineConfig({
         DATABASE_PROVIDER: 'sqlite',
         SQLITE_PATH: E2E_SQLITE_PATH,
         RATELIMIT: '10000',
+        RATELIMIT_AUTH: '10000',
         FORMMAKER_PASSWORD: 'formmaker',
         PORT: `${API_PORT}`,
       },

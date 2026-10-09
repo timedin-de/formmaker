@@ -38,14 +38,25 @@ export async function createApp(): Promise<NestExpressApplication> {
   if (tp) app.set('trust proxy', /^\d+$/.test(tp) ? Number(tp) : tp || false);
 
   const parsedLimit = parseInt(process.env.RATELIMIT ?? '');
+  const parsedAuthLimit = parseInt(process.env.RATELIMIT_AUTH ?? '');
 
+  // Only the API is limited; static assets and icons must not use up the quota.
   const rateLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     limit: parsedLimit >= 1 ? parsedLimit : 300,
     standardHeaders: true,
     legacyHeaders: false,
   });
-  app.use(rateLimiter);
+  app.use('/api', rateLimiter);
+
+  // Stricter budget against credential stuffing and mass registration.
+  const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: parsedAuthLimit >= 1 ? parsedAuthLimit : 20,
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+  app.use(['/api/auth/login', '/api/auth/register'], authLimiter);
 
   const nest = await NestFactory.create<NestExpressApplication>(
     AppModule,
