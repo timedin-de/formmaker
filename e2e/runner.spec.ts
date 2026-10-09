@@ -12,8 +12,8 @@ test('fills a multi-page form from its public share link and stores the submissi
   const formId = await createForm(
     session,
     makeForm(formName, [
-      { title: 'About you', elements: [seedField('text', nameId, 'Name')] },
-      { title: 'Details', elements: [seedField('number', ageId, 'Age')] },
+      { title: 'About you', subtitle: '', elements: [seedField('text', nameId, 'Name')] },
+      { title: 'Details', subtitle: '', elements: [seedField('number', ageId, 'Age')] },
     ]),
   );
 
@@ -63,6 +63,7 @@ test('submits when a required field is hidden by a condition', async ({ page, re
     makeForm(formName, [
       {
         title: 'Details',
+        subtitle: '',
         elements: [
           { ...seedField('text', nameId, 'Name'), required: true },
           {
@@ -110,6 +111,7 @@ test('blocks submission while a revealed required field is still empty', async (
     makeForm(formName, [
       {
         title: 'Details',
+        subtitle: '',
         elements: [
           seedField('text', triggerId, 'Trigger'),
           {
