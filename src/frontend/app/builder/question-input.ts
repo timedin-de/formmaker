@@ -55,7 +55,8 @@ export class QuestionInput {
   date = (value: unknown) => value as Date;
 
   inputType(el: ElementDefinition): string {
-    return (el as { inputType?: string }).inputType ?? 'text';
+    const type = (el as { inputType?: string }).inputType ?? 'text';
+    return type === 'phone' ? 'tel' : type;
   }
   errMsg(control: AbstractControl): string {
     const errors = control.errors;
