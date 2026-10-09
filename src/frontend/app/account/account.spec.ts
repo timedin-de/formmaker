@@ -1,19 +1,15 @@
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import type { FormGroupDirective } from '@angular/forms';
-import { MatIconRegistry } from '@angular/material/icon';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { DomSanitizer } from '@angular/platform-browser';
 import { provideRouter, Router } from '@angular/router';
 import type { PublicUser } from '@shared/model/user.model';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { initRegistry } from '../../../../tests/helper/icons';
 import { AuthService } from '../core/auth/auth.service';
 import { I18nService } from '../core/i18n';
 import { ApiError } from '../core/state/api-client';
 import { UsersRepository } from '../core/state/users.repository';
 import { Account } from './account';
-
-/** `svgIcon` names referenced by the account template. */
-const ICONS = ['account_circle', 'visibility', 'lock', 'save', 'delete_outline'];
 
 function makeUser(overrides: Partial<PublicUser> = {}): PublicUser {
   return {
@@ -41,12 +37,7 @@ describe('Account', () => {
       ],
     }).compileComponents();
 
-    const registry = TestBed.inject(MatIconRegistry);
-    const sanitizer = TestBed.inject(DomSanitizer);
-    const svg = sanitizer.bypassSecurityTrustHtml(
-      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"></svg>',
-    );
-    for (const name of ICONS) registry.addSvgIconLiteral(name, svg);
+    initRegistry(TestBed);
 
     fixture = TestBed.createComponent(Account);
     component = fixture.componentInstance;
@@ -149,12 +140,7 @@ describe('Account actions', () => {
       ],
     }).compileComponents();
 
-    const registry = TestBed.inject(MatIconRegistry);
-    const sanitizer = TestBed.inject(DomSanitizer);
-    const svg = sanitizer.bypassSecurityTrustHtml(
-      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"></svg>',
-    );
-    for (const name of ICONS) registry.addSvgIconLiteral(name, svg);
+    initRegistry(TestBed);
 
     fixture = TestBed.createComponent(Account);
     component = fixture.componentInstance;

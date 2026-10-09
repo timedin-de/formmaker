@@ -1,27 +1,13 @@
 import { TestBed } from '@angular/core/testing';
-import { MatIconRegistry } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { DomSanitizer } from '@angular/platform-browser';
 import { provideRouter } from '@angular/router';
 import type { FormWithOwner } from '@shared/model/form.model';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { initRegistry } from '../../../../tests/helper/icons';
 import { FormImportService } from '../core/export/import';
 import { I18nService } from '../core/i18n';
 import { FormsRepository } from '../core/state/forms.repository';
 import { LandingComponent } from './landing';
-
-/** `svgIcon` names referenced by the landing template. */
-const ICONS = [
-  'upload_file',
-  'add',
-  'note_add',
-  'play_circle_outline',
-  'edit',
-  'bar_chart',
-  'link',
-  'download',
-  'delete_outline',
-];
 
 function makeForm(updatedAt?: string): FormWithOwner {
   const base: FormWithOwner = {
@@ -69,12 +55,7 @@ describe('LandingComponent.updated', () => {
       ],
     }).compileComponents();
 
-    const registry = TestBed.inject(MatIconRegistry);
-    const sanitizer = TestBed.inject(DomSanitizer);
-    const svg = sanitizer.bypassSecurityTrustHtml(
-      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"></svg>',
-    );
-    for (const name of ICONS) registry.addSvgIconLiteral(name, svg);
+    initRegistry(TestBed);
 
     const fixture = TestBed.createComponent(LandingComponent);
     component = fixture.componentInstance;
@@ -142,6 +123,8 @@ describe('LandingComponent actions', () => {
     })
       .overrideComponent(LandingComponent, { remove: { imports: [MatSnackBarModule] } })
       .compileComponents();
+
+    initRegistry(TestBed);
     component = TestBed.createComponent(LandingComponent).componentInstance;
     i18n = TestBed.inject(I18nService);
     await vi.waitFor(() => expect(listForms).toHaveBeenCalledTimes(1)); // constructor refresh
