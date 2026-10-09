@@ -35,13 +35,13 @@ Built with Angular 22 + Angular Material 22 on the frontend and a TypeScript Exp
 
 The Express API (`src/server/`) exposes:
 
-- `POST /api/auth/login`, `POST /api/auth/register` — email/password login and self-registration. New registrations receive the `editor` role; sessions are durable, expire after 24 hours, and bearer tokens are stored as hashes. Omitting `email` keeps the existing single-password login compatible by selecting the initial admin account.
-- `GET/POST /api/users`, `PATCH /api/users/:id/password` — administrator-only user provisioning and password management. Forms are isolated by owner; admins retain access to all forms.
+- `POST /api/auth/login`, `POST /api/auth/register` — email/password login and self-registration. New registrations receive the `editor` role; sessions are durable, expire after 24 hours, and bearer tokens are stored as hashes. Both `email` and `password` are required.
+- `GET/POST /api/users`, `PATCH /api/users/:id` — administrator-only user provisioning; the patch updates email, role and/or password (a new password ends that user's sessions). Forms are isolated by owner; admins retain access to all forms.
 - `GET /api/forms`, `GET/POST/DELETE /api/forms/:id` — form CRUD.
 - `GET/POST/DELETE /api/forms/:id/submissions[ /:submissionId]` — submissions per form.
 - `GET /api/health` — liveness probe.
 
-The first start creates `admin@formmaker.local` with password `formmaker`. Set `FORMMAKER_ADMIN_EMAIL` and `FORMMAKER_PASSWORD` before the first start to choose secure bootstrap credentials.
+The first start creates an admin account `admin@formmaker.local` (override with `FORMMAKER_ADMIN_EMAIL`). Its password comes from `FORMMAKER_PASSWORD`; if that is unset or shorter than 8 characters, a random password is generated and printed to the server log.
 
 SQLite is used by default at `src/server/data/formmaker.sqlite`. To use MySQL instead, set `DATABASE_PROVIDER=mysql` and `DATABASE_URL=mysql://user:password@host:3306/formmaker`. The schema is managed by TypeORM migrations in `src/server/migrations` (`synchronize` is never used). Pending migrations run automatically on startup; set `TYPEORM_MIGRATIONS_RUN=false` to apply them yourself with `npm run migration:run` (also `migration:revert` and `migration:generate -- src/server/migrations/<Name>`). Databases created before migrations existed are picked up automatically by the baseline migration.
 

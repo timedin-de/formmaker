@@ -61,8 +61,8 @@ scripts/            copy-icons.mjs (icon bundling), build-server.mjs (ncc bundle
   Nest routes. `index.ts` only listens.
 - **Auth.** Users with roles (`admin` / `editor`). Durable sessions with hashed bearer tokens
   and a 24h TTL. Forms are scoped to their owner, and admins see everything. The first start
-  creates `admin@formmaker.local` / `formmaker` (override with `FORMMAKER_ADMIN_EMAIL`,
-  `FORMMAKER_PASSWORD`). Protect Nest routes with `@UseGuards(AuthGuard)` + `@CurrentUser()`.
+  creates `admin@formmaker.local` (override with `FORMMAKER_ADMIN_EMAIL`) with the password from
+  `FORMMAKER_PASSWORD`, or a random one printed to the log if unset or shorter than 8 characters. Protect Nest routes with `@UseGuards(AuthGuard)` + `@CurrentUser()`.
 
 ## Server rules
 
@@ -71,7 +71,7 @@ scripts/            copy-icons.mjs (icon bundling), build-server.mjs (ncc bundle
   class-validator.
 - Error contract is `{ error, details? }`. Throw Nest exceptions with an object body
   (`new ConflictException({ error: '...' })`). `ApiExceptionFilter` formats the rest. Status
-  codes are part of the contract (`@HttpCode(200)` login, 201 register, 204 logout).
+  codes are part of the contract (`@HttpCode(200)` login, 204 register, 204 logout).
 - Schema changes go **only** through TypeORM migrations (never `synchronize`). Edit the entity,
   generate, review the SQL, and **register the migration in `src/server/migrations/index.ts`**
   (the server is bundled with ncc, so there is no runtime globbing). Keep migrations dialect-neutral
