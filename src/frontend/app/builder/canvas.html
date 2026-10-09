@@ -7,7 +7,7 @@
             class="page-name"
             [routerLink]="[]"
             queryParamsHandling="merge"
-            rel="button"
+            [attr.aria-current]="store().activePageId() === page.id ? 'page' : null"
             style="text-decoration: none"
             [queryParams]="{ page: page.id }"
           >

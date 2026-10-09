@@ -8,14 +8,25 @@
             mat-button
             routerLink="/"
             routerLinkActive="active"
+            ariaCurrentWhenActive="page"
             [routerLinkActiveOptions]="{ exact: true }"
           >
             {{ i18n.t('app.forms') }}
           </a>
-          <a mat-button routerLink="/builder" routerLinkActive="active">
+          <a
+            mat-button
+            routerLink="/builder"
+            routerLinkActive="active"
+            ariaCurrentWhenActive="page"
+          >
             {{ i18n.t('app.builder') }}
           </a>
-          <a mat-button routerLink="/account" routerLinkActive="active">
+          <a
+            mat-button
+            routerLink="/account"
+            routerLinkActive="active"
+            ariaCurrentWhenActive="page"
+          >
             {{ i18n.t('app.account') }}
           </a>
         </nav>
