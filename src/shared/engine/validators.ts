@@ -3,6 +3,7 @@ import type { QuestionDefinition } from '@shared/model/form.model';
 import type { ValidationRule, ValidationRuleType } from '@shared/model/validation.model';
 import type { FieldValue } from '@shared/model/values.model';
 import { evalExpression } from './expression/evaluator';
+import { compileRegex, type Matcher } from './regex';
 
 interface ValidationFailure {
   ruleId: string;
@@ -105,20 +106,26 @@ function checkRule(
     }
     case 'pattern': {
       if (typeof value !== 'string' || value === '') return null;
-      let re: RegExp;
+      let re: Matcher;
       try {
-        re = new RegExp(rule.pattern ?? '', '');
+        re = compileRegex(rule.pattern ?? '');
       } catch {
         return null;
       }
       return re.test(value) ? null : errorMessage(rule, rule.pattern);
     }
     case 'email':
-      return stringValue(value) && !EMAIL_RE.test(String(value)) ? errorMessage(rule) : null;
+      return stringValue(value) && !compileRegex(EMAIL_RE, 'i').test(String(value))
+        ? errorMessage(rule)
+        : null;
     case 'url':
-      return stringValue(value) && !URL_RE.test(String(value)) ? errorMessage(rule) : null;
+      return stringValue(value) && !compileRegex(URL_RE, 'i').test(String(value))
+        ? errorMessage(rule)
+        : null;
     case 'phone':
-      return stringValue(value) && !PHONE_RE.test(String(value)) ? errorMessage(rule) : null;
+      return stringValue(value) && !compileRegex(PHONE_RE).test(String(value))
+        ? errorMessage(rule)
+        : null;
     case 'integer':
       return number(value) !== null && !Number.isInteger(number(value)) ? errorMessage(rule) : null;
     case 'number':
@@ -228,6 +235,7 @@ function num(value: unknown, fallback: number): number {
   return Number.isFinite(n) ? n : fallback;
 }
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const URL_RE = /^(https?:\/\/)?([\w-]+\.)+[\w-]{2,}(\/\S*)?$/i;
-const PHONE_RE = /^[+()\-\s\d]{7,20}$/;
+// Compiled through `compileRegex` so the server runs them on RE2 as well.
+const EMAIL_RE = String.raw`^[^\s@]+@[^\s@]+\.[^\s@]+$`;
+const URL_RE = String.raw`^(https?://)?([\w-]+\.)+[\w-]{2,}(/\S*)?$`;
+const PHONE_RE = String.raw`^[+()\-\s\d]{7,20}$`;

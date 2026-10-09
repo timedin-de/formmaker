@@ -10,7 +10,8 @@ import type {
   TextElement,
 } from '@shared/model';
 import 'reflect-metadata';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { useRe2Regex } from '../common/re2-regex';
 import type { Repository } from '../repository';
 import { FormService } from './form.service';
 
@@ -342,6 +343,35 @@ describe('FormService.addSubmission', () => {
       await expect(submit({ q1: '1' })).resolves.toBeDefined();
       await expect(submit({ q1: 2 })).resolves.toBeDefined();
       await expectRejected({ q1: 3 });
+    });
+  });
+
+  describe('regex patterns (RE2)', () => {
+    beforeAll(() => useRe2Regex());
+
+    it('evaluates catastrophic patterns in linear time', async () => {
+      form = formOf([
+        page('p1', [
+          text('q1', {
+            validations: [{ id: 'r1', rule: 'pattern', pattern: '^(a+)+$', message: 'Error' }],
+          }),
+        ]),
+      ]);
+      const started = Date.now();
+      await expectRejected({ q1: 'a'.repeat(5000) + '!' });
+      expect(Date.now() - started).toBeLessThan(500);
+    });
+
+    it('still applies ordinary patterns', async () => {
+      form = formOf([
+        page('p1', [
+          text('q1', {
+            validations: [{ id: 'r1', rule: 'pattern', pattern: '^\\d{3}$', message: 'Error' }],
+          }),
+        ]),
+      ]);
+      await expect(submit({ q1: '123' })).resolves.toBeDefined();
+      await expectRejected({ q1: '12a' });
     });
   });
 });
