@@ -36,7 +36,7 @@ export class LandingComponent {
   private readonly repo = inject(FormsRepository);
   private readonly snack = inject(MatSnackBar);
   protected readonly i18n = inject(I18nService);
-  readonly forms = signal<FormWithOwner[]>([]);
+  readonly forms = signal<FormWithOwner[] | undefined>(undefined);
   private readonly importService = inject(FormImportService);
 
   private timedOutCloser: number | undefined;
