@@ -124,7 +124,7 @@ export class RunnerStore {
     return this.draft.load(form);
   }
 
-  private clearDraft(): void {
+  clearDraft(): void {
     const form = this.form();
     if (!form) return;
     this.draft.clear(form);
@@ -356,7 +356,6 @@ export class RunnerStore {
     };
 
     this.durationMs.set(submission.durationMs);
-    this.clearDraft();
     return { submission, visibleAnswerKeys };
   }
 

@@ -146,6 +146,7 @@ export class Runner {
         this.snack.open(this.i18n.t('errors.unknown'), 'OK', { duration: 2000 });
         return;
       }
+      this.store.clearDraft();
       this.submitted.set(true);
       this.lastSubmission.set(submission);
       this.snack.open(this.i18n.t('runner.submitted'), 'OK', { duration: 2000 });
