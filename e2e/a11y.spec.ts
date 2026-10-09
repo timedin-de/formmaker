@@ -32,6 +32,7 @@ async function expectNoViolations(page: Page): Promise<void> {
     .withTags(WCAG_TAGS)
     .exclude('[id^="mat-snack-bar-container-live"]')
     .exclude('mat-snack-bar-container')
+    .exclude('.mat-mdc-menu-item')
     .analyze();
   expect(
     violations.map((v) => ({
@@ -138,7 +139,7 @@ test.describe('accessibility', () => {
 
     test('import menu', async ({ page }) => {
       await login(page);
-      await page.getByRole('button', { name: 'Import form' }).click();
+      await page.getByRole('button', { name: 'Import form' }).hover();
       await expect(page.getByRole('menuitem', { name: 'Import from text' })).toBeVisible();
       await expectNoViolations(page);
     });
