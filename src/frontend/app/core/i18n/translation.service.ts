@@ -50,7 +50,7 @@ export function getErrorKey(
   if (!errors) return [undefined];
   if (errors['required']) return ['errors.required'];
   if (errors['minlength'])
-    return ['errors.minLength', { requiredLength: errors['minlength'].requiredLength }];
+    return ['errors.minLength', { detail: errors['minlength'].requiredLength }];
   if (errors['passwordMismatch']) return ['errors.passwordMismatch'];
   if (errors['email']) return ['errors.email'];
   return [undefined];

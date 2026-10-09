@@ -8,7 +8,7 @@ const validationRuleTypeSchema = z.enum(
 export const validationRuleSchema = z.strictObject({
   id: z.string(),
   rule: validationRuleTypeSchema,
-  message: z.string().optional(),
+  message: z.string().default('This value is invalid'),
   value: z.unknown().optional(),
   valueTo: z.unknown().optional(),
   pattern: z.string().optional(),

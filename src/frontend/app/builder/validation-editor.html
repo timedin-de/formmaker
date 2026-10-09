@@ -2,7 +2,7 @@
   <div class="sec-title">{{ i18n.t('panel.validation') }}</div>
   <mat-form-field appearance="outline" subscriptSizing="dynamic">
     <mat-select [placeholder]="i18n.t('panel.addRule')" (selectionChange)="addRule($event)">
-      @for (r of VALIDATION_RULE_TYPES; track r) {
+      @for (r of validationRuleTypes(); track r) {
         <mat-option [value]="r">{{ i18n.t(`val.${r}`) }}</mat-option>
       }
     </mat-select>
@@ -61,7 +61,7 @@
                   matInput
                   type="number"
                   [value]="str(rule.value)"
-                  (chaneg)="patchRule(rule.id, { value: stringOrNum($event.target.value) })"
+                  (change)="patchRule(rule.id, { value: stringOrNum($event.target.value) })"
                 />
               </mat-form-field>
               <mat-form-field appearance="outline" subscriptSizing="dynamic">

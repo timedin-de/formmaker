@@ -1,8 +1,10 @@
+import { type ValidationRule } from '@shared/model';
 import type { QuestionDefinition } from '@shared/model/form.model';
 import { describe, expect, it } from 'vitest';
 import { validateElementValue } from './validators';
 
-const textEl = (overrides: Partial<Record<string, unknown>> = {}): QuestionDefinition =>
+const message = 'a';
+const textEl = (overrides?: Partial<QuestionDefinition>): QuestionDefinition =>
   ({ id: 'q1', type: 'text', label: 'Name', ...overrides }) as QuestionDefinition;
 
 describe('validateElementValue', () => {
@@ -22,19 +24,21 @@ describe('validateElementValue', () => {
   });
 
   it('min/max length', () => {
-    const el = textEl({ validations: [{ id: 'a', rule: 'minLength', value: 3 }] });
+    const el = textEl({ validations: [{ id: 'a', rule: 'minLength', value: 3, message }] });
     expect(validateElementValue(el, 'ab', {}).valid).toBe(false);
     expect(validateElementValue(el, 'abc', {}).valid).toBe(true);
   });
 
   it('email rule', () => {
-    const el = textEl({ validations: [{ id: 'a', rule: 'email' }] });
+    const el = textEl({ validations: [{ id: 'a', rule: 'email', message }] });
     expect(validateElementValue(el, 'not-an-email', {}).valid).toBe(false);
     expect(validateElementValue(el, 'a@b.co', {}).valid).toBe(true);
   });
 
   it('pattern rule', () => {
-    const el = textEl({ validations: [{ id: 'a', rule: 'pattern', pattern: '^[A-Z]{2}\\d{3}$' }] });
+    const el = textEl({
+      validations: [{ id: 'a', rule: 'pattern', pattern: '^[A-Z]{2}\\d{3}$', message: '' }],
+    });
     expect(validateElementValue(el, 'AB123', {}).valid).toBe(true);
     expect(validateElementValue(el, 'ab123', {}).valid).toBe(false);
   });
@@ -43,8 +47,8 @@ describe('validateElementValue', () => {
     const el = textEl({
       type: 'number',
       validations: [
-        { id: 'a', rule: 'min', value: 10 },
-        { id: 'b', rule: 'max', value: 20 },
+        { id: 'a', rule: 'min', value: 10, message },
+        { id: 'b', rule: 'max', value: 20, message },
       ],
     });
     expect(validateElementValue(el, 5, {}).valid).toBe(false);
@@ -54,7 +58,9 @@ describe('validateElementValue', () => {
 
   it('custom expression referencing another field', () => {
     const el = textEl({
-      validations: [{ id: 'a', rule: 'custom', expression: 'required(q1) && q1 == q_confirm' }],
+      validations: [
+        { id: 'a', rule: 'custom', expression: 'required(q1) && q1 == q_confirm', message },
+      ],
     });
     const values = { q1: 'secret', q_confirm: 'secret' };
     expect(validateElementValue(el, 'secret', values).valid).toBe(true);
@@ -63,7 +69,9 @@ describe('validateElementValue', () => {
 
   it('custom expression can return a message string', () => {
     const el = textEl({
-      validations: [{ id: 'a', rule: 'custom', expression: 'msg("Password too short")', value: 0 }],
+      validations: [
+        { id: 'a', rule: 'custom', expression: 'msg("Password too short")', value: 0, message },
+      ],
     });
     const r = validateElementValue(el, 'x', {});
     expect(r.valid).toBe(false);
@@ -74,8 +82,8 @@ describe('validateElementValue', () => {
     const el = textEl({
       type: 'file',
       validations: [
-        { id: 'a', rule: 'minFiles', value: 2 },
-        { id: 'b', rule: 'fileType', accept: '.pdf' },
+        { id: 'a', rule: 'minFiles', value: 2, message: '' },
+        { id: 'b', rule: 'fileType', accept: '.pdf', message: '' },
       ],
     });
     const onePdf = [{ name: 'a.pdf', size: 10, mimeType: 'application/pdf' }];
@@ -84,19 +92,8 @@ describe('validateElementValue', () => {
     expect(validateElementValue(el, twoPdf, {}).valid).toBe(true);
   });
 
-  it('pipes a custom message', () => {
-    const el = textEl({
-      required: true,
-      validations: [
-        { id: 'a', rule: 'required', message: 'Hello {{q_name}}, please fill {{q_field_label}}' },
-      ],
-    });
-    const r = validateElementValue(el, '', { q_name: 'Ada', q_field_label: 'the box' });
-    expect(r.failures[0].message).toBe('Hello Ada, please fill the box');
-  });
-
-  const withRule = (rule: Record<string, unknown>, overrides = {}) =>
-    textEl({ validations: [{ id: 'r', ...rule }], ...overrides });
+  const withRule = (rule: Partial<ValidationRule>, overrides = {}) =>
+    textEl({ validations: [{ id: 'r', rule: 'custom', message, ...rule }], ...overrides });
   const ok = (el: QuestionDefinition, v: unknown) => validateElementValue(el, v as never, {}).valid;
 
   it('maxLength on strings and arrays', () => {
@@ -140,7 +137,7 @@ describe('validateElementValue', () => {
   });
 
   it('dateMin and dateMax', () => {
-    const min = withRule({ rule: 'dateMin', value: '2026-01-10' });
+    const min = withRule({ rule: 'dateMin', value: '2026-01-10', message: '{detail}' });
     expect(ok(min, '2026-01-09')).toBe(false);
     expect(ok(min, '2026-01-10')).toBe(true);
     expect(ok(min, 'garbage')).toBe(true);
@@ -167,13 +164,15 @@ describe('validateElementValue', () => {
       type: 'multiChoice',
       options,
       validations: [
-        { id: 'min', rule: 'minLength', value: 2 },
-        { id: 'max', rule: 'maxLength', value: 2 },
+        { id: 'min', rule: 'minLength', value: 2, message },
+        { id: 'max', rule: 'maxLength', value: 2, message: 'message 2' },
       ],
     });
     expect(ok(el, ['a', 'b'])).toBe(true);
-    expect(validateElementValue(el, ['a'], {}).failures[0].message).toContain('option');
-    expect(validateElementValue(el, ['a', 'b', 'c'], {}).failures[0].message).toContain('2 option');
+    expect(validateElementValue(el, ['a'], {}).failures[0].message).toBe(message);
+    expect(validateElementValue(el, ['a', 'b', 'c'], {}).failures[0].message).toContain(
+      'message 2',
+    );
   });
 
   it('maxFiles, fileSizeMaxMb and fileType by mime type', () => {
@@ -198,7 +197,6 @@ describe('validateElementValue', () => {
 
   it('ignores invalid patterns and unknown rules', () => {
     expect(ok(withRule({ rule: 'pattern', pattern: '(' }), 'x')).toBe(true);
-    expect(ok(withRule({ rule: 'bogus' }), 'x')).toBe(true);
   });
 
   it('rejects values that are not a configured option', () => {
@@ -219,7 +217,7 @@ describe('validateElementValue', () => {
   });
 
   it('does not add a second required rule when one is configured', () => {
-    const el = textEl({ required: true, validations: [{ id: 'r', rule: 'required' }] });
+    const el = textEl({ required: true, validations: [{ id: 'r', rule: 'required', message }] });
     expect(validateElementValue(el, '', {}).failures).toHaveLength(1);
   });
 

@@ -65,7 +65,7 @@ describe('Account', () => {
       newPassword: 'short',
     });
     expect(i18n.error(component.passwordForm.controls.newPassword.errors)).toBe(
-      i18n.t('errors.minLength', { requiredLength: 8 }),
+      i18n.t('errors.minLength', { detail: 8 }),
     );
 
     component.passwordForm.setValue({

@@ -57,7 +57,7 @@ export function validateElementValue(
 
   for (const rule of rules) {
     const failure = checkRule(element, rule, value, allValues);
-    if (failure) failures.push({ ruleId: rule.id, type: rule.rule, message: failure });
+    if (failure !== null) failures.push({ ruleId: rule.id, type: rule.rule, message: failure });
   }
 
   return { valid: failures.length === 0, failures };
