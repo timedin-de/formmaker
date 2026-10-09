@@ -8,6 +8,7 @@ import {
 } from '../../shared/schemas/index.js';
 import { ZodValidationPipe } from '../common/zod-validation.pipe.js';
 import { type User } from '../repository.js';
+import { publicUser } from './auth-helper.js';
 import { AuthGuard } from './auth.guard.js';
 import { AuthService, type AuthResult } from './auth.service.js';
 import { CurrentTokenHash } from './current-token.decorator.js';
@@ -59,7 +60,7 @@ export class AuthController {
     @Body(new ZodValidationPipe(emailUpdateSchema)) body: z.infer<typeof emailUpdateSchema>,
   ) {
     if (await this.auth.changeEmail(user, body.currentPassword, body.email)) {
-      return { ...user, email: body.email };
+      return publicUser({ ...user, email: body.email.trim().toLowerCase() });
     }
   }
 }

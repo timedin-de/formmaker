@@ -83,4 +83,20 @@ describe('auth API', () => {
     expect((await post('logout', undefined, token)).status).toBe(204);
     expect((await me(token)).status).toBe(401);
   });
+
+  it('email change returns the normalized public user', async () => {
+    await post('register', { email: 'mail@example.com', password: 'longenough' });
+    const { token } = await (
+      await post('login', { email: 'mail@example.com', password: 'longenough' })
+    ).json();
+    const res = await fetch(`${base}/api/auth/email`, {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
+      body: JSON.stringify({ email: 'Changed@Example.com', currentPassword: 'longenough' }),
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body).toMatchObject({ email: 'changed@example.com' });
+    expect(body).not.toHaveProperty('passwordHash');
+  });
 });
