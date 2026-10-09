@@ -105,7 +105,8 @@ export function tokenize(src: string): Token[] {
       let j = i + 1;
       while (j < n && /[A-Za-z0-9_.-]/.test(src[j])) j += 1;
       const word = src.slice(i, j);
-      const kw = KEYWORD_OPS[word.toLowerCase()];
+      const lower = word.toLowerCase();
+      const kw = Object.hasOwn(KEYWORD_OPS, lower) ? KEYWORD_OPS[lower] : undefined;
       if (kw) {
         tokens.push({ type: 'op', value: kw });
       } else if (word === 'true') {
