@@ -47,7 +47,8 @@ RUN apk add --no-cache --virtual .build-deps python3 make g++ \
 COPY --from=build /app/dist ./dist
 
 # Forms + submissions are persisted here (see src/server/database.ts).
-RUN mkdir -p server/data
+RUN mkdir -p server/data && chown node:node server/data
+USER node
 VOLUME ["/app/server/data"]
 
 EXPOSE 3000
