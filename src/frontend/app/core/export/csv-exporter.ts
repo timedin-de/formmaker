@@ -17,7 +17,11 @@ export function toCsv(header: string[], rows: (string | number | boolean | null)
 }
 
 function escapeCell(value: string | number | boolean | null): string {
-  const text = value === null || value === undefined ? '' : String(value);
+  let text = value === null || value === undefined ? '' : String(value);
+  // Neutralize spreadsheet formulas (CSV injection); plain numbers stay untouched.
+  if (/^[=+\-@\t\r]/.test(text) && !/^[+-]?\d+(\.\d+)?$/.test(text)) {
+    text = `'${text}`;
+  }
   if (/[",\r\n]/.test(text)) {
     return `"${text.replace(/"/g, '""')}"`;
   }
