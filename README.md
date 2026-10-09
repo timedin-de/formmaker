@@ -111,6 +111,8 @@ FORMMAKER_PASSWORD=secret docker compose up -d --build
 
 The container serves both the built Angular SPA (with SPA fallback) and the API on port 3000; persist the SQLite database through a mounted volume, or configure MySQL via the environment variables above. Alternatively, serve the static `dist/` build with **nginx** and reverse-proxy `/api/` to the Node backend — see `deploy/nginx/form-maker.conf`.
 
+API requests are rate limited per client IP over 15 minutes: `RATELIMIT` (default 300) for `/api`, and `RATELIMIT_AUTH` (default 20) for login and registration. Behind a reverse proxy, set `TRUST_PROXY` (e.g. `TRUST_PROXY=1` for one proxy hop) so the limits apply to the real client IP instead of the proxy's.
+
 ## Note on AI
 
 This project was **built for the most part with AI assistance** (opencode with a large language model), including significant portions of the code, the tests, and this README. It's a working, tested mini-go-live rather than a production product — expect rough edges.
