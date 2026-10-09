@@ -35,7 +35,7 @@ Built with Angular 22 + Angular Material 22 on the frontend and a TypeScript Exp
 
 The Express API (`src/server/`) exposes:
 
-- `POST /api/auth/login`, `POST /api/auth/register` — email/password login and self-registration. New registrations receive the `editor` role; sessions are durable, expire after 24 hours, and bearer tokens are stored as hashes. Both `email` and `password` are required.
+- `POST /api/auth/login`, `POST /api/auth/register` — email/password login and self-registration. Self-registration is disabled by default (403); set `ALLOW_REGISTRATION=true` to enable it. New registrations receive the `editor` role; sessions are durable, expire after 24 hours, and bearer tokens are stored as hashes. Both `email` and `password` are required.
 - `GET/POST /api/users`, `PATCH /api/users/:id` — administrator-only user provisioning; the patch updates email, role and/or password (a new password ends that user's sessions). Forms are isolated by owner; admins retain access to all forms.
 - `GET /api/forms`, `GET/POST/DELETE /api/forms/:id` — form CRUD.
 - `GET/POST/DELETE /api/forms/:id/submissions[ /:submissionId]` — submissions per form.

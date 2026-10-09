@@ -39,23 +39,24 @@ export class AuthService {
   }
 
   /** Create an editor account and immediately start its session. */
-  async register(email: string, password: string): Promise<boolean> {
+  async register(email: string, password: string): Promise<'ok' | 'failed' | 'disabled'> {
     try {
       const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
-      if (!res.ok) return false;
+      if (res.status === 403) return 'disabled';
+      if (!res.ok) return 'failed';
       const token = await requestLogin(email, password);
-      if (!token) return false;
+      if (!token) return 'failed';
       clearApiCache();
       writeToken(token);
       this.authenticated.set(true);
       await this.loadUser();
-      return true;
+      return 'ok';
     } catch {
-      return false;
+      return 'failed';
     }
   }
 

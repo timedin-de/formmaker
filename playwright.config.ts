@@ -38,6 +38,7 @@ export default defineConfig({
         RATELIMIT: '10000',
         RATELIMIT_AUTH: '10000',
         FORMMAKER_PASSWORD: 'formmaker',
+        ALLOW_REGISTRATION: 'true',
         PORT: `${API_PORT}`,
       },
     },

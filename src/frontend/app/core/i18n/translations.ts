@@ -31,6 +31,7 @@ const en = {
   'register.link': 'Create an account',
   'register.back': 'Back to sign in',
   'register.error': 'Registration failed. Check if your email is already registered.',
+  'register.disabled': 'Registration is disabled. Ask an administrator for an account.',
 
   // landing
   'landing.title': 'Forms',
@@ -489,6 +490,8 @@ const de: typeof en = {
   'register.link': 'Konto erstellen',
   'register.back': 'Zurück zur Anmeldung',
   'register.error': 'Registrierung fehlgeschlagen. Möglicherweise ist die E-Mail bereits vergeben.',
+  'register.disabled':
+    'Die Registrierung ist deaktiviert. Bitte wende dich an einen Administrator.',
 
   // landing
   'landing.title': 'Formulare',

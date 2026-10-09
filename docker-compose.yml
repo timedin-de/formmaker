@@ -19,6 +19,7 @@ services:
       - '3000:3000'
     environment:
       - FORMMAKER_PASSWORD=${FORMMAKER_PASSWORD:-}
+      - ALLOW_REGISTRATION=${ALLOW_REGISTRATION:-false}
     volumes:
       - formmaker-data:/app/server/data
     healthcheck:

@@ -1,4 +1,13 @@
-import { Body, Controller, HttpCode, Inject, Post, Put, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  ForbiddenException,
+  HttpCode,
+  Inject,
+  Post,
+  Put,
+  UseGuards,
+} from '@nestjs/common';
 import type { z } from 'zod';
 import {
   emailUpdateSchema,
@@ -8,7 +17,7 @@ import {
 } from '../../shared/schemas/index.js';
 import { ZodValidationPipe } from '../common/zod-validation.pipe.js';
 import { type User } from '../repository.js';
-import { publicUser } from './auth-helper.js';
+import { publicUser, registrationEnabled } from './auth-helper.js';
 import { AuthGuard } from './auth.guard.js';
 import { AuthService, type AuthResult } from './auth.service.js';
 import { CurrentTokenHash } from './current-token.decorator.js';
@@ -31,6 +40,9 @@ export class AuthController {
   register(
     @Body(new ZodValidationPipe(registrationSchema)) body: z.infer<typeof registrationSchema>,
   ): Promise<void> {
+    if (!registrationEnabled()) {
+      throw new ForbiddenException({ error: 'registration disabled' });
+    }
     return this.auth.register(body.email, body.password);
   }
 

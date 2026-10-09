@@ -9,7 +9,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import { AuthService } from '../core/auth/auth.service';
 import { PasswordField, TextField } from '../core/components';
-import { I18nService } from '../core/i18n';
+import { I18nService, type TranslationKey } from '../core/i18n';
 import { fieldMatchValidator } from '../core/validators';
 
 @Component({
@@ -64,13 +64,13 @@ export class Login {
 
     if (!email || !password) return;
 
-    const ok = this.registering()
-      ? await this.auth.register(email, password)
-      : await this.auth.login(email, password);
-    if (!ok) {
-      this.snack.open(this.i18n.t(this.registering() ? 'register.error' : 'login.error'), 'OK', {
-        duration: 3000,
-      });
+    const error = this.registering()
+      ? registerErrorKey(await this.auth.register(email, password))
+      : (await this.auth.login(email, password))
+        ? null
+        : 'login.error';
+    if (error) {
+      this.snack.open(this.i18n.t(error), 'OK', { duration: 3000 });
       return;
     }
     const redirect = (this.router.currentNavigation()?.extras.state as { redirect?: string } | null)
@@ -81,4 +81,9 @@ export class Login {
   toggleRegistration(): void {
     this.registering.update((value) => !value);
   }
+}
+
+function registerErrorKey(result: 'ok' | 'failed' | 'disabled'): TranslationKey | null {
+  if (result === 'ok') return null;
+  return result === 'disabled' ? 'register.disabled' : 'register.error';
 }
