@@ -66,7 +66,7 @@ Every element: `id`, `type`, `label` (required); `description` (optional, Markdo
 | --------------------------------- | ------------------------------ | ------------------------------------------------------------- | ---------------------------------------------- |
 | `text`                            | –                              | `inputType`: `text\|email\|url\|phone\|number`; `placeholder` | string                                         |
 | `longText`                        | –                              | `rows`; `placeholder`                                         | string                                         |
-| `number`                          | –                              | `min`, `max`, `step`, `unit`, `decimals`; `placeholder`       | number                                         |
+| `number`                          | –                              | `step`, `unit`, `decimals`; `placeholder`                     | number                                         |
 | `date`                            | –                              | `placeholder`                                                 | string (ISO `yyyy-MM-dd`)                      |
 | `time`/`dateTime`                 | `timeInterval` (default 1 min) | `placeholder`                                                 | string (ISO `HH:mm` / ISO)                     |
 | `boolean`                         | –                              | –                                                             | boolean                                        |
@@ -361,8 +361,6 @@ dateDiff yearsBetween msg required`. Identifiers = field ids (null when empty).
           ],
           "defaultValue": { "kind": "static", "value": 49.99 },
           "placeholder": "0.00",
-          "min": 0,
-          "max": 1000,
           "step": 0.01,
           "unit": "USD",
           "decimals": 2

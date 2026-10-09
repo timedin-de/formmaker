@@ -88,8 +88,6 @@ export interface ChoiceElement extends QuestionBase {
 
 export interface NumberElement extends QuestionBase, Placeholderable {
   type: 'number';
-  min?: number;
-  max?: number;
   step?: number;
   unit?: string;
   decimals?: number;
@@ -152,13 +150,11 @@ export interface TimeElement extends QuestionBase, Placeholderable {
 export interface TextElement extends QuestionBase, Placeholderable {
   type: 'text';
   inputType?: 'text' | 'email' | 'url' | 'phone' | 'number';
-  maxLength?: number;
 }
 
 export interface LongTextElement extends QuestionBase, Placeholderable {
   type: 'longText';
   rows?: number;
-  maxLength?: number;
 }
 
 export interface GroupElement extends ElementBase, DefaultValueable {
