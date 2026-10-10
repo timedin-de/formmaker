@@ -3,12 +3,12 @@ import { FormControl, FormGroup } from '@angular/forms';
 import { evalExpression, validateElementValue } from '@shared/engine';
 import { isQuestion } from '@shared/helper';
 import {
+  type ElementDefinition,
   type ElementViewRef,
+  type FormDefinition,
   type QuestionDefinition,
   type RunnerPage,
   type SubmissionResult,
-  type ElementDefinition,
-  type FormDefinition,
 } from '@shared/model/form.model';
 import type { SubmissionCreate } from '@shared/model/submission.model';
 import type { FieldValue, ValuesMap } from '@shared/model/values.model';
@@ -54,18 +54,7 @@ export class RunnerStore {
   private draftSub: { unsubscribe: () => void } | null = null;
 
   constructor() {
-    this.evaluator = new FormEvaluator(this.emptyForm());
-  }
-
-  private emptyForm(): FormDefinition {
-    return {
-      id: 'empty',
-      name: 'Empty',
-      version: 1,
-      schemaVersion: 1,
-      settings: { navigation: 'auto' },
-      pages: [],
-    };
+    this.evaluator = new FormEvaluator();
   }
 
   init(form: FormDefinition, initialValues?: ValuesMap): void {

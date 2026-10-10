@@ -5,10 +5,13 @@ import { has, isQuestionOrGroup } from '@shared/helper';
 import {
   type ElementDefinition,
   elementId,
+  emptyConditionGroup,
+  type FormDefinition,
   type PageDefinition,
   type SubmissionCreate,
+  uuid,
 } from '@shared/model';
-import { Repository } from '../repository';
+import { Repository, type User } from '../repository';
 
 @Injectable()
 export class FormService {
@@ -16,6 +19,27 @@ export class FormService {
 
   async getForm(id: string) {
     return await this.repository.form(id);
+  }
+
+  async newForm(user: User) {
+    const now = new Date().toISOString();
+    const form: FormDefinition = {
+      id: uuid(),
+      owner: user,
+      description: '',
+      version: 1,
+      schemaVersion: 1,
+      createdAt: now,
+      updatedAt: now,
+      settings: {
+        showProgress: true,
+        allowBack: true,
+        navigation: 'auto',
+        enableAutoSave: true,
+      },
+      pages: [createPage()],
+    };
+    return await this.repository.saveForm(user.id, form);
   }
 
   async addSubmission(submission: SubmissionCreate) {
@@ -74,4 +98,13 @@ export class FormService {
     await this.repository.addSubmission(saved);
     return saved;
   }
+}
+function createPage(title = 'New page'): PageDefinition {
+  return {
+    id: elementId('page'),
+    title,
+    subtitle: '',
+    elements: [],
+    enabledWhen: emptyConditionGroup(),
+  };
 }

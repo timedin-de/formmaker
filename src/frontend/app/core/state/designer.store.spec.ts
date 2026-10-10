@@ -6,9 +6,10 @@ import type {
   PageDefinition,
   TextElement,
 } from '@shared/model/form.model';
+import { newForm } from '@test/helper';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { DesignerStore } from './designer.store';
-import { createElement, createPage, newForm } from './form-factory';
+import { createElement, createPage } from './form-factory';
 
 function conditions(fieldId: string): ConditionGroup {
   return {

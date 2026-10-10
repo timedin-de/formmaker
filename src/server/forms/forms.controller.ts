@@ -10,26 +10,43 @@ import {
   Param,
   Post,
   Put,
-  Res,
   UnprocessableEntityException,
   UseGuards,
 } from '@nestjs/common';
-import { type FormDefinition, type SubmissionCreate, toPortableForm, uuid } from '@shared/model';
-import { formDefinitionSchema, stripFormOwnership, submissionCreateSchema } from '@shared/schemas';
-import type { Response } from 'express';
+import {
+  type SaveFormDefinition,
+  type SubmissionCreate,
+  toPortableForm,
+  uuid,
+} from '@shared/model';
+import {
+  formDefinitionSchema,
+  saveFormDefinitionSchema,
+  stripFormOwnership,
+  submissionCreateSchema,
+} from '@shared/schemas';
 import { AuthGuard } from '../auth/auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import { Repository, type User } from '../repository';
 import { FormService } from './form.service';
+import { type FormDefinition } from './forms.model';
 
-/** Strips client-supplied ownership fields before validating the form schema. */
-class FormBodyPipe extends ZodValidationPipe<FormDefinition> {
+class SaveFormBodyPipe extends ZodValidationPipe<SaveFormDefinition> {
   constructor() {
-    super(formDefinitionSchema as never);
+    super(saveFormDefinitionSchema);
   }
 
-  override transform(value: unknown): FormDefinition {
+  override transform(value: unknown): SaveFormDefinition {
+    return super.transform(stripFormOwnership(value));
+  }
+}
+class OptionalFormBodyPipe extends ZodValidationPipe<FormDefinition | undefined> {
+  constructor() {
+    super(formDefinitionSchema.optional());
+  }
+
+  override transform(value: unknown) {
     return super.transform(stripFormOwnership(value));
   }
 }
@@ -59,6 +76,21 @@ export class FormsController {
     return user.role === 'admin' ? this.repository.allForms() : this.repository.forms(user.id);
   }
 
+  @Post()
+  @HttpCode(201)
+  @UseGuards(AuthGuard)
+  async createForm(
+    @CurrentUser() user: User,
+    @Body(new OptionalFormBodyPipe()) body: FormDefinition,
+  ) {
+    if (body) {
+      body.id = uuid();
+      return this.repository.saveForm(user.id, body);
+    }
+    const form = await this.formService.newForm(user);
+    return form;
+  }
+
   // Public by id: existing share links stay usable without revealing the form catalogue.
   @Get(':id')
   async getFormById(@Param('id') id: string) {
@@ -67,26 +99,21 @@ export class FormsController {
     return toPortableForm(item.form);
   }
 
-  @Post()
-  @HttpCode(201)
-  @UseGuards(AuthGuard)
-  createForm(@CurrentUser() user: User, @Body(new FormBodyPipe()) form: FormDefinition) {
-    form.id = uuid();
-    return this.repository.saveForm(user.id, form);
-  }
-
-  @Put()
+  @Put(':id')
+  @HttpCode(200)
   @UseGuards(AuthGuard)
   async saveForm(
     @CurrentUser() user: User,
-    @Body(new FormBodyPipe()) form: FormDefinition,
-    @Res({ passthrough: true }) res: Response,
+    @Body(new SaveFormBodyPipe()) form: SaveFormDefinition,
+    @Param('id') id: string,
   ) {
-    const existing = await this.repository.form(form.id);
-    if (existing && !canManage(existing.ownerId, user))
-      throw new ForbiddenException({ error: 'not form owner' });
-    res.status(existing ? 200 : 201);
-    return this.repository.saveForm(existing?.ownerId ?? user.id, form);
+    if (form.id !== id)
+      throw new UnprocessableEntityException({ error: 'form id must match the path id' });
+    const existing = await this.repository.form(id);
+    if (!existing) throw new NotFoundException({ error: `form with id: ${id} doesnt not exist` });
+    if (!canManage(existing.ownerId, user))
+      throw new ForbiddenException({ error: 'not form owner of form' });
+    return this.repository.saveForm(existing?.ownerId ?? user.id, { ...existing.form, ...form });
   }
 
   @Delete(':id')

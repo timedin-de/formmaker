@@ -40,7 +40,7 @@ export class FormEvaluator {
   private depsById = new Map<string, string[]>();
   private dependents = new Map<string, string[]>();
 
-  constructor(private form: FormDefinition) {
+  constructor(private form?: FormDefinition) {
     this.rebuild();
   }
 
@@ -53,6 +53,7 @@ export class FormEvaluator {
   private rebuild(): void {
     this.depsById.clear();
     this.dependents.clear();
+    if (!this.form) return;
     for (const page of this.form.pages) {
       for (const el of page.elements) {
         const deps = collectElementRefs(el);
@@ -90,6 +91,12 @@ export class FormEvaluator {
 
     const byId = new Map<string, ElementView>();
     const pages: PageView[] = [];
+
+    if (!this.form)
+      return {
+        pages,
+        byId,
+      };
 
     for (const page of this.form.pages) {
       const pageVisible = evalConditionGroup(page.enabledWhen, values);

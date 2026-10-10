@@ -7,18 +7,26 @@ import type {
   FormDefinition,
   FormSettings,
   PageDefinition,
+  SaveFormDefinition,
 } from '@shared/model/form.model';
 import { type ElementId, elementId, uuid } from '@shared/model/ids';
 import { parseFormData } from '@shared/schemas';
 import { I18nService } from '../i18n/translation.service';
-import { createElement, createPage, insertElementAfter, newForm } from './form-factory';
+import { createElement, createPage, insertElementAfter } from './form-factory';
+import { FormsRepository } from './forms.repository';
 
 const STORAGE_KEY = 'formmaker.designer.v1';
 
 @Injectable()
 export class DesignerStore {
   private readonly i18n = inject(I18nService);
-  readonly form = signal<FormDefinition>(newForm());
+  private readonly repository = inject(FormsRepository);
+  readonly _form = signal<FormDefinition | undefined>(undefined);
+  readonly form = computed(() => {
+    const f = this._form();
+    if (!f) throw new Error('Form not set before read');
+    return f;
+  });
   readonly selectedId = signal<string | null>(null);
   readonly activePageId = signal<string | null>(null);
   /** Optional reference form (imported) read-only compare. */
@@ -47,7 +55,7 @@ export class DesignerStore {
       return raw ? parseFormData(raw).data : null;
     });
     if (parsed && Array.isArray(parsed.pages)) {
-      this.form.set(parsed);
+      this._form.set(parsed);
       this.schedulePersist();
     } else {
       console.warn('designer: stored form failed validation', error);
@@ -56,18 +64,18 @@ export class DesignerStore {
 
   // ---- actions ---------------------------------------------------------------
 
-  createEmpty(): void {
-    this.form.set(newForm());
+  async createEmpty(): Promise<void> {
+    const form = await this.repository.newForm();
+    this._form.set(form);
     this.selectedId.set(null);
     this.dirty.set(true);
     this.persist();
   }
 
   load(def: FormDefinition): void {
-    const clean = normalizeForm(def);
-    this.form.set(clean);
+    this._form.set(def);
     this.selectedId.set(null);
-    this.activePageId.set(clean.pages[0]?.id ?? null);
+    this.activePageId.set(def.pages[0]?.id ?? null);
     this.dirty.set(false);
     this.persist();
   }
@@ -125,10 +133,11 @@ export class DesignerStore {
   }
 
   updateElement(elementId: string, patch: Partial<ElementDefinition>): void {
-    this.form.update((f) => ({
-      ...f,
-      pages: f.pages.map((p) => patchNested(p, elementId, patch)),
-    }));
+    const pages = this.form().pages;
+    this.patchForm({
+      pages: pages.map((p) => patchNested(p, elementId, patch)),
+    });
+
     this.dirty.set(true);
     this.persist();
   }
@@ -233,13 +242,14 @@ export class DesignerStore {
     return null;
   }
 
-  private patchForm(patch: Partial<FormDefinition>): void {
-    this.form.update((f) => ({
-      ...f,
-      updatedAt: new Date().toISOString(),
-      ...patch,
-      createdAt: f.createdAt,
-    }));
+  private patchForm(patch: Partial<SaveFormDefinition>): void {
+    this._form.update((f) => {
+      if (!f) throw new Error('Form not set in store before update');
+      return {
+        ...f,
+        ...patch,
+      };
+    });
     this.dirty.set(true);
     this.persist();
   }
@@ -374,14 +384,6 @@ function moveIn(els: ElementDefinition[], id: string, dir: -1 | 1): ElementDefin
     next.splice(target, 0, item);
   }
   return next;
-}
-
-function normalizeForm(def: unknown): FormDefinition {
-  const form = def as FormDefinition;
-  if (!form.pages) form.pages = [];
-  form.schemaVersion = 1;
-  form.settings = { ...form.settings };
-  return form;
 }
 
 /**

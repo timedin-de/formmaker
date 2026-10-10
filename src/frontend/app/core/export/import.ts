@@ -3,7 +3,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { catchFnAsync } from '@shared/helper';
 import { type FormDefinition } from '@shared/model';
 import { parseFormData } from '@shared/schemas';
-import { SNACK_TIME_ERROR } from '../consts';
+import { SNACK_TIME_ERROR, SNACK_TIME_OK } from '../consts';
 import { I18nService } from '../i18n';
 import { FormsRepository } from '../state/forms.repository';
 import { readFileAsText } from './file';
@@ -23,12 +23,7 @@ export class FormImportService {
       this.report(this.i18n.t('import.failed', { message: this.i18n.t('import.badFile') }));
       return;
     }
-    const form = await this.importJson(text);
-    if (!form) return;
-
-    this.snack.open(this.i18n.t('import.success'), 'OK', { duration: 2500 });
-
-    return form;
+    return await this.importJson(text);
   }
 
   /** Parse, validate and persist a raw JSON string. Reports failures, returns undefined. */
@@ -38,8 +33,9 @@ export class FormImportService {
       this.report(this.i18n.t('import.failed', { message: this.i18n.t('import.badJson') }));
       return;
     }
+    const saved = await this.repo.importForm(form);
 
-    const saved = await this.repo.newForm(form);
+    this.snack.open(this.i18n.t('import.success'), 'OK', { duration: SNACK_TIME_OK });
 
     return saved;
   }

@@ -5,6 +5,7 @@ import {
   type FormSettings,
   type FormWithOwner,
   type PageDefinition,
+  type SaveFormDefinition,
 } from '../model';
 import { conditionGroupSchema } from './conditions';
 import { elementsSchema } from './elements';
@@ -33,6 +34,16 @@ const formOwnerSchema = z.strictObject({
   createdAt: z.string(),
 });
 
+export const saveFormDefinitionSchema = z.strictObject({
+  id: z.string(),
+  name: z.string().optional(),
+  ownerId: z.string().min(1).max(128).optional(),
+  owner: formOwnerSchema.nullable().optional(),
+  description: z.string().optional(),
+  settings: formSettingsSchema,
+  pages: z.array(pageDefinitionSchema),
+}) satisfies z.ZodType<SaveFormDefinition>;
+
 export const formDefinitionSchema = z.strictObject({
   id: z.string(),
   name: z.string().optional(),
@@ -41,8 +52,8 @@ export const formDefinitionSchema = z.strictObject({
   description: z.string().optional(),
   version: z.number(),
   schemaVersion: z.literal(1),
-  createdAt: z.string().optional(),
-  updatedAt: z.string().optional(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
   settings: formSettingsSchema,
   pages: z.array(pageDefinitionSchema),
 }) satisfies z.ZodType<FormDefinition>;

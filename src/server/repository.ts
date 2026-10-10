@@ -164,9 +164,10 @@ export class Repository {
     const existing = await this.form(form.id);
     const now = new Date().toISOString();
     const saved: FormDefinition = {
+      ...existing?.form,
       ...toPortableForm(form),
       ownerId,
-      createdAt: existing?.form.createdAt ?? form.createdAt ?? now,
+      createdAt: existing?.form.createdAt || form.createdAt || now,
       updatedAt: now,
     };
     await this.source.getRepository(FormEntity).save({

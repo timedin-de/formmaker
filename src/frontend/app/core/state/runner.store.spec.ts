@@ -1,7 +1,8 @@
-import { describe, expect, it, beforeEach } from 'vitest';
-import { RunnerStore } from './runner.store';
-import { newForm, createElement, createPage } from './form-factory';
 import type { FormDefinition } from '@shared/model/form.model';
+import { newForm } from '@test/helper/forms';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { createElement, createPage } from './form-factory';
+import { RunnerStore } from './runner.store';
 
 function draftForm(): FormDefinition {
   const form = newForm('Draft Demo');
@@ -52,7 +53,7 @@ describe('RunnerStore draft persistence', () => {
     store.setAnswer(nameEl.id, 'Ada');
     store.saveDraft();
 
-    form.version += 1;
+    (form.version as number) += 1;
     const reloaded = new RunnerStore();
     reloaded.init(form);
     expect(reloaded.restoredDraft()).toBe(false);
