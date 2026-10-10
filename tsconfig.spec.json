@@ -4,7 +4,11 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "rootDir": ".",
-    "types": ["vitest/globals"]
+    "types": ["vitest/globals"],
+    "paths": {
+      "@test/*": ["./tests/*"],
+      "@shared/*": ["./src/shared/*"]
+    }
   },
   "include": ["src/**/*.d.ts", "src/**/*.spec.ts", "tests/**/*.ts"],
   "exclude": ["src/server/**"]

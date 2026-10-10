@@ -6,5 +6,10 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   oxc: { decorator: { legacy: true } },
   test: { include: ['src/server/**/*.spec.ts'], environment: 'node' },
-  resolve: { alias: { '@shared': path.resolve(__dirname, './src/shared') } },
+  resolve: {
+    alias: {
+      '@shared': path.resolve(__dirname, './src/shared'),
+      '@test': path.resolve(__dirname, './tests'),
+    },
+  },
 });
