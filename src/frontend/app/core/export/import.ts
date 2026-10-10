@@ -3,6 +3,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { catchFnAsync } from '@shared/helper';
 import { type FormDefinition } from '@shared/model';
 import { parseFormData } from '@shared/schemas';
+import { SNACK_TIME_ERROR } from '../consts';
 import { I18nService } from '../i18n';
 import { FormsRepository } from '../state/forms.repository';
 import { readFileAsText } from './file';
@@ -44,6 +45,6 @@ export class FormImportService {
   }
 
   private report(message: string): void {
-    this.snack.open(message, 'OK', { duration: 6000 });
+    this.snack.open(message, 'OK', { duration: SNACK_TIME_ERROR });
   }
 }

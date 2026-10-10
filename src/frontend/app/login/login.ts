@@ -9,6 +9,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import { AuthService } from '../core/auth/auth.service';
 import { PasswordField, TextField } from '../core/components';
+import { SNACK_TIME_ERROR } from '../core/consts';
 import { I18nService, type TranslationKey } from '../core/i18n';
 import { fieldMatchValidator } from '../core/validators';
 
@@ -70,7 +71,7 @@ export class Login {
         ? null
         : 'login.error';
     if (error) {
-      this.snack.open(this.i18n.t(error), 'OK', { duration: 3000 });
+      this.snack.open(this.i18n.t(error), 'OK', { duration: SNACK_TIME_ERROR });
       return;
     }
     const redirect = (this.router.currentNavigation()?.extras.state as { redirect?: string } | null)

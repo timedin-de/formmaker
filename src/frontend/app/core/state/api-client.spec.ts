@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthService } from '../auth/auth.service';
+import { SNACK_TIME_ERROR } from '../consts';
 import { I18nService } from '../i18n/translation.service';
 import { ApiClient, ApiError, apiErrorMessage } from './api-client';
 
@@ -109,7 +110,7 @@ describe('api-client request', () => {
     const message = TestBed.inject(I18nService).t('error.rateLimited');
 
     await expect(request(undefined, '/x')).rejects.toEqual(new ApiError(message, 429));
-    expect(snack.open).toHaveBeenCalledWith(message, 'OK', { duration: 5000 });
+    expect(snack.open).toHaveBeenCalledWith(message, 'OK', { duration: SNACK_TIME_ERROR });
     expect(auth.expireSession).not.toHaveBeenCalled();
   });
 

@@ -13,6 +13,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { ActivatedRoute, Router } from '@angular/router';
 import { toPortableForm } from '@shared/model/form.model';
 import { pairwise, startWith } from 'rxjs';
+import { SNACK_TIME_OK } from '../core/consts';
 import { downloadJSON } from '../core/export/file';
 import { I18nService } from '../core/i18n';
 import { DesignerStore } from '../core/state/designer.store';
@@ -70,7 +71,7 @@ export class BuilderComponent {
           if (loaded) {
             this.store.load(loaded);
             this.snack.open(this.i18n.t('builder.editing', { name: loaded.name }), 'OK', {
-              duration: 2500,
+              duration: SNACK_TIME_OK,
             });
           } else {
             this.store.createEmpty();
@@ -114,7 +115,7 @@ export class BuilderComponent {
   async save(): Promise<void> {
     await this.repo.saveForm(this.store.form());
     this.saved.set(true);
-    this.snack.open(this.i18n.t('builder.saveMsg'), 'OK', { duration: 2000 });
+    this.snack.open(this.i18n.t('builder.saveMsg'), 'OK', { duration: SNACK_TIME_OK });
   }
 
   async preview(): Promise<void> {

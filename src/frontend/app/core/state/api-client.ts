@@ -2,6 +2,7 @@ import { Injectable, Injector, inject } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import type z from 'zod';
 import { AuthService } from '../auth/auth.service';
+import { SNACK_TIME_ERROR } from '../consts';
 import { I18nService } from '../i18n/translation.service';
 
 const TOKEN_KEY = 'formmaker.token';
@@ -58,7 +59,7 @@ export class ApiClient {
   ): Promise<ApiError> {
     if (res.status === 429) {
       const message = this.i18n.t('error.rateLimited');
-      this.snack.open(message, 'OK', { duration: 5000 });
+      this.snack.open(message, 'OK', { duration: SNACK_TIME_ERROR });
       return new ApiError(message, res.status);
     }
     // A 401 means the session is no longer valid. Without a token it is not a session
