@@ -1,4 +1,9 @@
-import { toPortableForm, type FormDefinition, type FormWithOwner } from '@shared/model/form.model';
+import {
+  toPortableForm,
+  type FormDefinition,
+  type FormWithOwner,
+  type NamedFormDefinition,
+} from '@shared/model/form.model';
 import type { Submission } from '@shared/model/submission.model';
 import { describe, expect, it } from 'vitest';
 import { createElement, createPage, newForm } from '../state/form-factory';
@@ -137,7 +142,6 @@ describe('submissionsToCsv', () => {
     const sub: Submission = {
       id: 's1',
       formId: form.id,
-      formName: form.name,
       formVersion: 1,
       submittedAt: '2026-01-01T00:00:00Z',
       durationMs: 1000,
@@ -235,7 +239,6 @@ describe('EXPORT_CHANNELS', () => {
       {
         id: 's1',
         formId: form.id,
-        formName: form.name,
         formVersion: 1,
         submittedAt: '2026-01-01T00:00:00Z',
         durationMs: 1000,
@@ -244,7 +247,7 @@ describe('EXPORT_CHANNELS', () => {
     ];
     expect(EXPORT_CHANNELS.map((c) => c.id)).toEqual(['csv', 'xlsx', 'pdf', 'mail']);
     for (const ch of EXPORT_CHANNELS) {
-      const artifact = await ch.build(form, submissions, ctx);
+      const artifact = await ch.build(form as NamedFormDefinition, submissions, ctx);
       expect(artifact.kind).toBe(ch.id === 'mail' ? 'link' : 'download');
       if (artifact.kind === 'download') {
         expect(artifact.filename).toMatch(/\.(csv|xlsx|pdf)$/);

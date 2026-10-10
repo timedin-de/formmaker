@@ -7,6 +7,7 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltip } from '@angular/material/tooltip';
 import { RouterLink } from '@angular/router';
+import { formName } from '@shared/helper';
 import { toPortableForm, type FormDefinition, type FormWithOwner } from '@shared/model/form.model';
 import { FormImportModal } from '../core/components';
 import { SNACK_TIME_ERROR, SNACK_TIME_OK } from '../core/consts';
@@ -43,6 +44,8 @@ export class LandingComponent {
   private timedOutCloser: number | undefined;
   protected showTextModal = signal(false);
 
+  readonly formName = formName;
+
   constructor() {
     void this.repo.init().then(() => this.refresh());
   }
@@ -72,7 +75,8 @@ export class LandingComponent {
   }
 
   exportJson(form: FormDefinition): void {
-    downloadJSON(toPortableForm(form), toSlug(form.name) + '.json');
+    const name = formName(form, this.i18n);
+    downloadJSON(toPortableForm(form), toSlug(name) + '.json');
   }
 
   ownerLabel(form: FormWithOwner): string {
@@ -122,9 +126,10 @@ export class LandingComponent {
     if (raw === null) return this.showTextModal.set(false);
     const form = await this.importService.importJson(raw);
     if (!form) return;
+    const name = formName(form, this.i18n);
     this.showTextModal.set(false);
     await this.refresh();
-    this.snack.open(this.i18n.t('landing.imported', { name: form.name }), 'OK', {
+    this.snack.open(this.i18n.t('landing.imported', { name }), 'OK', {
       duration: SNACK_TIME_OK,
     });
   }

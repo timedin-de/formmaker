@@ -11,7 +11,6 @@ export interface Submission {
   id: string;
   formId: FormId;
   formVersion: number;
-  formName: string;
   submittedAt: string;
   durationMs: number;
   values: Record<ElementId, FieldValue>;
@@ -25,7 +24,6 @@ export function createSubmission(
   return {
     id: elementId('submission'),
     formId: form.id,
-    formName: form.name,
     formVersion: form.version,
     submittedAt,
     durationMs: 0,

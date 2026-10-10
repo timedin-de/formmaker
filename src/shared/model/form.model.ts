@@ -217,7 +217,7 @@ export interface FormSettings {
 
 export interface FormDefinition {
   id: FormId;
-  name: string;
+  name?: string;
   ownerId?: string;
   owner?: PublicUser | null;
   description?: string;
@@ -227,6 +227,9 @@ export interface FormDefinition {
   updatedAt?: string;
   settings: FormSettings;
   pages: PageDefinition[];
+}
+export interface NamedFormDefinition extends FormDefinition {
+  name: string;
 }
 
 export type PortableFormDefinition = Omit<FormDefinition, 'ownerId' | 'owner'>;

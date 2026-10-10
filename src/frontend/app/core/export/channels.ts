@@ -1,4 +1,4 @@
-import type { FormDefinition } from '@shared/model/form.model';
+import type { NamedFormDefinition } from '@shared/model/form.model';
 import type { Submission } from '@shared/model/submission.model';
 import { type TranslationKey } from '../i18n';
 import { submissionsToCsv } from './csv-exporter';
@@ -29,7 +29,7 @@ export interface ExportChannel {
   /** I18n key for the success message; defaults to 'export.exported'. */
   readonly doneKey?: TranslationKey;
   build(
-    form: FormDefinition,
+    form: NamedFormDefinition,
     submissions: Submission[],
     ctx: ExportContext,
   ): Promise<ExportArtifact>;

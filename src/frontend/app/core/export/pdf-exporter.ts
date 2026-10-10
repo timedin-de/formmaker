@@ -1,8 +1,8 @@
+import type { FormDefinition, NamedFormDefinition } from '@shared/model/form.model';
+import type { Submission } from '@shared/model/submission.model';
 import { jsPDF } from 'jspdf';
 import { buildColumnBlocks, formatValueForExport } from './columns';
 import { buildReceipt, type ReceiptBlock } from './receipt';
-import type { FormDefinition } from '@shared/model/form.model';
-import type { Submission } from '@shared/model/submission.model';
 
 const PAGE_W = 595; // A4 portrait, pt
 const PAGE_H = 842;
@@ -14,7 +14,7 @@ const CONTENT_W = PAGE_W - MARGIN * 2;
  * and a flat list of all submissions.
  */
 export async function submissionsToPdf(
-  form: FormDefinition,
+  form: NamedFormDefinition,
   submissions: Submission[],
 ): Promise<Blob> {
   const doc = new jsPDF({ unit: 'pt', format: 'a4' });
@@ -170,7 +170,10 @@ function countQuestions(form: FormDefinition): number {
  * "question → answer" line per answered field, grouped under their group
  * headings when present. Used on the runner's thank-you screen.
  */
-export async function submissionToPdf(form: FormDefinition, submission: Submission): Promise<Blob> {
+export async function submissionToPdf(
+  form: NamedFormDefinition,
+  submission: Submission,
+): Promise<Blob> {
   const doc = new jsPDF({ unit: 'pt', format: 'a4' });
   let y = MARGIN;
 
