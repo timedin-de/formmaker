@@ -6,6 +6,7 @@ import type { PublicUser } from '@shared/model/user.model';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { initRegistry } from '../../../../tests/helper/icons';
 import { AuthService } from '../core/auth/auth.service';
+import { SNACK_TIME_ERROR, SNACK_TIME_OK } from '../core/consts';
 import { I18nService } from '../core/i18n';
 import { ApiError } from '../core/state/api-client';
 import { UsersRepository } from '../core/state/users.repository';
@@ -175,7 +176,7 @@ describe('Account actions', () => {
     expect(component.user()?.email).toBe('new@formmaker.local');
     expect(component.emailForm.value.email).toBe('new@formmaker.local');
     expect(snack.open).toHaveBeenCalledWith(i18n.t('account.emailSaved'), 'OK', {
-      duration: 3000,
+      duration: SNACK_TIME_OK,
     });
   });
 
@@ -187,7 +188,9 @@ describe('Account actions', () => {
     await component.saveEmail(formDir());
 
     expect(component.user()?.email).toBeUndefined();
-    expect(snack.open).toHaveBeenCalledWith('email already exists', 'OK', { duration: 4000 });
+    expect(snack.open).toHaveBeenCalledWith('email already exists', 'OK', {
+      duration: SNACK_TIME_ERROR,
+    });
   });
 
   it('does not save a password while the form is invalid', async () => {
@@ -211,7 +214,7 @@ describe('Account actions', () => {
 
     expect(users.changePassword).toHaveBeenCalledWith('formmaker', 'newpassword');
     expect(snack.open).toHaveBeenCalledWith(i18n.t('account.passwordChanged'), 'OK', {
-      duration: 3000,
+      duration: SNACK_TIME_OK,
     });
   });
 
@@ -226,7 +229,9 @@ describe('Account actions', () => {
 
     await component.savePassword(formDir());
 
-    expect(snack.open).toHaveBeenCalledWith('invalid password', 'OK', { duration: 4000 });
+    expect(snack.open).toHaveBeenCalledWith('invalid password', 'OK', {
+      duration: SNACK_TIME_ERROR,
+    });
   });
 
   it('does not delete the account while the password field is empty', async () => {
@@ -245,7 +250,7 @@ describe('Account actions', () => {
     expect(users.deleteAccount).toHaveBeenCalledWith('formmaker');
     expect(navigate).toHaveBeenCalledWith(['/login']);
     expect(snack.open).toHaveBeenCalledWith(i18n.t('account.accountDeleted'), 'OK', {
-      duration: 3000,
+      duration: SNACK_TIME_OK,
     });
   });
 
@@ -257,6 +262,8 @@ describe('Account actions', () => {
     await component.deleteAccount();
 
     expect(navigate).not.toHaveBeenCalled();
-    expect(snack.open).toHaveBeenCalledWith('invalid password', 'OK', { duration: 4000 });
+    expect(snack.open).toHaveBeenCalledWith('invalid password', 'OK', {
+      duration: SNACK_TIME_ERROR,
+    });
   });
 });

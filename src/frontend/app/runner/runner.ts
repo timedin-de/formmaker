@@ -17,6 +17,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { type RunnerPage } from '@shared/model';
 import type { Submission } from '@shared/model/submission.model';
 import { first, switchMap, tap } from 'rxjs';
+import { SNACK_TIME_ERROR, SNACK_TIME_OK } from '../core/consts';
 import { downloadBlob, submissionToPdf, toSlug } from '../core/export';
 import { I18nService } from '../core/i18n';
 import { MarkdownPipe } from '../core/markdown';
@@ -92,10 +93,14 @@ export class Runner {
             this.submitted.set(false);
             this.formLoaded.set(true);
             if (this.store.restoredDraft()) {
-              this.snack.open(this.i18n.t('runner.draftRestored'), 'OK', { duration: 4000 });
+              this.snack.open(this.i18n.t('runner.draftRestored'), 'OK', {
+                duration: SNACK_TIME_OK,
+              });
             }
           } else {
-            this.snack.open(this.i18n.t('runner.formNotFound'), 'OK', { duration: 4000 });
+            this.snack.open(this.i18n.t('runner.formNotFound'), 'OK', {
+              duration: SNACK_TIME_ERROR,
+            });
             void this.router.navigate(['/']);
           }
         }),
@@ -143,15 +148,15 @@ export class Runner {
     try {
       const submission = await this.repo.addSubmission(result.submission);
       if (!submission) {
-        this.snack.open(this.i18n.t('errors.unknown'), 'OK', { duration: 2000 });
+        this.snack.open(this.i18n.t('errors.unknown'), 'OK', { duration: SNACK_TIME_ERROR });
         return;
       }
       this.store.clearDraft();
       this.submitted.set(true);
       this.lastSubmission.set(submission);
-      this.snack.open(this.i18n.t('runner.submitted'), 'OK', { duration: 2000 });
+      this.snack.open(this.i18n.t('runner.submitted'), 'OK', { duration: SNACK_TIME_OK });
     } catch {
-      this.snack.open(this.i18n.t('errors.unknown'), 'OK', { duration: 2000 });
+      this.snack.open(this.i18n.t('errors.unknown'), 'OK', { duration: SNACK_TIME_ERROR });
     } finally {
       this.submitting.set(false);
     }

@@ -9,6 +9,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { ActivatedRoute, Router } from '@angular/router';
 import type { FormDefinition } from '@shared/model/form.model';
 import type { Submission } from '@shared/model/submission.model';
+import { SNACK_TIME_ERROR, SNACK_TIME_OK } from '../core/consts';
 import {
   buildColumns,
   downloadBlob,
@@ -104,7 +105,7 @@ export class Results {
     if (!formId) return;
     await this.repo.deleteSubmission(formId, id);
     this.submissions.set(await this.repo.submissionsFor(formId));
-    this.snack.open(this.i18n.t('results.submissionDeleted'), 'OK', { duration: 2000 });
+    this.snack.open(this.i18n.t('results.submissionDeleted'), 'OK', { duration: SNACK_TIME_OK });
   }
 
   async clearAll(): Promise<void> {
@@ -112,7 +113,7 @@ export class Results {
     if (!formId) return;
     await this.repo.clearSubmissions(formId);
     this.submissions.set(await this.repo.submissionsFor(formId));
-    this.snack.open(this.i18n.t('results.allCleared'), 'OK', { duration: 2000 });
+    this.snack.open(this.i18n.t('results.allCleared'), 'OK', { duration: SNACK_TIME_OK });
   }
 
   async runChannel(ch: ExportChannel): Promise<void> {
@@ -130,9 +131,11 @@ export class Results {
       } else {
         window.location.assign(artifact.url);
       }
-      this.snack.open(this.i18n.t(ch.doneKey ?? 'export.exported'), 'OK', { duration: 2000 });
+      this.snack.open(this.i18n.t(ch.doneKey ?? 'export.exported'), 'OK', {
+        duration: SNACK_TIME_OK,
+      });
     } catch {
-      this.snack.open(this.i18n.t('export.failed'), 'OK', { duration: 3000 });
+      this.snack.open(this.i18n.t('export.failed'), 'OK', { duration: SNACK_TIME_ERROR });
     }
   }
 }

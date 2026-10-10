@@ -18,6 +18,7 @@ import type { UserRole } from '@shared/model/user.model';
 import { AuthService } from '../core/auth/auth.service';
 import { PasswordField } from '../core/components';
 import { TextField } from '../core/components/text-field/text-field';
+import { SNACK_TIME_ERROR, SNACK_TIME_OK } from '../core/consts';
 import { I18nService } from '../core/i18n';
 import { apiErrorMessage } from '../core/state/api-client';
 import { UsersRepository } from '../core/state/users.repository';
@@ -100,7 +101,7 @@ export class Account {
       formDir.resetForm();
       this.emailForm.controls.email.setValue(email);
 
-      this.snack.open(this.i18n.t('account.emailSaved'), 'OK', { duration: 3000 });
+      this.snack.open(this.i18n.t('account.emailSaved'), 'OK', { duration: SNACK_TIME_OK });
     } catch (error) {
       this.fail(apiErrorMessage(error));
     }
@@ -115,7 +116,7 @@ export class Account {
     try {
       await this.users.changePassword(currentPassword, newPassword);
       formDir.resetForm();
-      this.snack.open(this.i18n.t('account.passwordChanged'), 'OK', { duration: 3000 });
+      this.snack.open(this.i18n.t('account.passwordChanged'), 'OK', { duration: SNACK_TIME_OK });
     } catch (error) {
       this.fail(apiErrorMessage(error));
     }
@@ -129,7 +130,7 @@ export class Account {
     try {
       await this.users.deleteAccount(value);
       await this.auth.expireSession();
-      this.snack.open(this.i18n.t('account.accountDeleted'), 'OK', { duration: 3000 });
+      this.snack.open(this.i18n.t('account.accountDeleted'), 'OK', { duration: SNACK_TIME_OK });
       await this.router.navigate(['/login']);
     } catch (error) {
       this.fail(apiErrorMessage(error));
@@ -137,6 +138,6 @@ export class Account {
   }
 
   private fail(message: string): void {
-    this.snack.open(message, 'OK', { duration: 4000 });
+    this.snack.open(message, 'OK', { duration: SNACK_TIME_ERROR });
   }
 }

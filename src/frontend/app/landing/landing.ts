@@ -9,6 +9,7 @@ import { MatTooltip } from '@angular/material/tooltip';
 import { RouterLink } from '@angular/router';
 import { toPortableForm, type FormDefinition, type FormWithOwner } from '@shared/model/form.model';
 import { FormImportModal } from '../core/components';
+import { SNACK_TIME_ERROR, SNACK_TIME_OK } from '../core/consts';
 import { downloadJSON } from '../core/export/file';
 import { FormImportService } from '../core/export/import';
 import { I18nService } from '../core/i18n';
@@ -92,9 +93,9 @@ export class LandingComponent {
     const url = `${location.origin}/runner/${form.id}`;
     try {
       await navigator.clipboard.writeText(url);
-      this.snack.open(this.i18n.t('landing.linkCopied'), 'OK', { duration: 2500 });
+      this.snack.open(this.i18n.t('landing.linkCopied'), 'OK', { duration: SNACK_TIME_OK });
     } catch {
-      this.snack.open(url, 'OK', { duration: 6000 });
+      this.snack.open(url, 'OK', { duration: SNACK_TIME_ERROR });
     }
   }
 
@@ -124,7 +125,7 @@ export class LandingComponent {
     this.showTextModal.set(false);
     await this.refresh();
     this.snack.open(this.i18n.t('landing.imported', { name: form.name }), 'OK', {
-      duration: 3000,
+      duration: SNACK_TIME_OK,
     });
   }
 
