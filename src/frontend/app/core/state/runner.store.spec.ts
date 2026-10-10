@@ -180,6 +180,35 @@ describe('RunnerStore submission', () => {
     expect(store.submit()).not.toBeNull();
   });
 
+  it('hides conditional fields again after reset', () => {
+    const form = newForm('Conditional');
+    const page = createPage('Details');
+    const trigger = createElement('text', 'Trigger');
+    const conditional = createElement('text', 'Conditional');
+    conditional.enabledWhen = {
+      logic: 'all',
+      conditions: [
+        { fieldId: trigger.id, operator: 'eq', operand: { kind: 'literal', value: 'yes' } },
+      ],
+      groups: [],
+    };
+    page.elements = [trigger, conditional];
+    form.pages = [page];
+
+    const store = new RunnerStore();
+    store.init(form);
+    const isVisible = () =>
+      store.currentPage()?.elements.find((r) => r.id === conditional.id)?.visible;
+
+    expect(isVisible()).toBe(false);
+    store.setAnswer(trigger.id, 'yes');
+    expect(isVisible()).toBe(true);
+
+    store.reset();
+    expect(store.answers.get(trigger.id)?.value).toBeNull();
+    expect(isVisible()).toBe(false);
+  });
+
   it('enforces required fields nested inside groups', () => {
     const form = newForm('Grouped');
     const page = createPage('Details');
