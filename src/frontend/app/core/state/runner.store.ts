@@ -356,9 +356,13 @@ export class RunnerStore {
     }
     this.pageIndex.set(0);
     this.startedAt.set(Date.now());
-    this.previousValues = {};
     this.clearDraft();
-    this.onValuesChanged();
+    // Full re-evaluation: a diff against the cleared values would miss
+    // conditions that depended on answers now reset to null.
+    const form = this.form();
+    if (!form) return;
+    this.evaluator.invalidateAll();
+    this.updateInternal(form, this.rawValues());
   }
 
   setAnswer(
