@@ -215,16 +215,12 @@ export interface FormSettings {
   enableAutoSave?: boolean;
 }
 
-export interface FormDefinition {
+export interface SaveFormDefinition {
   id: FormId;
   name?: string;
   ownerId?: string;
   owner?: PublicUser | null;
   description?: string;
-  version: number;
-  schemaVersion: 1;
-  createdAt?: string;
-  updatedAt?: string;
   settings: FormSettings;
   pages: PageDefinition[];
 }
@@ -232,14 +228,37 @@ export interface NamedFormDefinition extends FormDefinition {
   name: string;
 }
 
-export type PortableFormDefinition = Omit<FormDefinition, 'ownerId' | 'owner'>;
+export interface FormDefinition extends SaveFormDefinition {
+  readonly id: FormId;
+  name?: string;
+  readonly ownerId?: string;
+  readonly owner?: PublicUser | null;
+  description?: string;
+  readonly version: number;
+  readonly schemaVersion: 1;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+  settings: FormSettings;
+  pages: PageDefinition[];
+}
+
+export interface NamedFormDefinition extends FormDefinition {
+  name: string;
+}
+
+export type PortableFormDefinition<T extends FormDefinition | SaveFormDefinition> = Omit<
+  T,
+  'ownerId' | 'owner'
+>;
 
 export interface FormWithOwner extends FormDefinition {
   ownerId: string;
   owner: PublicUser | null;
 }
 
-export function toPortableForm(form: FormDefinition): PortableFormDefinition {
+export function toPortableForm<T extends FormDefinition | SaveFormDefinition>(
+  form: T,
+): PortableFormDefinition<T> {
   const { ownerId: _ownerId, owner: _owner, ...portable } = form;
   return portable;
 }

@@ -8,6 +8,7 @@ import {
   QUESTION_TYPES,
   type QuestionDefinition,
   type QuestionType,
+  type SaveFormDefinition,
 } from './model';
 
 // Helper function that checks if the value exists in the object
@@ -91,4 +92,15 @@ export function formName(form: FormDefinition, i18n: I18nService) {
       date: form.createdAt ? new Date(form.createdAt).toLocaleDateString(i18n.lang()) : '',
     })
   );
+}
+
+export function toSaveableForm(form: FormDefinition): SaveFormDefinition {
+  const {
+    version: _v,
+    schemaVersion: _schemaVersion,
+    createdAt: _created,
+    updatedAt: _updated,
+    ...saveable
+  } = form;
+  return saveable;
 }

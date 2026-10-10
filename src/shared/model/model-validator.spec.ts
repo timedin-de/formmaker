@@ -7,6 +7,8 @@ const formJson = (element: Record<string, unknown>): string =>
   JSON.stringify({
     id: 'f1',
     name: 'Form',
+    createdAt: '2026-01-02',
+    updatedAt: '2026-01-02',
     version: 1,
     schemaVersion: 1,
     settings: { navigation: 'auto' },

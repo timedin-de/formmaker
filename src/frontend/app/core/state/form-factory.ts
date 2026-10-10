@@ -3,7 +3,6 @@ import type {
   ElementDefinition,
   Elements,
   ElementType,
-  FormDefinition,
   GroupElement,
   PageDefinition,
   QuestionDefinition,
@@ -11,27 +10,6 @@ import type {
 } from '@shared/model/form.model';
 import { DEFAULT_TIME_INTERVAL } from '@shared/model/form.model';
 import { elementId, uuid } from '@shared/model/ids';
-
-export function newForm(name = 'Untitled form'): FormDefinition {
-  const now = new Date().toISOString();
-  return {
-    id: uuid(),
-    name,
-    description: '',
-    version: 1,
-    schemaVersion: 1,
-    createdAt: now,
-    updatedAt: now,
-    settings: {
-      submitLabel: 'Submit',
-      showProgress: true,
-      allowBack: true,
-      navigation: 'auto',
-      enableAutoSave: true,
-    },
-    pages: [createPage()],
-  };
-}
 
 export function createPage(title = 'New page'): PageDefinition {
   return {
@@ -141,18 +119,4 @@ export function insertElementAfter(
   const next = [...elements];
   next.splice(idx + 1, 0, el);
   return next;
-}
-
-/** Build a form with `count` pages × `perPage` simple text fields for load testing. */
-export function buildStressForm(count = 40, perPage = 50): FormDefinition {
-  const form = newForm(`Stress ${count * perPage} questions`);
-  form.pages = Array.from({ length: count }, (_, p) => {
-    const page = createPage(`Page ${p + 1}`);
-    page.elements = Array.from({ length: perPage }, (_, i) => {
-      const n = p * perPage + i + 1;
-      return createElement('text', `Question ${n}`);
-    });
-    return page;
-  });
-  return form;
 }

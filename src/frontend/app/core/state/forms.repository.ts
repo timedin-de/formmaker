@@ -1,4 +1,5 @@
 import { inject, Injectable, signal } from '@angular/core';
+import { toSaveableForm } from '@shared/helper';
 import { toPortableForm, type FormDefinition, type FormWithOwner } from '@shared/model/form.model';
 import type { Submission, SubmissionCreate } from '@shared/model/submission.model';
 import {
@@ -66,7 +67,18 @@ export class FormsRepository {
     return portable;
   }
 
-  async newForm(form: FormDefinition): Promise<FormWithOwner> {
+  async newForm(): Promise<FormDefinition> {
+    await this.init();
+    const saved = await this.api.request(formWithOwnerSchema, '/api/forms', {
+      method: 'POST',
+    });
+    this.upsert([saved]);
+    writeCache(FORM_CACHE_PREFIX + saved.id, toPortableForm(saved));
+    writeCache(FORMS_CACHE_KEY, this.forms());
+    return saved;
+  }
+
+  async importForm(form: FormDefinition): Promise<FormDefinition> {
     await this.init();
     const saved = await this.api.request(formWithOwnerSchema, '/api/forms', {
       method: 'POST',
@@ -80,10 +92,14 @@ export class FormsRepository {
 
   async saveForm(form: FormDefinition): Promise<FormWithOwner> {
     await this.init();
-    const saved = await this.api.request(formWithOwnerSchema, '/api/forms', {
-      method: 'PUT',
-      body: JSON.stringify(form),
-    });
+    const saved = await this.api.request(
+      formWithOwnerSchema,
+      `/api/forms/${encodeURIComponent(form.id)}`,
+      {
+        method: 'PUT',
+        body: JSON.stringify(toSaveableForm(form)),
+      },
+    );
     this.upsert([saved]);
     writeCache(FORM_CACHE_PREFIX + saved.id, toPortableForm(saved));
     writeCache(FORMS_CACHE_KEY, this.forms());

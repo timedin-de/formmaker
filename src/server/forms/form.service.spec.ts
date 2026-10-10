@@ -93,6 +93,8 @@ function formOf(pages: PageDefinition[]): FormDefinition {
     schemaVersion: 1,
     settings: { navigation: 'auto' },
     pages,
+    createdAt: '',
+    updatedAt: '',
   };
 }
 

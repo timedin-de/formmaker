@@ -48,6 +48,8 @@ describe('migrations', () => {
       name: 'Legacy',
       version: 1,
       schemaVersion: 1,
+      createdAt: '2026-01-01',
+      updatedAt: '2026-01-01',
       settings: { navigation: 'auto' },
       pages: [
         {

@@ -8,12 +8,14 @@ import { FormImportService } from './import';
 
 const validForm = {
   id: 'f1',
-  name: 'Imported',
+  name: 'imported',
   version: 1,
   schemaVersion: 1,
   settings: { navigation: 'auto' },
   pages: [],
-};
+  updatedAt: '2026-01-01',
+  createdAt: '2026-01-01',
+} as const;
 
 function fileEvent(file?: File): Event {
   return { target: { files: file ? [file] : [] } } as unknown as Event;
@@ -23,17 +25,17 @@ describe('FormImportService', () => {
   let service: FormImportService;
   let i18n: I18nService;
   const open = vi.fn();
-  const newForm = vi.fn();
+  const importForm = vi.fn((v) => v);
 
   beforeEach(() => {
     open.mockReset();
-    newForm.mockReset();
-    newForm.mockImplementation(async (f: FormDefinition) => f);
+    importForm.mockReset();
+    importForm.mockImplementation(async (f: FormDefinition) => f);
     TestBed.configureTestingModule({
       providers: [
         I18nService,
         { provide: MatSnackBar, useValue: { open } },
-        { provide: FormsRepository, useValue: { newForm } },
+        { provide: FormsRepository, useValue: { importForm } },
       ],
     });
     service = TestBed.inject(FormImportService);
@@ -44,15 +46,15 @@ describe('FormImportService', () => {
     const form = await service.importJson(
       JSON.stringify({ ...validForm, ownerId: 'u1', owner: null }),
     );
-    expect(form?.name).toBe('Imported');
-    expect(newForm).toHaveBeenCalledTimes(1);
-    expect(newForm.mock.calls[0][0]).not.toHaveProperty('ownerId');
-    expect(open).not.toHaveBeenCalled();
+    expect(form?.name).toBe('imported');
+    expect(importForm).toHaveBeenCalledTimes(1);
+    expect(importForm.mock.calls[0][0]).not.toHaveProperty('ownerId');
+    expect(open).toHaveBeenCalled();
   });
 
   it('importJson reports invalid JSON without saving', async () => {
     expect(await service.importJson('{nope')).toBeUndefined();
-    expect(newForm).not.toHaveBeenCalled();
+    expect(importForm).not.toHaveBeenCalled();
     expect(open.mock.calls[0][0]).toBe(
       i18n.t('import.failed', { message: i18n.t('import.badJson') }),
     );
@@ -62,7 +64,7 @@ describe('FormImportService', () => {
     expect(await service.importJson(JSON.stringify({ ...validForm, schemaVersion: 2 }))).toBe(
       undefined,
     );
-    expect(newForm).not.toHaveBeenCalled();
+    expect(importForm).not.toHaveBeenCalled();
     expect(open).toHaveBeenCalledTimes(1);
   });
 
@@ -74,14 +76,14 @@ describe('FormImportService', () => {
   it('onImport imports a selected file and confirms', async () => {
     const file = new File([JSON.stringify(validForm)], 'form.json', { type: 'application/json' });
     const form = await service.onImport(fileEvent(file));
-    expect(form?.id).toBe('f1');
+    expect(form?.name).toBe('imported');
     expect(open.mock.calls[0][0]).toBe(i18n.t('import.success'));
   });
 
   it('onImport reports an empty or unreadable file', async () => {
     const empty = new File([''], 'empty.json');
     expect(await service.onImport(fileEvent(empty))).toBeUndefined();
-    expect(newForm).not.toHaveBeenCalled();
+    expect(importForm).not.toHaveBeenCalled();
     expect(open.mock.calls[0][0]).toBe(
       i18n.t('import.failed', { message: i18n.t('import.badFile') }),
     );

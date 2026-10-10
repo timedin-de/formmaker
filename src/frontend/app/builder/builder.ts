@@ -78,11 +78,7 @@ export class BuilderComponent {
               duration: SNACK_TIME_OK,
             });
           } else {
-            this.store.createEmpty();
-            this.store.rename(
-              this.i18n.t('builder.untitled', { date: new Date().toLocaleDateString() }),
-            );
-            this.save();
+            await this.store.createEmpty();
             this.router.navigate([], {
               relativeTo: this.route,
               queryParams: { id: this.store.form().id, page: this.store.activePageId() },
@@ -104,7 +100,7 @@ export class BuilderComponent {
 
     effect(() => {
       // Auto-mark unsaved whenever the form struct changes after initial load.
-      this.store.form();
+      if (this.store._form()) return;
       this.store.dirty();
       this.saved.set(false);
     });
@@ -123,8 +119,8 @@ export class BuilderComponent {
   }
 
   async preview(): Promise<void> {
-    const kept = await this.repo.saveForm(this.store.form());
-    void this.router.navigate(['/runner', kept.id]);
+    await this.save();
+    this.router.navigate(['/runner', this.store.form().id]);
   }
 
   export(): void {
