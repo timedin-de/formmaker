@@ -11,6 +11,7 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { ActivatedRoute, Router } from '@angular/router';
+import { formName } from '@shared/helper';
 import { toPortableForm } from '@shared/model/form.model';
 import { pairwise, startWith } from 'rxjs';
 import { SNACK_TIME_OK } from '../core/consts';
@@ -57,6 +58,8 @@ export class BuilderComponent {
 
   readonly saved = signal(false);
 
+  readonly formName = formName;
+
   constructor() {
     effect(() => {
       const el = this.propertiesDialog()?.nativeElement;
@@ -69,8 +72,9 @@ export class BuilderComponent {
         if (!q.id || oldParams.id !== q.id) {
           const loaded = q['id'] ? await this.repo.getForm(q['id']!) : null;
           if (loaded) {
+            const name = formName(loaded, this.i18n);
             this.store.load(loaded);
-            this.snack.open(this.i18n.t('builder.editing', { name: loaded.name }), 'OK', {
+            this.snack.open(this.i18n.t('builder.editing', { name }), 'OK', {
               duration: SNACK_TIME_OK,
             });
           } else {
@@ -124,7 +128,9 @@ export class BuilderComponent {
   }
 
   export(): void {
-    downloadJSON(toPortableForm(this.store.form()), toSlug(this.store.form().name) + '.json');
+    const form = this.store.form();
+    const name = formName(form, this.i18n);
+    downloadJSON(toPortableForm(form), toSlug(name) + '.json');
   }
 
   protected closePropertiesDialog(): void {

@@ -1,7 +1,9 @@
+import { type I18nService } from '../frontend/app/core/i18n';
 import {
   type Condition,
   type ConditionGroup,
   type ElementDefinition,
+  type FormDefinition,
   type GroupElement,
   QUESTION_TYPES,
   type QuestionDefinition,
@@ -81,4 +83,12 @@ export function isQuestionOrGroup<T extends ElementDefinition>(
   object: T,
 ): object is Extract<T, QuestionDefinition | GroupElement> {
   return QUESTION_TYPES.includes(object.type as QuestionType) || object.type === 'group';
+}
+export function formName(form: FormDefinition, i18n: I18nService) {
+  return (
+    form.name ??
+    i18n.t('builder.untitled', {
+      date: form.createdAt ? new Date(form.createdAt).toLocaleDateString(i18n.lang()) : '',
+    })
+  );
 }

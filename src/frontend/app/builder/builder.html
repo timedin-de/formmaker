@@ -5,7 +5,7 @@
       <mat-form-field appearance="outline" class="title-field" subscriptSizing="dynamic">
         <input
           matInput
-          [ngModel]="store.form().name"
+          [ngModel]="formName(store.form(), i18n)"
           (ngModelChange)="store.rename($event)"
           [placeholder]="i18n.t('builder.formName')"
           [attr.aria-label]="i18n.t('builder.formName')"

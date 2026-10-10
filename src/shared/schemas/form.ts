@@ -35,7 +35,7 @@ const formOwnerSchema = z.strictObject({
 
 export const formDefinitionSchema = z.strictObject({
   id: z.string(),
-  name: z.string(),
+  name: z.string().optional(),
   ownerId: z.string().min(1).max(128).optional(),
   owner: formOwnerSchema.nullable().optional(),
   description: z.string().optional(),

@@ -11,7 +11,6 @@ export const submissionCreateSchema = z.strictObject({
 export const submissionSchema = submissionCreateSchema.strip().extend({
   id: z.string().min(1).max(128),
   formVersion: z.number().int().positive(),
-  formName: z.string().max(500),
   submittedAt: z.iso.datetime(),
 }) satisfies z.ZodType<Submission>;
 

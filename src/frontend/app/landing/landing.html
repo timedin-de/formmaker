@@ -62,9 +62,10 @@
       <mat-card class="card">
         <mat-card-header>
           <div class="form-card-text">
-            <mat-card-title [innerHTML]="form.name | markdown"></mat-card-title>
+            <mat-card-title [innerHTML]="formName(form, i18n) | markdown"></mat-card-title>
             <mat-card-subtitle>
-              v{{ form.version }} · {{ form.pages.length }} {{ i18n.t('landing.pages') }} ·
+              v{{ form.version }} · {{ form.pages.length }}
+              {{ i18n.t('landing.pages', { date: form.createdAt ?? '' }) }} ·
               {{ countQuestions(form) }} {{ i18n.t('landing.questions') }} ·
               <span [matTooltip]="updated(form).time">{{ updated(form).date }}</span>
             </mat-card-subtitle>

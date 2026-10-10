@@ -7,6 +7,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { ActivatedRoute, Router } from '@angular/router';
+import { formName } from '@shared/helper';
 import type { FormDefinition } from '@shared/model/form.model';
 import type { Submission } from '@shared/model/submission.model';
 import { SNACK_TIME_ERROR, SNACK_TIME_OK } from '../core/consts';
@@ -124,8 +125,9 @@ export class Results {
       t: (key: TranslationKey, params?: Record<string, string | number>) =>
         this.i18n.t(key, params),
     };
+    const name = formName(form, this.i18n);
     try {
-      const artifact = await ch.build(form, subs, ctx);
+      const artifact = await ch.build({ ...form, name }, subs, ctx);
       if (artifact.kind === 'download') {
         downloadBlob(artifact.blob, artifact.filename);
       } else {

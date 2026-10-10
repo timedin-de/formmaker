@@ -14,6 +14,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatTooltip } from '@angular/material/tooltip';
 import { ActivatedRoute, Router } from '@angular/router';
+import { formName } from '@shared/helper';
 import { type RunnerPage } from '@shared/model';
 import type { Submission } from '@shared/model/submission.model';
 import { first, switchMap, tap } from 'rxjs';
@@ -166,8 +167,9 @@ export class Runner {
     const form = this.store.form();
     const submission = this.lastSubmission();
     if (!form || !submission) return;
-    const blob = await submissionToPdf(form, submission);
-    downloadBlob(blob, toSlug(this.i18n.t('pdf.receipt', { name: form.name })) + '.pdf');
+    const name = formName(form, this.i18n);
+    const blob = await submissionToPdf({ ...form, name }, submission);
+    downloadBlob(blob, toSlug(this.i18n.t('pdf.receipt', { name })) + '.pdf');
   }
 
   fillAgain(): void {
