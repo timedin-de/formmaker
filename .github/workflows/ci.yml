@@ -24,6 +24,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Cache Angular build cache
+        uses: actions/cache@v5
+        with:
+          path: .angular/cache
+          key: angular-verify-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ github.sha }}
+          restore-keys: |
+            angular-verify-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-
+
       - name: Generate bundled icon manifest (src/frontend/app/core/icon-names.ts is gitignored)
         run: npm run icons:copy
 
@@ -73,8 +81,32 @@ jobs:
       - name: Generate bundled icon manifest (src/frontend/app/core/icon-names.ts is gitignored)
         run: npm run icons:copy
 
+      - name: Cache Angular build cache
+        uses: actions/cache@v5
+        with:
+          path: .angular/cache
+          key: angular-e2e-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ github.sha }}
+          restore-keys: |
+            angular-e2e-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-
+
+      - name: Read Playwright version
+        id: playwright-version
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
+
       - name: Install Playwright browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: npx playwright install --with-deps chromium firefox webkit
+
+      - name: Install Playwright system dependencies
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium firefox webkit
 
       - name: Run e2e tests (chromium/firefox/webkit; V8 coverage via chromium)
         run: npm run e2e
