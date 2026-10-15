@@ -24,6 +24,11 @@ export class RunnerStore {
   readonly evaluation = signal<FormEvaluation | null>(null);
   readonly restoredDraft = signal(false);
 
+  /** Question to scroll to and focus; cleared by the question list once handled. */
+  readonly focusedQuestion = signal<string | undefined>(undefined);
+  /** Ids of collapsible groups that are currently expanded. */
+  readonly expandedGroups = signal<ReadonlySet<string>>(new Set());
+
   readonly startedAt = signal(Date.now());
   readonly durationMs = signal(0);
 
@@ -61,6 +66,7 @@ export class RunnerStore {
     this.form.set(form);
     this.evaluator.setForm(form);
     this.pageIndex.set(0);
+    this.expandedGroups.set(new Set());
     this.startedAt.set(Date.now());
 
     const draft = this.loadDraft(form);
@@ -252,6 +258,42 @@ export class RunnerStore {
     for (const ref of page.elements) this.touchRef(ref, true);
   }
 
+  setGroupExpanded(id: string, expanded: boolean): void {
+    this.expandedGroups.update((ids) => {
+      const next = new Set(ids);
+      if (expanded) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  }
+
+  /** Expand the groups around the first invalid question on the current page and focus it. */
+  revealFirstInvalid(): void {
+    const pages = this.pages();
+    for (let index = 0; index < pages.length; index++) {
+      for (const ref of pages[index].elements ?? []) {
+        const path = this.findInvalid(ref);
+        if (!path) continue;
+        this.goTo(index);
+        const groupIds = path.slice(0, -1).map((g) => g.id);
+        this.expandedGroups.update((ids) => new Set([...ids, ...groupIds]));
+        this.focusedQuestion.set(path[path.length - 1].id);
+        return;
+      }
+    }
+  }
+
+  /** Path from `ref` down to its first invalid descendant (inclusive), or null. */
+  private findInvalid(ref: ElementViewRef): ElementViewRef[] | null {
+    if (!ref.visible || ref.control.disabled) return null;
+    if (ref.el.type !== 'group') return ref.control.errors ? [ref] : null;
+    for (const child of ref.el.elementsRef ?? []) {
+      const path = this.findInvalid(child);
+      if (path) return [ref, ...path];
+    }
+    return null;
+  }
+
   private validatePage(page: RunnerPage): boolean {
     let valid = true;
     for (const ref of page.elements) {
@@ -355,6 +397,7 @@ export class RunnerStore {
       ctrl.markAsUntouched();
     }
     this.pageIndex.set(0);
+    this.expandedGroups.set(new Set());
     this.startedAt.set(Date.now());
     this.clearDraft();
     // Full re-evaluation: a diff against the cleared values would miss

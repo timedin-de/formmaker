@@ -3,6 +3,7 @@
     @case ('text') {
       <mat-form-field appearance="outline" class="field-host" subscriptSizing="dynamic">
         <input
+          #field
           matInput
           [id]="vr.id"
           [formControl]="vr.control"
@@ -16,6 +17,7 @@
     @case ('longText') {
       <mat-form-field appearance="outline" class="field-host" subscriptSizing="dynamic">
         <textarea
+          #field
           matInput
           [id]="vr.id"
           [formControl]="vr.control"
@@ -29,6 +31,7 @@
     @case ('number') {
       <mat-form-field appearance="outline" class="field-host" subscriptSizing="dynamic">
         <input
+          #field
           matInput
           [id]="vr.id"
           type="number"
@@ -43,20 +46,20 @@
       </mat-form-field>
     }
     @case ('boolean') {
-      <mat-checkbox [formControl]="vr.control">
+      <mat-checkbox #field [formControl]="vr.control">
         <span [innerHTML]="vr.label | markdown"></span>
       </mat-checkbox>
     }
     @case ('choice') {
       <mat-radio-group class="choice-group" [formControl]="vr.control" [name]="vr.id">
         @for (opt of options(vr.el); track opt.id) {
-          <mat-radio-button [value]="opt.value">{{ opt.label }}</mat-radio-button>
+          <mat-radio-button #field [value]="opt.value">{{ opt.label }}</mat-radio-button>
         }
       </mat-radio-group>
     }
     @case ('dropdown') {
       <mat-form-field appearance="outline" class="field-host" subscriptSizing="dynamic">
-        <mat-select [formControl]="vr.control" [aria-labelledby]="`${vr.id}-title`">
+        <mat-select #field [formControl]="vr.control" [aria-labelledby]="`${vr.id}-title`">
           @for (opt of options(vr.el); track opt.id) {
             <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
           }
@@ -67,6 +70,7 @@
       <div class="choice-group">
         @for (opt of options(vr.el); track opt.id) {
           <mat-checkbox
+            #field
             [disabled]="multiDisabled(vr.control, opt.value)"
             [value]="strOpt(opt.value)"
             [checked]="multiChecked(vr.control, opt.value)"
@@ -82,6 +86,7 @@
         @for (val of scaleValues(vr.el); track val) {
           <div class="scale-container">
             <button
+              #field
               [matButton]="vr.control.value === val ? 'filled' : 'outlined'"
               extended
               type="button"
@@ -115,6 +120,7 @@
     @case ('time') {
       <mat-form-field appearance="outline" class="field-host" subscriptSizing="dynamic">
         <input
+          #field
           matInput
           [id]="vr.id"
           type="time"
@@ -126,6 +132,7 @@
     @case ('dateTime') {
       <mat-form-field appearance="outline" class="field-host" subscriptSizing="dynamic">
         <input
+          #field
           matInput
           [id]="vr.id"
           type="datetime-local"
@@ -145,7 +152,7 @@
             hidden
             (change)="onFiles(vr.control, vr.el, $event)"
           />
-          <button mat-stroked-button type="button" (click)="fileInput.click()">
+          <button #field mat-stroked-button type="button" (click)="fileInput.click()">
             <mat-icon svgIcon="attach_file"></mat-icon> {{ i18n.t('q.chooseFiles') }}
           </button>
         </div>

@@ -1,5 +1,14 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { Component, computed, input } from '@angular/core';
+import {
+  afterNextRender,
+  Component,
+  computed,
+  effect,
+  inject,
+  Injector,
+  input,
+  viewChildren,
+} from '@angular/core';
 import { MatDivider } from '@angular/material/divider';
 import {
   MatAccordion,
@@ -9,6 +18,7 @@ import {
 import { has } from '@shared/helper';
 import { type ElementViewRef } from '@shared/model';
 import { QuestionInput } from '../../builder/question-input';
+import { type RunnerStore } from '../../core';
 import { MarkdownPipe } from '../../core/markdown';
 
 @Component({
@@ -26,6 +36,9 @@ import { MarkdownPipe } from '../../core/markdown';
   styleUrl: './question-list.scss',
 })
 export class QuestionList {
+  private readonly inputs = viewChildren(QuestionInput);
+  private readonly injector = inject(Injector);
+  readonly store = input.required<RunnerStore>();
   readonly elements = input.required<ElementViewRef[]>();
   readonly group = input<'true' | true>();
   /** Heading level for sections and for questions that no section precedes. */
@@ -47,4 +60,21 @@ export class QuestionList {
     }
     return levels;
   });
+
+  constructor() {
+    effect(() => {
+      const store = this.store();
+      const id = store.focusedQuestion();
+      // Each nested list checks its own inputs; only the one that owns the question clears it.
+      const target = this.inputs().find((i) => i.vr()?.id === id);
+      if (!target) return;
+      afterNextRender(
+        () => {
+          target.focus();
+          store.focusedQuestion.set(undefined);
+        },
+        { injector: this.injector },
+      );
+    });
+  }
 }

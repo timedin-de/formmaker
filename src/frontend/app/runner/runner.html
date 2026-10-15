@@ -64,7 +64,7 @@
         }
       </header>
 
-      <fm-question-list [elements]="page.elements"></fm-question-list>
+      <fm-question-list [store]="store" [elements]="page.elements"></fm-question-list>
 
       <div class="nav">
         @if (store.canPrev()) {

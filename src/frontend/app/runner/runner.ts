@@ -117,19 +117,22 @@ export class Runner {
     const ok = this.store.next();
     if (!ok) {
       const page = this.store.currentPage();
-      if (page) this.store.markPageTouched(page);
+      if (page) {
+        this.store.markPageTouched(page);
+        this.store.revealFirstInvalid();
+      }
     } else {
-      this.router.navigate([], {
-        relativeTo: this.route,
-        queryParamsHandling: 'merge',
-        queryParams: { page: this.pageSignal()?.index },
-      });
+      this.syncPageParam();
     }
   }
 
   prev(): void {
     this.store.prev();
-    this.router.navigate([], {
+    this.syncPageParam();
+  }
+
+  private syncPageParam(): void {
+    void this.router.navigate([], {
       relativeTo: this.route,
       queryParamsHandling: 'merge',
       queryParams: { page: this.pageSignal()?.index },
@@ -143,6 +146,7 @@ export class Runner {
       for (const page of this.store.pages()) {
         if (page.visible) this.store.markPageTouched(page);
       }
+      this.store.revealFirstInvalid();
       return;
     }
     this.submitting.set(true);
