@@ -7,7 +7,7 @@ import {
 import type { Submission } from '@shared/model/submission.model';
 import { newForm } from '@test/helper';
 import { describe, expect, it } from 'vitest';
-import { createElement, createPage } from '../state/form-factory';
+import { createElement, createPage } from '@shared/model/form-factory';
 import { EXPORT_CHANNELS } from './channels';
 import { buildColumnBlocks, buildColumns, buildExportTable, formatValueForExport } from './columns';
 import { submissionsToCsv, toCsv } from './csv-exporter';

@@ -1,13 +1,22 @@
 import { inject, Injectable, signal } from '@angular/core';
 import { toSaveableForm } from '@shared/helper';
-import { toPortableForm, type FormDefinition, type FormWithOwner } from '@shared/model/form.model';
+import {
+  toPortableForm,
+  type ElementDefinition,
+  type FormDefinition,
+  type FormWithOwner,
+  type PageDefinition,
+} from '@shared/model/form.model';
 import type { Submission, SubmissionCreate } from '@shared/model/submission.model';
 import {
+  elementDefinitionSchema,
   formDefinitionSchema,
   formsWithOwnerSchema,
   formWithOwnerSchema,
+  pageDefinitionSchema,
   submissionSchema,
   submissionsSchema,
+  type CreateElementRequest,
 } from '@shared/schemas';
 import {
   FORM_CACHE_PREFIX,
@@ -104,6 +113,28 @@ export class FormsRepository {
     writeCache(FORM_CACHE_PREFIX + saved.id, toPortableForm(saved));
     writeCache(FORMS_CACHE_KEY, this.forms());
     return saved;
+  }
+
+  /** Creates and persists a new page on the server; returns the page as generated there. */
+  async addPage(formId: string, title: string): Promise<PageDefinition> {
+    const page = await this.api.request(
+      pageDefinitionSchema,
+      `/api/forms/${encodeURIComponent(formId)}/pages`,
+      { method: 'POST', body: JSON.stringify({ title }) },
+    );
+    removeCache(FORM_CACHE_PREFIX + formId);
+    return page;
+  }
+
+  /** Creates and persists a new element on the server; returns the element as generated there. */
+  async addElement(formId: string, request: CreateElementRequest): Promise<ElementDefinition> {
+    const element = await this.api.request(
+      elementDefinitionSchema,
+      `/api/forms/${encodeURIComponent(formId)}/elements`,
+      { method: 'POST', body: JSON.stringify(request) },
+    );
+    removeCache(FORM_CACHE_PREFIX + formId);
+    return element;
   }
 
   async deleteForm(id: string): Promise<void> {

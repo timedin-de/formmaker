@@ -1,6 +1,7 @@
 import z from 'zod';
 import { type CatchFnResult, catchFn } from '../helper';
 import {
+  ELEMENT_TYPES,
   type FormDefinition,
   type FormSettings,
   type FormWithOwner,
@@ -10,7 +11,7 @@ import {
 import { conditionGroupSchema } from './conditions';
 import { elementsSchema } from './elements';
 
-const pageDefinitionSchema = z.strictObject({
+export const pageDefinitionSchema = z.strictObject({
   id: z.string(),
   title: z.string(),
   subtitle: z.string().default(''),
@@ -66,6 +67,19 @@ export const formWithOwnerSchema = formDefinitionSchema.extend({
 }) satisfies z.ZodType<FormWithOwner>;
 
 export const formsWithOwnerSchema = z.array(formWithOwnerSchema);
+
+export const createPageSchema = z.strictObject({
+  title: z.string(),
+});
+
+export const createElementSchema = z.strictObject({
+  type: z.enum(ELEMENT_TYPES),
+  label: z.string(),
+  parentId: z.string().min(1),
+  afterId: z.string().nullable().optional(),
+});
+
+export type CreateElementRequest = z.infer<typeof createElementSchema>;
 
 export function stripFormOwnership(value: unknown): unknown {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return value;

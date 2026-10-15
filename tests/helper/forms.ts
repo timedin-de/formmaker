@@ -1,5 +1,5 @@
 import { type FormDefinition, uuid } from '@shared/model';
-import { createPage } from '../../src/frontend/app/core/state/form-factory';
+import { createPage } from '@shared/model/form-factory';
 
 export function newForm(name = 'Untitled form'): FormDefinition {
   const now = new Date().toISOString();
