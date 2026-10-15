@@ -58,10 +58,10 @@ export class FormService {
     return page;
   }
 
-  async deletePage({ form, ownerId }: OwnedForm, questionId: string): Promise<void> {
+  async deletePage({ form, ownerId }: OwnedForm, pageId: string): Promise<void> {
     await this.repository.saveForm(ownerId, {
       ...form,
-      pages: form.pages.filter((p) => p.id !== questionId),
+      pages: form.pages.filter((p) => p.id !== pageId),
     });
   }
   /** Inserts a new element into a page or group of the stored form and returns it. */
@@ -81,7 +81,17 @@ export class FormService {
     await this.repository.saveForm(ownerId, { ...form, pages });
     return element;
   }
+  async deleteElement({ form, ownerId }: OwnedForm, elementId: string): Promise<void> {
+    const remove = (els: ElementDefinition[]): ElementDefinition[] =>
+      els
+        .filter((e) => e.id !== elementId)
+        .map((e) => (e.type === 'group' ? { ...e, elements: remove(e.elements) } : e));
 
+    await this.repository.saveForm(ownerId, {
+      ...form,
+      pages: form.pages.map((p) => ({ ...p, elements: remove(p.elements) })),
+    });
+  }
   async addSubmission(submission: SubmissionCreate) {
     const form = await this.getForm(submission.formId);
     if (!form?.form) throw new NotFoundException({ error: 'not found' });
