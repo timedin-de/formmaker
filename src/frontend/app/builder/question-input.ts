@@ -1,4 +1,4 @@
-import { Component, inject, input } from '@angular/core';
+import { Component, ElementRef, inject, input, viewChild } from '@angular/core';
 import {
   FormsModule,
   ReactiveFormsModule,
@@ -51,6 +51,16 @@ import { QuestionInputField } from './question-input-field';
 export class QuestionInput {
   readonly vr = input<ElementViewRef>();
   protected readonly i18n = inject(I18nService);
+  /** Main control: a native input, or a Material component (select, checkbox, radio, button). */
+  private readonly field = viewChild<ElementRef<HTMLElement> | { focus(): void }>('field');
+
+  focus(): void {
+    const field = this.field();
+    if (field instanceof ElementRef) {
+      field.nativeElement.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      field.nativeElement.focus({ preventScroll: true });
+    } else field?.focus();
+  }
 
   date = (value: unknown) => value as Date;
 

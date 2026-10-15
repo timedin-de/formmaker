@@ -38,6 +38,12 @@
   overflow: hidden;
 }
 
+// While an invalid question is being revealed, skip Material's visibility fade-in so the
+// content of a just-opened panel can take focus in the same frame. The height still animates.
+.reveal ::ng-deep .mat-expansion-panel-content {
+  transition: none;
+}
+
 .desc {
   margin: 4px 0;
   color: var(--mat-sys-on-surface-variant);

@@ -21,7 +21,11 @@
           </div>
         } @else {
           <mat-accordion>
-            <mat-expansion-panel>
+            <mat-expansion-panel
+              [class.reveal]="!!store().focusedQuestion()"
+              [expanded]="store().expandedGroups().has(vr.id)"
+              (expandedChange)="store().setGroupExpanded(vr.id, $event)"
+            >
               <mat-expansion-panel-header>
                 <ng-container *ngTemplateOutlet="header"></ng-container>
               </mat-expansion-panel-header>
@@ -64,6 +68,7 @@
               <div class="group">
                 <fm-question-list
                   group="true"
+                  [store]="store()"
                   [level]="(levels().get(vr.id) ?? level()) + 1"
                   [elements]="el.elementsRef"
                 ></fm-question-list>
