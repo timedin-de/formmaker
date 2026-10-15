@@ -4,7 +4,6 @@ import { evalConditionGroup, validateElementValue } from '@shared/engine';
 import { has, isQuestionOrGroup } from '@shared/helper';
 import {
   createElement,
-  type CreateElementRequest,
   createPage,
   type ElementDefinition,
   elementId,
@@ -14,6 +13,7 @@ import {
   type SubmissionCreate,
   uuid,
 } from '@shared/model';
+import { type CreateElementRequest } from '@shared/schemas';
 import { Repository, type User } from '../repository';
 
 /** A stored form together with its owner, as loaded by `Repository.form`. */
@@ -58,6 +58,12 @@ export class FormService {
     return page;
   }
 
+  async deletePage({ form, ownerId }: OwnedForm, questionId: string): Promise<void> {
+    await this.repository.saveForm(ownerId, {
+      ...form,
+      pages: form.pages.filter((p) => p.id !== questionId),
+    });
+  }
   /** Inserts a new element into a page or group of the stored form and returns it. */
   async addElement(
     { form, ownerId }: OwnedForm,

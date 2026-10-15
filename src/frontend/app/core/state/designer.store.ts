@@ -250,10 +250,6 @@ export class DesignerStore {
     if (this.form().pages.find((page) => page.id === id)) this.activePageId.set(id);
   }
 
-  toJSON(): string {
-    return JSON.stringify(this.form(), null, 2);
-  }
-
   // ---- internals -------------------------------------------------------------
 
   private findElement(id: string): ElementDefinition | null {
