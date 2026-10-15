@@ -16,7 +16,6 @@ import { has } from '@shared/helper';
 import type {
   ChoiceElement,
   ElementDefinition,
-  ElementViewRef,
   FieldValue,
   FileValue,
   ScaleElement,
@@ -25,6 +24,7 @@ import type {
 } from '@shared/model';
 import { I18nService } from '../core/i18n';
 import { MarkdownPipe } from '../core/markdown';
+import type { ElementViewRef } from '../core/state/runner.model';
 import { SignaturePadField } from '../runner/signature-pad';
 import { QuestionInputField } from './question-input-field';
 

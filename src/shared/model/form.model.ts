@@ -1,8 +1,6 @@
-import { type FormControl } from '@angular/forms';
 import { type TranslationKey } from '../../frontend/app/core/i18n';
 import type { ConditionGroup } from './conditions.model';
 import type { ElementId, FormId, PageId } from './ids';
-import { type SubmissionCreate } from './submission.model';
 import type { PublicUser } from './user.model';
 import type { ValidationRule } from './validation.model';
 import type { FieldValue } from './values.model';
@@ -160,7 +158,6 @@ export interface LongTextElement extends QuestionBase, Placeholderable {
 export interface GroupElement extends ElementBase, DefaultValueable {
   type: 'group';
   elements: Elements;
-  elementsRef?: ElementViewRef[];
   collapsible: boolean;
 }
 
@@ -261,28 +258,4 @@ export function toPortableForm<T extends FormDefinition | SaveFormDefinition>(
 ): PortableFormDefinition<T> {
   const { ownerId: _ownerId, owner: _owner, ...portable } = form;
   return portable;
-}
-
-export interface RunnerPage {
-  id: string;
-  title: string;
-  subtitle: string;
-  index: number;
-  visible: boolean;
-  elements: ElementViewRef[];
-}
-
-export interface ElementViewRef {
-  id: string;
-  el: ElementDefinition;
-  label: string;
-  description: string;
-  visible: boolean;
-  placeholder?: string;
-  control: FormControl;
-}
-
-export interface SubmissionResult {
-  submission: SubmissionCreate;
-  visibleAnswerKeys: string[];
 }
