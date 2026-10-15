@@ -2,14 +2,12 @@ import { conditionGroupReferences, expressionReferences, templateReferences } fr
 import { has } from '@shared/helper';
 import type { ConditionGroup } from '@shared/model/conditions.model';
 import { EMPTY_CONDITION_GROUP } from '@shared/model/conditions.model';
-import type {
-  ElementDefinition,
-  FormDefinition,
-  GroupElement,
-  PageDefinition,
-} from '@shared/model/form.model';
+import type { ElementDefinition } from '@shared/model/form.model';
 
-/** Collect all field ids that `el` depends on (expressions, pipes, defaults, validations, etc.). */
+/**
+ * Collect all field ids that `el` itself depends on (expressions, pipes,
+ * defaults, validations, etc.). The children of a group are not included.
+ */
 export function collectElementRefs(el: ElementDefinition): string[] {
   const refs = new Set<string>();
 
@@ -69,31 +67,5 @@ export function collectElementRefs(el: ElementDefinition): string[] {
     }
   }
 
-  // Nested groups — recurse
-  if (el.type === 'group') {
-    for (const child of (el as GroupElement).elements) {
-      collectElementRefs(child).forEach((r) => refs.add(r));
-    }
-  }
-
-  return [...refs];
-}
-
-/** All field ids referenced anywhere in a page. */
-export function collectPageRefs(page: PageDefinition): string[] {
-  const refs = new Set<string>();
-  conditionGroupReferences(page.enabledWhen).forEach((r) => refs.add(r));
-  for (const el of page.elements) {
-    collectElementRefs(el).forEach((r) => refs.add(r));
-  }
-  return [...refs];
-}
-
-/** All field ids referenced anywhere in a form. */
-export function collectFormRefs(form: FormDefinition): string[] {
-  const refs = new Set<string>();
-  for (const page of form.pages) {
-    collectPageRefs(page).forEach((r) => refs.add(r));
-  }
   return [...refs];
 }

@@ -1,4 +1,5 @@
-import type { FormDefinition, NamedFormDefinition } from '@shared/model/form.model';
+import { countQuestions } from '@shared/model/form-tree';
+import type { NamedFormDefinition } from '@shared/model/form.model';
 import type { Submission } from '@shared/model/submission.model';
 import { jsPDF } from 'jspdf';
 import { buildColumnBlocks, formatValueForExport } from './columns';
@@ -151,18 +152,6 @@ export async function submissionsToPdf(
 
   const buffer = doc.output('arraybuffer');
   return new Blob([buffer], { type: 'application/pdf' });
-}
-
-function countQuestions(form: FormDefinition): number {
-  let n = 0;
-  const walk = (els: FormDefinition['pages'][number]['elements']): void => {
-    for (const el of els) {
-      if (el.type === 'group') walk(el.elements);
-      else if (el.type !== 'section') n += 1;
-    }
-  };
-  form.pages.forEach((p) => walk(p.elements));
-  return n;
 }
 
 /**

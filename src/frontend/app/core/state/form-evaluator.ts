@@ -1,5 +1,6 @@
 import { evalConditionGroup, interpolateTemplate } from '@shared/engine';
 import { has } from '@shared/helper';
+import { childrenOf, walkElements } from '@shared/model/form-tree';
 import type { ElementDefinition, FormDefinition, PageDefinition } from '@shared/model/form.model';
 import type { FieldValue, ValuesMap } from '@shared/model/values.model';
 import { collectElementRefs } from '../engine/dependencies';
@@ -54,17 +55,15 @@ export class FormEvaluator {
     this.depsById.clear();
     this.dependents.clear();
     if (!this.form) return;
-    for (const page of this.form.pages) {
-      for (const el of page.elements) {
-        const deps = collectElementRefs(el);
-        this.depsById.set(el.id, deps);
-        for (const dep of deps) {
-          const list = this.dependents.get(dep);
-          if (list) list.push(el.id);
-          else this.dependents.set(dep, [el.id]);
-        }
+    walkElements(this.form, (el) => {
+      const deps = collectElementRefs(el);
+      this.depsById.set(el.id, deps);
+      for (const dep of deps) {
+        const list = this.dependents.get(dep);
+        if (list) list.push(el.id);
+        else this.dependents.set(dep, [el.id]);
       }
-    }
+    });
   }
 
   /** Invalidate cached views for elements affected by the given changed field ids. */
@@ -98,23 +97,20 @@ export class FormEvaluator {
         byId,
       };
 
-    for (const page of this.form.pages) {
+    const form = this.form;
+    for (const page of form.pages) {
       const pageVisible = evalConditionGroup(page.enabledWhen, values);
       const views: ElementView[] = [];
-      for (const el of page.elements) {
+      for (const el of childrenOf(form, page)) {
         const view = this.evaluateElement(el, values);
         views.push(view);
         byId.set(el.id, view);
         if (el.type === 'group') {
-          const indexNested = (el: ElementDefinition): void => {
-            if (el.type !== 'group') return;
-            for (const child of el.elements) {
-              const childView = this.evaluateElement(child, values);
-              byId.set(child.id, childView);
-              indexNested(child);
-            }
-          };
-          indexNested(el);
+          walkElements(
+            form,
+            (child) => byId.set(child.id, this.evaluateElement(child, values)),
+            el,
+          );
         }
       }
       pages.push({ page, visible: pageVisible, elements: views });

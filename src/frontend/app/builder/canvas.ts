@@ -16,8 +16,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { flattenElements } from '@shared/helper';
-import { type ConditionGroup } from '@shared/model';
+import { childrenOf, type ConditionGroup, descendants } from '@shared/model';
 import type { Elements, ElementType, PageDefinition } from '@shared/model/form.model';
 import { first } from 'rxjs';
 import { I18nService } from '../core/i18n';
@@ -62,21 +61,22 @@ export class BuilderCanvas {
   protected readonly canSortAt = canSortAt;
   protected readonly mainDropList = MAIN_DROP_LIST;
 
-  protected readonly pages = computed(() => this.store().form().pages);
   protected readonly page = computed(() => this.store().activePage());
-  protected readonly dropLists = computed(() => [
-    ...flattenElements(this.page()?.elements ?? [])
-      .filter((x) => x.type === 'group')
-      .map((x) => `${DROP_LIST_PREFIX}${x.id}`),
-    MAIN_DROP_LIST,
-  ]);
+  protected readonly dropLists = computed(() => {
+    const page = this.page();
+    const groups = page
+      ? descendants(this.store().form(), page).filter((x) => x.type === 'group')
+      : [];
+    return [...groups.map((x) => `${DROP_LIST_PREFIX}${x.id}`), MAIN_DROP_LIST];
+  });
 
-  protected fieldOptions = computed(() =>
-    this.pages()
-      .flatMap((p) => p.elements)
+  protected fieldOptions = computed(() => {
+    const form = this.store().form();
+    return form.pages
+      .flatMap((p) => childrenOf(form, p))
       .filter((el) => el.type !== 'section' && el.type !== 'group')
-      .map((el) => ({ id: el.id, label: el.label })),
-  );
+      .map((el) => ({ id: el.id, label: el.label }));
+  });
 
   readonly paletteDialog = viewChild<ElementRef<HTMLDialogElement>>('palette');
   readonly paleteTarget = signal<false | ((type: ElementType) => void)>(false);

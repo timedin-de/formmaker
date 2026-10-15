@@ -1,4 +1,5 @@
-import type { FormDefinition, Elements } from '@shared/model/form.model';
+import { childrenOf, type ElementParent } from '@shared/model/form-tree';
+import type { FormDefinition } from '@shared/model/form.model';
 import type { Submission } from '@shared/model/submission.model';
 import type { FieldValue } from '@shared/model/values.model';
 
@@ -30,16 +31,12 @@ export function buildColumnBlocks(form: FormDefinition): ExportColumnBlock[] {
   let pageNum = 0;
   for (const page of form.pages) {
     pageNum += 1;
-    const collect = (elements: Elements, path: string[], indent: number): boolean => {
+    const collect = (parent: ElementParent, path: string[], indent: number): boolean => {
       let emitted = false;
-      for (const el of elements) {
+      for (const el of childrenOf(form, parent)) {
         if (el.type === 'group') {
           const start = blocks.length;
-          const nested = collect(
-            (el as { elements: Elements }).elements,
-            [...path, el.label],
-            indent + 1,
-          );
+          const nested = collect(el, [...path, el.label], indent + 1);
           if (nested) {
             blocks.splice(start, 0, { kind: 'group', label: el.label, indent });
             emitted = true;
@@ -55,7 +52,7 @@ export function buildColumnBlocks(form: FormDefinition): ExportColumnBlock[] {
       return emitted;
     };
     const start = blocks.length;
-    const hasFields = collect(page.elements, [], 0);
+    const hasFields = collect(page, [], 0);
     if (hasFields) {
       blocks.splice(start, 0, {
         kind: 'page',

@@ -11,7 +11,7 @@
     <div class="cond-row" [class.indent]="indent()">
       <fm-question-selector
         [model]="cond.fieldId"
-        [pages]="pages()"
+        [form]="form()"
         (selectChange)="set($index, { fieldId: $event.id, fieldType: $event.type })"
         [selfId]="self()"
       ></fm-question-selector>
@@ -56,7 +56,7 @@
             }
           } @else {
             <fm-question-selector
-              [pages]="pages()"
+              [form]="form()"
               [selfId]="self()"
               [model]="fieldOperandId(cond)"
               (selectChange)="set($index, { operand: { kind: 'field', fieldId: $event.id } })"
@@ -111,7 +111,7 @@
     <div class="nested">
       <fm-condition-editor
         [group]="group"
-        [pages]="pages()"
+        [form]="form()"
         [self]="self()"
         [fields]="fields()"
         [indent]="true"
