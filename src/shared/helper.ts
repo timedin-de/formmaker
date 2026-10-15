@@ -56,24 +56,6 @@ export function walkConditionGroup(condition: ConditionGroup, callback: (cg: Con
   if (condition.groups.length) condition.groups.forEach((c) => walkConditionGroup(c, callback));
 }
 
-export function flattenQuestions(elements: ElementDefinition[]): QuestionDefinition[] {
-  return filterQuestions(flattenElements(elements));
-}
-
-export function flattenElements(elements: ElementDefinition[]): ElementDefinition[] {
-  return elements.flatMap((e) => (e.type === 'group' ? [e, ...flattenElements(e.elements)] : e));
-}
-
-export function filterQuestions(elements: ElementDefinition[]): QuestionDefinition[] {
-  return elements.filter((e): e is QuestionDefinition =>
-    QUESTION_TYPES.includes(e.type as QuestionType),
-  );
-}
-
-export type QuestionGroupElement = GroupElement & {
-  elements: (QuestionDefinition | QuestionGroupElement)[];
-};
-
 export function isQuestion<T extends ElementDefinition>(
   object: T,
 ): object is Extract<T, QuestionDefinition> {

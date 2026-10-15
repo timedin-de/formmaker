@@ -8,6 +8,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltip } from '@angular/material/tooltip';
 import { RouterLink } from '@angular/router';
 import { formName } from '@shared/helper';
+import { countQuestions } from '@shared/model/form-tree';
 import { toPortableForm, type FormDefinition, type FormWithOwner } from '@shared/model/form.model';
 import { FormImportModal } from '../core/components';
 import { SNACK_TIME_ERROR, SNACK_TIME_OK } from '../core/consts';
@@ -54,17 +55,7 @@ export class LandingComponent {
     this.forms.set(await this.repo.listForms());
   }
 
-  countQuestions(form: FormDefinition): number {
-    let n = 0;
-    const walk = (els: FormDefinition['pages'][number]['elements']) => {
-      for (const el of els) {
-        if (el.type === 'group') walk(el.elements);
-        else if (el.type !== 'section') n += 1;
-      }
-    };
-    form.pages.forEach((p) => walk(p.elements));
-    return n;
-  }
+  readonly countQuestions = countQuestions;
 
   updated(form: FormDefinition) {
     if (!form.updatedAt)

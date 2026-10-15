@@ -4,9 +4,11 @@ import { MatExpansionModule } from '@angular/material/expansion';
 import { MatSelectModule } from '@angular/material/select';
 import { isQuestionOrGroup } from '@shared/helper';
 import {
+  childrenOf,
   type ElementDefinition,
+  type ElementParent,
+  type FormDocument,
   type GroupElement,
-  type PageDefinition,
   type QuestionDefinition,
   type QuestionType,
 } from '@shared/model';
@@ -24,7 +26,7 @@ interface OptionRow {
   imports: [FormsModule, MatSelectModule, MatExpansionModule],
 })
 export class QuestionSelector {
-  readonly pages = input.required<PageDefinition[]>();
+  readonly form = input.required<FormDocument>();
   readonly model = input.required<string>();
   readonly selfId = input<string>();
   readonly questionType = input<QuestionType | 'group'>();
@@ -41,24 +43,23 @@ export class QuestionSelector {
   // Options are a flat, depth-indented list per page: mat-select only registers mat-options
   // declared directly in its content, so nested groups can't be rendered via a recursive template.
   // Self and its subtree are skipped; subtrees without anything selectable are dropped. Rows keep
-  // the original elements (a picked group's full `elements` is needed by callers).
+  // the original elements.
   readonly _pages = computed(() => {
+    const form = this.form();
     const self = this.selfId();
     const questionType = this.questionType();
     const groupMode = questionType === 'group';
     const filterFn =
       this.filterFn() ?? ((e: ElementDefinition) => !questionType || questionType === e.type);
 
-    const walk = (elements: ElementDefinition[], depth: number): OptionRow[] =>
-      elements.flatMap((e) => {
+    const walk = (parent: ElementParent, depth: number): OptionRow[] =>
+      childrenOf(form, parent).flatMap((e) => {
         if (!isQuestionOrGroup(e) || e.id === self) return [];
-        const children = e.type === 'group' ? walk(e.elements, depth + 1) : [];
+        const children = e.type === 'group' ? walk(e, depth + 1) : [];
         const selectable = groupMode === (e.type === 'group') && filterFn(e);
         return selectable || children.length ? [{ el: e, depth, selectable }, ...children] : [];
       });
 
-    return this.pages()
-      .map((page) => ({ page, rows: walk(page.elements, 0) }))
-      .filter((p) => !!p.rows.length);
+    return form.pages.map((page) => ({ page, rows: walk(page, 0) })).filter((p) => !!p.rows.length);
   });
 }

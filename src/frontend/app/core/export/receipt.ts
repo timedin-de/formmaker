@@ -1,4 +1,5 @@
-import type { FormDefinition, Elements } from '@shared/model/form.model';
+import { childrenOf, type ElementParent } from '@shared/model/form-tree';
+import type { FormDefinition } from '@shared/model/form.model';
 import type { Submission } from '@shared/model/submission.model';
 import { formatValueForExport } from './columns';
 
@@ -16,12 +17,12 @@ export type ReceiptBlock =
  */
 export function buildReceipt(form: FormDefinition, submission: Submission): ReceiptBlock[] {
   const blocks: ReceiptBlock[] = [];
-  const walk = (elements: Elements, indent: number): boolean => {
+  const walk = (parent: ElementParent, indent: number): boolean => {
     let hasAnswers = false;
-    for (const el of elements) {
+    for (const el of childrenOf(form, parent)) {
       if (el.type === 'group') {
         const start = blocks.length;
-        const descended = walk((el as { elements: Elements }).elements, indent + 1);
+        const descended = walk(el, indent + 1);
         if (descended) {
           blocks.splice(start, 0, { kind: 'group', label: el.label, indent });
           hasAnswers = true;
@@ -39,7 +40,7 @@ export function buildReceipt(form: FormDefinition, submission: Submission): Rece
   };
   form.pages.forEach((page, index) => {
     const start = blocks.length;
-    const hasAnswers = walk(page.elements, 0);
+    const hasAnswers = walk(page, 0);
     if (hasAnswers) {
       blocks.splice(start, 0, {
         kind: 'page',

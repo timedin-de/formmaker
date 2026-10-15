@@ -2,9 +2,11 @@ import { computed, signal } from '@angular/core';
 import { FormControl, FormGroup } from '@angular/forms';
 import { evalExpression, validateElementValue } from '@shared/engine';
 import { isQuestion } from '@shared/helper';
+import { childrenOf, walkElements } from '@shared/model/form-tree';
 import {
   type ElementDefinition,
   type FormDefinition,
+  type GroupElement,
   type QuestionDefinition,
 } from '@shared/model/form.model';
 import type { SubmissionCreate } from '@shared/model/submission.model';
@@ -125,7 +127,7 @@ export class RunnerStore {
 
   private rebuildControls(form: FormDefinition, initialValues?: ValuesMap): void {
     const incoming = new Map<string, FormControl>();
-    walkQuestions(form, (el) => {
+    walkElements(form, (el) => {
       const existing = this.answers.get(el.id);
       if (existing) {
         incoming.set(el.id, existing as FormControl);
@@ -192,7 +194,7 @@ export class RunnerStore {
 
     // Apply dynamic defaults
     if (this.defaultsInitDone) {
-      walkQuestions(form, (el) => {
+      walkElements(form, (el) => {
         if (!('defaultValue' in el)) return;
         const dv = el.defaultValue;
         if (!dv || dv.kind === 'static') return;
@@ -342,9 +344,8 @@ export class RunnerStore {
     const values: Record<string, FieldValue> = {};
     const visibleAnswerKeys: string[] = [];
 
-    const collectGroup = (group: ElementDefinition, parentVisible: boolean): void => {
-      if (group.type !== 'group') return;
-      for (const child of group.elements) {
+    const collectGroup = (group: GroupElement, parentVisible: boolean): void => {
+      for (const child of childrenOf(form, group)) {
         const childView = evalResult.byId.get(child.id);
         const visible = parentVisible && !!childView?.visible;
         if (child.type === 'group') {
@@ -416,7 +417,8 @@ export class RunnerStore {
   // ---- view model ------------------------------------------------------------
 
   private buildPages(evaluation: FormEvaluation | null): RunnerPage[] {
-    if (!evaluation) return [];
+    const form = this.form();
+    if (!evaluation || !form) return [];
     const out: RunnerPage[] = [];
     for (const pv of evaluation.pages) {
       const refs: ElementViewRef[] = [];
@@ -433,7 +435,9 @@ export class RunnerStore {
             description: el.description ?? '',
             visible: view.visible,
             control,
-            children: el.elements.map(collect).filter((x) => !!x),
+            children: childrenOf(form, el)
+              .map(collect)
+              .filter((x) => !!x),
           };
         }
         return {
@@ -479,18 +483,6 @@ export class RunnerStore {
 
 function equal(a: FieldValue, b: FieldValue): boolean {
   return JSON.stringify(a) === JSON.stringify(b);
-}
-
-function walkQuestions(form: FormDefinition, fn: (el: ElementDefinition) => void): void {
-  for (const page of form.pages) {
-    const walk = (els: ElementDefinition[]) => {
-      for (const el of els) {
-        fn(el);
-        if (el.type === 'group') walk(el.elements);
-      }
-    };
-    walk(page.elements);
-  }
 }
 
 export type RunnerValues = ValuesMap;

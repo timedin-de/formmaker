@@ -16,7 +16,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDividerModule } from '@angular/material/divider';
 import { QuestionSelector } from './question-selector';
-import { type PageDefinition } from '@shared/model';
+import { type FormDocument } from '@shared/model';
 import { QuestionInputField } from './question-input-field';
 import { I18nService } from '../core/i18n';
 
@@ -65,7 +65,7 @@ export interface ConditionFieldOption {
 export class ConditionEditor {
   readonly group = input<ConditionGroup>({ logic: 'all', conditions: [], groups: [] });
   readonly fields = input<ConditionFieldOption[]>([]);
-  readonly pages = input.required<PageDefinition[]>();
+  readonly form = input.required<FormDocument>();
   protected readonly i18n = inject(I18nService);
 
   readonly self = input.required<string>();

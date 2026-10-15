@@ -317,7 +317,7 @@
             @case ('fromField') {
               @if (el.type === 'group') {
                 <fm-question-selector
-                  [pages]="pages()"
+                  [form]="form()"
                   [model]="fieldRef(el)"
                   [selfId]="el.id"
                   [questionType]="'group'"
@@ -326,7 +326,7 @@
                 ></fm-question-selector>
               } @else {
                 <fm-question-selector
-                  [pages]="pages()"
+                  [form]="form()"
                   [selfId]="el.id"
                   (selectChange)="setFromField($event)"
                   [model]="fieldRef(el)"
@@ -343,7 +343,7 @@
           [legend]="i18n.t('panel.showWhen')"
           [group]="el.enabledWhen ?? emptyGroup()"
           [fields]="fields()"
-          [pages]="pages()"
+          [form]="form()"
           [self]="el.id"
           (changed)="patch({ enabledWhen: $event })"
         />

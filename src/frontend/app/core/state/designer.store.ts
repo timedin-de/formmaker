@@ -1,6 +1,7 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { catchFn, has, walkConditionGroup, walkGroup } from '@shared/helper';
 import { insertIntoParent } from '@shared/model/form-factory';
+import { findElement } from '@shared/model/form-tree';
 import type {
   ElementDefinition,
   Elements,
@@ -256,11 +257,7 @@ export class DesignerStore {
   // ---- internals -------------------------------------------------------------
 
   private findElement(id: string): ElementDefinition | null {
-    for (const page of this.form().pages) {
-      const found = findIn(page.elements, id);
-      if (found) return found;
-    }
-    return null;
+    return findElement(this.form(), id) ?? null;
   }
 
   private patchForm(patch: Partial<SaveFormDefinition>): void {
@@ -334,17 +331,6 @@ function patchNested(
       return e;
     });
   return { ...page, elements: mapEl(page.elements) };
-}
-
-function findIn(els: ElementDefinition[], id: string): ElementDefinition | null {
-  for (const e of els) {
-    if (e.id === id) return e;
-    if (e.type === 'group') {
-      const found = findIn(e.elements, id);
-      if (found) return found;
-    }
-  }
-  return null;
 }
 
 /** True when `id` is `el` itself or lives anywhere inside its subtree. */

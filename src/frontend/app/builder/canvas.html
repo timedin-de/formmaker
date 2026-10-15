@@ -63,7 +63,7 @@
       <fm-condition-editor
         [legend]="i18n.t('canvas.pageLogic')"
         [group]="page.enabledWhen ?? emptyGroup()"
-        [pages]="pages()"
+        [form]="store().form()"
         [self]="page.id"
         [fields]="fieldOptions()"
         (changed)="store().updatePage(page.id, { enabledWhen: $event })"

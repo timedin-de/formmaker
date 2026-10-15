@@ -1,8 +1,9 @@
 import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { FORM_VERSION } from '@shared/consts';
 import { evalConditionGroup, validateElementValue } from '@shared/engine';
-import { has, isQuestionOrGroup } from '@shared/helper';
+import { isQuestionOrGroup } from '@shared/helper';
 import {
+  childrenOf,
   createElement,
   createPage,
   type ElementDefinition,
@@ -107,35 +108,34 @@ export class FormService {
     const values = submission.values;
     const seen: string[] = [];
 
-    for (const page of form.form.pages) {
-      const validateIfVisible = (e: ElementDefinition | PageDefinition, parentVisible = true) => {
-        if (has(e, 'type') && !isQuestionOrGroup(e)) return;
+    const validateIfVisible = (e: ElementDefinition, parentVisible: boolean) => {
+      if (!isQuestionOrGroup(e)) return;
 
-        const visible = evalConditionGroup(e.enabledWhen, values);
-        if (has(e, 'elements')) {
-          for (const child of e.elements) {
-            validateIfVisible(child, parentVisible && visible);
-          }
-        } else {
-          const value = values[e.id];
-          if (parentVisible && visible) {
-            if (value !== undefined) {
-              seen.push(e.id);
-            }
-
-            const validation = validateElementValue(e, value, values);
-            if (!validation.valid) {
-              throw new BadRequestException({
-                error: `value for field ${e.id} is invalid: ${validation.failures.map((x) => x.message).join(', ')}`,
-              });
-            }
-          } else if (value !== undefined)
-            throw new BadRequestException({
-              error: `submission contains value for invisible element: ${e.id}`,
-            });
+      const visible = parentVisible && evalConditionGroup(e.enabledWhen, values);
+      if (e.type === 'group') {
+        for (const child of childrenOf(form.form, e)) validateIfVisible(child, visible);
+        return;
+      }
+      const value = values[e.id];
+      if (visible) {
+        if (value !== undefined) {
+          seen.push(e.id);
         }
-      };
-      validateIfVisible(page);
+
+        const validation = validateElementValue(e, value, values);
+        if (!validation.valid) {
+          throw new BadRequestException({
+            error: `value for field ${e.id} is invalid: ${validation.failures.map((x) => x.message).join(', ')}`,
+          });
+        }
+      } else if (value !== undefined)
+        throw new BadRequestException({
+          error: `submission contains value for invisible element: ${e.id}`,
+        });
+    };
+    for (const page of form.form.pages) {
+      const visible = evalConditionGroup(page.enabledWhen, values);
+      for (const el of childrenOf(form.form, page)) validateIfVisible(el, visible);
     }
     const unknown = Object.keys(values).find((valueId) => !seen.includes(valueId));
 
