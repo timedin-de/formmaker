@@ -146,6 +146,15 @@ export class FormsRepository {
     return element;
   }
 
+  async deleteElement(formId: string, elementId: string) {
+    await this.api.request(
+      undefined,
+      `/api/forms/${encodeURIComponent(formId)}/elements/${encodeURIComponent(elementId)}`,
+      { method: 'DELETE' },
+    );
+    removeCache(FORM_CACHE_PREFIX + formId);
+  }
+
   async deleteForm(id: string): Promise<void> {
     await this.init();
     await this.api.request(undefined, `/api/forms/${encodeURIComponent(id)}`, { method: 'DELETE' });

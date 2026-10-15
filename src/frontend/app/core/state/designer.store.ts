@@ -165,7 +165,8 @@ export class DesignerStore {
     this.persist();
   }
 
-  removeElement(elementId: string): void {
+  async removeElement(elementId: string) {
+    await this.repository.deleteElement(this.form().id, elementId);
     const remove = (els: ElementDefinition[]): ElementDefinition[] =>
       els
         .filter((e) => e.id !== elementId)

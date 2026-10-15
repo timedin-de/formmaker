@@ -156,6 +156,18 @@ export class FormsController {
     return this.formService.addElement(item, body);
   }
 
+  @Delete(':formId/elements/:elementId')
+  @HttpCode(204)
+  @UseGuards(AuthGuard)
+  async deleteElement(
+    @CurrentUser() user: User,
+    @Param('formId') formId: string,
+    @Param('elementId') elementId: string,
+  ) {
+    const item = await this.managedForm(formId, user);
+    return this.formService.deleteElement(item, elementId);
+  }
+
   @Delete(':id')
   @HttpCode(204)
   @UseGuards(AuthGuard)
