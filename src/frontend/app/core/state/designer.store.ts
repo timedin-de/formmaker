@@ -110,9 +110,10 @@ export class DesignerStore {
     this.selectedId.set(copy.id);
   }
 
-  removePage(pageId: string): void {
-    const pages = this.form().pages.filter((p) => p.id !== pageId);
-    this.patchForm({ pages });
+  async removePage(pageId: string) {
+    await this.repository.deletePage(this.form().id, pageId);
+    this.applyServerChange((f) => ({ ...f, pages: f.pages.filter((p) => p.id !== pageId) }));
+    const pages = this.form().pages;
     if (this.activePageId() === pageId) this.activePageId.set(pages[0]?.id ?? null);
   }
 
@@ -169,9 +170,10 @@ export class DesignerStore {
       els
         .filter((e) => e.id !== elementId)
         .map((e) => (e.type === 'group' ? { ...e, elements: remove(e.elements) } : e));
-    this.patchForm({
-      pages: this.form().pages.map((p) => ({ ...p, elements: remove(p.elements) })),
-    });
+    this.applyServerChange((f) => ({
+      ...f,
+      pages: f.pages.map((p) => ({ ...p, elements: remove(p.elements) })),
+    }));
     if (this.selectedId() === elementId) this.selectedId.set(null);
   }
 

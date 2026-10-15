@@ -132,6 +132,18 @@ export class FormsController {
     return this.formService.addPage(item, body.title);
   }
 
+  @Delete(':formId/pages/:pageId')
+  @HttpCode(204)
+  @UseGuards(AuthGuard)
+  async deletePage(
+    @CurrentUser() user: User,
+    @Param('formId') formId: string,
+    @Param('pageId') pageId: string,
+  ) {
+    const item = await this.managedForm(formId, user);
+    return this.formService.deletePage(item, pageId);
+  }
+
   @Post(':id/elements')
   @HttpCode(201)
   @UseGuards(AuthGuard)

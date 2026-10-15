@@ -126,6 +126,15 @@ export class FormsRepository {
     return page;
   }
 
+  async deletePage(formId: string, pageId: string) {
+    await this.api.request(
+      undefined,
+      `/api/forms/${encodeURIComponent(formId)}/pages/${encodeURIComponent(pageId)}`,
+      { method: 'DELETE' },
+    );
+    removeCache(FORM_CACHE_PREFIX + formId);
+  }
+
   /** Creates and persists a new element on the server; returns the element as generated there. */
   async addElement(formId: string, request: CreateElementRequest): Promise<ElementDefinition> {
     const element = await this.api.request(
