@@ -15,7 +15,6 @@ import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatTooltip } from '@angular/material/tooltip';
 import { ActivatedRoute, Router } from '@angular/router';
 import { formName } from '@shared/helper';
-import { type RunnerPage } from '@shared/model';
 import type { Submission } from '@shared/model/submission.model';
 import { first, switchMap, tap } from 'rxjs';
 import { SNACK_TIME_ERROR, SNACK_TIME_OK } from '../core/consts';
@@ -23,6 +22,7 @@ import { downloadBlob, submissionToPdf, toSlug } from '../core/export';
 import { I18nService } from '../core/i18n';
 import { MarkdownPipe } from '../core/markdown';
 import { FormsRepository } from '../core/state/forms.repository';
+import type { RunnerPage } from '../core/state/runner.model';
 import { RunnerStore } from '../core/state/runner.store';
 import { QuestionList } from './questionList/question-list';
 

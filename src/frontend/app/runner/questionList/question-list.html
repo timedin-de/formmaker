@@ -64,16 +64,14 @@
       <ng-template #content>
         @switch (el.type) {
           @case ('group') {
-            @if (el.elementsRef) {
-              <div class="group">
-                <fm-question-list
-                  group="true"
-                  [store]="store()"
-                  [level]="(levels().get(vr.id) ?? level()) + 1"
-                  [elements]="el.elementsRef"
-                ></fm-question-list>
-              </div>
-            }
+            <div class="group">
+              <fm-question-list
+                group="true"
+                [store]="store()"
+                [level]="(levels().get(vr.id) ?? level()) + 1"
+                [elements]="vr.children"
+              ></fm-question-list>
+            </div>
           }
           @default {
             <fm-question-input [vr]="vr"></fm-question-input>

@@ -4,11 +4,8 @@ import { evalExpression, validateElementValue } from '@shared/engine';
 import { isQuestion } from '@shared/helper';
 import {
   type ElementDefinition,
-  type ElementViewRef,
   type FormDefinition,
   type QuestionDefinition,
-  type RunnerPage,
-  type SubmissionResult,
 } from '@shared/model/form.model';
 import type { SubmissionCreate } from '@shared/model/submission.model';
 import type { FieldValue, ValuesMap } from '@shared/model/values.model';
@@ -16,6 +13,7 @@ import { debounceTime, filter } from 'rxjs';
 import { collectElementRefs } from '../engine/dependencies';
 import { type FormEvaluation, FormEvaluator } from './form-evaluator';
 import { RunnerDraft } from './runner-draft';
+import type { ElementViewRef, RunnerPage, SubmissionResult } from './runner.model';
 
 export class RunnerStore {
   readonly form = signal<FormDefinition | null>(null);
@@ -287,7 +285,7 @@ export class RunnerStore {
   private findInvalid(ref: ElementViewRef): ElementViewRef[] | null {
     if (!ref.visible || ref.control.disabled) return null;
     if (ref.el.type !== 'group') return ref.control.errors ? [ref] : null;
-    for (const child of ref.el.elementsRef ?? []) {
+    for (const child of ref.children) {
       const path = this.findInvalid(child);
       if (path) return [ref, ...path];
     }
@@ -307,9 +305,7 @@ export class RunnerStore {
     const visible = parentVisible && ref.visible;
     if (!visible) return;
     ref.control.markAsTouched({ onlySelf: true });
-    if (ref.el.type === 'group') {
-      for (const child of ref.el.elementsRef ?? []) this.touchRef(child, visible);
-    }
+    for (const child of ref.children) this.touchRef(child, visible);
   }
 
   /** Validate one element; hidden elements (incl. hidden groups) are skipped. */
@@ -321,10 +317,8 @@ export class RunnerStore {
     control.markAsTouched({ onlySelf: true });
     control.updateValueAndValidity({ onlySelf: true });
     let valid = !control.errors;
-    if (ref.el.type === 'group') {
-      for (const child of ref.el.elementsRef ?? []) {
-        if (!this.validateRef(child, visible)) valid = false;
-      }
+    for (const child of ref.children) {
+      if (!this.validateRef(child, visible)) valid = false;
     }
     return valid;
   }
@@ -432,14 +426,14 @@ export class RunnerStore {
         if (!view || !control) return undefined;
 
         if (el.type === 'group') {
-          el.elementsRef = el.elements.map(collect).filter((x) => !!x) ?? [];
           return {
             id: el.id,
             el,
-            label: view?.label,
+            label: view.label,
             description: el.description ?? '',
             visible: view.visible,
-            control: control,
+            control,
+            children: el.elements.map(collect).filter((x) => !!x),
           };
         }
         return {
@@ -450,6 +444,7 @@ export class RunnerStore {
           placeholder: view.placeholder,
           visible: view.visible,
           control,
+          children: [],
         };
       };
 
