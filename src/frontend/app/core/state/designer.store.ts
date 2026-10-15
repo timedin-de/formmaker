@@ -1,5 +1,6 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { catchFn, has, walkConditionGroup, walkGroup } from '@shared/helper';
+import { insertIntoParent } from '@shared/model/form-factory';
 import type {
   ElementDefinition,
   Elements,
@@ -12,7 +13,6 @@ import type {
 import { type ElementId, elementId, uuid } from '@shared/model/ids';
 import { parseFormData } from '@shared/schemas';
 import { I18nService } from '../i18n/translation.service';
-import { createElement, createPage, insertElementAfter } from './form-factory';
 import { FormsRepository } from './forms.repository';
 
 const STORAGE_KEY = 'formmaker.designer.v1';
@@ -44,6 +44,8 @@ export class DesignerStore {
   });
 
   private persistTimer: ReturnType<typeof setTimeout> | null = null;
+  /** Tail of the server-side creation queue; see `createOnServer`. */
+  private creations: Promise<unknown> = Promise.resolve();
 
   constructor() {
     void this.hydrate();
@@ -68,7 +70,7 @@ export class DesignerStore {
     const form = await this.repository.newForm();
     this._form.set(form);
     this.selectedId.set(null);
-    this.dirty.set(true);
+    this.dirty.set(false);
     this.persist();
   }
 
@@ -88,9 +90,12 @@ export class DesignerStore {
     this.patchForm({ settings: { ...this.form().settings, ...patch } });
   }
 
-  addPage(): PageDefinition {
-    const page = createPage(`Page ${this.form().pages.length + 1}`);
-    this.patchForm({ pages: [...this.form().pages, page] });
+  /** Creates a page on the server (which persists it) and appends it locally. */
+  async addPage(): Promise<PageDefinition> {
+    const page = await this.createOnServer((form) =>
+      this.repository.addPage(form.id, `Page ${form.pages.length + 1}`),
+    );
+    this.applyServerChange((f) => ({ ...f, pages: [...f.pages, page] }));
     this.activePageId.set(page.id);
     return page;
   }
@@ -117,18 +122,35 @@ export class DesignerStore {
     });
   }
 
-  addElement(
-    pageId: string,
+  /**
+   * Creates an element on the server (which persists it) inside the page or group
+   * `parentId`, after `afterId` or at the end, and inserts it at the same spot locally.
+   */
+  async addElement(
+    parentId: string,
     type: ElementType,
     label?: string,
     afterId: string | null = null,
-  ): ElementDefinition {
-    const page = this.form().pages.find((p) => p.id === pageId);
-    if (!page) throw new Error(`Unknown page ${pageId}`);
-    const el = createElement(type, label ?? this.i18n.t(`q.${type}`));
-    const elements = insertElementAfter(page.elements, afterId, el);
-    this.updatePage(pageId, { elements });
-    this.selectedId.set(el.id);
+  ): Promise<ElementDefinition> {
+    const el = await this.createOnServer((form) =>
+      this.repository.addElement(form.id, {
+        type,
+        label: label ?? this.i18n.t(`q.${type}`),
+        parentId,
+        afterId,
+      }),
+    );
+    // The tree may have changed during the request: if `afterId` is gone, append instead.
+    // If the parent itself is gone, its removal was sent to the server too, so skip it.
+    let inserted = false;
+    this.applyServerChange((f) => {
+      const pages =
+        insertIntoParent(f.pages, parentId, afterId, el) ??
+        insertIntoParent(f.pages, parentId, null, el);
+      inserted = pages !== null;
+      return pages ? { ...f, pages } : f;
+    });
+    if (inserted) this.selectedId.set(el.id);
     return el;
   }
 
@@ -251,6 +273,41 @@ export class DesignerStore {
       };
     });
     this.dirty.set(true);
+    this.persist();
+  }
+
+  /**
+   * Queues a server-side creation for the form that is loaded now. Rejects instead of
+   * sending or applying it once another form has been loaded in the meantime.
+   */
+  private createOnServer<T>(create: (form: FormDefinition) => Promise<T>): Promise<T> {
+    const formId = this.form().id;
+    const assertSameForm = () => {
+      if (this._form()?.id !== formId) throw new Error('designer: form changed during creation');
+    };
+    const run = this.creations.then(async () => {
+      assertSameForm();
+      if (this.dirty()) {
+        const snapshot = this.form();
+        await this.repository.saveForm(snapshot);
+        // Edits made while the save was in flight are still unsaved.
+        if (this.form() === snapshot) this.dirty.set(false);
+        assertSameForm();
+      }
+      const result = await create(this.form());
+      assertSameForm();
+      return result;
+    });
+    this.creations = run.catch(() => undefined);
+    return run;
+  }
+
+  /** Applies a change the server already persisted, without marking the form dirty. */
+  private applyServerChange(change: (form: FormDefinition) => FormDefinition): void {
+    this._form.update((f) => {
+      if (!f) throw new Error('Form not set in store before update');
+      return change(f);
+    });
     this.persist();
   }
 

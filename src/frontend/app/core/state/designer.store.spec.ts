@@ -1,15 +1,17 @@
 import { TestBed } from '@angular/core/testing';
 import type { ConditionGroup } from '@shared/model/conditions.model';
+import { createElement, createPage } from '@shared/model/form-factory';
 import type {
   ElementDefinition,
   GroupElement,
   PageDefinition,
   TextElement,
 } from '@shared/model/form.model';
+import { type CreateElementRequest } from '@shared/schemas';
 import { newForm } from '@test/helper';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DesignerStore } from './designer.store';
-import { createElement, createPage } from './form-factory';
+import { FormsRepository } from './forms.repository';
 
 function conditions(fieldId: string): ConditionGroup {
   return {
@@ -293,5 +295,127 @@ describe('DesignerStore moveElementTo', () => {
     expect(store.form().pages).toBe(before);
     expect(store.dirty()).toBe(false);
     expect(ids(root())).toEqual(['C', 'Group', 'D']);
+  });
+});
+
+describe('DesignerStore server-side creation', () => {
+  let store: DesignerStore;
+  const calls: string[] = [];
+  const repo = {
+    saveForm: vi.fn(async () => calls.push('save')),
+    addPage: vi.fn(async (_formId: string, title: string) => {
+      calls.push('addPage');
+      return createPage(title);
+    }),
+    addElement: vi.fn(async (_formId: string, request: CreateElementRequest) => {
+      calls.push('addElement');
+      return createElement(request.type, request.label);
+    }),
+  };
+
+  beforeEach(() => {
+    localStorage.clear();
+    calls.length = 0;
+    vi.clearAllMocks();
+    TestBed.configureTestingModule({
+      providers: [DesignerStore, { provide: FormsRepository, useValue: repo }],
+    });
+    store = TestBed.inject(DesignerStore);
+  });
+
+  function loaded(): { page: PageDefinition; group: GroupElement } {
+    const page = createPage('Page 1');
+    const group = createElement('group', 'Group');
+    group.elements = [text('Child')];
+    page.elements = [text('A'), group, text('B')];
+    const form = newForm('Demo');
+    form.pages = [page];
+    store.load(form);
+    return { page, group };
+  }
+
+  it('inserts the server-generated element after a sibling and selects it', async () => {
+    const { page } = loaded();
+    const el = await store.addElement(page.id, 'number', 'Age', page.elements[0].id);
+
+    expect(repo.addElement).toHaveBeenCalledWith(store.form().id, {
+      type: 'number',
+      label: 'Age',
+      parentId: page.id,
+      afterId: page.elements[0].id,
+    });
+    expect(store.form().pages[0].elements[1]).toEqual(el);
+    expect(store.selectedId()).toBe(el.id);
+    expect(store.dirty()).toBe(false);
+  });
+
+  it('appends a server-generated child to a group', async () => {
+    const { group } = loaded();
+    const el = await store.addElement(group.id, 'text', 'Child 2');
+    const stored = store.form().pages[0].elements[1] as GroupElement;
+    expect(stored.elements.map((e) => e.id)).toEqual([group.elements[0].id, el.id]);
+  });
+
+  it('appends a server-generated page and activates it', async () => {
+    loaded();
+    const page = await store.addPage();
+    expect(repo.addPage).toHaveBeenCalledWith(store.form().id, 'Page 2');
+    expect(store.form().pages.at(-1)).toEqual(page);
+    expect(store.activePageId()).toBe(page.id);
+  });
+
+  it('saves unsaved edits before creating, and runs creations one at a time', async () => {
+    const { page } = loaded();
+    store.rename('Renamed');
+    await Promise.all([store.addElement(page.id, 'text'), store.addElement(page.id, 'text')]);
+    expect(calls).toEqual(['save', 'addElement', 'addElement']);
+    expect(store.form().pages[0].elements).toHaveLength(5);
+  });
+
+  it('appends the element when its anchor sibling was removed during the request', async () => {
+    const { page } = loaded();
+    const anchor = page.elements[0];
+    repo.addElement.mockImplementationOnce(async (_formId, request) => {
+      store.load({ ...store.form(), pages: [{ ...page, elements: page.elements.slice(1) }] });
+      return createElement(request.type, request.label);
+    });
+    const el = await store.addElement(page.id, 'text', 'New', anchor.id);
+    expect(store.form().pages[0].elements.at(-1)).toEqual(el);
+    expect(store.selectedId()).toBe(el.id);
+  });
+
+  it('does not select the element when its parent was removed during the request', async () => {
+    const { page, group } = loaded();
+    repo.addElement.mockImplementationOnce(async (_formId, request) => {
+      store.load({
+        ...store.form(),
+        pages: [{ ...page, elements: page.elements.filter((e) => e.id !== group.id) }],
+      });
+      return createElement(request.type, request.label);
+    });
+    await store.addElement(group.id, 'text', 'Orphan');
+    expect(store.form().pages[0].elements).toHaveLength(2);
+    expect(store.selectedId()).toBeNull();
+  });
+
+  it('drops queued and pending creations once another form is loaded', async () => {
+    const { page } = loaded();
+    const other = newForm('Other');
+    other.pages = [createPage('Other page')];
+    let release!: () => void;
+    repo.addElement.mockImplementationOnce(async (_formId, request) => {
+      await new Promise<void>((resolve) => (release = resolve));
+      return createElement(request.type, request.label);
+    });
+    const pending = store.addElement(page.id, 'text');
+    const queued = store.addPage();
+    await vi.waitFor(() => expect(release).toBeDefined());
+    store.load(other);
+    release();
+
+    await expect(pending).rejects.toThrow('form changed');
+    await expect(queued).rejects.toThrow('form changed');
+    expect(repo.addPage).not.toHaveBeenCalled();
+    expect(store.form()).toBe(other);
   });
 });

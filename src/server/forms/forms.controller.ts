@@ -20,11 +20,15 @@ import {
   uuid,
 } from '@shared/model';
 import {
+  type CreateElementRequest,
+  createElementSchema,
+  createPageSchema,
   formDefinitionSchema,
   saveFormDefinitionSchema,
   stripFormOwnership,
   submissionCreateSchema,
 } from '@shared/schemas';
+import type z from 'zod';
 import { AuthGuard } from '../auth/auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
@@ -114,6 +118,30 @@ export class FormsController {
     if (!canManage(existing.ownerId, user))
       throw new ForbiddenException({ error: 'not form owner of form' });
     return this.repository.saveForm(existing?.ownerId ?? user.id, { ...existing.form, ...form });
+  }
+
+  @Post(':id/pages')
+  @HttpCode(201)
+  @UseGuards(AuthGuard)
+  async addPage(
+    @CurrentUser() user: User,
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(createPageSchema)) body: z.infer<typeof createPageSchema>,
+  ) {
+    const item = await this.managedForm(id, user);
+    return this.formService.addPage(item, body.title);
+  }
+
+  @Post(':id/elements')
+  @HttpCode(201)
+  @UseGuards(AuthGuard)
+  async addElement(
+    @CurrentUser() user: User,
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(createElementSchema)) body: CreateElementRequest,
+  ) {
+    const item = await this.managedForm(id, user);
+    return this.formService.addElement(item, body);
   }
 
   @Delete(':id')

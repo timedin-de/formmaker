@@ -98,10 +98,9 @@ export class BuilderCanvas {
     this.store().removePage(page.id);
   }
 
-  append(type: ElementType = 'text'): void {
-    const page = this.store().activePage();
-    if (!page) this.store().addPage();
-    this.store().addElement(this.store().activePage()?.id ?? '', type);
+  async append(type: ElementType = 'text'): Promise<void> {
+    const page = this.store().activePage() ?? (await this.store().addPage());
+    await this.store().addElement(page.id, type);
   }
 
   selectPage(pageId: string) {
@@ -125,8 +124,8 @@ export class BuilderCanvas {
     if (dialog && event.target === dialog.nativeElement) this.paleteTarget.set(false);
   }
 
-  addPage() {
-    const { id } = this.store().addPage();
+  async addPage() {
+    const { id } = await this.store().addPage();
     this.router.navigate([], {
       relativeTo: this.route,
       queryParams: { page: id },

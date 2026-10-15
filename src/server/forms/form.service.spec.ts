@@ -98,6 +98,97 @@ function formOf(pages: PageDefinition[]): FormDefinition {
   };
 }
 
+describe('FormService element creation', () => {
+  let saveForm: ReturnType<typeof vi.fn>;
+  let service: FormService;
+
+  beforeEach(() => {
+    saveForm = vi.fn();
+    service = new FormService({ saveForm } as unknown as Repository);
+  });
+
+  const savedPages = (): PageDefinition[] => (saveForm.mock.calls[0][1] as FormDefinition).pages;
+
+  it('appends a generated page and persists it for the owner', async () => {
+    const form = formOf([page('p1', [])]);
+    const created = await service.addPage({ form, ownerId: 'owner-1' }, 'Page 2');
+
+    expect(created).toMatchObject({ title: 'Page 2', elements: [] });
+    expect(created.id).toBeTruthy();
+    expect(saveForm).toHaveBeenCalledWith('owner-1', expect.objectContaining({ id: 'form-1' }));
+    expect(savedPages().map((p) => p.id)).toEqual(['p1', created.id]);
+  });
+
+  it('generates an element with defaults and inserts it after a sibling', async () => {
+    const form = formOf([page('p1', [text('q1'), text('q2')])]);
+    const created = await service.addElement(
+      { form, ownerId: 'owner-1' },
+      { type: 'choice', label: 'Pick', parentId: 'p1', afterId: 'q1' },
+    );
+
+    expect(created).toMatchObject({ type: 'choice', label: 'Pick', required: false });
+    expect(created.id).toBeTruthy();
+    expect(savedPages()[0].elements.map((e) => e.id)).toEqual(['q1', created.id, 'q2']);
+  });
+
+  it('appends to the end of a page without afterId', async () => {
+    const form = formOf([page('p1', [text('q1')])]);
+    const created = await service.addElement(
+      { form, ownerId: 'owner-1' },
+      { type: 'text', label: 'Name', parentId: 'p1' },
+    );
+    expect(savedPages()[0].elements.map((e) => e.id)).toEqual(['q1', created.id]);
+  });
+
+  it('inserts into a nested group on any page', async () => {
+    const form = formOf([
+      page('p1', [text('q1')]),
+      page('p2', [group('outer', [group('inner', [text('q2')])])]),
+    ]);
+    const created = await service.addElement(
+      { form, ownerId: 'owner-1' },
+      { type: 'number', label: 'Age', parentId: 'inner' },
+    );
+
+    const outer = savedPages()[1].elements[0] as GroupElement;
+    const inner = outer.elements[0] as GroupElement;
+    expect(inner.elements.map((e) => e.id)).toEqual(['q2', created.id]);
+  });
+
+  it('throws 404 without saving when the parent does not exist', async () => {
+    const form = formOf([page('p1', [text('q1')])]);
+    await expect(
+      service.addElement(
+        { form, ownerId: 'owner-1' },
+        { type: 'text', label: 'x', parentId: 'q1' },
+      ),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    expect(saveForm).not.toHaveBeenCalled();
+  });
+
+  it('throws 404 without saving when afterId is stale', async () => {
+    const form = formOf([page('p1', [text('q1')])]);
+    await expect(
+      service.addElement(
+        { form, ownerId: 'owner-1' },
+        { type: 'text', label: 'x', parentId: 'p1', afterId: 'gone' },
+      ),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    expect(saveForm).not.toHaveBeenCalled();
+  });
+
+  it('throws 404 without saving when afterId belongs to another container', async () => {
+    const form = formOf([page('p1', [text('q1'), group('g1', [text('q2')])])]);
+    await expect(
+      service.addElement(
+        { form, ownerId: 'owner-1' },
+        { type: 'text', label: 'x', parentId: 'p1', afterId: 'q2' },
+      ),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    expect(saveForm).not.toHaveBeenCalled();
+  });
+});
+
 describe('FormService.addSubmission', () => {
   let form: FormDefinition | null;
   let addSubmission: ReturnType<typeof vi.fn>;

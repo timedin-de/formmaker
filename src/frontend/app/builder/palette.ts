@@ -29,7 +29,7 @@ export class BuilderPalette {
     return FIELD_TYPES.filter((f) => f.category === key);
   }
 
-  add(type: ElementType): void {
+  async add(type: ElementType): Promise<void> {
     if (this.isModal()) {
       this.addModule.emit(type);
       return;
@@ -38,11 +38,8 @@ export class BuilderPalette {
     const store = this.store();
 
     if (store) {
-      const page = store.activePage();
-      if (!page) {
-        store.addPage();
-      }
-      store.addElement(store.activePage()?.id ?? store.form().pages[0]?.id ?? '', type);
+      const page = store.activePage() ?? (await store.addPage());
+      await store.addElement(page.id, type);
     }
   }
 }

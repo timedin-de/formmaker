@@ -1,7 +1,7 @@
 import type { FormDefinition } from '@shared/model/form.model';
 import { newForm } from '@test/helper/forms';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { createElement, createPage } from './form-factory';
+import { createElement, createPage } from '@shared/model/form-factory';
 import { RunnerStore } from './runner.store';
 
 function draftForm(): FormDefinition {

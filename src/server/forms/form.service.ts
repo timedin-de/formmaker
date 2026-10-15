@@ -3,15 +3,24 @@ import { FORM_VERSION } from '@shared/consts';
 import { evalConditionGroup, validateElementValue } from '@shared/engine';
 import { has, isQuestionOrGroup } from '@shared/helper';
 import {
+  createElement,
+  type CreateElementRequest,
+  createPage,
   type ElementDefinition,
   elementId,
-  emptyConditionGroup,
   type FormDefinition,
+  insertIntoParent,
   type PageDefinition,
   type SubmissionCreate,
   uuid,
 } from '@shared/model';
 import { Repository, type User } from '../repository';
+
+/** A stored form together with its owner, as loaded by `Repository.form`. */
+interface OwnedForm {
+  form: FormDefinition;
+  ownerId: string;
+}
 
 @Injectable()
 export class FormService {
@@ -40,6 +49,31 @@ export class FormService {
       pages: [createPage()],
     };
     return await this.repository.saveForm(user.id, form);
+  }
+
+  /** Appends a new page to the stored form and returns it. */
+  async addPage({ form, ownerId }: OwnedForm, title: string): Promise<PageDefinition> {
+    const page = createPage(title);
+    await this.repository.saveForm(ownerId, { ...form, pages: [...form.pages, page] });
+    return page;
+  }
+
+  /** Inserts a new element into a page or group of the stored form and returns it. */
+  async addElement(
+    { form, ownerId }: OwnedForm,
+    { type, label, parentId, afterId = null }: CreateElementRequest,
+  ): Promise<ElementDefinition> {
+    const element = createElement(type, label);
+    const pages = insertIntoParent(form.pages, parentId, afterId, element);
+    if (!pages) {
+      throw new NotFoundException({
+        error: afterId
+          ? `no element ${afterId} in page or group ${parentId}`
+          : `no page or group with id: ${parentId}`,
+      });
+    }
+    await this.repository.saveForm(ownerId, { ...form, pages });
+    return element;
   }
 
   async addSubmission(submission: SubmissionCreate) {
@@ -98,13 +132,4 @@ export class FormService {
     await this.repository.addSubmission(saved);
     return saved;
   }
-}
-function createPage(title = 'New page'): PageDefinition {
-  return {
-    id: elementId('page'),
-    title,
-    subtitle: '',
-    elements: [],
-    enabledWhen: emptyConditionGroup(),
-  };
 }

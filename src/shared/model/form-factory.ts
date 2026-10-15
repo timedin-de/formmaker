@@ -1,4 +1,4 @@
-import { emptyConditionGroup } from '@shared/model/conditions.model';
+import { emptyConditionGroup } from './conditions.model';
 import type {
   ElementDefinition,
   Elements,
@@ -7,9 +7,9 @@ import type {
   PageDefinition,
   QuestionDefinition,
   QuestionType,
-} from '@shared/model/form.model';
-import { DEFAULT_TIME_INTERVAL } from '@shared/model/form.model';
-import { elementId, uuid } from '@shared/model/ids';
+} from './form.model';
+import { DEFAULT_TIME_INTERVAL } from './form.model';
+import { elementId, uuid } from './ids';
 
 export function createPage(title = 'New page'): PageDefinition {
   return {
@@ -114,9 +114,36 @@ export function insertElementAfter(
   elements: Elements,
   after: string | null,
   el: ElementDefinition,
-): Elements {
+): Elements | null {
   const idx = after ? elements.findIndex((e) => e.id === after) : elements.length;
+  if (idx === -1) return null;
   const next = [...elements];
   next.splice(idx + 1, 0, el);
   return next;
+}
+
+/**
+ * Inserts `el` after `afterId` (or at the end) into the page or nested group `parentId`.
+ * Returns the new pages, or null when no such parent exists or `afterId` is not a direct
+ * child of it.
+ */
+export function insertIntoParent(
+  pages: PageDefinition[],
+  parentId: string,
+  afterId: string | null,
+  el: ElementDefinition,
+): PageDefinition[] | null {
+  let found = false;
+  const insert = <T extends { id: string; elements: Elements }>(parent: T): T => {
+    if (parent.id === parentId) {
+      const elements = insertElementAfter(parent.elements, afterId, el);
+      if (!elements) return parent;
+      found = true;
+      return { ...parent, elements };
+    }
+    const elements = parent.elements.map((e) => (e.type === 'group' ? insert(e) : e));
+    return { ...parent, elements };
+  };
+  const next = pages.map(insert);
+  return found ? next : null;
 }
