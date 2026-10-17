@@ -16,7 +16,7 @@ export function createPage(title = 'New page'): PageDefinition {
     id: elementId('page'),
     title,
     subtitle: '',
-    elements: [],
+    children: [],
     enabledWhen: emptyConditionGroup(),
   };
 }
@@ -102,7 +102,7 @@ export function createElement(type: ElementType, label: string): ElementDefiniti
     case 'signature':
       return { ...qBase, type: 'signature' };
     case 'group':
-      return { ...base, type: 'group', defaultValue: null, elements: [], collapsible: false };
+      return { ...base, type: 'group', defaultValue: null, children: [], collapsible: false };
     case 'section':
       return { ...base, type: 'section' };
     case 'textdisplay':
