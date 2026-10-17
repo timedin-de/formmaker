@@ -157,7 +157,8 @@ export interface LongTextElement extends QuestionBase, Placeholderable {
 
 export interface GroupElement extends ElementBase, DefaultValueable {
   type: 'group';
-  elements: Elements;
+  /** Ids of the child elements, in order; the elements live in `FormDefinition.elements`. */
+  children: ElementId[];
   collapsible: boolean;
 }
 
@@ -185,9 +186,19 @@ export type ElementDefinition =
 
 export type Elements = ElementDefinition[];
 
+/** Every element of a form, keyed by its id. */
+export type FormElements = Record<ElementId, ElementDefinition>;
+
 // ---------------------------------------------------------------------------
 // Pages & form
 // ---------------------------------------------------------------------------
+
+/**
+ * Version of the stored form document layout.
+ * 1: children nested inline (`page.elements`, `group.elements`).
+ * 2: elements in a flat `elements` map, pages and groups hold `children` ids.
+ */
+export const FORM_SCHEMA_VERSION = 2;
 
 export interface PageDefinition {
   id: PageId;
@@ -199,7 +210,8 @@ export interface PageDefinition {
    * page logic without scripting.
    */
   enabledWhen?: ConditionGroup;
-  elements: Elements;
+  /** Ids of the root elements of the page, in order. */
+  children: ElementId[];
 }
 
 export interface FormSettings {
@@ -220,9 +232,11 @@ export interface SaveFormDefinition {
   description?: string;
   settings: FormSettings;
   pages: PageDefinition[];
-}
-export interface NamedFormDefinition extends FormDefinition {
-  name: string;
+  /**
+   * Every element of the form. Pages and groups list their children by id;
+   * each element is listed by exactly one page or group.
+   */
+  elements: FormElements;
 }
 
 export interface FormDefinition extends SaveFormDefinition {
@@ -232,11 +246,12 @@ export interface FormDefinition extends SaveFormDefinition {
   readonly owner?: PublicUser | null;
   description?: string;
   readonly version: number;
-  readonly schemaVersion: 1;
+  readonly schemaVersion: typeof FORM_SCHEMA_VERSION;
   readonly createdAt: string;
   readonly updatedAt: string;
   settings: FormSettings;
   pages: PageDefinition[];
+  elements: FormElements;
 }
 
 export interface NamedFormDefinition extends FormDefinition {

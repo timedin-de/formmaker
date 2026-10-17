@@ -3,14 +3,18 @@ import { FORM_VERSION } from '@shared/consts';
 import { evalConditionGroup, validateElementValue } from '@shared/engine';
 import { isQuestionOrGroup } from '@shared/helper';
 import {
+  addPage,
   childrenOf,
   createElement,
   createPage,
   type ElementDefinition,
   elementId,
+  FORM_SCHEMA_VERSION,
   type FormDefinition,
-  insertIntoParent,
+  insertElement,
   type PageDefinition,
+  removeElement,
+  removePage,
   type SubmissionCreate,
   uuid,
 } from '@shared/model';
@@ -38,7 +42,7 @@ export class FormService {
       owner: user,
       description: '',
       version: 1,
-      schemaVersion: 1,
+      schemaVersion: FORM_SCHEMA_VERSION,
       createdAt: now,
       updatedAt: now,
       settings: {
@@ -48,6 +52,7 @@ export class FormService {
         enableAutoSave: true,
       },
       pages: [createPage()],
+      elements: {},
     };
     return await this.repository.saveForm(user.id, form);
   }
@@ -55,43 +60,36 @@ export class FormService {
   /** Appends a new page to the stored form and returns it. */
   async addPage({ form, ownerId }: OwnedForm, title: string): Promise<PageDefinition> {
     const page = createPage(title);
-    await this.repository.saveForm(ownerId, { ...form, pages: [...form.pages, page] });
+    await this.repository.saveForm(ownerId, addPage(form, page));
     return page;
   }
 
+  /** Removes a page and all of its elements from the stored form. */
   async deletePage({ form, ownerId }: OwnedForm, pageId: string): Promise<void> {
-    await this.repository.saveForm(ownerId, {
-      ...form,
-      pages: form.pages.filter((p) => p.id !== pageId),
-    });
+    await this.repository.saveForm(ownerId, removePage(form, pageId));
   }
+
   /** Inserts a new element into a page or group of the stored form and returns it. */
   async addElement(
     { form, ownerId }: OwnedForm,
     { type, label, parentId, afterId = null }: CreateElementRequest,
   ): Promise<ElementDefinition> {
     const element = createElement(type, label);
-    const pages = insertIntoParent(form.pages, parentId, afterId, element);
-    if (!pages) {
+    const next = insertElement(form, parentId, afterId, element);
+    if (!next) {
       throw new NotFoundException({
         error: afterId
           ? `no element ${afterId} in page or group ${parentId}`
           : `no page or group with id: ${parentId}`,
       });
     }
-    await this.repository.saveForm(ownerId, { ...form, pages });
+    await this.repository.saveForm(ownerId, next);
     return element;
   }
-  async deleteElement({ form, ownerId }: OwnedForm, elementId: string): Promise<void> {
-    const remove = (els: ElementDefinition[]): ElementDefinition[] =>
-      els
-        .filter((e) => e.id !== elementId)
-        .map((e) => (e.type === 'group' ? { ...e, elements: remove(e.elements) } : e));
 
-    await this.repository.saveForm(ownerId, {
-      ...form,
-      pages: form.pages.map((p) => ({ ...p, elements: remove(p.elements) })),
-    });
+  /** Removes an element and everything below it from the stored form. */
+  async deleteElement({ form, ownerId }: OwnedForm, elementId: string): Promise<void> {
+    await this.repository.saveForm(ownerId, removeElement(form, elementId));
   }
   async addSubmission(submission: SubmissionCreate) {
     const form = await this.getForm(submission.formId);

@@ -1,23 +1,33 @@
 import z from 'zod';
 import { type CatchFnResult, catchFn } from '../helper';
 import {
+  documentIssues,
   ELEMENT_TYPES,
+  FORM_SCHEMA_VERSION,
   type FormDefinition,
+  type FormDocument,
   type FormSettings,
   type FormWithOwner,
   type PageDefinition,
   type SaveFormDefinition,
 } from '../model';
 import { conditionGroupSchema } from './conditions';
-import { elementsSchema } from './elements';
+import { formElementsSchema } from './elements';
 
 export const pageDefinitionSchema = z.strictObject({
   id: z.string(),
   title: z.string(),
   subtitle: z.string().default(''),
   enabledWhen: conditionGroupSchema.optional(),
-  elements: elementsSchema,
+  children: z.array(z.string()).default([]),
 }) satisfies z.ZodType<PageDefinition>;
+
+/** Reports every structural problem of the element tree, see `documentIssues`. */
+function checkDocument(form: FormDocument, ctx: z.RefinementCtx): void {
+  for (const message of documentIssues(form)) {
+    ctx.addIssue({ code: 'custom', message, path: ['elements'] });
+  }
+}
 
 export const formSettingsSchema = z.strictObject({
   name: z.string().optional(),
@@ -35,36 +45,46 @@ const formOwnerSchema = z.strictObject({
   createdAt: z.string(),
 });
 
-export const saveFormDefinitionSchema = z.strictObject({
-  id: z.string(),
-  name: z.string().optional(),
-  ownerId: z.string().min(1).max(128).optional(),
-  owner: formOwnerSchema.nullable().optional(),
-  description: z.string().optional(),
-  settings: formSettingsSchema,
-  pages: z.array(pageDefinitionSchema),
-}) satisfies z.ZodType<SaveFormDefinition>;
+export const saveFormDefinitionSchema = z
+  .strictObject({
+    id: z.string(),
+    name: z.string().optional(),
+    ownerId: z.string().min(1).max(128).optional(),
+    owner: formOwnerSchema.nullable().optional(),
+    description: z.string().optional(),
+    settings: formSettingsSchema,
+    pages: z.array(pageDefinitionSchema),
+    elements: formElementsSchema,
+  })
+  .superRefine(checkDocument) satisfies z.ZodType<SaveFormDefinition>;
 
-export const formDefinitionSchema = z.strictObject({
+const formDefinitionObject = z.strictObject({
   id: z.string(),
   name: z.string().optional(),
   ownerId: z.string().min(1).max(128).optional(),
   owner: formOwnerSchema.nullable().optional(),
   description: z.string().optional(),
   version: z.number(),
-  schemaVersion: z.literal(1),
+  schemaVersion: z.literal(FORM_SCHEMA_VERSION),
   createdAt: z.string(),
   updatedAt: z.string(),
   settings: formSettingsSchema,
   pages: z.array(pageDefinitionSchema),
-}) satisfies z.ZodType<FormDefinition>;
+  elements: formElementsSchema,
+});
+
+export const formDefinitionSchema = formDefinitionObject.superRefine(
+  checkDocument,
+) satisfies z.ZodType<FormDefinition>;
 
 export const formsDefinitionSchema = z.array(formDefinitionSchema);
 
-export const formWithOwnerSchema = formDefinitionSchema.extend({
-  ownerId: z.string().min(1).max(128),
-  owner: formOwnerSchema.nullable(),
-}) satisfies z.ZodType<FormWithOwner>;
+export const formWithOwnerSchema = formDefinitionObject
+  .extend({
+    ownerId: z.string().min(1).max(128),
+    owner: formOwnerSchema.nullable(),
+  })
+  .superRefine(checkDocument) satisfies z.ZodType<FormWithOwner>;
 
 export const formsWithOwnerSchema = z.array(formWithOwnerSchema);
 

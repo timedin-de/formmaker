@@ -11,11 +11,11 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { has } from '@shared/helper';
+import { childrenOf } from '@shared/model/form-tree';
 import type {
   ChoiceElement,
   DefaultValueDef,
   ElementDefinition,
-  Elements,
   GroupElement,
   PageDefinition,
   QuestionDefinition,
@@ -204,29 +204,26 @@ export class PropertyPanel {
   }
 
   setFromField(field: ElementDefinition): void {
-    this.patch({ defaultValue: { kind: 'fromField', fieldId: field.id } });
-    const selected = this.el();
-    if (selected?.type === 'group') {
-      const values = (field as GroupElement)?.elements;
-
-      const mapElement = (
-        e: ElementDefinition,
-        i: number,
-        values: Elements | undefined,
-      ): ElementDefinition => {
-        const source = values?.[i];
-        let next: ElementDefinition = e;
-        if (e.type === 'group') {
-          const srcChildren = source?.type === 'group' ? source.elements : undefined;
-          next = { ...e, elements: e.elements.map((ec, ic) => mapElement(ec, ic, srcChildren)) };
+    const selected = this.sel();
+    const patches: [string, Partial<ElementDefinition>][] = [
+      [selected.id, { defaultValue: { kind: 'fromField', fieldId: field.id } }],
+    ];
+    // A group copies from another group: each child takes its default from the
+    // source child at the same position, recursively.
+    const pair = (target: GroupElement, source: GroupElement): void => {
+      const form = this.form();
+      const sources = childrenOf(form, source);
+      childrenOf(form, target).forEach((child, i) => {
+        const src = sources[i];
+        if (!src) return;
+        if (child.type === 'group' && src.type === 'group') pair(child, src);
+        if (has(child, 'defaultValue')) {
+          patches.push([child.id, { defaultValue: { kind: 'fromField', fieldId: src.id } }]);
         }
-        if (!has(next, 'defaultValue') || !source?.id) return next;
-        return { ...next, defaultValue: { kind: 'fromField' as const, fieldId: source.id } };
-      };
-
-      const elements = selected.elements.map((e, i) => mapElement(e, i, values)).filter(Boolean);
-      this.patch({ elements });
-    }
+      });
+    };
+    if (selected.type === 'group' && field.type === 'group') pair(selected, field);
+    this.store().updateElements(patches);
   }
 
   // ---- visibility -------------------------------------------------------------
@@ -244,7 +241,7 @@ export class PropertyPanel {
     if (!has(element, 'type')) return true;
     const thisGroup = this.el();
     if (thisGroup?.type !== 'group') return false;
-    return element.type === 'group' && thisGroup.elements.length === element.elements.length;
+    return element.type === 'group' && thisGroup.children.length === element.children.length;
   };
 
   // ---- time interval ---------------------------------------------------------
