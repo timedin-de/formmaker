@@ -352,7 +352,7 @@ export class RunnerStore {
           collectGroup(child, visible);
           continue;
         }
-        if (child.type === 'section' || !visible) continue;
+        if (!visible || !isQuestion(child)) continue;
         const control = this.answers.get(child.id);
         values[child.id] = control ? ((control.getRawValue() as FieldValue) ?? null) : null;
         visibleAnswerKeys.push(child.id);
@@ -367,7 +367,7 @@ export class RunnerStore {
           collectGroup(view.element, true);
           continue;
         }
-        if (view.element.type === 'section') continue;
+        if (!isQuestion(view.element)) continue;
         const control = view.id ? this.answers.get(view.id) : null;
         const value = control ? control.getRawValue() : view.value;
         values[view.id] = value ?? null;
