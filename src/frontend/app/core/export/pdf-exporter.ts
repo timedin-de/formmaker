@@ -140,7 +140,7 @@ export async function submissionsToPdf(
     }
     y += 12;
     const state: { value: number } = { value: y };
-    renderBlocks(doc, buildReceipt(form, sub), ensureSpace, state, {
+    renderBlocks(doc, buildReceipt(form, sub), state, {
       fontSize: 9,
       groupSize: 10,
       labelWrap: 150,
@@ -166,13 +166,6 @@ export async function submissionToPdf(
 ): Promise<Blob> {
   const doc = new jsPDF({ unit: 'pt', format: 'a4' });
   let y = MARGIN;
-
-  const ensureSpace = (needed = 60): void => {
-    if (y + needed > PAGE_H - MARGIN) {
-      doc.addPage();
-      y = MARGIN;
-    }
-  };
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(18);
@@ -207,7 +200,7 @@ export async function submissionToPdf(
     y += 14;
   }
   const state: { value: number } = { value: y };
-  renderBlocks(doc, blocks, ensureSpace, state, {
+  renderBlocks(doc, blocks, state, {
     fontSize: 10,
     groupSize: 12,
     labelWrap: 170,
@@ -236,11 +229,16 @@ interface BlockRenderOptions {
 function renderBlocks(
   doc: jsPDF,
   blocks: ReceiptBlock[],
-  ensureSpace: (needed?: number) => void,
   state: { value: number },
   opts: BlockRenderOptions,
 ): void {
   const lineHeight = 12;
+  const ensureSpace = (needed = 60): void => {
+    if (state.value + needed > PAGE_H - MARGIN) {
+      doc.addPage();
+      state.value = MARGIN;
+    }
+  };
   for (const block of blocks) {
     ensureSpace(block.kind === 'answer' ? 30 : 40);
     const x = MARGIN + block.indent * 18;
