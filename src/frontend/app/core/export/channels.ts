@@ -2,9 +2,8 @@ import type { NamedFormDefinition } from '@shared/model/form.model';
 import type { Submission } from '@shared/model/submission.model';
 import { type TranslationKey } from '../i18n';
 import { submissionsToCsv } from './csv-exporter';
-import { submissionsToExcel } from './excel-exporter';
 import { toSlug } from './file';
-import { submissionsToPdf } from './pdf-exporter';
+import { submissionsToExcel, submissionsToPdf } from './lazy-exporters';
 
 export type ExportChannelId = 'csv' | 'xlsx' | 'pdf' | 'mail';
 
