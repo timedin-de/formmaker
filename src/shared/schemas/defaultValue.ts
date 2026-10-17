@@ -1,5 +1,5 @@
 import { type DefaultValueDef } from '@shared/model';
-import z from 'zod';
+import * as z from 'zod';
 import { fieldValueSchema } from './fieldValue';
 
 export const defaultValueDefSchema = z.union([

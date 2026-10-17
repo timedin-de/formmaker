@@ -1,4 +1,4 @@
-import z from 'zod';
+import * as z from 'zod';
 import { VALIDATION_RULE_TYPES, type ValidationRule, type ValidationRuleType } from '../model';
 
 const validationRuleTypeSchema = z.enum(

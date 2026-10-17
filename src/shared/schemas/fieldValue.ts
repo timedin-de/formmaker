@@ -1,5 +1,5 @@
 import { type FieldValue, type FileValue, type SignatureValue } from '@shared/model';
-import z from 'zod';
+import * as z from 'zod';
 
 const fileValueSchema = z.strictObject({
   name: z.string(),
