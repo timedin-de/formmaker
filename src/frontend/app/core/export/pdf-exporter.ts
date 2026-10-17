@@ -1,7 +1,7 @@
 import { countQuestions } from '@shared/model/form-tree';
 import type { NamedFormDefinition } from '@shared/model/form.model';
 import type { Submission } from '@shared/model/submission.model';
-import { jsPDF } from 'jspdf';
+import { GState, jsPDF } from 'jspdf';
 import { buildColumnBlocks, formatValueForExport } from './columns';
 import { buildReceipt, type ReceiptBlock } from './receipt';
 
