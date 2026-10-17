@@ -124,6 +124,30 @@ describe('RunnerStore submission', () => {
     expect(result?.visibleAnswerKeys).toContain(member2.id);
   });
 
+  it('omits display-only elements from the submitted values', () => {
+    const form = newForm('Display');
+    const page = createPage('Details');
+    const name = createElement('text', 'Full name');
+    const intro = createElement('textdisplay', 'Intro');
+    const section = createElement('section', 'Section');
+    const nestedIntro = createElement('textdisplay', 'Nested intro');
+    const group = createElement('group', 'Team') as unknown as {
+      type: 'group';
+      elements: ReturnType<typeof createElement>[];
+    };
+    group.elements = [nestedIntro];
+    page.elements = [intro, section, name, group as never];
+    form.pages = [page];
+
+    const store = new RunnerStore();
+    store.init(form);
+    store.setAnswer(name.id, 'Ada');
+
+    const result = store.submit();
+    expect(Object.keys(result?.submission.values ?? {})).toEqual([name.id]);
+    expect(result?.visibleAnswerKeys).toEqual([name.id]);
+  });
+
   it('does not require hidden fields', () => {
     const form = newForm('Conditional');
     const page = createPage('Details');

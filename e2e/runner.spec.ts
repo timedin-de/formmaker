@@ -1,5 +1,14 @@
 import { expect, test } from './fixtures';
-import { createForm, deleteForm, loginApi, makeForm, seedField, uniqueName, uuid } from './helpers';
+import {
+  createForm,
+  deleteForm,
+  loginApi,
+  makeForm,
+  seedField,
+  seedGroup,
+  uniqueName,
+  uuid,
+} from './helpers';
 
 test('fills a multi-page form from its public share link and stores the submission', async ({
   page,
@@ -136,6 +145,101 @@ test('blocks submission while a revealed required field is still empty', async (
   await page.getByLabel('Extra info').fill('Ada Lovelace');
   await page.getByRole('button', { name: 'Submit' }).click();
   await expect(page.getByRole('heading', { name: 'Thank you!' })).toBeVisible();
+
+  await deleteForm(session, formId);
+});
+
+/** An optional question of `type`, with the props its schema requires. */
+function seedOptionalQuestion(type: string, id: string): Record<string, unknown> {
+  const field = seedField(type, id, `Optional ${type}`);
+  if (type === 'choice' || type === 'dropdown' || type === 'multiChoice') {
+    return {
+      ...field,
+      options: [
+        { id: uuid(), label: 'Yes', value: 'yes' },
+        { id: uuid(), label: 'No', value: 'no' },
+      ],
+    };
+  }
+  if (type === 'scale') return { ...field, min: 1, max: 5, step: 1 };
+  return field;
+}
+
+test('submits a form mixing display-only elements with every question type', async ({
+  page,
+  request,
+}) => {
+  const formName = uniqueName('runner-mixed');
+  const nameId = uuid();
+  const displayIds = [uuid(), uuid(), uuid(), uuid(), uuid()];
+  const optionalIds = new Map(
+    [
+      'longText',
+      'number',
+      'date',
+      'time',
+      'dateTime',
+      'boolean',
+      'choice',
+      'dropdown',
+      'multiChoice',
+      'scale',
+      'file',
+      'signature',
+    ].map((type) => [type, uuid()]),
+  );
+  const session = await loginApi(request);
+  const formId = await createForm(
+    session,
+    makeForm(formName, [
+      {
+        title: 'Details',
+        subtitle: '',
+        elements: [
+          seedField('textdisplay', displayIds[0], 'Please answer honestly.'),
+          seedField('section', displayIds[1], 'Personal'),
+          { ...seedField('text', nameId, 'Name'), required: true },
+          seedGroup(uuid(), 'More', [
+            seedField('textdisplay', displayIds[2], 'Everything below is optional.'),
+            ...[...optionalIds].map(([type, id]) => seedOptionalQuestion(type, id)),
+          ]),
+        ],
+      },
+      {
+        title: 'Closing',
+        subtitle: '',
+        elements: [
+          seedField('section', displayIds[3], 'Almost done'),
+          seedField('textdisplay', displayIds[4], 'Thanks for your time.'),
+        ],
+      },
+    ]),
+  );
+
+  await page.goto(`/runner/${formId}`);
+  await expect(page.getByText('Please answer honestly.')).toBeVisible();
+  await page.getByLabel('Name').fill('Ada Lovelace');
+  await page.getByRole('button', { name: 'Next' }).click();
+
+  await expect(page.getByRole('heading', { name: 'Closing' })).toBeVisible();
+  await expect(page.getByText('Thanks for your time.')).toBeVisible();
+  await page.getByRole('button', { name: 'Submit' }).click();
+  await expect(page.getByRole('heading', { name: 'Thank you!' })).toBeVisible();
+
+  // Only questions are stored; display-only elements never carry a value.
+  const res = await session.request.get<{ values: Record<string, unknown> }[]>(
+    `/api/forms/${formId}/submissions`,
+    {
+      headers: { Authorization: `Bearer ${session.token}` },
+    },
+  );
+  const subs = await res.json();
+  expect(subs).toHaveLength(1);
+  expect(subs[0].values).toMatchObject({ [nameId]: 'Ada Lovelace' });
+  for (const id of displayIds) expect(subs[0].values).not.toHaveProperty(id);
+  for (const id of Object.keys(subs[0].values)) {
+    expect([nameId, ...optionalIds.values()]).toContain(id);
+  }
 
   await deleteForm(session, formId);
 });
