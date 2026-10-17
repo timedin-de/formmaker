@@ -342,7 +342,6 @@
         <fm-condition-editor
           [legend]="i18n.t('panel.showWhen')"
           [group]="el.enabledWhen ?? emptyGroup()"
-          [fields]="fields()"
           [form]="form()"
           [self]="el.id"
           (changed)="patch({ enabledWhen: $event })"

@@ -1,24 +1,23 @@
 import { Component, computed, effect, inject, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import type {
-  ConditionGroup,
-  Condition,
-  ConditionOperator,
-  ConditionOperand,
-} from '@shared/model/conditions.model';
-import { CONDITION_OPERATORS } from '@shared/model/conditions.model';
-import { emptyCondition } from '@shared/model/conditions.model';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
+import { MatDividerModule } from '@angular/material/divider';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatDividerModule } from '@angular/material/divider';
-import { QuestionSelector } from './question-selector';
 import { type FormDocument } from '@shared/model';
-import { QuestionInputField } from './question-input-field';
+import type {
+  Condition,
+  ConditionGroup,
+  ConditionOperand,
+  ConditionOperator,
+} from '@shared/model/conditions.model';
+import { CONDITION_OPERATORS, emptyCondition } from '@shared/model/conditions.model';
 import { I18nService } from '../core/i18n';
+import { QuestionInputField } from './question-input-field';
+import { QuestionSelector } from './question-selector';
 
 const NEEDS_RIGHT: Record<ConditionOperator, 'operand' | 'list' | 'range' | 'none'> = {
   eq: 'operand',
@@ -64,7 +63,6 @@ export interface ConditionFieldOption {
 })
 export class ConditionEditor {
   readonly group = input<ConditionGroup>({ logic: 'all', conditions: [], groups: [] });
-  readonly fields = input<ConditionFieldOption[]>([]);
   readonly form = input.required<FormDocument>();
   protected readonly i18n = inject(I18nService);
 
@@ -131,7 +129,7 @@ export class ConditionEditor {
       if (kind === 'literal') {
         cond.operand = { kind: 'literal', value: null };
       } else {
-        cond.operand = { kind: 'field', fieldId: this.fields()[0]?.id ?? '' };
+        cond.operand = { kind: 'field', fieldId: '' };
       }
     });
   }

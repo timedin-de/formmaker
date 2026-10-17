@@ -11,7 +11,6 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { has } from '@shared/helper';
-import { childrenOf } from '@shared/model/form-tree';
 import type {
   ChoiceElement,
   DefaultValueDef,
@@ -69,17 +68,16 @@ export class PropertyPanel {
   protected readonly TIME_INTERVAL_UNITS = TIME_INTERVAL_UNITS;
   protected readonly has = has;
 
-  protected el = computed(() => this.store().selectedElement());
-  protected meta = computed(() => (this.el() ? fieldMeta(this.el()!.type) : fieldMeta('text')));
-  protected emptyGroup = computed(() => ({ logic: 'all' as const, conditions: [], groups: [] }));
-  protected form = computed(() => this.store().form());
-  protected fields = computed(() => {
-    const form = this.form();
-    return form.pages
-      .flatMap((p) => childrenOf(form, p))
-      .filter((e) => e.type !== 'section' && e.type !== 'group')
-      .map((e) => ({ id: e.id, label: e.label }));
-  });
+  protected readonly el = computed(() => this.store().selectedElement());
+  protected readonly meta = computed(() =>
+    this.el() ? fieldMeta(this.el()!.type) : fieldMeta('text'),
+  );
+  protected readonly emptyGroup = computed(() => ({
+    logic: 'all' as const,
+    conditions: [],
+    groups: [],
+  }));
+  protected readonly form = computed(() => this.store().form());
 
   private sel(): ElementDefinition {
     const el = this.el();
@@ -172,7 +170,7 @@ export class PropertyPanel {
         case 'expression':
           return { kind: 'expression', expression: '' };
         case 'fromField':
-          return { kind: 'fromField', fieldId: this.fields()[0]?.id ?? '' };
+          return { kind: 'fromField', fieldId: '' };
         default:
           return null;
       }
