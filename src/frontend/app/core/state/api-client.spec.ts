@@ -20,7 +20,7 @@ describe('api-client request', () => {
   const auth = { expireSession: vi.fn(() => Promise.resolve()) };
   let request: ApiClient['request'];
 
-  beforeEach(() => {
+  beforeEach(async () => {
     snack.open.mockReset();
     auth.expireSession.mockClear();
     TestBed.configureTestingModule({
@@ -29,7 +29,7 @@ describe('api-client request', () => {
         { provide: AuthService, useValue: auth },
       ],
     });
-    TestBed.inject(I18nService).lang.set('en');
+    await TestBed.inject(I18nService).setLang('en', false);
     const client = TestBed.inject(ApiClient);
     request = client.request.bind(client) as ApiClient['request'];
     sessionStorage.clear();

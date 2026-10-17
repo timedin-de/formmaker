@@ -81,8 +81,9 @@ scripts/            copy-icons.mjs (icon bundling), build-server.mjs (ncc bundle
 
 ## Frontend rules
 
-- **No hardcoded UI strings.** Use `i18n.t('key', params?)` and add the key to both `en` and `de` in
-  `core/i18n/translations.ts`. Model-level default labels use keys too.
+- **No hardcoded UI strings.** Use `i18n.t('key', params?)` and add the key to both
+  `core/i18n/lang/en.ts` and `core/i18n/lang/de.ts`. Each language is a lazy chunk, cached in
+  localStorage (`formmaker.i18n.<lang>`) per build. Model-level default labels use keys too.
 - **Icons are bundled SVGs.** A new `mat-icon svgIcon="..."` must be added to
   `scripts/copy-icons.mjs` and regenerated with `npm run icons:copy` (manifest:
   `core/icon-names.ts`). This runs automatically on `prestart` and `prebuild`.
