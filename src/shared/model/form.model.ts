@@ -221,9 +221,6 @@ export interface SaveFormDefinition {
   settings: FormSettings;
   pages: PageDefinition[];
 }
-export interface NamedFormDefinition extends FormDefinition {
-  name: string;
-}
 
 export interface FormDefinition extends SaveFormDefinition {
   readonly id: FormId;
