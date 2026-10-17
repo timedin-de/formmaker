@@ -8,7 +8,7 @@ import {
   Put,
   UseGuards,
 } from '@nestjs/common';
-import type { z } from 'zod';
+import type * as z from 'zod/mini';
 import {
   emailUpdateSchema,
   loginSchema,

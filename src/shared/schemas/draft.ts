@@ -1,4 +1,4 @@
-import * as z from 'zod';
+import * as z from 'zod/mini';
 
 import { type SavedDraft } from '../model/draft';
 import { fieldValueSchema } from './fieldValue';
@@ -9,4 +9,4 @@ export const draftSchema = z.strictObject({
   savedAt: z.number(),
   formVersion: z.number(),
   values: valuesMapSchema,
-}) satisfies z.ZodType<SavedDraft>;
+}) satisfies z.ZodMiniType<SavedDraft>;

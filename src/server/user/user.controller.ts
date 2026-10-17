@@ -16,7 +16,7 @@ import {
 } from '@nestjs/common';
 import { type PublicUser } from '@shared/model';
 import { accountDeleteSchema, userCreateSchema } from '@shared/schemas';
-import type z from 'zod';
+import * as z from 'zod/mini';
 import { hashPassword, publicUser, verifyPassword } from '../auth/auth-helper';
 import { AdminGuard, AuthGuard } from '../auth/auth.guard';
 import { AuthService } from '../auth/auth.service';
@@ -72,7 +72,7 @@ export class UserController {
   @UseGuards(AdminGuard)
   async patchUser(
     @Param('id') id: string,
-    @Body(new ZodValidationPipe(userCreateSchema.partial()))
+    @Body(new ZodValidationPipe(z.partial(userCreateSchema)))
     body: Partial<z.infer<typeof userCreateSchema>>,
   ) {
     if (Object.keys(body).length === 0) {

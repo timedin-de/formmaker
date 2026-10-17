@@ -1,4 +1,4 @@
-import * as z from 'zod';
+import * as z from 'zod/mini';
 import {
   type BooleanElement,
   type ChoiceElement,
@@ -32,106 +32,112 @@ const elementBaseSchema = z.strictObject({
   id: z.string(),
   type: z.enum(ELEMENT_TYPES),
   label: z.string(),
-  description: z.string().default(''),
-  width: z.number().default(1),
-  enabledWhen: conditionGroupSchema.optional(),
-}) satisfies z.ZodType<ElementBase>;
+  description: z._default(z.string(), ''),
+  width: z._default(z.number(), 1),
+  enabledWhen: z.optional(conditionGroupSchema),
+}) satisfies z.ZodMiniType<ElementBase>;
 
 const placeholderableSchema = z.strictObject({
-  placeholder: z.string().default(''),
+  placeholder: z._default(z.string(), ''),
 });
 
 const choiceOptionSchema = z.strictObject({
   id: z.string(),
   label: z.string(),
   value: z.union([z.string(), z.number()]),
-}) satisfies z.ZodType<ChoiceOption>;
+}) satisfies z.ZodMiniType<ChoiceOption>;
 
-const sectionElementSchema = elementBaseSchema.extend({
+const sectionElementSchema = z.extend(elementBaseSchema, {
   type: z.literal('section'),
-}) satisfies z.ZodType<SectionElement>;
+}) satisfies z.ZodMiniType<SectionElement>;
 
-const textDisplayElementSchema = elementBaseSchema.extend({
+const textDisplayElementSchema = z.extend(elementBaseSchema, {
   type: z.literal('textdisplay'),
-}) satisfies z.ZodType<TextDisplayElement>;
+}) satisfies z.ZodMiniType<TextDisplayElement>;
 
-const questionAttributesSchema = defaultValueableSchema.extend({
+const questionAttributesSchema = z.extend(defaultValueableSchema, {
   type: z.enum(QUESTION_TYPES),
-  required: z.boolean().default(false),
-  validations: z.array(validationRuleSchema).default([]),
-  readonly: z.boolean().default(false),
+  required: z._default(z.boolean(), false),
+  validations: z._default(z.array(validationRuleSchema), []),
+  readonly: z._default(z.boolean(), false),
 });
 
-const questionBaseSchema = elementBaseSchema.extend(
+const questionBaseSchema = z.extend(
+  elementBaseSchema,
   questionAttributesSchema.shape,
-) satisfies z.ZodType<QuestionBase>;
+) satisfies z.ZodMiniType<QuestionBase>;
 
-const choiceElementSchema = questionBaseSchema.extend({
+const choiceElementSchema = z.extend(questionBaseSchema, {
   type: z.union([z.literal('choice'), z.literal('dropdown'), z.literal('multiChoice')]),
   options: z.array(choiceOptionSchema),
-}) satisfies z.ZodType<ChoiceElement>;
+}) satisfies z.ZodMiniType<ChoiceElement>;
 
-const numberElementSchema = questionBaseSchema.extend(placeholderableSchema.shape).extend({
+const numberElementSchema = z.extend(questionBaseSchema, {
+  ...placeholderableSchema.shape,
   type: z.literal('number'),
-  step: z.number().optional(),
-  unit: z.string().optional(),
-  decimals: z.number().optional(),
-}) satisfies z.ZodType<NumberElement>;
+  step: z.optional(z.number()),
+  unit: z.optional(z.string()),
+  decimals: z.optional(z.number()),
+}) satisfies z.ZodMiniType<NumberElement>;
 
-const scaleElementSchema = questionBaseSchema.extend({
+const scaleElementSchema = z.extend(questionBaseSchema, {
   type: z.literal('scale'),
   min: z.number(),
   max: z.number(),
   step: z.number(),
-  minLabel: z.string().optional(),
-  maxLabel: z.string().optional(),
-}) satisfies z.ZodType<ScaleElement>;
+  minLabel: z.optional(z.string()),
+  maxLabel: z.optional(z.string()),
+}) satisfies z.ZodMiniType<ScaleElement>;
 
-const fileElementSchema = questionBaseSchema.extend({
+const fileElementSchema = z.extend(questionBaseSchema, {
   type: z.literal('file'),
-  accept: z.string().optional(),
-  multiple: z.boolean().optional(),
-}) satisfies z.ZodType<FileElement>;
+  accept: z.optional(z.string()),
+  multiple: z.optional(z.boolean()),
+}) satisfies z.ZodMiniType<FileElement>;
 
-const signatureElementSchema = questionBaseSchema.extend({
+const signatureElementSchema = z.extend(questionBaseSchema, {
   type: z.literal('signature'),
-}) satisfies z.ZodType<SignatureElement>;
+}) satisfies z.ZodMiniType<SignatureElement>;
 
-const booleanElementSchema = questionBaseSchema.extend({
+const booleanElementSchema = z.extend(questionBaseSchema, {
   type: z.literal('boolean'),
-}) satisfies z.ZodType<BooleanElement>;
+}) satisfies z.ZodMiniType<BooleanElement>;
 
-const dateElementSchema = questionBaseSchema.extend(placeholderableSchema.shape).extend({
+const dateElementSchema = z.extend(questionBaseSchema, {
+  ...placeholderableSchema.shape,
   type: z.literal('date'),
-}) satisfies z.ZodType<DateElement>;
+}) satisfies z.ZodMiniType<DateElement>;
 
 const timeIntervalSchema = z.strictObject({
-  value: z.number().int().min(1),
+  value: z.number().check(z.int(), z.minimum(1)),
   multiplier: z.enum(TIME_INTERVAL_MULTIPLIERS),
-}) satisfies z.ZodType<TimeInterval>;
+}) satisfies z.ZodMiniType<TimeInterval>;
 
-const timeElementSchema = questionBaseSchema.extend(placeholderableSchema.shape).extend({
+const timeElementSchema = z.extend(questionBaseSchema, {
+  ...placeholderableSchema.shape,
   type: z.union([z.literal('time'), z.literal('dateTime')]),
-  timeInterval: timeIntervalSchema.default({ ...DEFAULT_TIME_INTERVAL }),
-}) satisfies z.ZodType<TimeElement>;
+  timeInterval: z._default(timeIntervalSchema, { ...DEFAULT_TIME_INTERVAL }),
+}) satisfies z.ZodMiniType<TimeElement>;
 
-const textElementSchema = questionBaseSchema.extend(placeholderableSchema.shape).extend({
+const textElementSchema = z.extend(questionBaseSchema, {
+  ...placeholderableSchema.shape,
   type: z.literal('text'),
-  inputType: z
-    .union([
+  inputType: z.optional(
+    z.union([
       z.literal('text'),
       z.literal('email'),
       z.literal('url'),
       z.literal('phone'),
       z.literal('number'),
-    ])
-    .optional(),
-}) satisfies z.ZodType<TextElement>;
+    ]),
+  ),
+}) satisfies z.ZodMiniType<TextElement>;
 
-const longTextElementSchema = questionBaseSchema.extend(placeholderableSchema.shape).extend({
+const longTextElementSchema = z.extend(questionBaseSchema, {
+  ...placeholderableSchema.shape,
   type: z.literal('longText'),
-  rows: z.number().optional(),
-}) satisfies z.ZodType<LongTextElement>;
+  rows: z.optional(z.number()),
+}) satisfies z.ZodMiniType<LongTextElement>;
 
 const questionDefinitionSchema = z.discriminatedUnion('type', [
   textElementSchema,
@@ -144,25 +150,22 @@ const questionDefinitionSchema = z.discriminatedUnion('type', [
   scaleElementSchema,
   fileElementSchema,
   signatureElementSchema,
-]) satisfies z.ZodType<QuestionDefinition>;
+]) satisfies z.ZodMiniType<QuestionDefinition>;
 
-const groupElementSchema = elementBaseSchema
-  .extend(defaultValueableSchema.shape)
-  .extend({
-    type: z.literal('group'),
-    collapsible: z.boolean().default(false),
-  })
-  .extend({
-    elements: z.lazy(() => elementsSchema),
-  }) satisfies z.ZodType<GroupElement>;
+const groupElementSchema = z.extend(elementBaseSchema, {
+  ...defaultValueableSchema.shape,
+  type: z.literal('group'),
+  collapsible: z._default(z.boolean(), false),
+  elements: z.lazy(() => elementsSchema),
+}) satisfies z.ZodMiniType<GroupElement>;
 
-export const elementDefinitionSchema: z.ZodType<ElementDefinition> = z.lazy(() =>
+export const elementDefinitionSchema: z.ZodMiniType<ElementDefinition> = z.lazy(() =>
   z.discriminatedUnion('type', [
     questionDefinitionSchema,
     groupElementSchema,
     sectionElementSchema,
     textDisplayElementSchema,
   ]),
-) satisfies z.ZodType<ElementDefinition>;
+) satisfies z.ZodMiniType<ElementDefinition>;
 
-export const elementsSchema: z.ZodType<ElementDefinition[]> = z.array(elementDefinitionSchema);
+export const elementsSchema: z.ZodMiniType<ElementDefinition[]> = z.array(elementDefinitionSchema);
