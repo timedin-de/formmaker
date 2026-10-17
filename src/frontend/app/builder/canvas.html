@@ -65,7 +65,6 @@
         [group]="page.enabledWhen ?? emptyGroup()"
         [form]="store().form()"
         [self]="page.id"
-        [fields]="fieldOptions()"
         (changed)="store().updatePage(page.id, { enabledWhen: $event })"
       />
     </div>
