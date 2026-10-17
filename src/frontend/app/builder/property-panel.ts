@@ -31,9 +31,10 @@ import { ConditionEditor } from './condition-editor';
 import { QuestionSelector } from './question-selector';
 import { ValidationEditor } from './validation-editor';
 
-const WIDTHS = Array(12)
-  .fill(12)
-  .map((v, i) => ({ label: `${i + 1}/${v}`, factor: (i + 1) / 12 }));
+const WIDTHS = Array.from(
+  { length: 12 },
+  (_, i) => ({ label: `${i + 1}/12`, factor: (i + 1) / 12 }) as const,
+);
 
 const INPUT_TYPES = ['text', 'email', 'url', 'phone', 'number'] as const;
 
