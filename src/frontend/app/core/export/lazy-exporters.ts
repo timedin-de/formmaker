@@ -14,9 +14,10 @@ export async function submissionToPdf(
   form: NamedFormDefinition,
   submission: Submission,
   ctx: ExportContext,
+  options?: { watermark?: string },
 ) {
   const exporterFn = await import('./pdf-exporter').then((x) => x.submissionToPdf);
-  return exporterFn(form, submission, ctx);
+  return exporterFn(form, submission, ctx, options);
 }
 
 export async function submissionsToExcel(
