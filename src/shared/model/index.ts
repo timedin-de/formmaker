@@ -1,6 +1,7 @@
 export * from './conditions.model';
 export * from './draft';
 export * from './form-factory';
+export * from './form-ops';
 export * from './form-tree';
 export * from './form.model';
 export * from './ids';
