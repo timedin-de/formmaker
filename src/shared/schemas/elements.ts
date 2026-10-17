@@ -9,6 +9,7 @@ import {
   type ElementBase,
   type ElementDefinition,
   type FileElement,
+  type FormElements,
   type GroupElement,
   type LongTextElement,
   type NumberElement,
@@ -146,23 +147,20 @@ const questionDefinitionSchema = z.discriminatedUnion('type', [
   signatureElementSchema,
 ]) satisfies z.ZodType<QuestionDefinition>;
 
-const groupElementSchema = elementBaseSchema
-  .extend(defaultValueableSchema.shape)
-  .extend({
-    type: z.literal('group'),
-    collapsible: z.boolean().default(false),
-  })
-  .extend({
-    elements: z.lazy(() => elementsSchema),
-  }) satisfies z.ZodType<GroupElement>;
+const groupElementSchema = elementBaseSchema.extend(defaultValueableSchema.shape).extend({
+  type: z.literal('group'),
+  collapsible: z.boolean().default(false),
+  children: z.array(z.string()).default([]),
+}) satisfies z.ZodType<GroupElement>;
 
-export const elementDefinitionSchema: z.ZodType<ElementDefinition> = z.lazy(() =>
-  z.discriminatedUnion('type', [
-    questionDefinitionSchema,
-    groupElementSchema,
-    sectionElementSchema,
-    textDisplayElementSchema,
-  ]),
-) satisfies z.ZodType<ElementDefinition>;
+export const elementDefinitionSchema = z.discriminatedUnion('type', [
+  questionDefinitionSchema,
+  groupElementSchema,
+  sectionElementSchema,
+  textDisplayElementSchema,
+]) satisfies z.ZodType<ElementDefinition>;
 
-export const elementsSchema: z.ZodType<ElementDefinition[]> = z.array(elementDefinitionSchema);
+export const formElementsSchema = z.record(
+  z.string(),
+  elementDefinitionSchema,
+) satisfies z.ZodType<FormElements>;

@@ -78,3 +78,42 @@ export function subtreeIds(form: FormDocument, id: ElementId): ElementId[] {
 export function countQuestions(form: FormDocument): number {
   return descendants(form).filter((el) => isQuestion(el)).length;
 }
+
+/**
+ * Structural problems of a form document: elements stored under a key other
+ * than their id, children that do not exist, elements listed more than once,
+ * and elements no page reaches (which includes groups nested in a cycle).
+ */
+export function documentIssues(form: FormDocument): string[] {
+  const issues: string[] = [];
+  for (const [key, el] of Object.entries(form.elements)) {
+    if (el.id !== key) issues.push(`element ${el.id} is stored under the key ${key}`);
+  }
+
+  const pageIds = new Set<string>();
+  for (const page of form.pages) {
+    if (pageIds.has(page.id)) issues.push(`page ${page.id} exists more than once`);
+    pageIds.add(page.id);
+  }
+
+  const reached = new Set<ElementId>();
+  const visit = (parent: ElementParent): void => {
+    for (const id of parent.children) {
+      const el = getElement(form, id);
+      if (!el) {
+        issues.push(`${parent.id} lists the unknown element ${id}`);
+      } else if (reached.has(id)) {
+        issues.push(`element ${id} is listed more than once`);
+      } else {
+        reached.add(id);
+        if (el.type === 'group') visit(el);
+      }
+    }
+  };
+  form.pages.forEach(visit);
+
+  for (const id of Object.keys(form.elements)) {
+    if (!reached.has(id)) issues.push(`element ${id} is not on any page`);
+  }
+  return issues;
+}
