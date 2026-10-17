@@ -97,6 +97,15 @@ const DEFAULT_FUNCTIONS: FunctionLibrary = {
     return db.getFullYear() - da.getFullYear();
   },
 
+  random: (_max = 10, _min = 0, _decimals = 0) => {
+    const min = toNumber(_min) ?? 0;
+    const max = toNumber(_max) ?? 10;
+    const decimal = 10 ** (toNumber(_decimals) ?? 0);
+    const rand = Math.random() * (max - min + 1);
+
+    return Math.round(rand * decimal) / decimal;
+  },
+
   // -- validation-oriented (used by validators) -----------------------------------
   /** fail-helper: returns the string message — a custom validator flags non-empty strings as failures. */
   msg: (...parts) => parts.map((p) => (p == null ? '' : String(p))).join(' '),
