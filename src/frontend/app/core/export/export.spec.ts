@@ -18,6 +18,9 @@ import { buildReceipt } from './receipt';
 /** Translates every key to itself. */
 const ctx: ExportContext = { t: (key) => key };
 
+const PNG_1X1 =
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+
 function demoForm(): FormDefinition {
   const form = newForm('Demo');
   const p1 = createPage('Details');
@@ -256,6 +259,21 @@ describe('buildReceipt', () => {
     expect(blocks.some((b) => b.kind === 'group')).toBe(true);
     expect(blocks.some((b) => b.label === 'City')).toBe(false);
     expect(blocks.some((b) => b.label === 'Empty group')).toBe(false);
+  });
+
+  it('passes the signature image through as additional data', () => {
+    const form = newForm();
+    const sign = createElement('signature', 'Sign here');
+    addToGroup(sign, form.pages[0], form);
+    const signature = { dataUrl: PNG_1X1, width: 1, height: 1, mimeType: 'image/png' };
+    const blocks = buildReceipt(form, submissionFor(form, { [sign.id]: signature }), ctx);
+    expect(blocks[1]).toEqual({
+      kind: 'answer',
+      label: 'Sign here',
+      value: '[signature]',
+      indent: 0,
+      additional: { dataUrl: PNG_1X1 },
+    });
   });
 });
 
