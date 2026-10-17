@@ -1,5 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Component, computed, effect, inject, input, signal } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -16,14 +15,13 @@ import { MatTooltip } from '@angular/material/tooltip';
 import { ActivatedRoute, Router } from '@angular/router';
 import { formName } from '@shared/helper';
 import type { Submission } from '@shared/model/submission.model';
-import { first, switchMap, tap } from 'rxjs';
-import { SNACK_TIME_ERROR, SNACK_TIME_OK } from '../core/consts';
-import { downloadBlob, submissionToPdf, toSlug } from '../core/export';
-import { I18nService } from '../core/i18n';
-import { MarkdownPipe } from '../core/markdown';
-import { FormsRepository } from '../core/state/forms.repository';
-import type { RunnerPage } from '../core/state/runner.model';
-import { RunnerStore } from '../core/state/runner.store';
+import { first } from 'rxjs';
+import { type RunnerPage, RunnerStore } from '../../core';
+import { SNACK_TIME_ERROR, SNACK_TIME_OK } from '../../core/consts';
+import { downloadBlob, submissionToPdf, toSlug } from '../../core/export';
+import { I18nService } from '../../core/i18n';
+import { MarkdownPipe } from '../../core/markdown';
+import { FormsRepository } from '../../core/state/forms.repository';
 import { QuestionList } from './questionList/question-list';
 
 @Component({
@@ -69,44 +67,35 @@ export class Runner {
     () => this.store.form()?.settings?.submitLabel ?? this.i18n.t('runner.submit'),
   );
 
+  readonly formId = input.required<string | null>();
+
   constructor() {
+    effect(async () => {
+      const id = this.formId();
+      if (!id) return;
+      const form = await this.repo.getForm(id);
+      if (form) {
+        this.store.init(form);
+        this.submitted.set(false);
+        this.formLoaded.set(true);
+        if (this.store.restoredDraft()) {
+          this.snack.open(this.i18n.t('runner.draftRestored'), 'OK', {
+            duration: SNACK_TIME_OK,
+          });
+        }
+      } else {
+        this.snack.open(this.i18n.t('runner.formNotFound'), 'OK', {
+          duration: SNACK_TIME_ERROR,
+        });
+        void this.router.navigate(['/']);
+      }
+    });
+
     this.route.queryParams.pipe(first()).subscribe((q) => {
       if (q['page']) {
         this.store.goTo(q['page']);
       }
     });
-
-    this.route.paramMap
-      .pipe(
-        takeUntilDestroyed(),
-        switchMap(async (params) => {
-          const id = params.get('id');
-          if (!id) return null;
-          try {
-            return (await this.repo.getForm(id)) ?? null;
-          } catch {
-            return null;
-          }
-        }),
-        tap((form) => {
-          if (form) {
-            this.store.init(form);
-            this.submitted.set(false);
-            this.formLoaded.set(true);
-            if (this.store.restoredDraft()) {
-              this.snack.open(this.i18n.t('runner.draftRestored'), 'OK', {
-                duration: SNACK_TIME_OK,
-              });
-            }
-          } else {
-            this.snack.open(this.i18n.t('runner.formNotFound'), 'OK', {
-              duration: SNACK_TIME_ERROR,
-            });
-            void this.router.navigate(['/']);
-          }
-        }),
-      )
-      .subscribe();
   }
 
   back(): void {

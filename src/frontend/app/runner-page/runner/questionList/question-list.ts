@@ -16,10 +16,9 @@ import {
   MatExpansionPanelHeader,
 } from '@angular/material/expansion';
 import { has } from '@shared/helper';
-import { QuestionInput } from '../../builder/question-input';
-import { type RunnerStore } from '../../core';
-import type { ElementViewRef } from '../../core/state/runner.model';
-import { MarkdownPipe } from '../../core/markdown';
+import { QuestionInput } from '../../../builder/question-input';
+import { type ElementViewRef, type RunnerStore } from '../../../core';
+import { MarkdownPipe } from '../../../core/markdown';
 
 @Component({
   imports: [
