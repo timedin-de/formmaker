@@ -396,6 +396,8 @@ const de: typeof en = {
 
   // PDF
   'pdf.receipt': '{name}-beleg',
+  'pdf.draft': '{name}-entwurf',
+  'pdf.watermarkDraft': 'ENTWURF',
 
   // API errors
   'error.rateLimited': 'Zu viele Anfragen. Bitte warte einen Moment und versuche es erneut.',

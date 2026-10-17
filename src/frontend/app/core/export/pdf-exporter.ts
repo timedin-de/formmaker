@@ -162,6 +162,7 @@ export async function submissionsToPdf(
 export async function submissionToPdf(
   form: NamedFormDefinition,
   submission: Submission,
+  options: { watermark?: string } = {},
 ): Promise<Blob> {
   const doc = new jsPDF({ unit: 'pt', format: 'a4' });
   let y = MARGIN;
@@ -213,7 +214,7 @@ export async function submissionToPdf(
     valueX: MARGIN + 180,
     gapAfter: 8,
   });
-  y = state.value;
+  if (options.watermark) drawWatermark(doc, options.watermark);
 
   const buffer = doc.output('arraybuffer');
   return new Blob([buffer], { type: 'application/pdf' });
@@ -292,6 +293,21 @@ function renderBlocks(
       state.value += lineHeight;
     }
     state.value += opts.gapAfter ?? 8;
+  }
+}
+
+/** Stamp a large, translucent diagonal label across the centre of every page. */
+function drawWatermark(doc: jsPDF, text: string): void {
+  const pages = doc.getNumberOfPages();
+  for (let i = 1; i <= pages; i++) {
+    doc.setPage(i);
+    doc.saveGraphicsState();
+    doc.setGState(new GState({ opacity: 0.12 }));
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(110);
+    doc.setTextColor(200, 30, 30);
+    doc.text(text, PAGE_W / 2, PAGE_H / 2, { angle: 45, align: 'center', baseline: 'middle' });
+    doc.restoreGraphicsState();
   }
 }
 

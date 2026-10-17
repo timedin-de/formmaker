@@ -5,9 +5,13 @@ export async function submissionsToPdf(form: NamedFormDefinition, submissions: S
   const exporterFn = await import('./pdf-exporter').then((x) => x.submissionsToPdf);
   return exporterFn(form, submissions);
 }
-export async function submissionToPdf(form: NamedFormDefinition, submission: Submission) {
+export async function submissionToPdf(
+  form: NamedFormDefinition,
+  submission: Submission,
+  options?: { watermark?: string },
+) {
   const exporterFn = await import('./pdf-exporter').then((x) => x.submissionToPdf);
-  return exporterFn(form, submission);
+  return exporterFn(form, submission, options);
 }
 
 export async function submissionsToExcel(
