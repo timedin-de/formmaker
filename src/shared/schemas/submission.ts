@@ -1,4 +1,4 @@
-import z from 'zod';
+import * as z from 'zod';
 import { type Submission, type SubmissionCreate } from '../model';
 import { fieldValueSchema } from './fieldValue';
 

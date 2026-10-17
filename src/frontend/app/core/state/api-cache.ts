@@ -1,5 +1,5 @@
 import { catchFn } from '@shared/helper';
-import z from 'zod';
+import * as z from 'zod';
 
 export const FORMS_CACHE_KEY = 'formmaker.cache.forms.v1';
 export const FORM_CACHE_PREFIX = 'formmaker.cache.form.v1.';
