@@ -1,4 +1,4 @@
-import * as z from 'zod';
+import * as z from 'zod/mini';
 import { type CatchFnResult, catchFn } from '../helper';
 import {
   ELEMENT_TYPES,
@@ -14,19 +14,19 @@ import { elementsSchema } from './elements';
 export const pageDefinitionSchema = z.strictObject({
   id: z.string(),
   title: z.string(),
-  subtitle: z.string().default(''),
-  enabledWhen: conditionGroupSchema.optional(),
+  subtitle: z._default(z.string(), ''),
+  enabledWhen: z.optional(conditionGroupSchema),
   elements: elementsSchema,
-}) satisfies z.ZodType<PageDefinition>;
+}) satisfies z.ZodMiniType<PageDefinition>;
 
 export const formSettingsSchema = z.strictObject({
-  name: z.string().optional(),
-  submitLabel: z.string().optional(),
-  showProgress: z.boolean().optional(),
-  allowBack: z.boolean().optional(),
+  name: z.optional(z.string()),
+  submitLabel: z.optional(z.string()),
+  showProgress: z.optional(z.boolean()),
+  allowBack: z.optional(z.boolean()),
   navigation: z.union([z.literal('linear'), z.literal('free'), z.literal('auto')]),
-  enableAutoSave: z.boolean().optional(),
-}) satisfies z.ZodType<FormSettings>;
+  enableAutoSave: z.optional(z.boolean()),
+}) satisfies z.ZodMiniType<FormSettings>;
 
 const formOwnerSchema = z.strictObject({
   id: z.string(),
@@ -37,34 +37,34 @@ const formOwnerSchema = z.strictObject({
 
 export const saveFormDefinitionSchema = z.strictObject({
   id: z.string(),
-  name: z.string().optional(),
-  ownerId: z.string().min(1).max(128).optional(),
-  owner: formOwnerSchema.nullable().optional(),
-  description: z.string().optional(),
+  name: z.optional(z.string()),
+  ownerId: z.optional(z.string().check(z.minLength(1), z.maxLength(128))),
+  owner: z.optional(z.nullable(formOwnerSchema)),
+  description: z.optional(z.string()),
   settings: formSettingsSchema,
   pages: z.array(pageDefinitionSchema),
-}) satisfies z.ZodType<SaveFormDefinition>;
+}) satisfies z.ZodMiniType<SaveFormDefinition>;
 
 export const formDefinitionSchema = z.strictObject({
   id: z.string(),
-  name: z.string().optional(),
-  ownerId: z.string().min(1).max(128).optional(),
-  owner: formOwnerSchema.nullable().optional(),
-  description: z.string().optional(),
+  name: z.optional(z.string()),
+  ownerId: z.optional(z.string().check(z.minLength(1), z.maxLength(128))),
+  owner: z.optional(z.nullable(formOwnerSchema)),
+  description: z.optional(z.string()),
   version: z.number(),
   schemaVersion: z.literal(1),
   createdAt: z.string(),
   updatedAt: z.string(),
   settings: formSettingsSchema,
   pages: z.array(pageDefinitionSchema),
-}) satisfies z.ZodType<FormDefinition>;
+}) satisfies z.ZodMiniType<FormDefinition>;
 
 export const formsDefinitionSchema = z.array(formDefinitionSchema);
 
-export const formWithOwnerSchema = formDefinitionSchema.extend({
-  ownerId: z.string().min(1).max(128),
-  owner: formOwnerSchema.nullable(),
-}) satisfies z.ZodType<FormWithOwner>;
+export const formWithOwnerSchema = z.extend(formDefinitionSchema, {
+  ownerId: z.string().check(z.minLength(1), z.maxLength(128)),
+  owner: z.nullable(formOwnerSchema),
+}) satisfies z.ZodMiniType<FormWithOwner>;
 
 export const formsWithOwnerSchema = z.array(formWithOwnerSchema);
 
@@ -75,8 +75,8 @@ export const createPageSchema = z.strictObject({
 export const createElementSchema = z.strictObject({
   type: z.enum(ELEMENT_TYPES),
   label: z.string(),
-  parentId: z.string().min(1),
-  afterId: z.string().nullable().optional(),
+  parentId: z.string().check(z.minLength(1)),
+  afterId: z.optional(z.nullable(z.string())),
 });
 
 export type CreateElementRequest = z.infer<typeof createElementSchema>;

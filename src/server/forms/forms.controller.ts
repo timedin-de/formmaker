@@ -28,7 +28,7 @@ import {
   stripFormOwnership,
   submissionCreateSchema,
 } from '@shared/schemas';
-import type z from 'zod';
+import * as z from 'zod/mini';
 import { AuthGuard } from '../auth/auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
@@ -47,7 +47,7 @@ class SaveFormBodyPipe extends ZodValidationPipe<SaveFormDefinition> {
 }
 class OptionalFormBodyPipe extends ZodValidationPipe<FormDefinition | undefined> {
   constructor() {
-    super(formDefinitionSchema.optional());
+    super(z.optional(formDefinitionSchema));
   }
 
   override transform(value: unknown) {

@@ -1,6 +1,6 @@
 import { Injectable, Injector, inject } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import type z from 'zod';
+import type * as z from 'zod/mini';
 import { AuthService } from '../auth/auth.service';
 import { SNACK_TIME_ERROR } from '../consts';
 import { I18nService } from '../i18n/translation.service';
@@ -32,9 +32,9 @@ export class ApiClient {
   private readonly i18n = inject(I18nService);
 
   request(schema: undefined, path: string, init?: RequestInit): Promise<undefined>;
-  request<T>(schema: z.ZodType<T>, path: string, init?: RequestInit): Promise<T>;
+  request<T>(schema: z.ZodMiniType<T>, path: string, init?: RequestInit): Promise<T>;
   async request<T>(
-    schema: z.ZodType<T> | undefined,
+    schema: z.ZodMiniType<T> | undefined,
     path: string,
     init?: RequestInit,
   ): Promise<T | undefined> {

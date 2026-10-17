@@ -1,4 +1,4 @@
-import * as z from 'zod';
+import * as z from 'zod/mini';
 import {
   type Condition,
   CONDITION_OPERATORS,
@@ -13,32 +13,32 @@ const conditionOperatorSchema = z.enum(CONDITION_OPERATORS);
 
 const literalOperandSchema = z.strictObject({
   kind: z.literal('literal'),
-  value: z.union([z.string(), z.number(), z.boolean()]).nullable(),
-}) satisfies z.ZodType<LiteralOperand>;
+  value: z.nullable(z.union([z.string(), z.number(), z.boolean()])),
+}) satisfies z.ZodMiniType<LiteralOperand>;
 
 const fieldOperandSchema = z.strictObject({
   kind: z.literal('field'),
   fieldId: z.string(),
-}) satisfies z.ZodType<FieldOperand>;
+}) satisfies z.ZodMiniType<FieldOperand>;
 
 const conditionOperandSchema = z.discriminatedUnion('kind', [
   literalOperandSchema,
   fieldOperandSchema,
-]) satisfies z.ZodType<ConditionOperand>;
+]) satisfies z.ZodMiniType<ConditionOperand>;
 
 const conditionSchema = z.strictObject({
   fieldId: z.string(),
-  fieldType: z.enum(ELEMENT_TYPES).optional(),
+  fieldType: z.optional(z.enum(ELEMENT_TYPES)),
   operator: conditionOperatorSchema,
-  operand: conditionOperandSchema.optional(),
-  operandTo: conditionOperandSchema.optional(),
-  values: z.array(z.union([z.string(), z.number(), z.boolean()])).optional(),
-}) satisfies z.ZodType<Condition>;
+  operand: z.optional(conditionOperandSchema),
+  operandTo: z.optional(conditionOperandSchema),
+  values: z.optional(z.array(z.union([z.string(), z.number(), z.boolean()]))),
+}) satisfies z.ZodMiniType<Condition>;
 
-export const conditionGroupSchema: z.ZodType<ConditionGroup> = z.lazy(() =>
+export const conditionGroupSchema: z.ZodMiniType<ConditionGroup> = z.lazy(() =>
   z.strictObject({
     logic: z.union([z.literal('all'), z.literal('any')]),
     conditions: z.array(conditionSchema),
     groups: z.array(conditionGroupSchema),
   }),
-) satisfies z.ZodType<ConditionGroup>;
+) satisfies z.ZodMiniType<ConditionGroup>;

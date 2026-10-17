@@ -1,5 +1,5 @@
 import { UnprocessableEntityException, type PipeTransform } from '@nestjs/common';
-import type { z } from 'zod';
+import type * as z from 'zod/mini';
 
 /**
  * Validates a request value against a shared zod schema and returns the parsed
@@ -7,7 +7,7 @@ import type { z } from 'zod';
  * Usage: `@Body(new ZodValidationPipe(loginSchema)) body: LoginInput`.
  */
 export class ZodValidationPipe<T> implements PipeTransform<unknown, T> {
-  constructor(private readonly schema: z.ZodType<T>) {}
+  constructor(private readonly schema: z.ZodMiniType<T>) {}
 
   transform(value: unknown): T {
     const parsed = this.schema.safeParse(value);
