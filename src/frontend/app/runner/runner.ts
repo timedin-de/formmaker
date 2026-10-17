@@ -167,6 +167,26 @@ export class Runner {
     }
   }
 
+  async downloadDraft() {
+    const form = this.store.form();
+    const values = this.store.rawValues();
+    if (!form || !values) return;
+    const name = formName(form, this.i18n);
+    const blob = await submissionToPdf(
+      { ...form, name },
+      {
+        durationMs: 0,
+        id: '0-0-0-0',
+        formId: form.id,
+        formVersion: 1,
+        submittedAt: '-',
+        values,
+      },
+      { watermark: this.i18n.t('pdf.watermarkDraft') },
+    );
+    downloadBlob(blob, toSlug(this.i18n.t('pdf.draft', { name })) + '.pdf');
+  }
+
   async downloadReceipt(): Promise<void> {
     const form = this.store.form();
     const submission = this.lastSubmission();

@@ -462,6 +462,8 @@ const en = {
 
   // PDF
   'pdf.receipt': '{name}-receipt',
+  'pdf.draft': '{name}-draft',
+  'pdf.watermarkDraft': 'DRAFT',
 
   // API errors
   'error.rateLimited': "You're being rate limited. Please wait a moment and try again.",
@@ -927,6 +929,8 @@ const de: typeof en = {
 
   // PDF
   'pdf.receipt': '{name}-beleg',
+  'pdf.draft': '{name}-entwurf',
+  'pdf.watermarkDraft': 'ENTWURF',
 
   // API errors
   'error.rateLimited': 'Zu viele Anfragen. Bitte warte einen Moment und versuche es erneut.',
