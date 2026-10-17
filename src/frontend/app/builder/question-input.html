@@ -174,7 +174,12 @@
       </div>
     }
     @case ('signature') {
-      <fm-signature-pad [initialValue]="sigValue(vr.control)" (write)="onSig(vr.control, $event)" />
+      @defer {
+        <fm-signature-pad
+          [initialValue]="sigValue(vr.control)"
+          (write)="onSig(vr.control, $event)"
+        />
+      }
     }
   }
   @if (vr.control.touched && vr.control.errors) {
