@@ -6,7 +6,7 @@ import { formatValueForExport } from './columns';
 export type ReceiptBlock =
   | { kind: 'page'; label: string; indent: number }
   | { kind: 'group'; label: string; indent: number }
-  | { kind: 'answer'; label: string; value: string; indent: number };
+  | { kind: 'answer'; label: string; value: string; indent: number; additional?: unknown };
 
 /**
  * Flatten a form into the blocks shown on a submission receipt, in order:
@@ -30,9 +30,15 @@ export function buildReceipt(form: FormDefinition, submission: Submission): Rece
       } else if (el.type === 'section') {
         continue;
       } else {
-        const text = formatValueForExport(submission.values[el.id]).text;
+        const { text, additional } = formatValueForExport(submission.values[el.id]);
         if (!text) continue;
-        blocks.push({ kind: 'answer', label: el.label, value: text, indent });
+        blocks.push({
+          kind: 'answer',
+          label: el.label,
+          value: text,
+          indent,
+          additional,
+        });
         hasAnswers = true;
       }
     }

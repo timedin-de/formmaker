@@ -276,6 +276,15 @@ function renderBlocks(
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(60, 60, 60);
     const labelLines = wrap(doc, block.label, opts.labelWrap - block.indent * 18);
+    const imageUrl =
+      block.additional &&
+      typeof block.additional === 'object' &&
+      'dataUrl' in block.additional &&
+      typeof block.additional.dataUrl === 'string'
+        ? block.additional.dataUrl
+        : null;
+    // keep an image together with its label
+    if (imageUrl) ensureSpace(labelLines.length * lineHeight + 160);
     for (const line of labelLines) {
       ensureSpace(14);
       doc.text(line, x, state.value);
@@ -284,6 +293,12 @@ function renderBlocks(
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(30, 30, 30);
     const valueWrap = CONTENT_W - (opts.valueX - MARGIN) - 12;
+    if (imageUrl) {
+      ensureSpace(160);
+      doc.addImage(imageUrl, 'JPEG', x, state.value, 460, 160);
+      state.value += 160;
+      continue;
+    }
     const valueLines = wrap(doc, block.value, valueWrap);
     for (const line of valueLines) {
       ensureSpace(14);
