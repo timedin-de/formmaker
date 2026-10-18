@@ -76,24 +76,25 @@
       </div>
     </div>
     @if (el.type === 'group') {
+      @let children = store().childrenOf(el);
       <!-- Sort and enter predicates: see drop-sort.ts. -->
       <div
         class="group-children"
         [cdkDropListSortPredicate]="canSortAt"
         [cdkDropListEnterPredicate]="canEnter"
         (cdkDropListDropped)="dropElement.emit($event)"
-        [cdkDropListData]="el.elements"
+        [cdkDropListData]="children"
         [cdkDropListConnectedTo]="dropLists()"
         cdkDropList
         [id]="`dropList_${el.id}`"
       >
-        @for (child of el.elements; track child.id) {
+        @for (child of children; track child.id) {
           <div class="group-drag-container" cdkDrag [cdkDragData]="child.id">
             <fm-element-row
               [el]="child"
               [neighbours]="{
-                before: el.elements[$index - 1],
-                after: el.elements[$index + 1],
+                before: children[$index - 1],
+                after: children[$index + 1],
               }"
               (paletteTarget)="paletteTarget.emit($event)"
               [dropLists]="dropLists()"

@@ -1,7 +1,7 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { catchFn, has, walkConditionGroup, walkGroup } from '@shared/helper';
 import { insertIntoParent } from '@shared/model/form-factory';
-import { findElement } from '@shared/model/form-tree';
+import { childrenOf, type ElementParent, findElement } from '@shared/model/form-tree';
 import type {
   ElementDefinition,
   Elements,
@@ -63,6 +63,11 @@ export class DesignerStore {
     } else {
       console.warn('designer: stored form failed validation', error);
     }
+  }
+
+  /** The direct children of a page or group of the current form. */
+  childrenOf(parent: ElementParent): ElementDefinition[] {
+    return childrenOf(this.form(), parent);
   }
 
   // ---- actions ---------------------------------------------------------------
