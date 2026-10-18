@@ -1,8 +1,9 @@
 import { TestBed } from '@angular/core/testing';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { provideRouter } from '@angular/router';
+import { createElement, createPage } from '@shared/model';
 import type { FormWithOwner } from '@shared/model/form.model';
-import { initRegistry } from '@test/helper';
+import { addToGroup, initRegistry } from '@test/helper';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { FormImportService } from '../core/export/import';
 import { I18nService } from '../core/i18n';
@@ -15,7 +16,7 @@ function makeForm(updatedAt?: string): FormWithOwner {
     name: 'Demo',
     description: '',
     version: 1,
-    schemaVersion: 1,
+    schemaVersion: 2,
     createdAt: updatedAt ?? '2026-01-01T00:00:00.000Z',
     updatedAt: undefined as never,
     settings: {
@@ -26,6 +27,7 @@ function makeForm(updatedAt?: string): FormWithOwner {
       enableAutoSave: true,
     },
     pages: [],
+    elements: {},
     ownerId: '1',
     owner: {
       id: '1',
@@ -138,21 +140,23 @@ describe('LandingComponent actions', () => {
   });
 
   it('counts questions across groups, ignoring sections', () => {
-    const form = {
-      pages: [
-        {
-          elements: [
-            { type: 'text' },
-            { type: 'section' },
-            {
-              type: 'group',
-              elements: [{ type: 'text' }, { type: 'number' }, { type: 'section' }],
-            },
-          ],
-        },
-        { elements: [{ type: 'text' }] },
-      ],
-    } as unknown as FormWithOwner;
+    const form = makeForm();
+    const page = createPage();
+    const page2 = createPage();
+
+    form.pages = [page, page2];
+
+    addToGroup(createElement('text', ''), page, form);
+    addToGroup(createElement('section', ''), page, form);
+
+    const group = createElement('group', '');
+    addToGroup(group, page, form);
+
+    addToGroup(createElement('text', ''), page, form);
+    addToGroup(createElement('number', ''), page, form);
+    addToGroup(createElement('section', ''), page, form);
+    addToGroup(createElement('text', ''), page2, form);
+
     expect(component.countQuestions(form)).toBe(4);
   });
 

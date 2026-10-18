@@ -8,6 +8,7 @@ import {
   seedGroup,
   uniqueName,
   uuid,
+  type SeedElement,
 } from './helpers';
 
 test('fills a multi-page form from its public share link and stores the submission', async ({
@@ -20,10 +21,14 @@ test('fills a multi-page form from its public share link and stores the submissi
   const session = await loginApi(request);
   const formId = await createForm(
     session,
-    makeForm(formName, [
-      { title: 'About you', subtitle: '', elements: [seedField('text', nameId, 'Name')] },
-      { title: 'Details', subtitle: '', elements: [seedField('number', ageId, 'Age')] },
-    ]),
+    makeForm(
+      formName,
+      [
+        { title: 'About you', children: [nameId] },
+        { title: 'Details', children: [ageId] },
+      ],
+      [seedField('text', nameId, 'Name'), seedField('number', ageId, 'Age')],
+    ),
   );
 
   // The runner is public: no login/session needed.
@@ -69,20 +74,18 @@ test('submits when a required field is hidden by a condition', async ({ page, re
   const session = await loginApi(request);
   const formId = await createForm(
     session,
-    makeForm(formName, [
-      {
-        title: 'Details',
-        subtitle: '',
-        elements: [
-          { ...seedField('text', nameId, 'Name'), required: true },
-          {
-            ...seedField('text', conditionalId, 'Extra info'),
-            required: true,
-            enabledWhen: showWhen(nameId, 'show'),
-          },
-        ],
-      },
-    ]),
+    makeForm(
+      formName,
+      [{ title: 'Details', children: [nameId, conditionalId] }],
+      [
+        { ...seedField('text', nameId, 'Name'), required: true },
+        {
+          ...seedField('text', conditionalId, 'Extra info'),
+          required: true,
+          enabledWhen: showWhen(nameId, 'show'),
+        },
+      ],
+    ),
   );
 
   await page.goto(`/runner/${formId}`);
@@ -117,20 +120,18 @@ test('blocks submission while a revealed required field is still empty', async (
   const session = await loginApi(request);
   const formId = await createForm(
     session,
-    makeForm(formName, [
-      {
-        title: 'Details',
-        subtitle: '',
-        elements: [
-          seedField('text', triggerId, 'Trigger'),
-          {
-            ...seedField('text', conditionalId, 'Extra info'),
-            required: true,
-            enabledWhen: showWhen(triggerId, 'yes'),
-          },
-        ],
-      },
-    ]),
+    makeForm(
+      formName,
+      [{ title: 'Details', children: [triggerId, conditionalId] }],
+      [
+        seedField('text', triggerId, 'Trigger'),
+        {
+          ...seedField('text', conditionalId, 'Extra info'),
+          required: true,
+          enabledWhen: showWhen(triggerId, 'yes'),
+        },
+      ],
+    ),
   );
 
   await page.goto(`/runner/${formId}`);
@@ -150,7 +151,7 @@ test('blocks submission while a revealed required field is still empty', async (
 });
 
 /** An optional question of `type`, with the props its schema requires. */
-function seedOptionalQuestion(type: string, id: string): Record<string, unknown> {
+function seedOptionalQuestion(type: string, id: string): SeedElement {
   const field = seedField(type, id, `Optional ${type}`);
   if (type === 'choice' || type === 'dropdown' || type === 'multiChoice') {
     return {
@@ -188,32 +189,27 @@ test('submits a form mixing display-only elements with every question type', asy
       'signature',
     ].map((type) => [type, uuid()]),
   );
+  const groupId = uuid();
   const session = await loginApi(request);
   const formId = await createForm(
     session,
-    makeForm(formName, [
-      {
-        title: 'Details',
-        subtitle: '',
-        elements: [
-          seedField('textdisplay', displayIds[0], 'Please answer honestly.'),
-          seedField('section', displayIds[1], 'Personal'),
-          { ...seedField('text', nameId, 'Name'), required: true },
-          seedGroup(uuid(), 'More', [
-            seedField('textdisplay', displayIds[2], 'Everything below is optional.'),
-            ...[...optionalIds].map(([type, id]) => seedOptionalQuestion(type, id)),
-          ]),
-        ],
-      },
-      {
-        title: 'Closing',
-        subtitle: '',
-        elements: [
-          seedField('section', displayIds[3], 'Almost done'),
-          seedField('textdisplay', displayIds[4], 'Thanks for your time.'),
-        ],
-      },
-    ]),
+    makeForm(
+      formName,
+      [
+        { title: 'Details', children: [displayIds[0], displayIds[1], nameId, groupId] },
+        { title: 'Closing', children: [displayIds[3], displayIds[4]] },
+      ],
+      [
+        seedField('textdisplay', displayIds[0], 'Please answer honestly.'),
+        seedField('section', displayIds[1], 'Personal'),
+        { ...seedField('text', nameId, 'Name'), required: true },
+        seedGroup(groupId, 'More', [displayIds[2], ...optionalIds.values()]),
+        seedField('textdisplay', displayIds[2], 'Everything below is optional.'),
+        ...[...optionalIds].map(([type, id]) => seedOptionalQuestion(type, id)),
+        seedField('section', displayIds[3], 'Almost done'),
+        seedField('textdisplay', displayIds[4], 'Thanks for your time.'),
+      ],
+    ),
   );
 
   await page.goto(`/runner/${formId}`);
@@ -246,26 +242,26 @@ test('submits a form mixing display-only elements with every question type', asy
 
 test('enforces required fields nested inside groups', async ({ page, request }) => {
   const formName = uniqueName('runner-group');
+  const groupId = uuid();
   const memberId = uuid();
   const session = await loginApi(request);
   const formId = await createForm(
     session,
-    makeForm(formName, [
-      {
-        title: 'Details',
-        subtitle: '',
-        elements: [
-          {
-            id: uuid(),
-            type: 'group',
-            label: 'Team',
-            description: '',
-            width: 1,
-            elements: [{ ...seedField('text', memberId, 'Member'), required: true }],
-          },
-        ],
-      },
-    ]),
+    makeForm(
+      formName,
+      [{ title: 'Details', children: [groupId] }],
+      [
+        {
+          id: groupId,
+          type: 'group',
+          label: 'Team',
+          description: '',
+          width: 1,
+          children: [memberId],
+        },
+        { ...seedField('text', memberId, 'Member'), required: true },
+      ],
+    ),
   );
 
   await page.goto(`/runner/${formId}`);

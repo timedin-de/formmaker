@@ -9,6 +9,7 @@ import {
   type ElementBase,
   type ElementDefinition,
   type FileElement,
+  type FormElements,
   type GroupElement,
   type LongTextElement,
   type NumberElement,
@@ -156,16 +157,17 @@ const groupElementSchema = z.extend(elementBaseSchema, {
   ...defaultValueableSchema.shape,
   type: z.literal('group'),
   collapsible: z._default(z.boolean(), false),
-  elements: z.lazy(() => elementsSchema),
+  children: z._default(z.array(z.string()), []),
 }) satisfies z.ZodMiniType<GroupElement>;
 
-export const elementDefinitionSchema: z.ZodMiniType<ElementDefinition> = z.lazy(() =>
-  z.discriminatedUnion('type', [
-    questionDefinitionSchema,
-    groupElementSchema,
-    sectionElementSchema,
-    textDisplayElementSchema,
-  ]),
-) satisfies z.ZodMiniType<ElementDefinition>;
+export const elementDefinitionSchema = z.discriminatedUnion('type', [
+  questionDefinitionSchema,
+  groupElementSchema,
+  sectionElementSchema,
+  textDisplayElementSchema,
+]) satisfies z.ZodMiniType<ElementDefinition>;
 
-export const elementsSchema: z.ZodMiniType<ElementDefinition[]> = z.array(elementDefinitionSchema);
+export const formElementsSchema = z.record(
+  z.string(),
+  elementDefinitionSchema,
+) satisfies z.ZodMiniType<FormElements>;

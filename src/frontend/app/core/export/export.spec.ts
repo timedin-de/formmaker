@@ -1,13 +1,14 @@
+import { createElement, createPage } from '@shared/model/form-factory';
 import {
   toPortableForm,
   type FormDefinition,
   type FormWithOwner,
+  type GroupElement,
   type NamedFormDefinition,
 } from '@shared/model/form.model';
 import type { Submission } from '@shared/model/submission.model';
-import { newForm } from '@test/helper';
+import { addToGroup, newForm } from '@test/helper';
 import { describe, expect, it } from 'vitest';
-import { createElement, createPage } from '@shared/model/form-factory';
 import { EXPORT_CHANNELS } from './channels';
 import { buildColumnBlocks, buildColumns, buildExportTable, formatValueForExport } from './columns';
 import { submissionsToCsv, toCsv } from './csv-exporter';
@@ -18,7 +19,7 @@ function demoForm(): FormDefinition {
   const p1 = createPage('Details');
   const name = createElement('text', 'Full name');
   const age = createElement('number', 'Age');
-  p1.elements = [name, age];
+  addToGroup([name, age], p1, form);
   form.pages = [p1];
   return form;
 }
@@ -52,12 +53,9 @@ describe('buildColumns', () => {
 
   it('flattens groups with a path', () => {
     const form = newForm();
-    const group = createElement('group', 'Address') as unknown as {
-      type: 'group';
-      elements: ReturnType<typeof createElement>[];
-    };
-    group.elements = [createElement('text', 'Street'), createElement('text', 'City')];
-    form.pages[0].elements = [group as never];
+    const group = createElement('group', 'Address');
+    addToGroup([createElement('text', 'Street'), createElement('text', 'City')], group, form);
+    addToGroup(group, form.pages[0], form);
     const cols = buildColumns(form);
     expect(cols.map((c) => c.label)).toEqual(
       expect.arrayContaining([expect.stringContaining('Street'), expect.stringContaining('City')]),
@@ -70,12 +68,9 @@ describe('buildColumnBlocks', () => {
     const form = newForm();
     const street = createElement('text', 'Street');
     const city = createElement('text', 'City');
-    const group = createElement('group', 'Address') as unknown as {
-      type: 'group';
-      elements: ReturnType<typeof createElement>[];
-    };
-    group.elements = [street, city];
-    form.pages[0].elements = [group as never];
+    const group = createElement('group', 'Address');
+    addToGroup([street, city], group, form);
+    addToGroup(group, form.pages[0], form);
     expect(buildColumnBlocks(form)).toEqual([
       { kind: 'page', label: 'New page', indent: 0 },
       { kind: 'group', label: 'Address', indent: 0 },
@@ -139,14 +134,14 @@ describe('toCsv', () => {
 describe('submissionsToCsv', () => {
   it('produces header + rows', async () => {
     const form = demoForm();
-    const [nameEl, ageEl] = form.pages[0].elements;
+    const [nameEl, ageEl] = form.pages[0].children;
     const sub: Submission = {
       id: 's1',
       formId: form.id,
       formVersion: 1,
       submittedAt: '2026-01-01T00:00:00Z',
       durationMs: 1000,
-      values: { [nameEl.id]: 'Ada', [ageEl.id]: 36 },
+      values: { [nameEl]: 'Ada', [ageEl]: 36 },
     };
     const blob = submissionsToCsv(form, [sub]);
     const text = await blob.text();
@@ -173,12 +168,10 @@ describe('buildReceipt', () => {
     const form = newForm();
     const street = createElement('text', 'Street');
     const city = createElement('text', 'City');
-    const group = createElement('group', 'Address') as unknown as {
-      type: 'group';
-      elements: ReturnType<typeof createElement>[];
-    };
-    group.elements = [street, city];
-    form.pages[0].elements = [group as never];
+    const group = createElement('group', 'Address');
+    addToGroup([street, city], group, form);
+    addToGroup(group, form.pages[0], form);
+
     return { form, street, city };
   }
 
@@ -209,14 +202,14 @@ describe('buildReceipt', () => {
 
   it('skips empty groups, sections and unanswered questions', () => {
     const { form, street } = formWithGroup();
-    const group = form.pages[0].elements[0] as { elements: { type: string; id: string }[] };
-    group.elements = [
-      ...group.elements,
+    const group = form.elements[form.pages[0].children[0]] as GroupElement;
+    group.children = [
+      ...group.children,
       { type: 'section', id: 'sec_1', heading: 'Remark' } as never,
     ];
-    form.pages[0].elements = [
-      ...form.pages[0].elements,
-      { type: 'group', id: 'g_empty', label: 'Empty group', elements: [] } as never,
+    form.pages[0].children = [
+      ...form.pages[0].children,
+      { type: 'group', id: 'g_empty', label: 'Empty group', children: [] } as never,
     ];
     const blocks = buildReceipt(form, submissionFor(form, { [street.id]: 'Main 1' }));
     expect(blocks).toEqual([
@@ -235,7 +228,7 @@ describe('EXPORT_CHANNELS', () => {
 
   it('registers download channels for csv, xlsx, pdf and a link channel for mail', async () => {
     const form = demoForm();
-    const [nameEl, ageEl] = form.pages[0].elements;
+    const [nameEl, ageEl] = form.pages[0].children;
     const submissions: Submission[] = [
       {
         id: 's1',
@@ -243,7 +236,7 @@ describe('EXPORT_CHANNELS', () => {
         formVersion: 1,
         submittedAt: '2026-01-01T00:00:00Z',
         durationMs: 1000,
-        values: { [nameEl.id]: 'Ada', [ageEl.id]: 36 },
+        values: { [nameEl]: 'Ada', [ageEl]: 36 },
       },
     ];
     expect(EXPORT_CHANNELS.map((c) => c.id)).toEqual(['csv', 'xlsx', 'pdf', 'mail']);

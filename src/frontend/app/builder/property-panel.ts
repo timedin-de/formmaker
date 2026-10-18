@@ -241,7 +241,7 @@ export class PropertyPanel {
     if (!has(element, 'type')) return true;
     const thisGroup = this.el();
     if (thisGroup?.type !== 'group') return false;
-    return element.type === 'group' && thisGroup.elements.length === element.elements.length;
+    return element.type === 'group' && thisGroup.children.length === element.children.length;
   };
 
   // ---- time interval ---------------------------------------------------------

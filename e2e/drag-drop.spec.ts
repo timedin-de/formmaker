@@ -11,6 +11,7 @@ import {
   seedGroup,
   uniqueName,
   uuid,
+  type SeedElement,
   type StoredForm,
 } from './helpers';
 
@@ -73,23 +74,39 @@ async function dragInto(page: Page, label: Locator, target: Locator): Promise<vo
   await page.mouse.up();
 }
 
-/** Single page with the given root elements; the group id is passed in. */
+/** Single page with the given root ids and elements; the group id is passed in. */
 async function seedCanvas(
   prefix: string,
   request: APIRequestContext,
-  root: (groupId: string) => Record<string, unknown>[],
+  canvas: (groupId: string) => { children: string[]; elements: SeedElement[] },
 ): Promise<{ session: Awaited<ReturnType<typeof loginApi>>; formId: string; groupId: string }> {
   const session = await loginApi(request);
   const groupId = uuid();
+  const { children, elements } = canvas(groupId);
   const formId = await createForm(
     session,
-    makeForm(uniqueName(prefix), [{ title: 'Canvas', elements: root(groupId) }]),
+    makeForm(uniqueName(prefix), [{ title: 'Canvas', children }], elements),
   );
   return { session, formId, groupId };
 }
 
+/** `First`, a group holding `Inner`, then `Last`. */
+function groupBetween(groupId: string): { children: string[]; elements: SeedElement[] } {
+  const [first, inner, last] = ['First', 'Inner', 'Last'].map((label) =>
+    seedField('text', uuid(), label),
+  );
+  return {
+    children: [first.id, groupId, last.id],
+    elements: [first, seedGroup(groupId, 'Group', [inner.id]), inner, last],
+  };
+}
+
 function outline(form: StoredForm): [string, string[]][] {
-  return form.pages[0].elements.map((el) => [el.label, el.elements?.map((c) => c.label) ?? []]);
+  const label = (id: string): string => form.elements[id].label;
+  return form.pages[0].children.map((id) => [
+    label(id),
+    form.elements[id].children?.map(label) ?? [],
+  ]);
 }
 
 async function openBuilder(page: Page, formId: string, labels: string[]): Promise<void> {
@@ -104,10 +121,11 @@ test('drags a question into an empty group and persists the move', async ({ page
   // page list. The group sits above the dragged row, which keeps that reflow away from
   // the pointer - with the group below it, CDK enters and leaves the group again on the
   // next pointer event (see drop-sort.ts).
-  const { session, formId, groupId } = await seedCanvas('drag-into-group', request, (id) => [
-    seedGroup(id, 'Group', []),
-    seedField('text', uuid(), 'First'),
-  ]);
+  const first = seedField('text', uuid(), 'First');
+  const { session, formId, groupId } = await seedCanvas('drag-into-group', request, (id) => ({
+    children: [id, first.id],
+    elements: [seedGroup(id, 'Group', []), first],
+  }));
   await openBuilder(page, formId, ['Group', 'First']);
 
   await dragInto(
@@ -129,13 +147,18 @@ test('drags a question into an empty group and persists the move', async ({ page
 });
 
 test('sorts the questions inside a group', async ({ page, request }) => {
-  const { session, formId, groupId } = await seedCanvas('drag-sort-in-group', request, (id) => [
-    seedGroup(id, 'Group', [
-      seedField('text', uuid(), 'A'),
-      seedField('text', uuid(), 'B'),
-      seedField('text', uuid(), 'C'),
-    ]),
-  ]);
+  const fields = ['A', 'B', 'C'].map((label) => seedField('text', uuid(), label));
+  const { session, formId, groupId } = await seedCanvas('drag-sort-in-group', request, (id) => ({
+    children: [id],
+    elements: [
+      seedGroup(
+        id,
+        'Group',
+        fields.map((f) => f.id),
+      ),
+      ...fields,
+    ],
+  }));
   await openBuilder(page, formId, ['Group']);
   await expect(groupLabels(page, groupId)).toHaveText(['A', 'B', 'C']);
 
@@ -151,11 +174,7 @@ test('sorts the questions inside a group', async ({ page, request }) => {
 });
 
 test('drags a question out of a group back onto the page', async ({ page, request }) => {
-  const { session, formId, groupId } = await seedCanvas('drag-out-of-group', request, (id) => [
-    seedField('text', uuid(), 'First'),
-    seedGroup(id, 'Group', [seedField('text', uuid(), 'Inner')]),
-    seedField('text', uuid(), 'Last'),
-  ]);
+  const { session, formId, groupId } = await seedCanvas('drag-out-of-group', request, groupBetween);
   await openBuilder(page, formId, ['First', 'Group', 'Last']);
   await expect(groupLabels(page, groupId)).toHaveText(['Inner']);
 
@@ -172,11 +191,7 @@ test('drags a question out of a group back onto the page', async ({ page, reques
 });
 
 test('reorders questions on the page by dragging', async ({ page, request }) => {
-  const { session, formId } = await seedCanvas('drag-reorder', request, (id) => [
-    seedField('text', uuid(), 'First'),
-    seedGroup(id, 'Group', [seedField('text', uuid(), 'Inner')]),
-    seedField('text', uuid(), 'Last'),
-  ]);
+  const { session, formId } = await seedCanvas('drag-reorder', request, groupBetween);
   await openBuilder(page, formId, ['First', 'Group', 'Last']);
 
   await dragInto(page, rootLabels(page).filter({ hasText: /^Last$/ }), firstRootRow(page));
@@ -190,16 +205,21 @@ test('sorts the questions inside a nested group', async ({ page, request }) => {
   // The outer group zone and the page list both enclose the nested zone, so either would
   // take the drag over if it only checked its own bounds (see drop-sort.ts).
   const innerId = uuid();
-  const { session, formId } = await seedCanvas('drag-sort-nested', request, (id) => [
-    seedGroup(id, 'Outer', [
-      seedField('text', uuid(), 'Before'),
-      seedGroup(innerId, 'Inner', [
-        seedField('text', uuid(), 'A'),
-        seedField('text', uuid(), 'B'),
-        seedField('text', uuid(), 'C'),
-      ]),
-    ]),
-  ]);
+  const before = seedField('text', uuid(), 'Before');
+  const fields = ['A', 'B', 'C'].map((label) => seedField('text', uuid(), label));
+  const { session, formId } = await seedCanvas('drag-sort-nested', request, (id) => ({
+    children: [id],
+    elements: [
+      seedGroup(id, 'Outer', [before.id, innerId]),
+      before,
+      seedGroup(
+        innerId,
+        'Inner',
+        fields.map((f) => f.id),
+      ),
+      ...fields,
+    ],
+  }));
   await openBuilder(page, formId, ['Outer']);
   await expect(groupLabels(page, innerId)).toHaveText(['A', 'B', 'C']);
 

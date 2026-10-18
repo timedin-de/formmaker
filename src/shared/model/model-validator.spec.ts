@@ -10,9 +10,10 @@ const formJson = (element: Record<string, unknown>): string =>
     createdAt: '2026-01-02',
     updatedAt: '2026-01-02',
     version: 1,
-    schemaVersion: 1,
+    schemaVersion: 2,
     settings: { navigation: 'auto' },
-    pages: [{ id: 'p1', title: 'Page', elements: [element] }],
+    elements: { [element['id'] as string]: element },
+    pages: [{ id: 'p1', title: 'Page', children: [element['id']] }],
   });
 
 const parse = (element: Record<string, unknown>) => {
@@ -28,7 +29,7 @@ const timeElement = (overrides: Record<string, unknown> = {}): Record<string, un
 });
 
 const firstElement = (form: FormDefinition | null): ElementDefinition | undefined =>
-  form?.pages[0]?.elements[0];
+  form?.elements[form?.pages[0]?.children[0]];
 
 describe('time element schema', () => {
   it('applies the default interval to legacy elements without one', () => {

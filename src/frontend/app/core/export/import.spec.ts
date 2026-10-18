@@ -6,15 +6,16 @@ import { I18nService } from '../i18n';
 import { FormsRepository } from '../state/forms.repository';
 import { FormImportService } from './import';
 
-const validForm = {
+const validForm: FormDefinition = {
   id: 'f1',
   name: 'imported',
   version: 1,
-  schemaVersion: 1,
+  schemaVersion: 2,
   settings: { navigation: 'auto' },
   pages: [],
   updatedAt: '2026-01-01',
   createdAt: '2026-01-01',
+  elements: {},
 } as const;
 
 function fileEvent(file?: File): Event {
@@ -46,7 +47,7 @@ describe('FormImportService', () => {
     const form = await service.importJson(
       JSON.stringify({ ...validForm, ownerId: 'u1', owner: null }),
     );
-    expect(form?.name).toBe('imported');
+    expect(form!.name).toBe('imported');
     expect(importForm).toHaveBeenCalledTimes(1);
     expect(importForm.mock.calls[0][0]).not.toHaveProperty('ownerId');
     expect(open).toHaveBeenCalled();
@@ -61,7 +62,7 @@ describe('FormImportService', () => {
   });
 
   it('importJson rejects JSON that does not match the schema', async () => {
-    expect(await service.importJson(JSON.stringify({ ...validForm, schemaVersion: 2 }))).toBe(
+    expect(await service.importJson(JSON.stringify({ ...validForm, schemaVersion: 1 }))).toBe(
       undefined,
     );
     expect(importForm).not.toHaveBeenCalled();

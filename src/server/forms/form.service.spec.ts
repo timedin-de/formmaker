@@ -1,14 +1,20 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
-import type {
-  ChoiceElement,
-  ConditionGroup,
-  ElementDefinition,
-  FieldValue,
-  FormDefinition,
-  GroupElement,
-  PageDefinition,
-  TextElement,
+import {
+  type ChoiceElement,
+  childrenOf,
+  type ConditionGroup,
+  type FieldValue,
+  FORM_SCHEMA_VERSION,
+  type FormDefinition,
+  getParent,
+  type TextElement,
 } from '@shared/model';
+import {
+  documentFromTree,
+  type ElementNode,
+  type GroupNode,
+  type PageNode,
+} from '@test/helper/forms';
 import 'reflect-metadata';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useRe2Regex } from '../common/re2-regex';
@@ -50,7 +56,7 @@ function choice(id: string, extra: Partial<ChoiceElement> = {}): ChoiceElement {
   };
 }
 
-function group(id: string, elements: ElementDefinition[], enabledWhen?: ConditionGroup) {
+function group(id: string, elements: ElementNode[], enabledWhen?: ConditionGroup): GroupNode {
   return {
     id,
     type: 'group',
@@ -61,14 +67,10 @@ function group(id: string, elements: ElementDefinition[], enabledWhen?: Conditio
     collapsible: false,
     elements,
     enabledWhen,
-  } satisfies GroupElement;
+  };
 }
 
-function page(
-  id: string,
-  elements: ElementDefinition[],
-  enabledWhen?: ConditionGroup,
-): PageDefinition {
+function page(id: string, elements: ElementNode[], enabledWhen?: ConditionGroup): PageNode {
   return { id, title: id, subtitle: '', elements, enabledWhen };
 }
 
@@ -85,14 +87,14 @@ function isNotEmpty(fieldId: string): ConditionGroup {
   return { logic: 'all', conditions: [{ fieldId, operator: 'isNotEmpty' }], groups: [] };
 }
 
-function formOf(pages: PageDefinition[]): FormDefinition {
+function formOf(pages: PageNode[]): FormDefinition {
   return {
     id: 'form-1',
     name: 'Test form',
     version: 1,
-    schemaVersion: 1,
+    schemaVersion: FORM_SCHEMA_VERSION,
     settings: { navigation: 'auto' },
-    pages,
+    ...documentFromTree(pages),
     createdAt: '',
     updatedAt: '',
   };
@@ -107,16 +109,22 @@ describe('FormService element creation', () => {
     service = new FormService({ saveForm } as unknown as Repository);
   });
 
-  const savedPages = (): PageDefinition[] => (saveForm.mock.calls[0][1] as FormDefinition).pages;
+  const saved = (): FormDefinition => saveForm.mock.calls[0][1] as FormDefinition;
+
+  /** Ids of the children of the page or group `parentId` in the saved form. */
+  const savedChildren = (parentId: string): string[] => {
+    const parent = getParent(saved(), parentId);
+    return parent ? childrenOf(saved(), parent).map((e) => e.id) : [];
+  };
 
   it('appends a generated page and persists it for the owner', async () => {
     const form = formOf([page('p1', [])]);
     const created = await service.addPage({ form, ownerId: 'owner-1' }, 'Page 2');
 
-    expect(created).toMatchObject({ title: 'Page 2', elements: [] });
+    expect(created).toMatchObject({ title: 'Page 2', children: [] });
     expect(created.id).toBeTruthy();
     expect(saveForm).toHaveBeenCalledWith('owner-1', expect.objectContaining({ id: 'form-1' }));
-    expect(savedPages().map((p) => p.id)).toEqual(['p1', created.id]);
+    expect(saved().pages.map((p) => p.id)).toEqual(['p1', created.id]);
   });
 
   it('generates an element with defaults and inserts it after a sibling', async () => {
@@ -128,7 +136,7 @@ describe('FormService element creation', () => {
 
     expect(created).toMatchObject({ type: 'choice', label: 'Pick', required: false });
     expect(created.id).toBeTruthy();
-    expect(savedPages()[0].elements.map((e) => e.id)).toEqual(['q1', created.id, 'q2']);
+    expect(savedChildren('p1')).toEqual(['q1', created.id, 'q2']);
   });
 
   it('appends to the end of a page without afterId', async () => {
@@ -137,7 +145,7 @@ describe('FormService element creation', () => {
       { form, ownerId: 'owner-1' },
       { type: 'text', label: 'Name', parentId: 'p1' },
     );
-    expect(savedPages()[0].elements.map((e) => e.id)).toEqual(['q1', created.id]);
+    expect(savedChildren('p1')).toEqual(['q1', created.id]);
   });
 
   it('inserts into a nested group on any page', async () => {
@@ -150,9 +158,8 @@ describe('FormService element creation', () => {
       { type: 'number', label: 'Age', parentId: 'inner' },
     );
 
-    const outer = savedPages()[1].elements[0] as GroupElement;
-    const inner = outer.elements[0] as GroupElement;
-    expect(inner.elements.map((e) => e.id)).toEqual(['q2', created.id]);
+    expect(savedChildren('outer')).toEqual(['inner']);
+    expect(savedChildren('inner')).toEqual(['q2', created.id]);
   });
 
   it('throws 404 without saving when the parent does not exist', async () => {

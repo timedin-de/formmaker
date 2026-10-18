@@ -1,7 +1,6 @@
 import { emptyConditionGroup } from './conditions.model';
 import type {
   ElementDefinition,
-  Elements,
   ElementType,
   GroupElement,
   PageDefinition,
@@ -16,7 +15,7 @@ export function createPage(title = 'New page'): PageDefinition {
     id: elementId('page'),
     title,
     subtitle: '',
-    elements: [],
+    children: [],
     enabledWhen: emptyConditionGroup(),
   };
 }
@@ -102,48 +101,10 @@ export function createElement(type: ElementType, label: string): ElementDefiniti
     case 'signature':
       return { ...qBase, type: 'signature' };
     case 'group':
-      return { ...base, type: 'group', defaultValue: null, elements: [], collapsible: false };
+      return { ...base, type: 'group', defaultValue: null, children: [], collapsible: false };
     case 'section':
       return { ...base, type: 'section' };
     case 'textdisplay':
       return { ...base, type: 'textdisplay' };
   }
-}
-
-export function insertElementAfter(
-  elements: Elements,
-  after: string | null,
-  el: ElementDefinition,
-): Elements | null {
-  const idx = after ? elements.findIndex((e) => e.id === after) : elements.length;
-  if (idx === -1) return null;
-  const next = [...elements];
-  next.splice(idx + 1, 0, el);
-  return next;
-}
-
-/**
- * Inserts `el` after `afterId` (or at the end) into the page or nested group `parentId`.
- * Returns the new pages, or null when no such parent exists or `afterId` is not a direct
- * child of it.
- */
-export function insertIntoParent(
-  pages: PageDefinition[],
-  parentId: string,
-  afterId: string | null,
-  el: ElementDefinition,
-): PageDefinition[] | null {
-  let found = false;
-  const insert = <T extends { id: string; elements: Elements }>(parent: T): T => {
-    if (parent.id === parentId) {
-      const elements = insertElementAfter(parent.elements, afterId, el);
-      if (!elements) return parent;
-      found = true;
-      return { ...parent, elements };
-    }
-    const elements = parent.elements.map((e) => (e.type === 'group' ? insert(e) : e));
-    return { ...parent, elements };
-  };
-  const next = pages.map(insert);
-  return found ? next : null;
 }

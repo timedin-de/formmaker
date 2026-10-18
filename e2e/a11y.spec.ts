@@ -193,16 +193,18 @@ test.describe('accessibility', () => {
     });
 
     test('later page and thank-you screen', async ({ page }) => {
+      const name = seedField('text', uuid(), 'Name');
+      const age = seedField('number', uuid(), 'Age');
       const multiPageId = await createForm(
         session,
-        makeForm(uniqueName('a11y-pages'), [
-          {
-            title: 'About you',
-            subtitle: 'Step **one**',
-            elements: [seedField('text', uuid(), 'Name')],
-          },
-          { title: 'Details', subtitle: '', elements: [seedField('number', uuid(), 'Age')] },
-        ]),
+        makeForm(
+          uniqueName('a11y-pages'),
+          [
+            { title: 'About you', subtitle: 'Step **one**', children: [name.id] },
+            { title: 'Details', children: [age.id] },
+          ],
+          [name, age],
+        ),
       );
       try {
         await page.goto(`/runner/${multiPageId}`);

@@ -55,7 +55,8 @@ export async function createForm(session: ApiSession, form: unknown): Promise<st
 
 /** Structural view of a stored form, enough to assert element order. */
 export interface StoredForm {
-  pages: { elements: { label: string; elements?: { label: string }[] }[] }[];
+  pages: { children: string[] }[];
+  elements: Record<string, { label: string; children?: string[] }>;
 }
 
 export async function getForm(session: ApiSession, formId: string): Promise<StoredForm> {
@@ -75,21 +76,30 @@ export async function deleteForm(session: ApiSession, formId: string): Promise<v
 
 const EMPTY_GROUP = { logic: 'all', conditions: [], groups: [] } as const;
 
+export type SeedElement = Record<string, unknown> & { id: string };
+
 export interface SeedPage {
   title: string;
-  subtitle: string;
-  elements: Record<string, unknown>[];
+  subtitle?: string;
+  children: string[];
 }
 
-/** Minimal but valid FormDefinition payload for POST /api/forms. */
-export function makeForm(name: string, pages: SeedPage[]): Record<string, unknown> {
+/**
+ * Minimal but valid FormDefinition payload for POST /api/forms. Pages and groups reference
+ * their children by id; `elements` holds every element of the form.
+ */
+export function makeForm(
+  name: string,
+  pages: SeedPage[],
+  elements: SeedElement[] = [],
+): Record<string, unknown> {
   const now = new Date().toISOString();
   return {
     id: uuid(),
     name,
     description: '',
     version: 1,
-    schemaVersion: 1,
+    schemaVersion: 2,
     createdAt: now,
     updatedAt: now,
     settings: {
@@ -102,14 +112,15 @@ export function makeForm(name: string, pages: SeedPage[]): Record<string, unknow
     pages: pages.map((page) => ({
       id: uuid(),
       title: page.title,
-      subtitle: page.subtitle,
+      subtitle: page.subtitle ?? '',
       enabledWhen: EMPTY_GROUP,
-      elements: page.elements,
+      children: page.children,
     })),
+    elements: Object.fromEntries(elements.map((el) => [el.id, el])),
   };
 }
 
-export function seedField(type: string, id: string, label: string): Record<string, unknown> {
+export function seedField(type: string, id: string, label: string): SeedElement {
   return {
     id,
     type,
@@ -120,17 +131,13 @@ export function seedField(type: string, id: string, label: string): Record<strin
   };
 }
 
-export function seedGroup(
-  id: string,
-  label: string,
-  children: Record<string, unknown>[],
-): Record<string, unknown> {
+export function seedGroup(id: string, label: string, children: string[]): SeedElement {
   return {
     id,
     type: 'group',
     label,
     width: 1,
     enabledWhen: EMPTY_GROUP,
-    elements: children,
+    children,
   };
 }
