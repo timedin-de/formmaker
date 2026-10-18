@@ -1,4 +1,4 @@
-import { type FormDefinition, uuid } from '@shared/model';
+import { FORM_SCHEMA_VERSION, type FormDefinition, uuid } from '@shared/model';
 import { createPage } from '@shared/model/form-factory';
 
 export function newForm(name = 'Untitled form'): FormDefinition {
@@ -8,7 +8,7 @@ export function newForm(name = 'Untitled form'): FormDefinition {
     name,
     description: '',
     version: 1,
-    schemaVersion: 1,
+    schemaVersion: FORM_SCHEMA_VERSION,
     createdAt: now,
     updatedAt: now,
     settings: {

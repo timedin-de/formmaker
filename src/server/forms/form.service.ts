@@ -8,6 +8,7 @@ import {
   createPage,
   type ElementDefinition,
   elementId,
+  FORM_SCHEMA_VERSION,
   type FormDefinition,
   insertIntoParent,
   type PageDefinition,
@@ -38,7 +39,7 @@ export class FormService {
       owner: user,
       description: '',
       version: 1,
-      schemaVersion: 1,
+      schemaVersion: FORM_SCHEMA_VERSION,
       createdAt: now,
       updatedAt: now,
       settings: {
