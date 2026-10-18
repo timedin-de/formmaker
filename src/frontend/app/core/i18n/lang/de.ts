@@ -431,6 +431,8 @@ const de: typeof en = {
   'q.groupCount': 'Gruppe · {n} Frage(n)',
   'sig.signAbove': 'Hier unterschreiben',
   'sig.clear': 'Löschen',
+  'sig.placeholder': 'Signaturfeld lädt. Bitte warten...',
+
   'q.invalid': 'Dieses Feld ist ungültig.',
   // password field
   'password.show': 'Passwort anzeigen',

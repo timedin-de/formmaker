@@ -426,6 +426,7 @@ const en = {
   'q.groupCount': 'Group · {n} question(s)',
   'sig.signAbove': 'Sign above',
   'sig.clear': 'Clear',
+  'sig.placeholder': 'Signature field is loading. Please wait...',
   'q.invalid': 'This field is invalid.',
   // password field
   'password.show': 'Show password',

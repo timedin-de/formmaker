@@ -179,6 +179,10 @@
           [initialValue]="sigValue(vr.control)"
           (write)="onSig(vr.control, $event)"
         />
+      } @placeholder {
+        <div class="signature-pad-placeholder">
+          <span>{{ i18n.t('sig.placeholder') }}</span>
+        </div>
       }
     }
   }
