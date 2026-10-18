@@ -24,8 +24,8 @@ Node ≥ 24.22.1 is required (Angular 22 CLI needs ≥ 24.15; 24.22.1 / 26.12.1 
 | Full gate             | `npm run check` (lint, format:check, typecheck, typecheck:server, test:ci, test:server, build)      |
 
 Which runner picks up which spec: `ng test` runs every `src/**/*.spec.ts` **except** `src/server/**`
-(so `src/shared` specs run here). `test:server` runs only `src/server/**/*.spec.ts`. Server specs are
-typechecked by `typecheck:server`, not `typecheck`.
+(so `src/shared` specs run here). `test:server` runs only `src/server/**/*.spec.ts`. All specs, server specs included, are
+typechecked by `typecheck` (`tsconfig.spec.json`); `typecheck:server` covers only server app code.
 
 ## Layout
 
