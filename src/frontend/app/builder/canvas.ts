@@ -106,7 +106,9 @@ export class BuilderCanvas {
 
   drop(event: CdkDragDrop<Elements, Elements, string>): void {
     const listId = event.container.id;
-    const parentId = listId === MAIN_DROP_LIST ? null : listId.slice(DROP_LIST_PREFIX.length);
+    const parentId =
+      listId === MAIN_DROP_LIST ? this.page()?.id : listId.slice(DROP_LIST_PREFIX.length);
+    if (!parentId) return;
     this.store().moveElementTo(event.item.data, parentId, event.currentIndex);
   }
   readonly emptyGroup: () => ConditionGroup = () => ({ logic: 'all', conditions: [], groups: [] });
