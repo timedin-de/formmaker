@@ -5,9 +5,8 @@ import {
 } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { routes } from './app.routes';
-import { FormsRepository } from './core/state/forms.repository';
-import { provideSvgIcons } from './core/icons';
 import { provideI18n } from './core/i18n';
+import { provideSvgIcons } from './core/icons';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -16,6 +15,5 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes),
     provideSvgIcons,
     provideI18n(),
-    FormsRepository,
   ],
 };
