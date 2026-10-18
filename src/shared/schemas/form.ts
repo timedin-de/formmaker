@@ -2,6 +2,7 @@ import * as z from 'zod/mini';
 import { type CatchFnResult, catchFn } from '../helper';
 import {
   ELEMENT_TYPES,
+  FORM_SCHEMA_VERSION,
   type FormDefinition,
   type FormSettings,
   type FormWithOwner,
@@ -52,7 +53,7 @@ export const formDefinitionSchema = z.strictObject({
   owner: z.optional(z.nullable(formOwnerSchema)),
   description: z.optional(z.string()),
   version: z.number(),
-  schemaVersion: z.literal(1),
+  schemaVersion: z.literal(FORM_SCHEMA_VERSION),
   createdAt: z.string(),
   updatedAt: z.string(),
   settings: formSettingsSchema,

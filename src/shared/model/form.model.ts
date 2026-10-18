@@ -189,6 +189,12 @@ export type Elements = ElementDefinition[];
 // Pages & form
 // ---------------------------------------------------------------------------
 
+/**
+ * Version of the stored form document layout.
+ * 1: children nested inline (`page.elements`, `group.elements`).
+ */
+export const FORM_SCHEMA_VERSION = 1;
+
 export interface PageDefinition {
   id: PageId;
   title: string;
@@ -229,7 +235,7 @@ export interface FormDefinition extends SaveFormDefinition {
   readonly owner?: PublicUser | null;
   description?: string;
   readonly version: number;
-  readonly schemaVersion: 1;
+  readonly schemaVersion: typeof FORM_SCHEMA_VERSION;
   readonly createdAt: string;
   readonly updatedAt: string;
   settings: FormSettings;
