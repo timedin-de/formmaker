@@ -162,13 +162,14 @@ export class DesignerStore {
   }
 
   updateElement(elementId: string, patch: Partial<ElementDefinition>): void {
-    const pages = this.form().pages;
-    this.patchForm({
-      pages: pages.map((p) => patchNested(p, elementId, patch)),
-    });
+    this.updateElements([[elementId, patch]]);
+  }
 
-    this.dirty.set(true);
-    this.persist();
+  /** Applies several element patches as one change. */
+  updateElements(patches: [ElementId, Partial<ElementDefinition>][]): void {
+    let pages = this.form().pages;
+    for (const [id, patch] of patches) pages = pages.map((p) => patchNested(p, id, patch));
+    this.patchForm({ pages });
   }
 
   async removeElement(elementId: string) {
@@ -193,30 +194,33 @@ export class DesignerStore {
   }
 
   /**
-   * Move an element to an arbitrary position of an arbitrary container, wherever
-   * it currently lives. `parentId === null` targets the root element list of the
-   * page holding the element, otherwise the children of the group with that id.
+   * Move an element to an arbitrary position of an arbitrary container (a page or
+   * a group), wherever it currently lives.
    *
    * `index` follows CDK drop semantics: it is resolved against the destination
    * array *after* the element has been detached from its source, so the same
    * value works for both reorders and transfers.
    */
-  moveElementTo(elementId: string, parentId: string | null, index: number): void {
+  moveElementTo(elementId: string, parentId: string, index: number): void {
     const source = this.findElement(elementId);
     if (!source) return;
     // A group may not be dropped into itself or one of its own descendants.
-    if (parentId !== null && containsElement(source, parentId)) return;
+    if (containsElement(source, parentId)) return;
 
     let moved = false;
-    const pages = this.form().pages.map((page) => {
-      const detached = detachFrom(page.elements, elementId);
-      if (!detached.removed) return page;
-      const attached = attachTo(detached.elements, parentId, detached.removed, index);
-      // `attachTo` returns its input untouched when `parentId` is not on this page.
-      if (attached === detached.elements) return page;
-      moved = true;
-      return { ...page, elements: attached };
-    });
+    const pages = this.form()
+      .pages.map((page) => ({ ...page, elements: detachFrom(page.elements, elementId).elements }))
+      .map((page) => {
+        if (moved) return page;
+        const attached =
+          page.id === parentId
+            ? insertAt(page.elements, source, index)
+            : attachTo(page.elements, parentId, source, index);
+        // `attachTo` returns its input untouched when `parentId` is not on this page.
+        if (attached === page.elements) return page;
+        moved = true;
+        return { ...page, elements: attached };
+      });
     if (!moved) return;
     this.patchForm({ pages });
   }
@@ -367,18 +371,8 @@ function detachFrom(
   return { elements: els, removed: null };
 }
 
-/** Inserts `el` at `index` of the group `parentId`, or of the root when `parentId` is null. */
-function attachTo(
-  els: Elements,
-  parentId: string | null,
-  el: ElementDefinition,
-  index: number,
-): Elements {
-  if (parentId === null) {
-    const next = [...els];
-    next.splice(clamp(index, 0, els.length), 0, el);
-    return next;
-  }
+/** Inserts `el` at `index` of the group `parentId` anywhere below `els`. */
+function attachTo(els: Elements, parentId: string, el: ElementDefinition, index: number): Elements {
   for (let i = 0; i < els.length; i++) {
     const candidate = els[i];
     if (candidate.type !== 'group') continue;

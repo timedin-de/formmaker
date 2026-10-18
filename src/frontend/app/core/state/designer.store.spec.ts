@@ -224,9 +224,9 @@ describe('DesignerStore moveElementTo', () => {
   });
 
   it('moves a group child back out to the page root', () => {
-    const { group, a } = scenario();
+    const { page, group, a } = scenario();
 
-    store.moveElementTo(a.id, null, 0);
+    store.moveElementTo(a.id, page.id, 0);
 
     expect(ids(root())).toEqual(['A', 'C', 'Group', 'D']);
     expect(ids(childrenOf(group.id))).toEqual(['B']);
