@@ -69,7 +69,8 @@
       />
     </div>
 
-    @if (page.elements.length === 0) {
+    @let children = store().childrenOf(page);
+    @if (children.length === 0) {
       <div class="empty-hint">
         <mat-icon svgIcon="add_circle_outline"></mat-icon>
         <p>{{ i18n.t('canvas.addFieldHint') }}</p>
@@ -80,18 +81,18 @@
         cdkDropList
         [cdkDropListSortPredicate]="canSortAt"
         [cdkDropListEnterPredicate]="canEnter"
-        [cdkDropListData]="page.elements"
+        [cdkDropListData]="children"
         (cdkDropListDropped)="drop($event)"
         [cdkDropListConnectedTo]="dropLists()"
         [id]="mainDropList"
         class="list"
       >
-        @for (el of page.elements; track el.id) {
+        @for (el of children; track el.id) {
           <div cdkDrag [cdkDragData]="el.id">
             <fm-element-row
               [neighbours]="{
-                before: page.elements[$index - 1],
-                after: page.elements[$index + 1],
+                before: children[$index - 1],
+                after: children[$index + 1],
               }"
               (paletteTarget)="paleteTarget.set($event)"
               [dropLists]="dropLists()"
