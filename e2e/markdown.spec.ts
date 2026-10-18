@@ -10,18 +10,16 @@ test('renders markdown in page titles, subtitles and question labels/description
   const session = await loginApi(request);
   const formId = await createForm(
     session,
-    makeForm(formName, [
-      {
-        title: 'About **you**',
-        subtitle: 'Please fill in *everything*.',
-        elements: [
-          {
-            ...seedField('text', nameId, 'Your **name**'),
-            description: '- first item\n- second item',
-          },
-        ],
-      },
-    ]),
+    makeForm(
+      formName,
+      [{ title: 'About **you**', subtitle: 'Please fill in *everything*.', children: [nameId] }],
+      [
+        {
+          ...seedField('text', nameId, 'Your **name**'),
+          description: '- first item\n- second item',
+        },
+      ],
+    ),
   );
 
   await page.goto(`/runner/${formId}`);

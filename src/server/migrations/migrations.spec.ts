@@ -1,3 +1,4 @@
+import { childrenOf } from '@shared/model';
 import { formDefinitionSchema } from '@shared/schemas';
 import { DataSource } from 'typeorm';
 import { describe, expect, it } from 'vitest';
@@ -95,12 +96,12 @@ describe('migrations', () => {
 
       const [row] = await ds.query(`SELECT document FROM forms WHERE id = 'f1'`);
       const form = formDefinitionSchema.parse(JSON.parse(row.document));
-      const [plain, ruled, group, range, ruledMax, scale] = form.pages[0].elements;
+      const [plain, ruled, group, range, ruledMax, scale] = childrenOf(form, form.pages[0]);
       expect(plain.type === 'text' && plain.validations).toEqual([]);
       expect(ruled.type === 'longText' && ruled.validations).toEqual([
         { id: 'v1', rule: 'maxLength', value: 500, message: 'This value is invalid' },
       ]);
-      const custom = group.type === 'group' ? group.elements[0] : undefined;
+      const custom = group.type === 'group' ? childrenOf(form, group)[0] : undefined;
       expect(custom?.type === 'text' && custom.validations).toEqual([
         { id: expect.any(String), rule: 'maxLength', value: 20, message: 'This value is invalid' },
       ]);

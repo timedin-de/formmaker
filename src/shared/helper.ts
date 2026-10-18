@@ -38,19 +38,6 @@ export async function catchFnAsync<T>(fn: () => Promise<T>): Promise<CatchFnResu
   }
 }
 
-export function walkGroup(
-  elements: ElementDefinition[],
-  callback: (element: ElementDefinition) => ElementDefinition,
-): ElementDefinition[] {
-  return elements.map((e) => {
-    callback(e);
-    if (e.type === 'group') {
-      e.elements = walkGroup(e.elements, callback);
-    }
-    return e;
-  });
-}
-
 export function walkConditionGroup(condition: ConditionGroup, callback: (cg: Condition) => void) {
   condition.conditions.forEach(callback);
   if (condition.groups.length) condition.groups.forEach((c) => walkConditionGroup(c, callback));

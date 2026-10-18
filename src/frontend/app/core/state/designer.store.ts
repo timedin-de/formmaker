@@ -1,10 +1,24 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
-import { catchFn, has, walkConditionGroup, walkGroup } from '@shared/helper';
-import { insertIntoParent } from '@shared/model/form-factory';
-import { childrenOf, type ElementParent, findElement } from '@shared/model/form-tree';
+import { catchFn, has, walkConditionGroup } from '@shared/helper';
+import {
+  addPage,
+  insertElement,
+  moveElement,
+  moveElementTo,
+  removeElement,
+  removePage,
+  updateElement,
+} from '@shared/model/form-ops';
+import {
+  childrenOf,
+  descendants,
+  type ElementParent,
+  type FormDocument,
+  getElement,
+  parentOf,
+} from '@shared/model/form-tree';
 import type {
   ElementDefinition,
-  Elements,
   ElementType,
   FormDefinition,
   FormSettings,
@@ -36,7 +50,7 @@ export class DesignerStore {
   readonly selectedElement = computed(() => {
     const id = this.selectedId();
     if (!id) return null;
-    return this.findElement(id);
+    return getElement(this.form(), id) ?? null;
   });
 
   readonly activePage = computed(() => {
@@ -101,24 +115,34 @@ export class DesignerStore {
     const page = await this.createOnServer((form) =>
       this.repository.addPage(form.id, `Page ${form.pages.length + 1}`),
     );
-    this.applyServerChange((f) => ({ ...f, pages: [...f.pages, page] }));
+    this.applyServerChange((f) => addPage(f, page));
     this.activePageId.set(page.id);
     return page;
   }
 
   clonePage(pageId: string): void {
-    const src = this.form().pages.find((p) => p.id === pageId);
+    const form = this.form();
+    const src = form.pages.find((p) => p.id === pageId);
     if (!src) return;
-    const copy = clonePageWithFreshId(src);
-    const pages = this.form().pages;
-    pages.push(copy);
-    this.patchForm({ pages });
+    // Every element of the page is cloned at once, so references between them
+    // point at the copies while references to other pages stay as they are.
+    const { rootIds, elements } = cloneSubtrees(form, src.children);
+    for (const el of elements) {
+      if (rootIds.includes(el.id)) el.label = `${el.label} (copy)`;
+    }
+    const copy: PageDefinition = {
+      ...structuredCloneSafe(src),
+      id: uuid(),
+      title: `${src.title} (copy)`,
+      children: rootIds,
+    };
+    this.patchDocument(addPage(form, copy, elements));
     this.selectedId.set(copy.id);
   }
 
   async removePage(pageId: string) {
     await this.repository.deletePage(this.form().id, pageId);
-    this.applyServerChange((f) => ({ ...f, pages: f.pages.filter((p) => p.id !== pageId) }));
+    this.applyServerChange((f) => removePage(f, pageId));
     const pages = this.form().pages;
     if (this.activePageId() === pageId) this.activePageId.set(pages[0]?.id ?? null);
   }
@@ -151,11 +175,9 @@ export class DesignerStore {
     // If the parent itself is gone, its removal was sent to the server too, so skip it.
     let inserted = false;
     this.applyServerChange((f) => {
-      const pages =
-        insertIntoParent(f.pages, parentId, afterId, el) ??
-        insertIntoParent(f.pages, parentId, null, el);
-      inserted = pages !== null;
-      return pages ? { ...f, pages } : f;
+      const next = insertElement(f, parentId, afterId, el) ?? insertElement(f, parentId, null, el);
+      inserted = next !== null;
+      return next ?? f;
     });
     if (inserted) this.selectedId.set(el.id);
     return el;
@@ -167,30 +189,19 @@ export class DesignerStore {
 
   /** Applies several element patches as one change. */
   updateElements(patches: [ElementId, Partial<ElementDefinition>][]): void {
-    let pages = this.form().pages;
-    for (const [id, patch] of patches) pages = pages.map((p) => patchNested(p, id, patch));
-    this.patchForm({ pages });
+    let next: FormDocument = this.form();
+    for (const [id, patch] of patches) next = updateElement(next, id, patch);
+    this.patchDocument(next);
   }
 
   async removeElement(elementId: string) {
     await this.repository.deleteElement(this.form().id, elementId);
-    const remove = (els: ElementDefinition[]): ElementDefinition[] =>
-      els
-        .filter((e) => e.id !== elementId)
-        .map((e) => (e.type === 'group' ? { ...e, elements: remove(e.elements) } : e));
-    this.applyServerChange((f) => ({
-      ...f,
-      pages: f.pages.map((p) => ({ ...p, elements: remove(p.elements) })),
-    }));
+    this.applyServerChange((f) => removeElement(f, elementId));
     if (this.selectedId() === elementId) this.selectedId.set(null);
   }
 
   moveElement(elementId: string, direction: -1 | 1): void {
-    const pages = this.form().pages.map((p) => ({
-      ...p,
-      elements: moveIn(p.elements, elementId, direction),
-    }));
-    this.patchForm({ pages });
+    this.patchDocument(moveElement(this.form(), elementId, direction));
   }
 
   /**
@@ -202,56 +213,27 @@ export class DesignerStore {
    * value works for both reorders and transfers.
    */
   moveElementTo(elementId: string, parentId: string, index: number): void {
-    const source = this.findElement(elementId);
-    if (!source) return;
-    // A group may not be dropped into itself or one of its own descendants.
-    if (containsElement(source, parentId)) return;
-
-    let moved = false;
-    const pages = this.form()
-      .pages.map((page) => ({ ...page, elements: detachFrom(page.elements, elementId).elements }))
-      .map((page) => {
-        if (moved) return page;
-        const attached =
-          page.id === parentId
-            ? insertAt(page.elements, source, index)
-            : attachTo(page.elements, parentId, source, index);
-        // `attachTo` returns its input untouched when `parentId` is not on this page.
-        if (attached === page.elements) return page;
-        moved = true;
-        return { ...page, elements: attached };
-      });
-    if (!moved) return;
-    this.patchForm({ pages });
+    const next = moveElementTo(this.form(), elementId, parentId, index);
+    if (next) this.patchDocument(next);
   }
 
   duplicateElement(elementId: string): void {
-    const src = this.findElement(elementId);
-    if (!src) return;
+    const form = this.form();
+    const parent = parentOf(form, elementId);
+    if (!parent) return;
     // Only ids inside the duplicated subtree are mapped, so references to other
     // fields keep pointing at the originals.
-    const idMap: Record<ElementId, ElementId> = {};
-    const copy = cloneElementWithFreshId(src, idMap);
-    remapElementReferences([copy], idMap);
-    const pages = this.form().pages.map((p) => {
-      const walkGroups = (elements: ElementDefinition[]) => {
-        const idx = elements.findIndex((e) => e.id === elementId);
-        if (idx >= 0) {
-          const next = [...elements];
-          next.splice(idx + 1, 0, copy);
-          return next;
-        }
-        return elements.map((e): ElementDefinition => {
-          if (e.type === 'group') {
-            return { ...e, elements: walkGroups(e.elements) };
-          }
-          return e;
-        });
-      };
-
-      return { ...p, elements: walkGroups(p.elements) };
-    });
-    this.patchForm({ pages });
+    const {
+      rootIds: [copyId],
+      elements,
+    } = cloneSubtrees(form, [elementId]);
+    const copy = elements.find((el) => el.id === copyId);
+    if (!copy) return;
+    copy.label = `${copy.label} (copy)`;
+    const subtree = elements.filter((el) => el !== copy);
+    const next = insertElement(form, parent.id, elementId, copy, subtree);
+    if (!next) return;
+    this.patchDocument(next);
     this.selectedId.set(copy.id);
   }
 
@@ -265,8 +247,8 @@ export class DesignerStore {
 
   // ---- internals -------------------------------------------------------------
 
-  private findElement(id: string): ElementDefinition | null {
-    return findElement(this.form(), id) ?? null;
+  private patchDocument({ pages, elements }: FormDocument): void {
+    this.patchForm({ pages, elements });
   }
 
   private patchForm(patch: Partial<SaveFormDefinition>): void {
@@ -328,191 +310,67 @@ export class DesignerStore {
   }
 }
 
-function patchNested(
-  page: PageDefinition,
-  elementId: string,
-  patch: Partial<ElementDefinition>,
-): PageDefinition {
-  const mapEl = (els: ElementDefinition[]): ElementDefinition[] =>
-    els.map((e) => {
-      if (e.id === elementId) return { ...e, ...patch } as ElementDefinition;
-      if (e.type === 'group') return { ...e, elements: mapEl(e.elements) };
-      return e;
-    });
-  return { ...page, elements: mapEl(page.elements) };
-}
-
-/** True when `id` is `el` itself or lives anywhere inside its subtree. */
-function containsElement(el: ElementDefinition, id: string): boolean {
-  if (el.id === id) return true;
-  return el.type === 'group' && el.elements.some((child) => containsElement(child, id));
-}
-
-/** Removes `id` from the tree. Returns the untouched input when `id` is absent. */
-function detachFrom(
-  els: Elements,
-  id: string,
-): { elements: Elements; removed: ElementDefinition | null } {
-  const idx = els.findIndex((e) => e.id === id);
-  if (idx >= 0) {
-    const next = [...els];
-    const [removed] = next.splice(idx, 1);
-    return { elements: next, removed };
-  }
-  for (let i = 0; i < els.length; i++) {
-    const el = els[i];
-    if (el.type !== 'group') continue;
-    const nested = detachFrom(el.elements, id);
-    if (!nested.removed) continue;
-    const next = [...els];
-    next[i] = { ...el, elements: nested.elements };
-    return { elements: next, removed: nested.removed };
-  }
-  return { elements: els, removed: null };
-}
-
-/** Inserts `el` at `index` of the group `parentId` anywhere below `els`. */
-function attachTo(els: Elements, parentId: string, el: ElementDefinition, index: number): Elements {
-  for (let i = 0; i < els.length; i++) {
-    const candidate = els[i];
-    if (candidate.type !== 'group') continue;
-    if (candidate.id === parentId) {
-      const next = [...els];
-      next[i] = { ...candidate, elements: insertAt(candidate.elements, el, index) };
-      return next;
-    }
-    const next = attachTo(candidate.elements, parentId, el, index);
-    if (next !== candidate.elements) {
-      const copy = [...els];
-      copy[i] = { ...candidate, elements: next };
-      return copy;
-    }
-  }
-  return els;
-}
-
-function insertAt(els: Elements, el: ElementDefinition, index: number): Elements {
-  const next = [...els];
-  next.splice(clamp(index, 0, els.length), 0, el);
-  return next;
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(Math.max(value, min), max);
-}
-
-function moveIn(els: ElementDefinition[], id: string, dir: -1 | 1): ElementDefinition[] {
-  let out = els;
-  const idx = out.findIndex((e) => e.id === id);
-  if (idx < 0) {
-    out = out.map((e) =>
-      e.type === 'group' ? { ...e, elements: moveIn(e.elements, id, dir) } : e,
-    );
-    return out;
-  }
-  const target = idx + dir;
-  if (target < 0 || target >= out.length) return out;
-  const next = [...out];
-  const oldItem = next[target];
-  const [item] = next.splice(idx, 1);
-  if (oldItem?.type === 'group') {
-    const groupIdx = next.indexOf(oldItem);
-    next[groupIdx] = {
-      ...oldItem,
-      elements: dir === 1 ? [item, ...oldItem.elements] : [...oldItem.elements, item],
-    };
-  } else {
-    next.splice(target, 0, item);
-  }
-  return next;
-}
-
 /**
- * Deep-clone an element with fresh ids. When `idMap` is given, every element of
- * the cloned tree (group children included) records its old id → new id so that
- * references can be remapped afterwards.
+ * Deep-clones the elements `ids` and everything below them with fresh ids.
+ * References between the cloned elements (defaults, conditions) are remapped
+ * to the copies; references to elements outside the clone stay untouched.
+ * Returns the ids of the copied roots, in order, and all copied elements.
  */
-function cloneElementWithFreshId(
-  el: ElementDefinition,
-  idMap?: Record<ElementId, ElementId>,
-): ElementDefinition {
-  const cloned = structuredCloneSafe(el);
-  cloned.label = `${el.label} (copy)`;
+function cloneSubtrees(
+  form: FormDocument,
+  ids: ElementId[],
+): { rootIds: ElementId[]; elements: ElementDefinition[] } {
+  const originals = ids.flatMap((id) => {
+    const el = getElement(form, id);
+    if (!el) return [];
+    return el.type === 'group' ? [el, ...descendants(form, el)] : [el];
+  });
 
-  const clone = (e: ElementDefinition) => {
-    const id = elementId('q');
-    if (idMap) idMap[e.id] = id;
-    e.id = id;
-    if ('options' in e) {
-      e.options = e.options.map((o) => ({ ...o, id: uuid() }));
-    }
-    return e;
-  };
+  const idMap: Record<ElementId, ElementId> = {};
+  for (const el of originals) idMap[el.id] = elementId('q');
 
-  if (has(cloned, 'elements')) walkGroup(cloned.elements, clone);
-  clone(cloned);
-
-  return cloned;
+  const elements = originals.map((el) => {
+    const copy = structuredCloneSafe(el);
+    copy.id = idMap[el.id];
+    if ('options' in copy) copy.options = copy.options.map((o) => ({ ...o, id: uuid() }));
+    if (copy.type === 'group') copy.children = copy.children.map((id) => idMap[id] ?? id);
+    remapElementReferences(copy, idMap);
+    return copy;
+  });
+  return { rootIds: ids.filter((id) => idMap[id]).map((id) => idMap[id]), elements };
 }
 
 /**
  * Point `defaultValue` / condition field references at their cloned counterparts.
  * Ids missing from `idMap` (i.e. fields outside the cloned tree) stay untouched.
  */
-function remapElementReferences(
-  elements: ElementDefinition[],
-  idMap: Record<ElementId, ElementId>,
-): void {
+function remapElementReferences(e: ElementDefinition, idMap: Record<ElementId, ElementId>): void {
   function map<T extends object>(
-    e: T,
+    target: T,
     attribute: { [K in keyof T]: T[K] extends ElementId ? K : never }[keyof T],
   ) {
-    if (idMap[e[attribute] as ElementId]) {
-      (e[attribute] as string) = idMap[e[attribute] as ElementId];
+    if (idMap[target[attribute] as ElementId]) {
+      (target[attribute] as string) = idMap[target[attribute] as ElementId];
     }
   }
 
-  const patchDeps = (e: ElementDefinition) => {
-    if (has(e, 'defaultValue') && e.defaultValue?.kind === 'fromField') {
-      if (idMap[e.defaultValue.fieldId]) {
-        e.defaultValue.fieldId = idMap[e.defaultValue.fieldId];
+  if (has(e, 'defaultValue') && e.defaultValue?.kind === 'fromField') {
+    if (idMap[e.defaultValue.fieldId]) {
+      e.defaultValue.fieldId = idMap[e.defaultValue.fieldId];
+    }
+  }
+
+  if (e.enabledWhen) {
+    walkConditionGroup(e.enabledWhen, (condition) => {
+      map(condition, 'fieldId');
+      if (condition.operand?.kind === 'field') {
+        map(condition.operand, 'fieldId');
       }
-    }
-
-    if (e.enabledWhen) {
-      walkConditionGroup(e.enabledWhen, (condition) => {
-        map(condition, 'fieldId');
-        if (condition.operand?.kind === 'field') {
-          map(condition.operand, 'fieldId');
-        }
-        if (condition.operandTo?.kind === 'field') {
-          map(condition.operandTo, 'fieldId');
-        }
-      });
-    }
-    return e;
-  };
-
-  for (const e of elements) {
-    if (has(e, 'elements')) walkGroup(e.elements, patchDeps);
-    patchDeps(e);
+      if (condition.operandTo?.kind === 'field') {
+        map(condition.operandTo, 'fieldId');
+      }
+    });
   }
-}
-
-function clonePageWithFreshId(el: PageDefinition): PageDefinition {
-  const cloned = structuredCloneSafe(el);
-  cloned.id = uuid();
-  cloned.title = `${el.title} (copy)`;
-  cloned.subtitle = el.subtitle;
-
-  if (!has(cloned, 'elements')) return cloned;
-
-  // Collect old → new ids for the whole tree first, then remap references.
-  const idMap: Record<ElementId, ElementId> = {};
-  cloned.elements = cloned.elements.map((e) => cloneElementWithFreshId(e, idMap));
-  remapElementReferences(cloned.elements, idMap);
-
-  return cloned;
 }
 
 function structuredCloneSafe<T>(value: T): T {

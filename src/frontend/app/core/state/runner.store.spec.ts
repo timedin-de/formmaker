@@ -1,7 +1,7 @@
-import type { FormDefinition } from '@shared/model/form.model';
-import { newForm } from '@test/helper/forms';
-import { beforeEach, describe, expect, it } from 'vitest';
 import { createElement, createPage } from '@shared/model/form-factory';
+import type { FormDefinition } from '@shared/model/form.model';
+import { addToGroup, getElements, newForm } from '@test/helper/forms';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { RunnerStore } from './runner.store';
 
 function draftForm(): FormDefinition {
@@ -9,7 +9,7 @@ function draftForm(): FormDefinition {
   const page = createPage('Details');
   const name = createElement('text', 'Full name');
   const age = createElement('number', 'Age');
-  page.elements = [name, age];
+  addToGroup([name, age], page, form);
   form.pages = [page];
   return form;
 }
@@ -31,7 +31,7 @@ describe('RunnerStore draft persistence', () => {
   it('autosaves values and restores them on a fresh init', () => {
     const form = draftForm();
     store.init(form);
-    const [nameEl, ageEl] = form.pages[0].elements;
+    const [nameEl, ageEl] = getElements(form.pages[0], form);
 
     store.setAnswer(nameEl.id, 'Ada');
     store.setAnswer(ageEl.id, 36);
@@ -49,7 +49,7 @@ describe('RunnerStore draft persistence', () => {
   it('discards a stale draft when the form version changed', () => {
     const form = draftForm();
     store.init(form);
-    const [nameEl] = form.pages[0].elements;
+    const [nameEl] = getElements(form.pages[0], form);
     store.setAnswer(nameEl.id, 'Ada');
     store.saveDraft();
 
@@ -63,7 +63,7 @@ describe('RunnerStore draft persistence', () => {
   it('clears the draft on submit', () => {
     const form = draftForm();
     store.init(form);
-    const [nameEl, ageEl] = form.pages[0].elements;
+    const [nameEl, ageEl] = getElements(form.pages[0], form);
 
     store.setAnswer(nameEl.id, 'Ada');
     store.setAnswer(ageEl.id, 36);
@@ -75,7 +75,7 @@ describe('RunnerStore draft persistence', () => {
   it('clears the draft on reset', () => {
     const form = draftForm();
     store.init(form);
-    const [nameEl] = form.pages[0].elements;
+    const [nameEl] = getElements(form.pages[0], form);
 
     store.setAnswer(nameEl.id, 'Ada');
     store.reset();
@@ -100,12 +100,10 @@ describe('RunnerStore submission', () => {
     const name = createElement('text', 'Full name');
     const member1 = createElement('text', 'Member 1');
     const member2 = createElement('text', 'Member 2');
-    const group = createElement('group', 'Team') as unknown as {
-      type: 'group';
-      elements: ReturnType<typeof createElement>[];
-    };
-    group.elements = [member1, member2];
-    page.elements = [name, group as never];
+    const group = createElement('group', 'Team');
+
+    addToGroup([member1, member2], group, form);
+    addToGroup([name, group as never], page, form);
     form.pages = [page];
 
     const store = new RunnerStore();
@@ -136,7 +134,7 @@ describe('RunnerStore submission', () => {
       elements: ReturnType<typeof createElement>[];
     };
     group.elements = [nestedIntro];
-    page.elements = [intro, section, name, group as never];
+    addToGroup([intro, section, name, group as never], page, form);
     form.pages = [page];
 
     const store = new RunnerStore();
@@ -161,7 +159,7 @@ describe('RunnerStore submission', () => {
       ],
       groups: [],
     };
-    page.elements = [trigger, conditional];
+    addToGroup([trigger, conditional], page, form);
     form.pages = [page];
 
     const store = new RunnerStore();
@@ -189,7 +187,7 @@ describe('RunnerStore submission', () => {
       ],
       groups: [],
     };
-    page.elements = [trigger, conditional];
+    addToGroup([trigger, conditional], page, form);
     form.pages = [page];
 
     const store = new RunnerStore();
@@ -216,7 +214,7 @@ describe('RunnerStore submission', () => {
       ],
       groups: [],
     };
-    page.elements = [trigger, conditional];
+    addToGroup([trigger, conditional], page, form);
     form.pages = [page];
 
     const store = new RunnerStore();
@@ -239,8 +237,10 @@ describe('RunnerStore submission', () => {
     const member = createElement('text', 'Member');
     member.required = true;
     const group = createElement('group', 'Team');
-    group.elements = [member];
-    page.elements = [group];
+    group.children.push(member.id);
+    form.elements[member.id] = member;
+    page.children.push(group.id);
+    form.elements[group.id] = group;
     form.pages = [page];
 
     const store = new RunnerStore();
@@ -266,8 +266,8 @@ describe('RunnerStore submission', () => {
       groups: [],
     };
     const group = createElement('group', 'Team');
-    group.elements = [member];
-    page.elements = [trigger, group];
+    addToGroup(member, group, form);
+    addToGroup([trigger, group], page, form);
     form.pages = [page];
 
     const store = new RunnerStore();
