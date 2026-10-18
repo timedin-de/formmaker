@@ -172,8 +172,12 @@ export class Runner {
     const submission = this.lastSubmission();
     if (!form || !submission) return;
     const name = formName(form, this.i18n);
-    const blob = await submissionToPdf({ ...form, name }, submission);
-    downloadBlob(blob, toSlug(this.i18n.t('pdf.receipt', { name })) + '.pdf');
+    try {
+      const blob = await submissionToPdf({ ...form, name }, submission);
+      downloadBlob(blob, toSlug(this.i18n.t('pdf.receipt', { name })) + '.pdf');
+    } catch {
+      this.snack.open(this.i18n.t('export.failed'), 'OK', { duration: SNACK_TIME_ERROR });
+    }
   }
 
   fillAgain(): void {
