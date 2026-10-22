@@ -58,7 +58,7 @@ SQLite is used by default at `src/server/data/formmaker.sqlite`. To use MySQL in
 
 ## Getting started
 
-Requires Node ≥ 24.15.
+Requires Node ≥ 24.22.1 (or ≥ 26.12.1).
 
 ```bash
 npm install

@@ -1,4 +1,5 @@
 import type { NestExpressApplication } from '@nestjs/platform-express';
+import { brotliCompressSync } from 'node:zlib';
 import 'reflect-metadata';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { createApp } from './app.js';
@@ -37,6 +38,17 @@ describe('app', () => {
 
   it('returns 404 for unknown API paths', async () => {
     expect((await fetch(`${base}/api/nope`)).status).toBe(404);
+  });
+
+  it('rejects compressed request bodies without decompressing them', async () => {
+    const body = brotliCompressSync(JSON.stringify({ email: 'a@b.c', password: 'x' }));
+    const res = await fetch(`${base}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'content-encoding': 'br' },
+      body,
+    });
+    expect(res.status).toBe(415);
+    expect(await res.json()).toHaveProperty('error');
   });
 });
 

@@ -12,6 +12,17 @@ import { AuthService } from './auth/auth.service';
 import { ApiExceptionFilter } from './common/api-exception.filter.js';
 import { useRe2Regex } from './common/re2-regex.js';
 
+/** http-errors shape (body-parser): `expose` marks a 4xx whose message is safe to return. */
+function isExposedHttpError(error: unknown): error is { status: number; message: string } {
+  return (
+    error instanceof Error &&
+    'expose' in error &&
+    error.expose === true &&
+    'status' in error &&
+    typeof error.status === 'number'
+  );
+}
+
 /**
  * Nest app wrapping the Express instance. Routes not yet ported to Nest
  * controllers stay as Express routers mounted below; port them one module at a
@@ -28,7 +39,9 @@ export async function createApp(): Promise<NestExpressApplication> {
     .filter(Boolean);
   app.use(cors({ origin: corsOrigins?.length ? corsOrigins : false }));
   // Body parsing stays here (Nest's parser is disabled) so the 50mb limit covers all routes.
-  app.use(express.json({ limit: '50mb' }));
+  // inflate: false rejects compressed bodies (415) so untrusted input never reaches zlib/Brotli
+  // pre-auth (CVE-2026-111497) and the limit applies to the bytes actually received.
+  app.use(express.json({ limit: '50mb', inflate: false }));
   app.use((_req, res, next) => {
     res.setHeader('X-Request-Id', crypto.randomUUID());
     next();
@@ -80,8 +93,13 @@ export async function createApp(): Promise<NestExpressApplication> {
     });
   }
   app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
-    console.error('Unhandled Server Error', error);
     if (res.headersSent) return;
+    // body-parser errors (400 malformed JSON, 413 too large, 415 encoding) are client errors.
+    if (isExposedHttpError(error)) {
+      res.status(error.status).json({ error: error.message });
+      return;
+    }
+    console.error('Unhandled Server Error', error);
 
     const code =
       typeof error === 'object' && error !== null && 'code' in error ? error.code : undefined;
