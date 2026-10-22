@@ -7,7 +7,7 @@ API with TypeORM persistence (SQLite by default, MySQL optional).
 
 ## Commands
 
-Node ≥ 24.15 is required by the Angular 22 CLI.
+Node ≥ 24.22.1 is required (Angular 22 CLI needs ≥ 24.15; 24.22.1 / 26.12.1 fix CVE-2026-111497).
 
 | Task                  | Command                                                                                             |
 | --------------------- | --------------------------------------------------------------------------------------------------- |

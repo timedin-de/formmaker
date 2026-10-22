@@ -30,6 +30,9 @@
     "check": "npm run lint && npm run format:check && npm run typecheck && npm run typecheck:server && npm run test:ci && npm run test:server && npm run build"
   },
   "private": true,
+  "engines": {
+    "node": "^24.22.1 || >=26.12.1"
+  },
   "packageManager": "npm@11.12.1",
   "dependencies": {
     "@angular/animations": "^22.2.3",
@@ -89,5 +92,11 @@
     "typescript-eslint": "8.71.2",
     "v8-to-istanbul": "^9.3.0",
     "vitest": "^5.0.3"
+  },
+  "overrides": {
+    "vite": "8.3.5",
+    "typeorm": {
+      "better-sqlite3": "$better-sqlite3"
+    }
   }
 }
