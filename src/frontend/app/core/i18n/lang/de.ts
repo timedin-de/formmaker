@@ -245,6 +245,8 @@ const de: typeof en = {
   'panel.fromGroup': 'Aus Gruppe',
   'panel.staticValue': 'Statischer Wert',
   'panel.expressionExample': "Ausdruck — z. B. now(), concat('A', 'B')",
+  'expression.questions': 'Fragen',
+  'expression.functions': 'Funktionen',
   'panel.visibility': 'Sichtbarkeit',
   'panel.showWhen': 'Dieses Feld zeigen, wenn',
   'panel.alwaysVisible': 'Immer sichtbar',

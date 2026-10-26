@@ -24,6 +24,7 @@ import type {
 import { DEFAULT_TIME_INTERVAL, TIME_INTERVAL_UNITS } from '@shared/model/form.model';
 import { uuid } from '@shared/model/ids';
 import { VALIDATION_RULE_TYPES } from '@shared/model/validation.model';
+import { ExpressionEditor } from '../core/components/expression-editor/expression-editor';
 import { I18nService } from '../core/i18n';
 import { fieldMeta } from '../core/model/field-registry';
 import { type DesignerStore } from '../core/state/designer.store';
@@ -54,6 +55,7 @@ const INPUT_TYPES = ['text', 'email', 'url', 'phone', 'number'] as const;
     ConditionEditor,
     QuestionSelector,
     ValidationEditor,
+    ExpressionEditor,
   ],
   selector: 'fm-property-panel',
   templateUrl: './property-panel.html',

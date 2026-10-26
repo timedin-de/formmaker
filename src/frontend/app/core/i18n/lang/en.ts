@@ -240,6 +240,8 @@ const en = {
   'panel.fromGroup': 'From group',
   'panel.staticValue': 'Static value',
   'panel.expressionExample': "Expression — e.g. now(), concat('A', 'B')",
+  'expression.questions': 'Questions',
+  'expression.functions': 'Functions',
   'panel.visibility': 'Visibility',
   'panel.showWhen': 'Show this field when',
   'panel.alwaysVisible': 'Always visible',

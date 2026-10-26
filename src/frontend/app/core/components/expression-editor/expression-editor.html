@@ -1,0 +1,40 @@
+<div
+  class="textInput"
+  #text
+  contenteditable="true"
+  role="combobox"
+  aria-autocomplete="list"
+  [attr.aria-expanded]="suggestions().length > 0"
+  [attr.aria-controls]="listboxId"
+  [attr.aria-activedescendant]="suggestions().length ? listboxId + '-' + activeIndex() : null"
+  [ariaDescribedByElements]="describedByIdsS()"
+  (input)="onInput()"
+  (keydown)="onKeydown($event)"
+  (focus)="focused.set(true)"
+  (blur)="onBlur()"
+></div>
+@if (suggest(); as s) {
+  @if (suggestions().length) {
+    <ul
+      class="suggestions"
+      role="listbox"
+      [id]="listboxId"
+      [attr.aria-label]="i18n.t(s.kind === 'question' ? 'expression.questions' : 'expression.functions')"
+      [style.top.px]="s.top"
+      [style.left.px]="s.left"
+    >
+      @for (item of suggestions(); track item.key; let i = $index) {
+        <li
+          role="option"
+          [id]="listboxId + '-' + i"
+          [class.active]="i === activeIndex()"
+          [attr.aria-selected]="i === activeIndex()"
+          (mousedown)="$event.preventDefault(); pick(item.key)"
+          (mouseenter)="activeIndex.set(i)"
+        >
+          <span class="label" [matTooltip]="item.tooltip">{{ item.label }}</span>
+        </li>
+      }
+    </ul>
+  }
+}

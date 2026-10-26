@@ -1,0 +1,46 @@
+.textInput {
+  width: 100%;
+  outline: none;
+
+  ::ng-deep .var {
+    color: green;
+  }
+
+  ::ng-deep .fn {
+    color: var(--mat-sys-primary, blue);
+  }
+}
+
+.suggestions {
+  min-width: 200px;
+  max-width: 360px;
+  max-height: 280px;
+  margin: 4px 0 0;
+  padding: 4px 0;
+  overflow-y: auto;
+  list-style: none;
+  background: var(--mat-sys-surface-container, #fff);
+  color: var(--mat-sys-on-surface, inherit);
+  border-radius: 4px;
+  box-shadow: var(--mat-sys-level2, 0 2px 8px rgb(0 0 0 / 20%));
+
+  li {
+    display: flex;
+    gap: 12px;
+    justify-content: space-between;
+    padding: 6px 12px;
+    cursor: pointer;
+
+    &.active {
+      background: var(--mat-sys-surface-container-highest, rgb(0 0 0 / 8%));
+    }
+  }
+
+  .label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+
+}
