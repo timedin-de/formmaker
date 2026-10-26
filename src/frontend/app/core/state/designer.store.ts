@@ -1,4 +1,5 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { catchFn, has, walkConditionGroup } from '@shared/helper';
 import {
   addPage,
@@ -28,7 +29,9 @@ import type {
 } from '@shared/model/form.model';
 import { type ElementId, elementId, uuid } from '@shared/model/ids';
 import { parseFormData, type UpdateOptionRequest } from '@shared/schemas';
+import { SNACK_TIME_ERROR } from '../consts';
 import { I18nService } from '../i18n/translation.service';
+import { ApiError } from './api-client';
 import { FormsRepository } from './forms.repository';
 
 const STORAGE_KEY = 'formmaker.designer.v1';
@@ -40,11 +43,22 @@ interface PendingOptionPatch {
   elementId: ElementId;
   optionId: string;
   patch: UpdateOptionRequest;
+  /** The patched fields as they were before the first unsent edit, to roll back to. */
+  before: UpdateOptionRequest;
   timer: ReturnType<typeof setTimeout>;
 }
 
 function optionKey(elementId: ElementId, optionId: string): string {
   return `${elementId}/${optionId}`;
+}
+
+function findOption(
+  form: FormDefinition,
+  elementId: ElementId,
+  optionId: string,
+): ChoiceOption | undefined {
+  const el = getElement(form, elementId);
+  return el && 'options' in el ? el.options.find((o) => o.id === optionId) : undefined;
 }
 
 /** Replaces the options of the choice element `elementId`; returns the input without one. */
@@ -62,6 +76,7 @@ function updateOptions(
 export class DesignerStore {
   private readonly i18n = inject(I18nService);
   private readonly repository = inject(FormsRepository);
+  private readonly snack = inject(MatSnackBar);
   readonly _form = signal<FormDefinition | undefined>(undefined);
   readonly form = computed(() => {
     const f = this._form();
@@ -237,9 +252,14 @@ export class DesignerStore {
   /**
    * Applies an option edit locally right away and sends it to the server shortly after,
    * merged with further edits of the same option, so typing sends one request rather
-   * than one per key. A failed send marks the form dirty so the next save covers it.
+   * than one per key. An edit the server rejects as a conflict (duplicate value) is
+   * rolled back; any other failed send marks the form dirty so the next save covers it.
    */
   patchOption(elementId: ElementId, optionId: string, patch: UpdateOptionRequest): void {
+    const current = findOption(this.form(), elementId, optionId);
+    const before: UpdateOptionRequest = {};
+    if (current && patch.label !== undefined) before.label = current.label;
+    if (current && patch.value !== undefined) before.value = current.value;
     this.applyServerChange((f) =>
       updateOptions(f, elementId, (options) =>
         options.map((o) => (o.id === optionId ? { ...o, ...patch } : o)),
@@ -248,21 +268,36 @@ export class DesignerStore {
     const key = optionKey(elementId, optionId);
     const pending = this.optionPatches.get(key);
     if (pending) clearTimeout(pending.timer);
-    this.optionPatches.set(key, {
+    this.scheduleOptionPatch(key, {
       formId: this.form().id,
       elementId,
       optionId,
       patch: { ...pending?.patch, ...patch },
-      timer: setTimeout(() => void this.sendOptionPatch(key), OPTION_PATCH_DELAY_MS),
+      // The earliest value of a field wins: it is the one the server still has.
+      before: { ...before, ...pending?.before },
     });
   }
 
-  /** Deletes an option on the server, dropping any unsent edit of it, then removes it locally. */
+  /**
+   * Deletes an option on the server, dropping any unsent edit of it, then removes it
+   * locally. If the deletion fails, the unsent edit is sent after all.
+   */
   async removeOption(elementId: ElementId, optionId: string): Promise<void> {
     const key = optionKey(elementId, optionId);
-    clearTimeout(this.optionPatches.get(key)?.timer);
+    const pending = this.optionPatches.get(key);
+    if (pending) clearTimeout(pending.timer);
     this.optionPatches.delete(key);
-    await this.createOnServer((form) => this.repository.deleteOption(form.id, elementId, optionId));
+    try {
+      await this.createOnServer((form) =>
+        this.repository.deleteOption(form.id, elementId, optionId),
+      );
+    } catch (error) {
+      if (pending && !this.optionPatches.has(key)) {
+        this.scheduleOptionPatch(key, pending);
+        void this.sendOptionPatch(key);
+      }
+      throw error;
+    }
     this.applyServerChange((f) =>
       updateOptions(f, elementId, (options) => options.filter((o) => o.id !== optionId)),
     );
@@ -365,19 +400,62 @@ export class DesignerStore {
   private sendOptionPatch(key: string): Promise<void> {
     const pending = this.optionPatches.get(key);
     if (!pending) return Promise.resolve();
+    clearTimeout(pending.timer);
     this.optionPatches.delete(key);
-    const { formId, elementId, optionId, patch } = pending;
+    const { formId, elementId, optionId, patch, before } = pending;
     const isLoaded = () => this._form()?.id === formId;
     const run = this.creations
       .then(async () => {
         if (isLoaded()) await this.saveIfDirty();
         await this.repository.updateOption(formId, elementId, optionId, patch);
       })
-      .catch(() => {
-        if (isLoaded()) this.dirty.set(true);
+      .catch((error: unknown) => {
+        if (!isLoaded()) return;
+        // Saving the whole form would store the rejected value after all, so undo it.
+        if (error instanceof ApiError && error.status === 409) {
+          this.revertOption(elementId, optionId, patch, before);
+          this.snack.open(
+            this.i18n.t('panel.optionValueTaken', { value: String(patch.value) }),
+            'OK',
+            { duration: SNACK_TIME_ERROR },
+          );
+        } else {
+          this.dirty.set(true);
+        }
       });
     this.creations = run;
     return run;
+  }
+
+  private scheduleOptionPatch(key: string, pending: Omit<PendingOptionPatch, 'timer'>): void {
+    this.optionPatches.set(key, {
+      ...pending,
+      timer: setTimeout(() => void this.sendOptionPatch(key), OPTION_PATCH_DELAY_MS),
+    });
+  }
+
+  /**
+   * Restores the fields of a rejected option edit to `before`, except those edited again
+   * since, which are still to be sent.
+   */
+  private revertOption(
+    elementId: ElementId,
+    optionId: string,
+    rejected: UpdateOptionRequest,
+    before: UpdateOptionRequest,
+  ): void {
+    this.applyServerChange((f) =>
+      updateOptions(f, elementId, (options) =>
+        options.map((o) => {
+          if (o.id !== optionId) return o;
+          const label =
+            rejected.label !== undefined && o.label === rejected.label ? before.label : undefined;
+          const value =
+            rejected.value !== undefined && o.value === rejected.value ? before.value : undefined;
+          return { ...o, label: label ?? o.label, value: value ?? o.value };
+        }),
+      ),
+    );
   }
 
   /** Saves unsaved edits, so the server knows everything a following change refers to. */
