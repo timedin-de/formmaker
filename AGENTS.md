@@ -9,19 +9,20 @@ API with TypeORM persistence (SQLite by default, MySQL optional).
 
 Node ≥ 24.22.1 is required (Angular 22 CLI needs ≥ 24.15; 24.22.1 / 26.12.1 fix CVE-2026-111497).
 
-| Task                  | Command                                                                                             |
-| --------------------- | --------------------------------------------------------------------------------------------------- |
-| Dev UI + API together | `npm start` (UI on :4200, proxies `/api` to :3000)                                                  |
-| UI only / API only    | `npm run start:frontend` / `npm run start:api`                                                      |
-| Frontend unit tests   | `npm run test:ci` (`ng test`, Vitest + jsdom)                                                       |
-| Single frontend spec  | `npx ng test --watch=false --include src/shared/engine/engine.spec.ts`                              |
-| Server tests          | `npm run test:server`                                                                               |
-| Single server spec    | `npx vitest run -c vitest.server.config.ts src/server/forms/form.service.spec.ts`                   |
-| E2E (3 browsers)      | `npm run e2e` (Playwright starts the API + UI servers itself)                                       |
-| Single E2E spec       | `npx playwright test e2e/runner.spec.ts --project=chromium`                                         |
-| Coverage              | `npx ng test --watch=false --coverage` (thresholds in `angular.json`)                               |
-| Migrations            | `npm run migration:run` / `migration:revert` / `migration:generate -- src/server/migrations/<Name>` |
-| Full gate             | `npm run check` (lint, format:check, typecheck, typecheck:server, test:ci, test:server, build)      |
+| Task                  | Command                                                                                                    |
+| --------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Dev UI + API together | `npm start` (UI on :4200, proxies `/api` to :3000)                                                         |
+| UI only / API only    | `npm run start:frontend` / `npm run start:api`                                                             |
+| Frontend unit tests   | `npm run test:ci` (`ng test`, Vitest + jsdom)                                                              |
+| Single frontend spec  | `npx ng test --watch=false --include src/shared/engine/engine.spec.ts`                                     |
+| Server tests          | `npm run test:server`                                                                                      |
+| Single server spec    | `npx vitest run -c vitest.server.config.ts src/server/forms/form.service.spec.ts`                          |
+| E2E (3 browsers)      | `npm run e2e` (Playwright starts the API + UI servers itself)                                              |
+| Single E2E spec       | `npx playwright test e2e/runner.spec.ts --project=chromium`                                                |
+| Coverage              | `npx ng test --watch=false --coverage` (thresholds in `angular.json`)                                      |
+| Migrations            | `npm run migration:run` / `migration:revert` / `migration:generate -- src/server/migrations/<Name>`        |
+| Translation keys      | `npm run i18n:check` (every key used, present in `en.ts` and `de.ts`)                                      |
+| Full gate             | `npm run check` (lint, format:check, i18n:check, typecheck, typecheck:server, test:ci, test:server, build) |
 
 Which runner picks up which spec: `ng test` runs every `src/**/*.spec.ts` **except** `src/server/**`
 (so `src/shared` specs run here). `test:server` runs only `src/server/**/*.spec.ts`. All specs, server specs included, are
