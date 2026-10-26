@@ -18,6 +18,7 @@ import {
   parentOf,
 } from '@shared/model/form-tree';
 import type {
+  ChoiceOption,
   ElementDefinition,
   ElementType,
   FormDefinition,
@@ -26,11 +27,36 @@ import type {
   SaveFormDefinition,
 } from '@shared/model/form.model';
 import { type ElementId, elementId, uuid } from '@shared/model/ids';
-import { parseFormData } from '@shared/schemas';
+import { parseFormData, type UpdateOptionRequest } from '@shared/schemas';
 import { I18nService } from '../i18n/translation.service';
 import { FormsRepository } from './forms.repository';
 
 const STORAGE_KEY = 'formmaker.designer.v1';
+/** How long an option edit waits for further edits before it is sent. */
+export const OPTION_PATCH_DELAY_MS = 400;
+
+interface PendingOptionPatch {
+  formId: string;
+  elementId: ElementId;
+  optionId: string;
+  patch: UpdateOptionRequest;
+  timer: ReturnType<typeof setTimeout>;
+}
+
+function optionKey(elementId: ElementId, optionId: string): string {
+  return `${elementId}/${optionId}`;
+}
+
+/** Replaces the options of the choice element `elementId`; returns the input without one. */
+function updateOptions(
+  form: FormDefinition,
+  elementId: ElementId,
+  update: (options: ChoiceOption[]) => ChoiceOption[],
+): FormDefinition {
+  const el = getElement(form, elementId);
+  if (!el || !('options' in el)) return form;
+  return updateElement(form, elementId, { options: update(el.options) });
+}
 
 @Injectable()
 export class DesignerStore {
@@ -61,6 +87,8 @@ export class DesignerStore {
   private persistTimer: ReturnType<typeof setTimeout> | null = null;
   /** Tail of the server-side creation queue; see `createOnServer`. */
   private creations: Promise<unknown> = Promise.resolve();
+  /** Option edits not yet sent, by `optionKey`; see `patchOption`. */
+  private readonly optionPatches = new Map<string, PendingOptionPatch>();
 
   constructor() {
     void this.hydrate();
@@ -194,6 +222,52 @@ export class DesignerStore {
     this.patchDocument(next);
   }
 
+  /**
+   * Creates an option on the server (which persists it) for the choice element
+   * `elementId` and appends it locally. Skipped locally if the element is gone by then.
+   */
+  async addOption(elementId: string, label: string): Promise<ChoiceOption> {
+    const option = await this.createOnServer((form) =>
+      this.repository.addOption(form.id, elementId, { label }),
+    );
+    this.applyServerChange((f) => updateOptions(f, elementId, (options) => [...options, option]));
+    return option;
+  }
+
+  /**
+   * Applies an option edit locally right away and sends it to the server shortly after,
+   * merged with further edits of the same option, so typing sends one request rather
+   * than one per key. A failed send marks the form dirty so the next save covers it.
+   */
+  patchOption(elementId: ElementId, optionId: string, patch: UpdateOptionRequest): void {
+    this.applyServerChange((f) =>
+      updateOptions(f, elementId, (options) =>
+        options.map((o) => (o.id === optionId ? { ...o, ...patch } : o)),
+      ),
+    );
+    const key = optionKey(elementId, optionId);
+    const pending = this.optionPatches.get(key);
+    if (pending) clearTimeout(pending.timer);
+    this.optionPatches.set(key, {
+      formId: this.form().id,
+      elementId,
+      optionId,
+      patch: { ...pending?.patch, ...patch },
+      timer: setTimeout(() => void this.sendOptionPatch(key), OPTION_PATCH_DELAY_MS),
+    });
+  }
+
+  /** Deletes an option on the server, dropping any unsent edit of it, then removes it locally. */
+  async removeOption(elementId: ElementId, optionId: string): Promise<void> {
+    const key = optionKey(elementId, optionId);
+    clearTimeout(this.optionPatches.get(key)?.timer);
+    this.optionPatches.delete(key);
+    await this.createOnServer((form) => this.repository.deleteOption(form.id, elementId, optionId));
+    this.applyServerChange((f) =>
+      updateOptions(f, elementId, (options) => options.filter((o) => o.id !== optionId)),
+    );
+  }
+
   async removeElement(elementId: string) {
     await this.repository.deleteElement(this.form().id, elementId);
     this.applyServerChange((f) => removeElement(f, elementId));
@@ -264,8 +338,8 @@ export class DesignerStore {
   }
 
   /**
-   * Queues a server-side creation for the form that is loaded now. Rejects instead of
-   * sending or applying it once another form has been loaded in the meantime.
+   * Queues a server-side creation or removal for the form that is loaded now. Rejects
+   * instead of sending or applying it once another form has been loaded in the meantime.
    */
   private createOnServer<T>(create: (form: FormDefinition) => Promise<T>): Promise<T> {
     const formId = this.form().id;
@@ -274,19 +348,45 @@ export class DesignerStore {
     };
     const run = this.creations.then(async () => {
       assertSameForm();
-      if (this.dirty()) {
-        const snapshot = this.form();
-        await this.repository.saveForm(snapshot);
-        // Edits made while the save was in flight are still unsaved.
-        if (this.form() === snapshot) this.dirty.set(false);
-        assertSameForm();
-      }
+      await this.saveIfDirty();
+      assertSameForm();
       const result = await create(this.form());
       assertSameForm();
       return result;
     });
     this.creations = run.catch(() => undefined);
     return run;
+  }
+
+  /**
+   * Sends the pending edit `key` through the creation queue. Unlike creations it is
+   * still sent after another form has been loaded, since it is already applied there.
+   */
+  private sendOptionPatch(key: string): Promise<void> {
+    const pending = this.optionPatches.get(key);
+    if (!pending) return Promise.resolve();
+    this.optionPatches.delete(key);
+    const { formId, elementId, optionId, patch } = pending;
+    const isLoaded = () => this._form()?.id === formId;
+    const run = this.creations
+      .then(async () => {
+        if (isLoaded()) await this.saveIfDirty();
+        await this.repository.updateOption(formId, elementId, optionId, patch);
+      })
+      .catch(() => {
+        if (isLoaded()) this.dirty.set(true);
+      });
+    this.creations = run;
+    return run;
+  }
+
+  /** Saves unsaved edits, so the server knows everything a following change refers to. */
+  private async saveIfDirty(): Promise<void> {
+    if (!this.dirty()) return;
+    const snapshot = this.form();
+    await this.repository.saveForm(snapshot);
+    // Edits made while the save was in flight are still unsaved.
+    if (this.form() === snapshot) this.dirty.set(false);
   }
 
   /** Applies a change the server already persisted, without marking the form dirty. */

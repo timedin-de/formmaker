@@ -22,7 +22,6 @@ import type {
   TimeElement,
 } from '@shared/model/form.model';
 import { DEFAULT_TIME_INTERVAL, TIME_INTERVAL_UNITS } from '@shared/model/form.model';
-import { uuid } from '@shared/model/ids';
 import { VALIDATION_RULE_TYPES } from '@shared/model/validation.model';
 import { I18nService } from '../core/i18n';
 import { fieldMeta } from '../core/model/field-registry';
@@ -126,25 +125,18 @@ export class PropertyPanel {
 
   patchOption(index: number, patch: Partial<{ label: string; value: string | number }>): void {
     const choice = this.choice();
-    const options = choice.options.map((o, i) => (i === index ? { ...o, ...patch } : o));
-    this.patch({ options });
+    this.store().patchOption(choice.id, choice.options[index].id, patch);
   }
 
-  addOption(): void {
+  async addOption(): Promise<void> {
     const choice = this.choice();
-    const options = choice.options ?? [];
-    const idx = options.length + 1;
-    this.patch({
-      options: [
-        ...options,
-        { id: uuid(), label: `${this.i18n.t('panel.option')} ${idx}`, value: idx },
-      ],
-    });
+    const label = `${this.i18n.t('panel.option')} ${choice.options.length + 1}`;
+    await this.store().addOption(choice.id, label);
   }
 
-  removeOption(index: number): void {
+  async removeOption(index: number): Promise<void> {
     const choice = this.choice();
-    this.patch({ options: choice.options.filter((_, i) => i !== index) });
+    await this.store().removeOption(choice.id, choice.options[index].id);
   }
 
   moveOption(index: number, dir: -1 | 1): void {

@@ -2,13 +2,14 @@ import { TestBed } from '@angular/core/testing';
 import type { ConditionGroup } from '@shared/model/conditions.model';
 import { createElement, createPage } from '@shared/model/form-factory';
 import type {
+  ChoiceElement,
   ElementDefinition,
   FormDefinition,
   GroupElement,
   PageDefinition,
   TextElement,
 } from '@shared/model/form.model';
-import { type CreateElementRequest } from '@shared/schemas';
+import { type CreateElementRequest, type CreateOptionRequest } from '@shared/schemas';
 import { addToGroup, getElements, newForm } from '@test/helper';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DesignerStore } from './designer.store';
@@ -317,6 +318,10 @@ describe('DesignerStore server-side creation', () => {
       calls.push('addElement');
       return createElement(request.type, request.label);
     }),
+    addOption: vi.fn(async (_formId: string, _elementId: string, request: CreateOptionRequest) => {
+      calls.push('addOption');
+      return { id: 'opt-new', label: request.label, value: 'option_3' };
+    }),
   };
 
   beforeEach(() => {
@@ -376,6 +381,46 @@ describe('DesignerStore server-side creation', () => {
     expect(repo.addPage).toHaveBeenCalledWith(store.form().id, 'Page 2');
     expect(store.form().pages.at(-1)).toEqual(page);
     expect(store.activePageId()).toBe(page.id);
+  });
+
+  function loadedChoice(): ChoiceElement {
+    const form = newForm('Demo');
+    const page = createPage('Page 1');
+    const choice = createElement('dropdown', 'Pick') as ChoiceElement;
+    addToGroup(choice, page, form);
+    form.pages = [page];
+    store.load(form);
+    return choice;
+  }
+
+  it('saves unsaved edits, then appends a server-generated option', async () => {
+    const choice = loadedChoice();
+    store.updateElement(choice.id, { label: 'Renamed' });
+
+    const option = await store.addOption(choice.id, 'Option 3');
+
+    expect(calls).toEqual(['save', 'addOption']);
+    expect(repo.addOption).toHaveBeenCalledWith(store.form().id, choice.id, { label: 'Option 3' });
+    const stored = store.form().elements[choice.id] as ChoiceElement;
+    expect(stored.options.at(-1)).toEqual(option);
+    expect(stored.options).toHaveLength(3);
+    expect(store.dirty()).toBe(false);
+  });
+
+  it('drops the option locally when its element was removed during the request', async () => {
+    const choice = loadedChoice();
+    repo.addOption.mockImplementationOnce(async (_formId, _elementId, request) => {
+      store.load({
+        ...store.form(),
+        pages: [{ ...store.form().pages[0], children: [] }],
+        elements: {},
+      });
+      return { id: 'opt-new', label: request.label, value: 'option_3' };
+    });
+
+    await store.addOption(choice.id, 'Option 3');
+
+    expect(store.form().elements[choice.id]).toBeUndefined();
   });
 
   it('saves unsaved edits before creating, and runs creations one at a time', async () => {

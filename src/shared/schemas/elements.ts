@@ -42,7 +42,7 @@ const placeholderableSchema = z.strictObject({
   placeholder: z._default(z.string(), ''),
 });
 
-const choiceOptionSchema = z.strictObject({
+export const choiceOptionSchema = z.strictObject({
   id: z.string(),
   label: z.string(),
   value: z.union([z.string(), z.number()]),

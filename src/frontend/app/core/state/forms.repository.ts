@@ -2,6 +2,7 @@ import { inject, Injectable, signal } from '@angular/core';
 import { toSaveableForm } from '@shared/helper';
 import {
   toPortableForm,
+  type ChoiceOption,
   type ElementDefinition,
   type FormDefinition,
   type FormWithOwner,
@@ -9,6 +10,7 @@ import {
 } from '@shared/model/form.model';
 import type { Submission, SubmissionCreate } from '@shared/model/submission.model';
 import {
+  choiceOptionSchema,
   elementDefinitionSchema,
   formDefinitionSchema,
   formsWithOwnerSchema,
@@ -17,6 +19,8 @@ import {
   submissionSchema,
   submissionsSchema,
   type CreateElementRequest,
+  type CreateOptionRequest,
+  type UpdateOptionRequest,
 } from '@shared/schemas';
 import {
   FORM_CACHE_PREFIX,
@@ -29,6 +33,10 @@ import {
   writeCache,
 } from './api-cache';
 import { ApiClient } from './api-client';
+
+function optionUrl(formId: string, elementId: string, optionId: string): string {
+  return `/api/forms/${encodeURIComponent(formId)}/elements/${encodeURIComponent(elementId)}/options/${encodeURIComponent(optionId)}`;
+}
 
 /** Server-backed persistence with a short-lived local response cache. */
 @Injectable({ providedIn: 'root' })
@@ -144,6 +152,41 @@ export class FormsRepository {
     );
     removeCache(FORM_CACHE_PREFIX + formId);
     return element;
+  }
+
+  /** Appends a new option to a choice element on the server; returns the option as generated there. */
+  async addOption(
+    formId: string,
+    elementId: string,
+    request: CreateOptionRequest,
+  ): Promise<ChoiceOption> {
+    const option = await this.api.request(
+      choiceOptionSchema,
+      `/api/forms/${encodeURIComponent(formId)}/elements/${encodeURIComponent(elementId)}/options`,
+      { method: 'POST', body: JSON.stringify(request) },
+    );
+    removeCache(FORM_CACHE_PREFIX + formId);
+    return option;
+  }
+
+  /** Patches an option of a choice element on the server; returns the option as stored there. */
+  async updateOption(
+    formId: string,
+    elementId: string,
+    optionId: string,
+    patch: UpdateOptionRequest,
+  ): Promise<ChoiceOption> {
+    const option = await this.api.request(choiceOptionSchema, optionUrl(formId, elementId, optionId), {
+      method: 'PATCH',
+      body: JSON.stringify(patch),
+    });
+    removeCache(FORM_CACHE_PREFIX + formId);
+    return option;
+  }
+
+  async deleteOption(formId: string, elementId: string, optionId: string) {
+    await this.api.request(undefined, optionUrl(formId, elementId, optionId), { method: 'DELETE' });
+    removeCache(FORM_CACHE_PREFIX + formId);
   }
 
   async deleteElement(formId: string, elementId: string) {

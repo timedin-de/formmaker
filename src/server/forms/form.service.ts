@@ -1,9 +1,17 @@
-import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { FORM_VERSION } from '@shared/consts';
 import { evalConditionGroup, validateElementValue } from '@shared/engine';
 import { isQuestionOrGroup } from '@shared/helper';
 import {
   addPage,
+  type ChoiceElement,
+  type ChoiceOption,
   childrenOf,
   createElement,
   createPage,
@@ -11,20 +19,42 @@ import {
   elementId,
   FORM_SCHEMA_VERSION,
   type FormDefinition,
+  getElement,
   insertElement,
   type PageDefinition,
   removeElement,
   removePage,
   type SubmissionCreate,
+  updateElement,
   uuid,
 } from '@shared/model';
-import { type CreateElementRequest } from '@shared/schemas';
+import {
+  type CreateElementRequest,
+  type CreateOptionRequest,
+  type UpdateOptionRequest,
+} from '@shared/schemas';
 import { Repository, type User } from '../repository';
 
 /** A stored form together with its owner, as loaded by `Repository.form`. */
 interface OwnedForm {
   form: FormDefinition;
   ownerId: string;
+}
+
+/** The choice, dropdown or multi choice element `id`, or throws 404 / 400. */
+function choiceElement(form: FormDefinition, id: string): ChoiceElement {
+  const element = getElement(form, id);
+  if (!element) throw new NotFoundException({ error: `no element with id: ${id}` });
+  if (element.type !== 'choice' && element.type !== 'dropdown' && element.type !== 'multiChoice')
+    throw new BadRequestException({ error: `element ${id} has no options` });
+  return element;
+}
+
+/** The option `id` of `element`, or throws 404. */
+function choiceOption(element: ChoiceElement, id: string): ChoiceOption {
+  const option = element.options.find((o) => o.id === id);
+  if (!option) throw new NotFoundException({ error: `no option ${id} in element ${element.id}` });
+  return option;
 }
 
 @Injectable()
@@ -91,6 +121,61 @@ export class FormService {
   async deleteElement({ form, ownerId }: OwnedForm, elementId: string): Promise<void> {
     await this.repository.saveForm(ownerId, removeElement(form, elementId));
   }
+
+  /**
+   * Appends an option to a choice, dropdown or multi choice element and returns it.
+   * Without a value the next free `option_<n>` is used.
+   */
+  async addOption(
+    { form, ownerId }: OwnedForm,
+    elementId: string,
+    { label, value }: CreateOptionRequest,
+  ): Promise<ChoiceOption> {
+    const element = choiceElement(form, elementId);
+    const taken = new Set(element.options.map((o) => String(o.value)));
+    if (value !== undefined && taken.has(String(value)))
+      throw new ConflictException({ error: `option value ${value} already exists` });
+    let n = element.options.length + 1;
+    while (value === undefined && taken.has(`option_${n}`)) n++;
+
+    const option: ChoiceOption = { id: uuid(), label, value: value ?? `option_${n}` };
+    await this.repository.saveForm(
+      ownerId,
+      updateElement(form, elementId, { options: [...element.options, option] }),
+    );
+    return option;
+  }
+
+  /** Merges `patch` into an option of a choice element and returns the updated option. */
+  async updateOption(
+    { form, ownerId }: OwnedForm,
+    elementId: string,
+    optionId: string,
+    patch: UpdateOptionRequest,
+  ): Promise<ChoiceOption> {
+    const element = choiceElement(form, elementId);
+    const current = choiceOption(element, optionId);
+    const { value } = patch;
+    if (
+      value !== undefined &&
+      element.options.some((o) => o !== current && String(o.value) === String(value))
+    )
+      throw new ConflictException({ error: `option value ${value} already exists` });
+
+    const option: ChoiceOption = { ...current, ...patch };
+    const options = element.options.map((o) => (o === current ? option : o));
+    await this.repository.saveForm(ownerId, updateElement(form, elementId, { options }));
+    return option;
+  }
+
+  /** Removes an option from a choice element. */
+  async deleteOption({ form, ownerId }: OwnedForm, elementId: string, optionId: string) {
+    const element = choiceElement(form, elementId);
+    const current = choiceOption(element, optionId);
+    const options = element.options.filter((o) => o !== current);
+    await this.repository.saveForm(ownerId, updateElement(form, elementId, { options }));
+  }
+
   async addSubmission(submission: SubmissionCreate) {
     const form = await this.getForm(submission.formId);
     if (!form?.form) throw new NotFoundException({ error: 'not found' });

@@ -8,6 +8,7 @@ import {
   Inject,
   NotFoundException,
   Param,
+  Patch,
   Post,
   Put,
   UnprocessableEntityException,
@@ -22,11 +23,15 @@ import {
 import {
   type CreateElementRequest,
   createElementSchema,
+  type CreateOptionRequest,
+  createOptionSchema,
   createPageSchema,
   formDefinitionSchema,
   saveFormDefinitionSchema,
   stripFormOwnership,
   submissionCreateSchema,
+  type UpdateOptionRequest,
+  updateOptionSchema,
 } from '@shared/schemas';
 import * as z from 'zod/mini';
 import { AuthGuard } from '../auth/auth.guard';
@@ -166,6 +171,46 @@ export class FormsController {
   ) {
     const item = await this.managedForm(formId, user);
     return this.formService.deleteElement(item, elementId);
+  }
+
+  @Post(':formId/elements/:elementId/options')
+  @HttpCode(201)
+  @UseGuards(AuthGuard)
+  async addOption(
+    @CurrentUser() user: User,
+    @Param('formId') formId: string,
+    @Param('elementId') elementId: string,
+    @Body(new ZodValidationPipe(createOptionSchema)) body: CreateOptionRequest,
+  ) {
+    const item = await this.managedForm(formId, user);
+    return this.formService.addOption(item, elementId, body);
+  }
+
+  @Patch(':formId/elements/:elementId/options/:optionId')
+  @HttpCode(200)
+  @UseGuards(AuthGuard)
+  async updateOption(
+    @CurrentUser() user: User,
+    @Param('formId') formId: string,
+    @Param('elementId') elementId: string,
+    @Param('optionId') optionId: string,
+    @Body(new ZodValidationPipe(updateOptionSchema)) body: UpdateOptionRequest,
+  ) {
+    const item = await this.managedForm(formId, user);
+    return this.formService.updateOption(item, elementId, optionId, body);
+  }
+
+  @Delete(':formId/elements/:elementId/options/:optionId')
+  @HttpCode(204)
+  @UseGuards(AuthGuard)
+  async deleteOption(
+    @CurrentUser() user: User,
+    @Param('formId') formId: string,
+    @Param('elementId') elementId: string,
+    @Param('optionId') optionId: string,
+  ) {
+    const item = await this.managedForm(formId, user);
+    await this.formService.deleteOption(item, elementId, optionId);
   }
 
   @Delete(':id')
