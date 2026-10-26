@@ -27,7 +27,8 @@
     "format:check": "prettier --check .",
     "typecheck": "tsc -p tsconfig.app.json --noEmit && tsc -p tsconfig.spec.json --noEmit",
     "typecheck:server": "tsc -p tsconfig.server.json --noEmit",
-    "check": "npm run lint && npm run format:check && npm run typecheck && npm run typecheck:server && npm run test:ci && npm run test:server && npm run build"
+    "i18n:check": "node scripts/check-translations.mjs",
+    "check": "npm run lint && npm run format:check && npm run i18n:check && npm run typecheck && npm run typecheck:server && npm run test:ci && npm run test:server && npm run build"
   },
   "private": true,
   "engines": {
