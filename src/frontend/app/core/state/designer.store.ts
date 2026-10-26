@@ -30,7 +30,7 @@ import { parseFormData } from '@shared/schemas';
 import { I18nService } from '../i18n/translation.service';
 import { FormsRepository } from './forms.repository';
 
-const STORAGE_KEY = 'formmaker.designer.v1';
+const STORAGE_KEY = 'formmaker.designer.v2';
 
 @Injectable()
 export class DesignerStore {
