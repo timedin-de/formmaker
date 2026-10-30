@@ -174,9 +174,9 @@
       "validations": [],
       "defaultValue": { "kind": "static", "value": "choc" },
       "options": [
-        { "id": "o1", "label": "Blue", "value": "blue" },
-        { "id": "o2", "label": "Chocolate", "value": "choc" },
-        { "id": "o3", "label": "Green", "value": "green" }
+        { "id": "blue", "label": "Blue" },
+        { "id": "choc", "label": "Chocolate" },
+        { "id": "green", "label": "Green" }
       ]
     },
     "q_country": {
@@ -187,9 +187,9 @@
       "validations": [{ "id": "v10", "rule": "required" }],
       "defaultValue": null,
       "options": [
-        { "id": "c1", "label": "Germany", "value": "DE" },
-        { "id": "c2", "label": "United States", "value": "US" },
-        { "id": "c3", "label": "United Kingdom", "value": "UK" }
+        { "id": "DE", "label": "Germany" },
+        { "id": "US", "label": "United States" },
+        { "id": "UK", "label": "United Kingdom" }
       ]
     },
     "q_tags": {
@@ -200,9 +200,9 @@
       "validations": [{ "id": "v11", "rule": "required" }],
       "defaultValue": { "kind": "static", "value": ["a", "b"] },
       "options": [
-        { "id": "t1", "label": "AI", "value": "a" },
-        { "id": "t2", "label": "Web", "value": "b" },
-        { "id": "t3", "label": "Mobile", "value": "c" }
+        { "id": "a", "label": "AI" },
+        { "id": "b", "label": "Web" },
+        { "id": "c", "label": "Mobile" }
       ]
     },
     "q_price": {

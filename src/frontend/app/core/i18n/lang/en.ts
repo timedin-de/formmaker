@@ -223,7 +223,6 @@ const en = {
   'panel.width': 'Width',
   'panel.options': 'Options',
   'panel.optionLabel': 'Label',
-  'panel.optionValue': 'Value',
   'panel.addOption': 'Add option',
   'panel.defaultValue': 'Default value',
   'panel.none': 'None',

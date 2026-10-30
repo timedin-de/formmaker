@@ -199,21 +199,22 @@ describe('validateElementValue', () => {
     expect(ok(withRule({ rule: 'pattern', pattern: '(' }), 'x')).toBe(true);
   });
 
-  it('rejects values that are not a configured option', () => {
+  it('rejects choice options that are not configured', () => {
     const options = [
-      { id: 'o1', label: 'A', value: 'a' },
-      { id: 'o2', label: 'B', value: 'b' },
+      { id: 'o1', label: 'A' },
+      { id: 'o2', label: 'B' },
     ];
     const single = textEl({ type: 'choice', options });
-    expect(ok(single, 'a')).toBe(true);
+    expect(ok(single, 'o1')).toBe(true);
+    expect(ok(single, 'A')).toBe(false); // labels are not answers
     expect(ok(single, 'z')).toBe(false);
-    expect(ok(single, ['a'])).toBe(false); // wrong arity
+    expect(ok(single, ['o1'])).toBe(false); // wrong arity
     expect(ok(single, '')).toBe(true); // empty is the required rule's job
 
     const multi = textEl({ type: 'multiChoice', options });
-    expect(ok(multi, ['a', 'b'])).toBe(true);
-    expect(ok(multi, ['a', 'z'])).toBe(false);
-    expect(ok(multi, 'a')).toBe(false);
+    expect(ok(multi, ['o1', 'o2'])).toBe(true);
+    expect(ok(multi, ['o1', 'z'])).toBe(false);
+    expect(ok(multi, 'o1')).toBe(false);
   });
 
   it('does not add a second required rule when one is configured', () => {

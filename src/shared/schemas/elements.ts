@@ -45,7 +45,6 @@ const placeholderableSchema = z.strictObject({
 const choiceOptionSchema = z.strictObject({
   id: z.string(),
   label: z.string(),
-  value: z.union([z.string(), z.number()]),
 }) satisfies z.ZodMiniType<ChoiceOption>;
 
 const sectionElementSchema = z.extend(elementBaseSchema, {

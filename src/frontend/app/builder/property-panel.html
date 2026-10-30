@@ -232,14 +232,6 @@
                     (ngModelChange)="patchOption(i, { label: $event })"
                   />
                 </mat-form-field>
-                <mat-form-field appearance="outline" subscriptSizing="dynamic" class="val-field">
-                  <input
-                    matInput
-                    [placeholder]="i18n.t('panel.optionValue')"
-                    [ngModel]="str(opt.value)"
-                    (ngModelChange)="patchOption(i, { value: stringOrNum($event) })"
-                  />
-                </mat-form-field>
                 <button
                   mat-icon-button
                   [matTooltip]="i18n.t('row.moveUp')"

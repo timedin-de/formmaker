@@ -157,8 +157,8 @@ function seedOptionalQuestion(type: string, id: string): SeedElement {
     return {
       ...field,
       options: [
-        { id: uuid(), label: 'Yes', value: 'yes' },
-        { id: uuid(), label: 'No', value: 'no' },
+        { id: uuid(), label: 'Yes' },
+        { id: uuid(), label: 'No' },
       ],
     };
   }
