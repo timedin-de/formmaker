@@ -76,7 +76,6 @@ export type QuestionBase = ElementBase & QuestionAttributes;
 export interface ChoiceOption {
   id: string;
   label: string;
-  value: string | number;
 }
 
 export interface ChoiceElement extends QuestionBase {

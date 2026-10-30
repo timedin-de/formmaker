@@ -49,6 +49,12 @@ export function isQuestion<T extends ElementDefinition>(
   return QUESTION_TYPES.includes(object.type as QuestionType);
 }
 
+export function isChoice<T extends ElementDefinition>(
+  object: T,
+): object is Extract<T, { type: 'choice' | 'dropdown' | 'multiChoice' }> {
+  return ['choice', 'dropdown', 'multiChoice'].includes(object.type);
+}
+
 export function isQuestionOrGroup<T extends ElementDefinition>(
   object: T,
 ): object is Extract<T, QuestionDefinition | GroupElement> {
