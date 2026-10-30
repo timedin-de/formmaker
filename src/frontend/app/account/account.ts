@@ -70,10 +70,11 @@ export class Account {
   protected readonly confirmDelete = signal(false);
 
   constructor() {
-    if (this.auth.authenticated()) {
-      this.auth.loadUser().then(() => {
-        this.emailForm.setValue({ email: this.auth.user()?.email ?? '', password: '' });
-      });
+    if (this.auth.user()) {
+      this.fillEmail();
+    } else if (this.auth.authenticated()) {
+      // After a reload only the token survives; the form stays hidden until the user is loaded.
+      this.auth.loadUser().then(() => this.fillEmail());
     }
   }
 
@@ -135,6 +136,10 @@ export class Account {
     } catch (error) {
       this.fail(apiErrorMessage(error));
     }
+  }
+
+  private fillEmail(): void {
+    this.emailForm.controls.email.setValue(this.auth.user()?.email ?? '');
   }
 
   private fail(message: string): void {

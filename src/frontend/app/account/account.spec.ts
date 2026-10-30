@@ -105,6 +105,20 @@ describe('Account', () => {
     expect(authComponent.user()?.email).toBe('changed@formmaker.local');
     expect(authComponent.emailForm.value.email).toBe('changed@formmaker.local');
   });
+
+  it('uses the already loaded user without refetching it', async () => {
+    const users = TestBed.inject(UsersRepository) as { me: () => Promise<PublicUser> };
+    users.me = vi.fn(() => Promise.resolve(makeUser({ email: 'stale@formmaker.local' })));
+    const auth = TestBed.inject(AuthService);
+    auth.authenticated.set(true);
+    auth.user.set(makeUser());
+
+    const authFixture = TestBed.createComponent(Account);
+    await authFixture.whenStable();
+
+    expect(users.me).not.toHaveBeenCalled();
+    expect(authFixture.componentInstance.emailForm.value.email).toBe('demo@formmaker.local');
+  });
 });
 
 describe('Account actions', () => {
