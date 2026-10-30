@@ -86,7 +86,13 @@ export class QuestionInput {
   }
 
   options(el: ElementDefinition): ChoiceElement['options'] {
-    return (el as ChoiceElement).options ?? [];
+    const vr = this.vr();
+    return (
+      (el as ChoiceElement).options.map((v) => ({
+        ...v,
+        label: vr?.optionLabels?.[v.id] ?? v.label,
+      })) ?? []
+    );
   }
 
   strOpt(value: string | number): string {

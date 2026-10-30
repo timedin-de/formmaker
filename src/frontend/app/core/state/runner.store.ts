@@ -435,6 +435,7 @@ export class RunnerStore {
             description: el.description ?? '',
             visible: view.visible,
             control,
+            optionLabels: view.optionLabels,
             children: childrenOf(form, el)
               .map(collect)
               .filter((x) => !!x),
@@ -448,6 +449,7 @@ export class RunnerStore {
           placeholder: view.placeholder,
           visible: view.visible,
           control,
+          optionLabels: view.optionLabels,
           children: [],
         };
       };

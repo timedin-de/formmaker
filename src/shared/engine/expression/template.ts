@@ -1,4 +1,5 @@
-import { type FieldValue } from '@shared/model';
+import { isChoice } from '@shared/helper';
+import { type FieldValue, type FormDefinition } from '@shared/model';
 
 const TEMPLATE_PATTERN =
   /\{\{\s*([A-Za-z][A-Za-z0-9_.-]*)\s*(?:\|\s*([A-Za-z]+)(?:\s*:\s*([^}]*))?)?\s*\}\}/g;
@@ -70,10 +71,23 @@ export function parseTemplate(template: string): TemplateSegment[] {
 /** Substitute {{fieldId}} and {{fieldId | filter}} references against a values map. */
 export function interpolateTemplate(
   template: string,
-  values: Readonly<Record<string, FieldValue>>,
+  rawValues: Readonly<Record<string, FieldValue>>,
+  form: FormDefinition,
   filters: Record<string, TemplateFilter> = FILTERS,
 ): string {
   if (!template.includes('{{')) return template;
+
+  const values = Object.fromEntries(
+    Object.entries(rawValues).map(([id, value]) => {
+      const e = form.elements[id];
+      if (isChoice(e)) {
+        const label = e.options.find((o) => o.id === value)?.label;
+        return [id, label];
+      }
+      return [id, value];
+    }),
+  );
+
   return parseTemplate(template)
     .map((seg) => {
       if (seg.kind === 'text') return seg.value;

@@ -1,5 +1,5 @@
 import { evalConditionGroup, interpolateTemplate } from '@shared/engine';
-import { has } from '@shared/helper';
+import { has, isChoice } from '@shared/helper';
 import { childrenOf, walkElements } from '@shared/model/form-tree';
 import type { ElementDefinition, FormDefinition, PageDefinition } from '@shared/model/form.model';
 import type { FieldValue, ValuesMap } from '@shared/model/values.model';
@@ -12,6 +12,7 @@ export interface ElementView {
   label: string;
   description: string;
   placeholder: string;
+  optionLabels: Record<string, string> | undefined;
   /** resolved formula value for computed fields / applied dynamic value. */
   value: FieldValue;
   /** referenced field ids (dependencies). */
@@ -119,14 +120,25 @@ export class FormEvaluator {
     return { pages, byId };
   }
 
+  private interpolateTemplate(label: string, values: ValuesMap) {
+    if (!this.form) return label;
+    return interpolateTemplate(label, values, this.form);
+  }
+
   private evaluateElement(el: ElementDefinition, values: ValuesMap): ElementView {
     const cached = this.cache.get(el.id);
     if (cached && cached.rev === this.rev) return cached.view;
 
     const visible = evalConditionGroup(el.enabledWhen, values);
-    const label = interpolateTemplate(el.label, values);
-    const description = el.description ? interpolateTemplate(el.description, values) : '';
-    const placeholder = has(el, 'placeholder') ? interpolateTemplate(el.placeholder, values) : '';
+    const label = this.interpolateTemplate(el.label, values);
+    const description = el.description ? this.interpolateTemplate(el.description, values) : '';
+    const placeholder = has(el, 'placeholder')
+      ? this.interpolateTemplate(el.placeholder, values)
+      : '';
+
+    const optionLabels = isChoice(el)
+      ? Object.fromEntries(el.options.map((o) => [o.id, this.interpolateTemplate(o.label, values)]))
+      : undefined;
 
     const view: ElementView = {
       id: el.id,
@@ -135,6 +147,7 @@ export class FormEvaluator {
       label,
       description,
       placeholder,
+      optionLabels,
       value: values[el.id] ?? null,
       deps: this.depsById.get(el.id) ?? [],
     };

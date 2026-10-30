@@ -17,6 +17,7 @@ export interface ElementViewRef {
   id: string;
   el: ElementDefinition;
   label: string;
+  optionLabels?: Record<string, string>;
   description: string;
   visible: boolean;
   placeholder?: string;
