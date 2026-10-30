@@ -306,12 +306,11 @@
             @case ('expression') {
               <mat-form-field appearance="outline" subscriptSizing="dynamic">
                 <mat-label>{{ i18n.t('panel.expressionExample') }}</mat-label>
-                <textarea
-                  matInput
-                  rows="2"
-                  [ngModel]="exprText(el)"
-                  (ngModelChange)="setExpr($event)"
-                ></textarea>
+                <fm-expression-editor
+                  [form]="form()"
+                  [value]="exprText(el)"
+                  (valueChange)="setExpr($event)"
+                ></fm-expression-editor>
               </mat-form-field>
             }
             @case ('fromField') {
