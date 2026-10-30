@@ -36,11 +36,12 @@ export function validateElementValue(
   }
 
   if (has(element, 'options') && !isEmpty(value)) {
-    const allowed = element.options.map((o) => o.value);
     if (Array.isArray(value) !== (element.type === 'multiChoice')) {
       failures.push({ ruleId: '__option__', type: 'custom', message: 'Select valid option count' });
     }
+
     const picked = Array.isArray(value) ? value : [value];
+    const allowed = element.options.map((o) => o.id);
     if (
       picked.some(
         // Reject options with value not string or number

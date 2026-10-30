@@ -49,8 +49,8 @@ function choice(id: string, extra: Partial<ChoiceElement> = {}): ChoiceElement {
     readonly: false,
     defaultValue: null,
     options: [
-      { id: 'o1', label: 'Yes', value: 'yes' },
-      { id: 'o2', label: 'No', value: 'no' },
+      { id: 'yes', label: 'Yes' },
+      { id: 'no', label: 'No' },
     ],
     ...extra,
   };
@@ -433,16 +433,14 @@ describe('FormService.addSubmission', () => {
       await expectRejected({ q1: 'maybe' });
     });
 
-    // Select controls may hand back numeric option values as strings.
-    it('matches numeric option values loosely', async () => {
+    it('accepts option ids, not labels', async () => {
       const options = [
-        { id: 'o1', label: 'One', value: 1 },
-        { id: 'o2', label: 'Two', value: 2 },
+        { id: 'o1', label: 'One' },
+        { id: 'o2', label: 'Two' },
       ];
       form = formOf([page('p1', [choice('q1', { options })])]);
-      await expect(submit({ q1: '1' })).resolves.toBeDefined();
-      await expect(submit({ q1: 2 })).resolves.toBeDefined();
-      await expectRejected({ q1: 3 });
+      await expect(submit({ q1: 'o1' })).resolves.toBeDefined();
+      await expectRejected({ q1: 'One' });
     });
   });
 

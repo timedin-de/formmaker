@@ -228,7 +228,6 @@ const de: typeof en = {
   'panel.width': 'Breite',
   'panel.options': 'Optionen',
   'panel.optionLabel': 'Bezeichnung',
-  'panel.optionValue': 'Wert',
   'panel.addOption': 'Option hinzufügen',
   'panel.defaultValue': 'Standardwert',
   'panel.none': 'Keiner',
