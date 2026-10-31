@@ -1,5 +1,6 @@
+import { isChoice } from '@shared/helper';
 import { childrenOf, type ElementParent } from '@shared/model/form-tree';
-import type { FormDefinition } from '@shared/model/form.model';
+import type { ElementDefinition, FormDefinition } from '@shared/model/form.model';
 import type { Submission } from '@shared/model/submission.model';
 import type { FieldValue } from '@shared/model/values.model';
 
@@ -76,10 +77,30 @@ function buildLabel(pageNum: number, path: string[]): string {
   return `P${pageNum}·${joined}`;
 }
 
-export function formatValueForExport(value: FieldValue | undefined): {
+/** Shown for an answer whose option was removed from the form after submitting. */
+const REMOVED_OPTION = '[removed option]';
+
+/** Answers to choice questions hold option ids; replace them with the option labels. */
+export function displayValue(
+  value: FieldValue | undefined,
+  element: ElementDefinition | undefined,
+): FieldValue | undefined {
+  if (!element || !isChoice(element) || value === null || value === undefined || value === '') {
+    return value;
+  }
+  const label = (id: unknown): string =>
+    element.options.find((o) => o.id === id)?.label ?? REMOVED_OPTION;
+  return Array.isArray(value) ? value.map(label) : label(value);
+}
+
+export function formatValueForExport(
+  raw: FieldValue | undefined,
+  element?: ElementDefinition,
+): {
   text: string;
   additional?: unknown;
 } {
+  const value = displayValue(raw, element);
   if (value === null || value === undefined) return { text: '' };
   if (typeof value === 'string') return { text: value };
   if (typeof value === 'number') return { text: String(value) };
@@ -105,12 +126,16 @@ export function formatValueForExport(value: FieldValue | undefined): {
 }
 
 export function rowForSubmission(
+  form: FormDefinition,
   submission: Submission,
   columns: ExportColumn[],
 ): Record<string, { text: string; additional?: unknown }> {
   const row: Record<string, { text: string; additional?: unknown }> = {};
   for (const column of columns) {
-    row[column.fieldId] = formatValueForExport(submission.values[column.fieldId]);
+    row[column.fieldId] = formatValueForExport(
+      submission.values[column.fieldId],
+      form.elements[column.fieldId],
+    );
   }
   return row;
 }
@@ -119,7 +144,7 @@ export function buildExportTable(form: FormDefinition, submissions: Submission[]
   const columns = buildColumns(form);
   return {
     columns,
-    rows: submissions.map((s) => rowForSubmission(s, columns)),
+    rows: submissions.map((s) => rowForSubmission(form, s, columns)),
   };
 }
 

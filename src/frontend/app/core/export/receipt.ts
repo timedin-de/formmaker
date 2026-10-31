@@ -30,7 +30,7 @@ export function buildReceipt(form: FormDefinition, submission: Submission): Rece
       } else if (el.type === 'section') {
         continue;
       } else {
-        const text = formatValueForExport(submission.values[el.id]).text;
+        const text = formatValueForExport(submission.values[el.id], el).text;
         if (!text) continue;
         blocks.push({ kind: 'answer', label: el.label, value: text, indent });
         hasAnswers = true;
