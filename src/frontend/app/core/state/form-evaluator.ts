@@ -1,4 +1,4 @@
-import { evalConditionGroup, interpolateTemplate } from '@shared/engine';
+import { evalConditionGroup, interpolateTemplate, templateValues } from '@shared/engine';
 import { has } from '@shared/helper';
 import { childrenOf, walkElements } from '@shared/model/form-tree';
 import type { ElementDefinition, FormDefinition, PageDefinition } from '@shared/model/form.model';
@@ -98,17 +98,18 @@ export class FormEvaluator {
       };
 
     const form = this.form;
+    const display = templateValues(values, form.elements);
     for (const page of form.pages) {
       const pageVisible = evalConditionGroup(page.enabledWhen, values);
       const views: ElementView[] = [];
       for (const el of childrenOf(form, page)) {
-        const view = this.evaluateElement(el, values);
+        const view = this.evaluateElement(el, values, display);
         views.push(view);
         byId.set(el.id, view);
         if (el.type === 'group') {
           walkElements(
             form,
-            (child) => byId.set(child.id, this.evaluateElement(child, values)),
+            (child) => byId.set(child.id, this.evaluateElement(child, values, display)),
             el,
           );
         }
@@ -119,14 +120,19 @@ export class FormEvaluator {
     return { pages, byId };
   }
 
-  private evaluateElement(el: ElementDefinition, values: ValuesMap): ElementView {
+  /** `display` holds the values as templates show them (option labels instead of ids). */
+  private evaluateElement(
+    el: ElementDefinition,
+    values: ValuesMap,
+    display: ValuesMap,
+  ): ElementView {
     const cached = this.cache.get(el.id);
     if (cached && cached.rev === this.rev) return cached.view;
 
     const visible = evalConditionGroup(el.enabledWhen, values);
-    const label = interpolateTemplate(el.label, values);
-    const description = el.description ? interpolateTemplate(el.description, values) : '';
-    const placeholder = has(el, 'placeholder') ? interpolateTemplate(el.placeholder, values) : '';
+    const label = interpolateTemplate(el.label, display);
+    const description = el.description ? interpolateTemplate(el.description, display) : '';
+    const placeholder = has(el, 'placeholder') ? interpolateTemplate(el.placeholder, display) : '';
 
     const view: ElementView = {
       id: el.id,
