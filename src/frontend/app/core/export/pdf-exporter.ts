@@ -1,7 +1,7 @@
 import { countQuestions } from '@shared/model/form-tree';
 import type { NamedFormDefinition } from '@shared/model/form.model';
 import type { Submission } from '@shared/model/submission.model';
-import { jsPDF } from 'jspdf';
+import { GState, jsPDF } from 'jspdf';
 import { buildColumnBlocks, formatValueForExport } from './columns';
 import { buildReceipt, type ReceiptBlock } from './receipt';
 
@@ -140,7 +140,7 @@ export async function submissionsToPdf(
     }
     y += 12;
     const state: { value: number } = { value: y };
-    renderBlocks(doc, buildReceipt(form, sub), ensureSpace, state, {
+    renderBlocks(doc, buildReceipt(form, sub), state, {
       fontSize: 9,
       groupSize: 10,
       labelWrap: 150,
@@ -162,16 +162,10 @@ export async function submissionsToPdf(
 export async function submissionToPdf(
   form: NamedFormDefinition,
   submission: Submission,
+  options: { watermark?: string } = {},
 ): Promise<Blob> {
   const doc = new jsPDF({ unit: 'pt', format: 'a4' });
   let y = MARGIN;
-
-  const ensureSpace = (needed = 60): void => {
-    if (y + needed > PAGE_H - MARGIN) {
-      doc.addPage();
-      y = MARGIN;
-    }
-  };
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(18);
@@ -206,14 +200,14 @@ export async function submissionToPdf(
     y += 14;
   }
   const state: { value: number } = { value: y };
-  renderBlocks(doc, blocks, ensureSpace, state, {
+  renderBlocks(doc, blocks, state, {
     fontSize: 10,
     groupSize: 12,
     labelWrap: 170,
     valueX: MARGIN + 180,
     gapAfter: 8,
   });
-  y = state.value;
+  if (options.watermark) drawWatermark(doc, options.watermark);
 
   const buffer = doc.output('arraybuffer');
   return new Blob([buffer], { type: 'application/pdf' });
@@ -235,11 +229,16 @@ interface BlockRenderOptions {
 function renderBlocks(
   doc: jsPDF,
   blocks: ReceiptBlock[],
-  ensureSpace: (needed?: number) => void,
   state: { value: number },
   opts: BlockRenderOptions,
 ): void {
   const lineHeight = 12;
+  const ensureSpace = (needed = 60): void => {
+    if (state.value + needed > PAGE_H - MARGIN) {
+      doc.addPage();
+      state.value = MARGIN;
+    }
+  };
   for (const block of blocks) {
     ensureSpace(block.kind === 'answer' ? 30 : 40);
     const x = MARGIN + block.indent * 18;
@@ -277,6 +276,15 @@ function renderBlocks(
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(60, 60, 60);
     const labelLines = wrap(doc, block.label, opts.labelWrap - block.indent * 18);
+    const imageUrl =
+      block.additional &&
+      typeof block.additional === 'object' &&
+      'dataUrl' in block.additional &&
+      typeof block.additional.dataUrl === 'string'
+        ? block.additional.dataUrl
+        : null;
+    // keep an image together with its label
+    if (imageUrl) ensureSpace(labelLines.length * lineHeight + 160);
     for (const line of labelLines) {
       ensureSpace(14);
       doc.text(line, x, state.value);
@@ -285,6 +293,12 @@ function renderBlocks(
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(30, 30, 30);
     const valueWrap = CONTENT_W - (opts.valueX - MARGIN) - 12;
+    if (imageUrl) {
+      ensureSpace(160);
+      doc.addImage(imageUrl, 'JPEG', x, state.value, 460, 160);
+      state.value += 160;
+      continue;
+    }
     const valueLines = wrap(doc, block.value, valueWrap);
     for (const line of valueLines) {
       ensureSpace(14);
@@ -292,6 +306,21 @@ function renderBlocks(
       state.value += lineHeight;
     }
     state.value += opts.gapAfter ?? 8;
+  }
+}
+
+/** Stamp a large, translucent diagonal label across the centre of every page. */
+function drawWatermark(doc: jsPDF, text: string): void {
+  const pages = doc.getNumberOfPages();
+  for (let i = 1; i <= pages; i++) {
+    doc.setPage(i);
+    doc.saveGraphicsState();
+    doc.setGState(new GState({ opacity: 0.12 }));
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(110);
+    doc.setTextColor(200, 30, 30);
+    doc.text(text, PAGE_W / 2, PAGE_H / 2, { angle: 45, align: 'center', baseline: 'middle' });
+    doc.restoreGraphicsState();
   }
 }
 

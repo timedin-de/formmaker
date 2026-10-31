@@ -390,6 +390,8 @@ const en = {
 
   // PDF
   'pdf.receipt': '{name}-receipt',
+  'pdf.draft': '{name}-draft',
+  'pdf.watermarkDraft': 'DRAFT',
 
   // API errors
   'error.rateLimited': "You're being rate limited. Please wait a moment and try again.",

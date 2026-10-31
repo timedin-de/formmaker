@@ -81,6 +81,9 @@
           <button mat-flat-button color="primary" [disabled]="submitting()" (click)="submit()">
             <mat-icon svgIcon="send"></mat-icon> {{ submitLabel() }}
           </button>
+          <button mat-flat-button color="primary" (click)="downloadDraft()">
+            <mat-icon svgIcon="send"></mat-icon> Draft print
+          </button>
         }
       </div>
     </div>
