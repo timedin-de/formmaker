@@ -110,6 +110,16 @@ describe('formatValueForExport', () => {
       }),
     ).toMatchObject({ text: '[signature]' });
   });
+
+  it('shows option labels instead of ids for choice answers', () => {
+    const choice = createElement('multiChoice', 'Pick');
+    if (choice.type !== 'multiChoice') throw new Error('expected multiChoice');
+    const [a, b] = choice.options;
+    expect(formatValueForExport(a.id, choice)).toEqual({ text: 'Option 1' });
+    expect(formatValueForExport([a.id, b.id], choice)).toEqual({ text: 'Option 1, Option 2' });
+    expect(formatValueForExport('gone', choice)).toEqual({ text: '[removed option]' });
+    expect(formatValueForExport(null, choice)).toEqual({ text: '' });
+  });
 });
 
 describe('toCsv', () => {
@@ -148,6 +158,25 @@ describe('submissionsToCsv', () => {
     expect(text).toContain('Full name');
     expect(text).toContain('Ada');
     expect(text).toContain('36');
+  });
+
+  it('writes choice answers as option labels', async () => {
+    const form = newForm();
+    const choice = createElement('dropdown', 'Color');
+    if (choice.type !== 'dropdown') throw new Error('expected dropdown');
+    addToGroup(choice, form.pages[0], form);
+    const option = choice.options[1];
+    const sub: Submission = {
+      id: 's1',
+      formId: form.id,
+      formVersion: 1,
+      submittedAt: '2026-01-01T00:00:00Z',
+      durationMs: 1000,
+      values: { [choice.id]: option.id },
+    };
+    const text = await submissionsToCsv(form, [sub]).text();
+    expect(text).toContain('Option 2');
+    expect(text).not.toContain(option.id);
   });
 });
 

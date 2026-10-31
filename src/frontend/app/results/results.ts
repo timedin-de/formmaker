@@ -68,14 +68,18 @@ export class Results {
   }
 
   valueFor(sub: Submission, fieldId: string): string {
-    const row = rowForSubmission(sub, [{ fieldId, label: '' }]);
+    const form = this.form();
+    if (!form) return '—';
+    const row = rowForSubmission(form, sub, [{ fieldId, label: '' }]);
     const v = row[fieldId].text;
     if (typeof v === 'string' && v !== '') return v;
     return '—';
   }
 
   clickValueFor(sub: Submission, fieldId: string): string {
-    const row = rowForSubmission(sub, [{ fieldId, label: '' }]);
+    const form = this.form();
+    if (!form) return '—';
+    const row = rowForSubmission(form, sub, [{ fieldId, label: '' }]);
 
     if ((row[fieldId]?.additional as { dataUrl: string })?.dataUrl) {
       window.open((row[fieldId]?.additional as { dataUrl: string }).dataUrl, '_blank');

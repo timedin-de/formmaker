@@ -1,4 +1,4 @@
-import { buildColumns } from './columns';
+import { buildColumns, displayValue } from './columns';
 import type { FormDefinition } from '@shared/model/form.model';
 import type { Submission } from '@shared/model/submission.model';
 import exp from 'exceljs';
@@ -34,7 +34,11 @@ export async function submissionsToExcel(
   headerRow.height = 22;
 
   for (const submission of submissions) {
-    sheet.addRow(columns.map((c) => plainCell(submission.values[c.fieldId])));
+    sheet.addRow(
+      columns.map((c) =>
+        plainCell(displayValue(submission.values[c.fieldId], form.elements[c.fieldId])),
+      ),
+    );
   }
 
   sheet.columns = columns.map((c, i) => ({
