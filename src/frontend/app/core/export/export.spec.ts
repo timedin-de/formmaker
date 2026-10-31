@@ -12,7 +12,11 @@ import { describe, expect, it } from 'vitest';
 import { EXPORT_CHANNELS } from './channels';
 import { buildColumnBlocks, buildColumns, buildExportTable, formatValueForExport } from './columns';
 import { submissionsToCsv, toCsv } from './csv-exporter';
+import type { ExportContext } from './context';
 import { buildReceipt } from './receipt';
+
+/** Translates every key to itself. */
+const ctx: ExportContext = { t: (key) => key };
 
 function demoForm(): FormDefinition {
   const form = newForm('Demo');
@@ -115,10 +119,12 @@ describe('formatValueForExport', () => {
     const choice = createElement('multiChoice', 'Pick');
     if (choice.type !== 'multiChoice') throw new Error('expected multiChoice');
     const [a, b] = choice.options;
-    expect(formatValueForExport(a.id, choice)).toEqual({ text: 'Option 1' });
-    expect(formatValueForExport([a.id, b.id], choice)).toEqual({ text: 'Option 1, Option 2' });
-    expect(formatValueForExport('gone', choice)).toEqual({ text: '[removed option]' });
-    expect(formatValueForExport(null, choice)).toEqual({ text: '' });
+    expect(formatValueForExport(a.id, choice, ctx)).toEqual({ text: 'Option 1' });
+    expect(formatValueForExport([a.id, b.id], choice, ctx)).toEqual({
+      text: 'Option 1, Option 2',
+    });
+    expect(formatValueForExport('gone', choice, ctx)).toEqual({ text: 'export.removedOption' });
+    expect(formatValueForExport(null, choice, ctx)).toEqual({ text: '' });
   });
 });
 
@@ -153,7 +159,7 @@ describe('submissionsToCsv', () => {
       durationMs: 1000,
       values: { [nameEl]: 'Ada', [ageEl]: 36 },
     };
-    const blob = submissionsToCsv(form, [sub]);
+    const blob = submissionsToCsv(form, [sub], ctx);
     const text = await blob.text();
     expect(text).toContain('Full name');
     expect(text).toContain('Ada');
@@ -174,7 +180,7 @@ describe('submissionsToCsv', () => {
       durationMs: 1000,
       values: { [choice.id]: option.id },
     };
-    const text = await submissionsToCsv(form, [sub]).text();
+    const text = await submissionsToCsv(form, [sub], ctx).text();
     expect(text).toContain('Option 2');
     expect(text).not.toContain(option.id);
   });
@@ -183,7 +189,7 @@ describe('submissionsToCsv', () => {
 describe('buildExportTable', () => {
   it('maps submissions to rows', () => {
     const form = demoForm();
-    const table = buildExportTable(form, []);
+    const table = buildExportTable(form, [], ctx);
     expect(table.columns).toHaveLength(2);
   });
 });
@@ -220,6 +226,7 @@ describe('buildReceipt', () => {
     const blocks = buildReceipt(
       form,
       submissionFor(form, { [street.id]: 'Main 1', [city.id]: 'Oslo' }),
+      ctx,
     );
     expect(blocks).toEqual([
       { kind: 'page', label: 'New page', indent: 0 },
@@ -240,7 +247,7 @@ describe('buildReceipt', () => {
       ...form.pages[0].children,
       { type: 'group', id: 'g_empty', label: 'Empty group', children: [] } as never,
     ];
-    const blocks = buildReceipt(form, submissionFor(form, { [street.id]: 'Main 1' }));
+    const blocks = buildReceipt(form, submissionFor(form, { [street.id]: 'Main 1' }), ctx);
     expect(blocks).toEqual([
       { kind: 'page', label: 'New page', indent: 0 },
       { kind: 'group', label: 'Address', indent: 0 },
@@ -253,8 +260,6 @@ describe('buildReceipt', () => {
 });
 
 describe('EXPORT_CHANNELS', () => {
-  const ctx = { t: (key: string) => key };
-
   it('registers download channels for csv, xlsx, pdf and a link channel for mail', async () => {
     const form = demoForm();
     const [nameEl, ageEl] = form.pages[0].children;

@@ -3,6 +3,7 @@ import type { ElementDefinition, FormDefinition } from '@shared/model/form.model
 import type { Submission } from '@shared/model/submission.model';
 import type { FieldValue } from '@shared/model/values.model';
 import { formatValueForExport } from './columns';
+import type { ExportContext } from './context';
 
 /** RFC-4180-ish CSV serialization (quotes when needed, CRLF). */
 export function toCsv(header: string[], rows: (string | number | boolean | null)[][]): Blob {
@@ -37,7 +38,8 @@ export type CsvFormatter = (
 export function submissionsToCsv(
   form: FormDefinition,
   submissions: Submission[],
-  formatter: CsvFormatter = formatValueForExport,
+  ctx: ExportContext,
+  formatter: CsvFormatter = (value, element) => formatValueForExport(value, element, ctx),
 ): Blob {
   const columns = buildColumns(form);
   const header = columns.map((c) => c.label);

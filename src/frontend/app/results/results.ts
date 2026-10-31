@@ -18,7 +18,7 @@ import {
   rowForSubmission,
   type ExportChannel,
 } from '../core/export';
-import { I18nService, type TranslationKey } from '../core/i18n';
+import { I18nService } from '../core/i18n';
 import { FormsRepository } from '../core/state/forms.repository';
 
 @Component({
@@ -70,7 +70,7 @@ export class Results {
   valueFor(sub: Submission, fieldId: string): string {
     const form = this.form();
     if (!form) return '—';
-    const row = rowForSubmission(form, sub, [{ fieldId, label: '' }]);
+    const row = rowForSubmission(form, sub, [{ fieldId, label: '' }], this.i18n);
     const v = row[fieldId].text;
     if (typeof v === 'string' && v !== '') return v;
     return '—';
@@ -79,7 +79,7 @@ export class Results {
   clickValueFor(sub: Submission, fieldId: string): string {
     const form = this.form();
     if (!form) return '—';
-    const row = rowForSubmission(form, sub, [{ fieldId, label: '' }]);
+    const row = rowForSubmission(form, sub, [{ fieldId, label: '' }], this.i18n);
 
     if ((row[fieldId]?.additional as { dataUrl: string })?.dataUrl) {
       window.open((row[fieldId]?.additional as { dataUrl: string }).dataUrl, '_blank');
@@ -125,13 +125,9 @@ export class Results {
     const form = this.form();
     const subs = this.submissions();
     if (!form || subs.length === 0) return;
-    const ctx = {
-      t: (key: TranslationKey, params?: Record<string, string | number>) =>
-        this.i18n.t(key, params),
-    };
     const name = formName(form, this.i18n);
     try {
-      const artifact = await ch.build({ ...form, name }, subs, ctx);
+      const artifact = await ch.build({ ...form, name }, subs, this.i18n);
       if (artifact.kind === 'download') {
         downloadBlob(artifact.blob, artifact.filename);
       } else {

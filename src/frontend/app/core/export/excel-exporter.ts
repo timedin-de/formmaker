@@ -1,4 +1,5 @@
 import { buildColumns, displayValue } from './columns';
+import type { ExportContext } from './context';
 import type { FormDefinition } from '@shared/model/form.model';
 import type { Submission } from '@shared/model/submission.model';
 import exp from 'exceljs';
@@ -17,6 +18,7 @@ export interface ExcelExportOptions {
 export async function submissionsToExcel(
   form: FormDefinition,
   submissions: Submission[],
+  ctx: ExportContext,
   options: ExcelExportOptions = {},
 ): Promise<Blob> {
   const workbook = new Workbook();
@@ -36,7 +38,7 @@ export async function submissionsToExcel(
   for (const submission of submissions) {
     sheet.addRow(
       columns.map((c) =>
-        plainCell(displayValue(submission.values[c.fieldId], form.elements[c.fieldId])),
+        plainCell(displayValue(submission.values[c.fieldId], form.elements[c.fieldId], ctx)),
       ),
     );
   }

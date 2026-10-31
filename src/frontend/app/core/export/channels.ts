@@ -1,6 +1,7 @@
 import type { NamedFormDefinition } from '@shared/model/form.model';
 import type { Submission } from '@shared/model/submission.model';
 import { type TranslationKey } from '../i18n';
+import { type ExportContext } from './context';
 import { submissionsToCsv } from './csv-exporter';
 import { toSlug } from './file';
 import { submissionsToExcel, submissionsToPdf } from './lazy-exporters';
@@ -9,11 +10,6 @@ export type ExportChannelId = 'csv' | 'xlsx' | 'pdf' | 'mail';
 
 export type ExportArtifact =
   { kind: 'download'; blob: Blob; filename: string } | { kind: 'link'; url: string };
-
-export interface ExportContext {
-  /** Translate a UI string; keeps channels framework-free yet localizable. */
-  t(key: string, params?: Record<string, string | number>): string;
-}
 
 /**
  * A pluggable "results output": anything that turns a form + its submissions
@@ -42,10 +38,10 @@ export const csvChannel: ExportChannel = {
   id: 'csv',
   labelKey: 'results.csv',
   icon: 'download',
-  build(form, submissions) {
+  build(form, submissions, ctx) {
     return Promise.resolve({
       kind: 'download',
-      blob: submissionsToCsv(form, submissions),
+      blob: submissionsToCsv(form, submissions, ctx),
       filename: exportFileName(form.name, 'csv'),
     });
   },
@@ -55,10 +51,10 @@ export const excelChannel: ExportChannel = {
   id: 'xlsx',
   labelKey: 'results.excel',
   icon: 'table_view',
-  async build(form, submissions) {
+  async build(form, submissions, ctx) {
     return {
       kind: 'download',
-      blob: await submissionsToExcel(form, submissions),
+      blob: await submissionsToExcel(form, submissions, ctx),
       filename: exportFileName(form.name, 'xlsx'),
     };
   },
@@ -69,10 +65,10 @@ export const pdfChannel: ExportChannel = {
   labelKey: 'results.pdf',
   icon: 'picture_as_pdf',
   doneKey: 'export.exported',
-  async build(form, submissions) {
+  async build(form, submissions, ctx) {
     return {
       kind: 'download',
-      blob: await submissionsToPdf(form, submissions),
+      blob: await submissionsToPdf(form, submissions, ctx),
       filename: exportFileName(form.name, 'pdf'),
     };
   },
