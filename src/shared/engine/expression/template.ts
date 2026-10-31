@@ -1,4 +1,5 @@
-import { type FieldValue } from '@shared/model';
+import { isChoice } from '@shared/helper';
+import { type ElementDefinition, type FieldValue } from '@shared/model';
 
 const TEMPLATE_PATTERN =
   /\{\{\s*([A-Za-z][A-Za-z0-9_.-]*)\s*(?:\|\s*([A-Za-z]+)(?:\s*:\s*([^}]*))?)?\s*\}\}/g;
@@ -83,6 +84,24 @@ export function interpolateTemplate(
       return formatValue(value as FieldValue);
     })
     .join('');
+}
+
+/**
+ * Values as templates should show them: choice answers hold option ids, which
+ * are replaced by their labels. Ids of removed options render as nothing.
+ */
+export function templateValues(
+  values: Readonly<Record<string, FieldValue>>,
+  elements: Readonly<Record<string, ElementDefinition>>,
+): Record<string, FieldValue> {
+  const out: Record<string, FieldValue> = { ...values };
+  for (const [id, value] of Object.entries(values)) {
+    const el = elements[id];
+    if (!el || !isChoice(el) || value === null || value === undefined) continue;
+    const label = (v: unknown): string => el.options.find((o) => o.id === v)?.label ?? '';
+    out[id] = Array.isArray(value) ? value.map(label) : label(value);
+  }
+  return out;
 }
 
 /** Field ids referenced by a piped template. */
