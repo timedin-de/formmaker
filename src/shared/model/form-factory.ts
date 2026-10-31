@@ -64,8 +64,8 @@ export function createElement(type: ElementType, label: string): ElementDefiniti
         ...qBase,
         type: 'choice',
         options: [
-          { id: uuid(), label: 'Option 1', value: 'option_1' },
-          { id: uuid(), label: 'Option 2', value: 'option_2' },
+          { id: uuid(), label: 'Option 1' },
+          { id: uuid(), label: 'Option 2' },
         ],
       };
     case 'dropdown':
@@ -73,8 +73,8 @@ export function createElement(type: ElementType, label: string): ElementDefiniti
         ...qBase,
         type: 'dropdown',
         options: [
-          { id: uuid(), label: 'Option 1', value: 'option_1' },
-          { id: uuid(), label: 'Option 2', value: 'option_2' },
+          { id: uuid(), label: 'Option 1' },
+          { id: uuid(), label: 'Option 2' },
         ],
       };
     case 'multiChoice':
@@ -82,8 +82,8 @@ export function createElement(type: ElementType, label: string): ElementDefiniti
         ...qBase,
         type: 'multiChoice',
         options: [
-          { id: uuid(), label: 'Option 1', value: 'option_1' },
-          { id: uuid(), label: 'Option 2', value: 'option_2' },
+          { id: uuid(), label: 'Option 1' },
+          { id: uuid(), label: 'Option 2' },
         ],
       };
     case 'scale':

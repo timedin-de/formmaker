@@ -10,7 +10,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { has } from '@shared/helper';
+import { has, isChoice } from '@shared/helper';
 import { childrenOf } from '@shared/model/form-tree';
 import type {
   ChoiceElement,
@@ -68,6 +68,7 @@ export class PropertyPanel {
   protected readonly VALIDATION_RULE_TYPES = VALIDATION_RULE_TYPES;
   protected readonly TIME_INTERVAL_UNITS = TIME_INTERVAL_UNITS;
   protected readonly has = has;
+  protected readonly isChoice = isChoice;
 
   protected readonly el = computed(() => this.store().selectedElement());
   protected readonly meta = computed(() =>
@@ -114,13 +115,9 @@ export class PropertyPanel {
     return s !== '' && !Number.isNaN(n) && /^-?\d*\.?\d+$/.test(s) ? n : s;
   }
 
-  isChoice(el: ElementDefinition): el is ChoiceElement {
-    return el.type === 'choice' || el.type === 'dropdown' || el.type === 'multiChoice';
-  }
-
   private choice(): ChoiceElement {
     const el = this.sel();
-    if (!this.isChoice(el)) throw new Error('Not a choice');
+    if (!isChoice(el)) throw new Error('Not a choice');
     return el;
   }
 
@@ -135,10 +132,7 @@ export class PropertyPanel {
     const options = choice.options ?? [];
     const idx = options.length + 1;
     this.patch({
-      options: [
-        ...options,
-        { id: uuid(), label: `${this.i18n.t('panel.option')} ${idx}`, value: idx },
-      ],
+      options: [...options, { id: uuid(), label: `${this.i18n.t('panel.option')} ${idx}` }],
     });
   }
 

@@ -53,7 +53,7 @@
     @case ('choice') {
       <mat-radio-group class="choice-group" [formControl]="vr.control" [name]="vr.id">
         @for (opt of options(vr.el); track opt.id) {
-          <mat-radio-button #field [value]="opt.value">{{ opt.label }}</mat-radio-button>
+          <mat-radio-button #field [value]="opt.id">{{ opt.label }}</mat-radio-button>
         }
       </mat-radio-group>
     }
@@ -61,7 +61,7 @@
       <mat-form-field appearance="outline" class="field-host" subscriptSizing="dynamic">
         <mat-select #field [formControl]="vr.control" [aria-labelledby]="`${vr.id}-title`">
           @for (opt of options(vr.el); track opt.id) {
-            <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
+            <mat-option [value]="opt.id">{{ opt.label }}</mat-option>
           }
         </mat-select>
       </mat-form-field>
@@ -71,10 +71,10 @@
         @for (opt of options(vr.el); track opt.id) {
           <mat-checkbox
             #field
-            [disabled]="multiDisabled(vr.control, opt.value)"
-            [value]="strOpt(opt.value)"
-            [checked]="multiChecked(vr.control, opt.value)"
-            (change)="toggleMulti(vr.control, opt.value, $event.checked)"
+            [disabled]="multiDisabled(vr.control, opt.id)"
+            [value]="strOpt(opt.id)"
+            [checked]="multiChecked(vr.control, opt.id)"
+            (change)="toggleMulti(vr.control, opt.id, $event.checked)"
           >
             {{ opt.label }}
           </mat-checkbox>
