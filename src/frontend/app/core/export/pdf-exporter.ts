@@ -3,6 +3,7 @@ import type { NamedFormDefinition } from '@shared/model/form.model';
 import type { Submission } from '@shared/model/submission.model';
 import { jsPDF } from 'jspdf';
 import { buildColumnBlocks, formatValueForExport } from './columns';
+import type { ExportContext } from './context';
 import { buildReceipt, type ReceiptBlock } from './receipt';
 
 const PAGE_W = 595; // A4 portrait, pt
@@ -17,6 +18,7 @@ const CONTENT_W = PAGE_W - MARGIN * 2;
 export async function submissionsToPdf(
   form: NamedFormDefinition,
   submissions: Submission[],
+  ctx: ExportContext,
 ): Promise<Blob> {
   const doc = new jsPDF({ unit: 'pt', format: 'a4' });
   const columnBlocks = buildColumnBlocks(form);
@@ -140,7 +142,7 @@ export async function submissionsToPdf(
     }
     y += 12;
     const state: { value: number } = { value: y };
-    renderBlocks(doc, buildReceipt(form, sub), ensureSpace, state, {
+    renderBlocks(doc, buildReceipt(form, sub, ctx), ensureSpace, state, {
       fontSize: 9,
       groupSize: 10,
       labelWrap: 150,
@@ -162,6 +164,7 @@ export async function submissionsToPdf(
 export async function submissionToPdf(
   form: NamedFormDefinition,
   submission: Submission,
+  ctx: ExportContext,
 ): Promise<Blob> {
   const doc = new jsPDF({ unit: 'pt', format: 'a4' });
   let y = MARGIN;
@@ -198,7 +201,7 @@ export async function submissionToPdf(
   doc.text(drawWord(doc, 'Your answers'), MARGIN, y + 12);
   y += 22;
 
-  const blocks = buildReceipt(form, submission);
+  const blocks = buildReceipt(form, submission, ctx);
   doc.setFontSize(10);
   if (blocks.length === 0) {
     doc.setTextColor(110, 110, 110);

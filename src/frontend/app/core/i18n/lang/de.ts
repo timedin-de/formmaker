@@ -392,6 +392,7 @@ const de: typeof en = {
   // export
   'export.exported': 'Export abgeschlossen',
   'export.failed': 'Export fehlgeschlagen',
+  'export.removedOption': '[entfernte Option]',
 
   // PDF
   'pdf.receipt': '{name}-beleg',

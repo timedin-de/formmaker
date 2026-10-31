@@ -2,6 +2,7 @@ import { childrenOf, type ElementParent } from '@shared/model/form-tree';
 import type { FormDefinition } from '@shared/model/form.model';
 import type { Submission } from '@shared/model/submission.model';
 import { formatValueForExport } from './columns';
+import type { ExportContext } from './context';
 
 export type ReceiptBlock =
   | { kind: 'page'; label: string; indent: number }
@@ -15,7 +16,11 @@ export type ReceiptBlock =
  * answered questions, indented by nesting depth. Sections are treated as
  * visual dividers and skipped; unanswered questions are omitted.
  */
-export function buildReceipt(form: FormDefinition, submission: Submission): ReceiptBlock[] {
+export function buildReceipt(
+  form: FormDefinition,
+  submission: Submission,
+  ctx: ExportContext,
+): ReceiptBlock[] {
   const blocks: ReceiptBlock[] = [];
   const walk = (parent: ElementParent, indent: number): boolean => {
     let hasAnswers = false;
@@ -30,7 +35,7 @@ export function buildReceipt(form: FormDefinition, submission: Submission): Rece
       } else if (el.type === 'section') {
         continue;
       } else {
-        const text = formatValueForExport(submission.values[el.id], el).text;
+        const text = formatValueForExport(submission.values[el.id], el, ctx).text;
         if (!text) continue;
         blocks.push({ kind: 'answer', label: el.label, value: text, indent });
         hasAnswers = true;

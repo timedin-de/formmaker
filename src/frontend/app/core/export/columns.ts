@@ -3,6 +3,7 @@ import { childrenOf, type ElementParent } from '@shared/model/form-tree';
 import type { ElementDefinition, FormDefinition } from '@shared/model/form.model';
 import type { Submission } from '@shared/model/submission.model';
 import type { FieldValue } from '@shared/model/values.model';
+import type { ExportContext } from './context';
 
 export interface ExportColumn {
   /** stable key used to look up the submission value. */
@@ -77,30 +78,33 @@ function buildLabel(pageNum: number, path: string[]): string {
   return `P${pageNum}·${joined}`;
 }
 
-/** Shown for an answer whose option was removed from the form after submitting. */
-const REMOVED_OPTION = '[removed option]';
-
-/** Answers to choice questions hold option ids; replace them with the option labels. */
+/**
+ * Answers to choice questions hold option ids; replace them with the option labels.
+ * Answers whose option was removed from the form after submitting show `export.removedOption`.
+ */
 export function displayValue(
   value: FieldValue | undefined,
   element: ElementDefinition | undefined,
+  ctx: ExportContext,
 ): FieldValue | undefined {
   if (!element || !isChoice(element) || value === null || value === undefined || value === '') {
     return value;
   }
   const label = (id: unknown): string =>
-    element.options.find((o) => o.id === id)?.label ?? REMOVED_OPTION;
+    element.options.find((o) => o.id === id)?.label ?? ctx.t('export.removedOption');
   return Array.isArray(value) ? value.map(label) : label(value);
 }
 
+/** Without an `element`, values are formatted as stored (no option labels). */
 export function formatValueForExport(
   raw: FieldValue | undefined,
   element?: ElementDefinition,
+  ctx?: ExportContext,
 ): {
   text: string;
   additional?: unknown;
 } {
-  const value = displayValue(raw, element);
+  const value = element && ctx ? displayValue(raw, element, ctx) : raw;
   if (value === null || value === undefined) return { text: '' };
   if (typeof value === 'string') return { text: value };
   if (typeof value === 'number') return { text: String(value) };
@@ -129,22 +133,28 @@ export function rowForSubmission(
   form: FormDefinition,
   submission: Submission,
   columns: ExportColumn[],
+  ctx: ExportContext,
 ): Record<string, { text: string; additional?: unknown }> {
   const row: Record<string, { text: string; additional?: unknown }> = {};
   for (const column of columns) {
     row[column.fieldId] = formatValueForExport(
       submission.values[column.fieldId],
       form.elements[column.fieldId],
+      ctx,
     );
   }
   return row;
 }
 
-export function buildExportTable(form: FormDefinition, submissions: Submission[]): ExportTable {
+export function buildExportTable(
+  form: FormDefinition,
+  submissions: Submission[],
+  ctx: ExportContext,
+): ExportTable {
   const columns = buildColumns(form);
   return {
     columns,
-    rows: submissions.map((s) => rowForSubmission(form, s, columns)),
+    rows: submissions.map((s) => rowForSubmission(form, s, columns, ctx)),
   };
 }
 

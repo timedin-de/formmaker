@@ -386,6 +386,7 @@ const en = {
   // export
   'export.exported': 'Export finished',
   'export.failed': 'Export failed',
+  'export.removedOption': '[removed option]',
 
   // PDF
   'pdf.receipt': '{name}-receipt',
