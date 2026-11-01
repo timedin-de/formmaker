@@ -1,7 +1,12 @@
 import { computed, signal } from '@angular/core';
 import { FormControl, FormGroup } from '@angular/forms';
-import { evalExpression, validateElementValue } from '@shared/engine';
-import { isQuestion } from '@shared/helper';
+import {
+  choiceValueFromLabels,
+  evalExpression,
+  templateValues,
+  validateElementValue,
+} from '@shared/engine';
+import { isChoice, isQuestion } from '@shared/helper';
 import { childrenOf, walkElements } from '@shared/model/form-tree';
 import {
   type ElementDefinition,
@@ -127,13 +132,14 @@ export class RunnerStore {
 
   private rebuildControls(form: FormDefinition, initialValues?: ValuesMap): void {
     const incoming = new Map<string, FormControl>();
+    const values = this.resolveInitialValues(form, initialValues ?? {});
     walkElements(form, (el) => {
       const existing = this.answers.get(el.id);
       if (existing) {
         incoming.set(el.id, existing as FormControl);
         return;
       }
-      const initial = initialValues?.[el.id] ?? this.evalInitialDefault(el, initialValues ?? {});
+      const initial = values[el.id] ?? null;
 
       if (isQuestion(el)) {
         const control = new FormControl(initial, (c: { value: FieldValue }) =>
@@ -153,6 +159,38 @@ export class RunnerStore {
     for (const [key, control] of incoming) {
       if (!this.answers.get(key)) this.answers.setControl(key, control);
     }
+  }
+
+  /**
+   * Starting values for new controls: restored values win, then static
+   * defaults, then dynamic defaults. Dynamic defaults can read each other in
+   * any form order, so they are re-evaluated until nothing changes (bounded,
+   * in case of a reference cycle).
+   */
+  private resolveInitialValues(form: FormDefinition, restored: ValuesMap): ValuesMap {
+    const values: Record<string, FieldValue> = { ...this.rawValues(), ...restored };
+    const pending: ElementDefinition[] = [];
+    walkElements(form, (el) => {
+      if (this.answers.get(el.id) || (values[el.id] ?? null) !== null) return;
+      const dv = 'defaultValue' in el && el.defaultValue;
+      if (!dv) return;
+      if (dv.kind === 'static') values[el.id] = dv.value ?? null;
+      else pending.push(el);
+    });
+
+    for (let pass = 0; pass <= pending.length; pass++) {
+      const displayValues = templateValues(values, form.elements);
+      let changed = false;
+      for (const el of pending) {
+        const value = this.evalDefault(el, displayValues);
+        if (!equal(values[el.id] ?? null, value)) {
+          values[el.id] = value;
+          changed = true;
+        }
+      }
+      if (!changed) break;
+    }
+    return values;
   }
 
   private validateControl(el: QuestionDefinition, value: FieldValue) {
@@ -192,6 +230,8 @@ export class RunnerStore {
   ): void {
     const evalResult = this.evaluator.compute(values, diff === 'all' ? [] : diff);
 
+    const displayValues = templateValues(values, form.elements);
+
     // Apply dynamic defaults
     if (this.defaultsInitDone) {
       walkElements(form, (el) => {
@@ -202,10 +242,7 @@ export class RunnerStore {
         if (!control || control.touched) return;
         const deps = collectElementRefs(el);
         if (diff !== 'all' && !deps.some((d) => diff.includes(d))) return;
-        const value =
-          dv.kind === 'fromField'
-            ? (values[dv.fieldId] ?? null)
-            : (evalExpression(dv.expression, values) as FieldValue);
+        const value = this.evalDefault(el, displayValues);
         if (!equal(control.getRawValue(), value)) {
           control.setValue(value, { emitEvent: false });
         }
@@ -468,16 +505,25 @@ export class RunnerStore {
     return out;
   }
 
-  private evalInitialDefault(el: ElementDefinition, values: ValuesMap): FieldValue {
+  /**
+   * Dynamic defaults see choice answers as option labels (option ids are
+   * unique per element). Choice targets map the result back to their own ids.
+   */
+  private evalDefault(el: ElementDefinition, displayValues: ValuesMap): FieldValue {
     const dv = 'defaultValue' in el && el.defaultValue;
     if (!dv) return null;
     if (dv.kind === 'static') return dv.value ?? null;
-    if (dv.kind === 'fromField') return values[dv.fieldId] ?? null;
-    try {
-      return evalExpression(dv.expression, values) as FieldValue;
-    } catch {
-      return null;
+    let value: FieldValue;
+    if (dv.kind === 'fromField') {
+      value = displayValues[dv.fieldId] ?? null;
+    } else {
+      try {
+        value = evalExpression(dv.expression, displayValues) as FieldValue;
+      } catch {
+        return null;
+      }
     }
+    return isChoice(el) ? choiceValueFromLabels(el, value) : value;
   }
 }
 

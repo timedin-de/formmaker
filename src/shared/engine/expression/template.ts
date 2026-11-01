@@ -104,6 +104,24 @@ export function templateValues(
   return out;
 }
 
+/**
+ * Inverse of `templateValues` for one choice element: maps display labels to
+ * the element's own option ids. Labels without a matching option are dropped.
+ */
+export function choiceValueFromLabels(
+  el: Extract<ElementDefinition, { type: 'choice' | 'dropdown' | 'multiChoice' }>,
+  value: FieldValue,
+): FieldValue {
+  const labels = (Array.isArray(value) ? value : [value]).filter(
+    (v): v is string => typeof v === 'string' && v !== '',
+  );
+  const ids = labels
+    .map((l) => el.options.find((o) => o.label === l)?.id)
+    .filter((id): id is string => id !== undefined);
+  if (el.type === 'multiChoice') return ids;
+  return ids[0] ?? null;
+}
+
 /** Field ids referenced by a piped template. */
 export function templateReferences(template: string): string[] {
   const refs = new Set<string>();
