@@ -41,18 +41,9 @@ export function validateElementValue(
     }
 
     const picked = Array.isArray(value) ? value : [value];
-    const allowed = element.options.map((o) => o.id);
-    if (
-      picked.some(
-        // Reject options with value not string or number
-        (v) =>
-          !allowed.some(
-            (a) =>
-              (typeof v === 'string' || typeof v === 'number') &&
-              (a === v || String(a) === String(v)),
-          ),
-      )
-    ) {
+    // Answers are option ids, matched exactly (no number/string coercion).
+    const allowed = new Set(element.options.map((o) => o.id));
+    if (picked.some((v) => typeof v !== 'string' || !allowed.has(v))) {
       failures.push({ ruleId: '__option__', type: 'custom', message: 'Select a valid option' });
     }
   }
