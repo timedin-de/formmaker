@@ -36,7 +36,15 @@
             </mat-select>
           </mat-form-field>
           <br />
-          @if (operandKind(cond) === 'literal') {
+          @if (operandKind(cond) === 'literal' && choiceOf(cond); as choice) {
+            <fm-option-picker
+              class="val"
+              [ariaLabel]="i18n.t('cond.value')"
+              [options]="choice.options"
+              [value]="cond.operand?.kind === 'literal' ? cond.operand.value : null"
+              (valueChange)="setOptionOperand($index, $event)"
+            />
+          } @else if (operandKind(cond) === 'literal') {
             @switch (group().conditions[$index].fieldType) {
               @case ('date') {
                 <fm-question-input-field
@@ -82,14 +90,25 @@
           </mat-form-field>
         }
         @case ('list') {
-          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="val grow">
-            <input
-              matInput
-              [placeholder]="i18n.t('cond.commaList')"
-              [ngModel]="listText(cond)"
-              (ngModelChange)="setList($index, $event)"
+          @if (choiceOf(cond); as choice) {
+            <fm-option-picker
+              class="val grow"
+              multiple
+              [ariaLabel]="i18n.t('cond.value')"
+              [options]="choice.options"
+              [value]="cond.values ?? []"
+              (valueChange)="setOptionList($index, $event)"
             />
-          </mat-form-field>
+          } @else {
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="val grow">
+              <input
+                matInput
+                [placeholder]="i18n.t('cond.commaList')"
+                [ngModel]="listText(cond)"
+                (ngModelChange)="setList($index, $event)"
+              />
+            </mat-form-field>
+          }
         }
         @case ('none') {
           <span class="hint">{{ i18n.t('cond.noValue') }}</span>

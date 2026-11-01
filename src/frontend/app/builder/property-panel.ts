@@ -14,6 +14,7 @@ import { has, isChoice } from '@shared/helper';
 import { childrenOf } from '@shared/model/form-tree';
 import type {
   ChoiceElement,
+  ChoiceOption,
   DefaultValueDef,
   ElementDefinition,
   GroupElement,
@@ -28,6 +29,7 @@ import { I18nService } from '../core/i18n';
 import { fieldMeta } from '../core/model/field-registry';
 import { type DesignerStore } from '../core/state/designer.store';
 import { ConditionEditor } from './condition-editor';
+import { OptionPicker } from './option-picker';
 import { QuestionSelector } from './question-selector';
 import { ValidationEditor } from './validation-editor';
 
@@ -52,6 +54,7 @@ const INPUT_TYPES = ['text', 'email', 'url', 'phone', 'number'] as const;
     MatTooltipModule,
     MatExpansionModule,
     ConditionEditor,
+    OptionPicker,
     QuestionSelector,
     ValidationEditor,
   ],
@@ -121,7 +124,7 @@ export class PropertyPanel {
     return el;
   }
 
-  patchOption(index: number, patch: Partial<{ label: string; value: string | number }>): void {
+  patchOption(index: number, patch: Partial<Pick<ChoiceOption, 'label'>>): void {
     const choice = this.choice();
     const options = choice.options.map((o, i) => (i === index ? { ...o, ...patch } : o));
     this.patch({ options });
@@ -173,14 +176,23 @@ export class PropertyPanel {
     this.patch({ defaultValue: make() });
   }
 
-  staticText(el: ElementDefinition): string {
+  staticValue(el: ElementDefinition): unknown {
     const q = el as QuestionDefinition;
-    const v = q.defaultValue?.kind === 'static' ? q.defaultValue.value : null;
+    return q.defaultValue?.kind === 'static' ? q.defaultValue.value : null;
+  }
+
+  staticText(el: ElementDefinition): string {
+    const v = this.staticValue(el);
     return v === null || v === undefined ? '' : String(v);
   }
 
   setStatic(raw: string): void {
     this.patch({ defaultValue: { kind: 'static', value: this.stringOrNum(raw) } });
+  }
+
+  /** Choice defaults store option ids as-is (no number parsing). */
+  setStaticOption(value: string | string[] | null): void {
+    this.patch({ defaultValue: { kind: 'static', value } });
   }
 
   exprText(el: ElementDefinition): string {

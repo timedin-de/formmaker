@@ -254,6 +254,7 @@ const de: typeof en = {
   'panel.remove': 'Entfernen',
   'panel.defaultMessage': 'Dieses Feld besteht die Prüfung "{rule}" nicht.',
   'panel.option': 'Option',
+  'panel.removedOption': '[entfernte Option]',
 
   // validation rule names
   'val.required': 'Pflichtfeld',

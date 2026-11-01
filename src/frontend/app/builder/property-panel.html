@@ -290,10 +290,20 @@
           </mat-button-toggle-group>
           @switch (el.defaultValue?.kind) {
             @case ('static') {
-              <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                <mat-label>{{ i18n.t('panel.staticValue') }}</mat-label>
-                <input matInput [ngModel]="staticText(el)" (ngModelChange)="setStatic($event)" />
-              </mat-form-field>
+              @if (isChoice(el)) {
+                <fm-option-picker
+                  [options]="el.options"
+                  [multiple]="el.type === 'multiChoice'"
+                  [value]="staticValue(el)"
+                  [label]="i18n.t('panel.staticValue')"
+                  (valueChange)="setStaticOption($event)"
+                />
+              } @else {
+                <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                  <mat-label>{{ i18n.t('panel.staticValue') }}</mat-label>
+                  <input matInput [ngModel]="staticText(el)" (ngModelChange)="setStatic($event)" />
+                </mat-form-field>
+              }
             }
             @case ('expression') {
               <mat-form-field appearance="outline" subscriptSizing="dynamic">

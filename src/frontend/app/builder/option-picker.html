@@ -1,0 +1,35 @@
+<mat-form-field appearance="outline" subscriptSizing="dynamic">
+  @if (label(); as label) {
+    <mat-label>{{ label }}</mat-label>
+  }
+  <!-- mat-select cannot switch `multiple` after init, so each mode has its own select. -->
+  @if (multiple()) {
+    <mat-select
+      multiple
+      [aria-label]="ariaLabel() ?? ''"
+      [value]="selectedIds()"
+      (valueChange)="emitMultiple($event)"
+    >
+      @for (opt of options(); track opt.id) {
+        <mat-option [value]="opt.id">{{ opt.label }}</mat-option>
+      }
+      @for (id of removedIds(); track id) {
+        <mat-option class="removed" [value]="id">{{ i18n.t('panel.removedOption') }}</mat-option>
+      }
+    </mat-select>
+  } @else {
+    <mat-select
+      [aria-label]="ariaLabel() ?? ''"
+      [value]="single()"
+      (valueChange)="emitSingle($event)"
+    >
+      <mat-option [value]="null">{{ i18n.t('panel.none') }}</mat-option>
+      @for (opt of options(); track opt.id) {
+        <mat-option [value]="opt.id">{{ opt.label }}</mat-option>
+      }
+      @for (id of removedIds(); track id) {
+        <mat-option class="removed" [value]="id">{{ i18n.t('panel.removedOption') }}</mat-option>
+      }
+    </mat-select>
+  }
+</mat-form-field>

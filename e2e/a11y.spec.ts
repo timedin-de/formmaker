@@ -255,6 +255,14 @@ test.describe('accessibility', () => {
       await expectNoViolations(page);
     });
 
+    test('property panel with a static choice default', async ({ page }) => {
+      await login(page);
+      await page.goto(`/builder?id=${formId}`);
+      await selectRow(page, 'Favorite color');
+      await expect(page.locator('fm-property-panel fm-option-picker').first()).toBeVisible();
+      await expectNoViolations(page);
+    });
+
     test('property modal on a narrow screen', async ({ page }) => {
       await page.setViewportSize({ width: 800, height: 900 });
       await login(page);
