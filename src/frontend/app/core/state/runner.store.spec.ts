@@ -1,5 +1,5 @@
 import { createElement, createPage } from '@shared/model/form-factory';
-import type { FormDefinition } from '@shared/model/form.model';
+import type { ChoiceElement, FormDefinition } from '@shared/model/form.model';
 import { addToGroup, getElements, newForm } from '@test/helper/forms';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { RunnerStore } from './runner.store';
@@ -90,6 +90,72 @@ describe('RunnerStore draft persistence', () => {
     const reloaded = new RunnerStore();
     reloaded.init(form);
     expect(reloaded.restoredDraft()).toBe(false);
+  });
+});
+
+describe('RunnerStore dynamic defaults', () => {
+  function choiceSourceForm() {
+    const form = newForm('Defaults');
+    const page = createPage('Details');
+    const color = createElement('choice', 'Color') as ChoiceElement;
+    const echo = createElement('text', 'Echo');
+    echo.defaultValue = { kind: 'fromField', fieldId: color.id };
+    const copy = createElement('dropdown', 'Copy') as ChoiceElement;
+    copy.defaultValue = { kind: 'fromField', fieldId: color.id };
+    addToGroup([color, echo, copy], page, form);
+    form.pages = [page];
+    return { form, color, echo, copy };
+  }
+
+  it('fills text fields with the option label of a choice source', () => {
+    const { form, color, echo } = choiceSourceForm();
+    const store = new RunnerStore();
+    store.init(form);
+
+    store.setAnswer(color.id, color.options[1].id);
+    expect(store.answers.get(echo.id)?.value).toBe('Option 2');
+  });
+
+  it('maps a choice source to the option with the same label in a choice target', () => {
+    const { form, color, copy } = choiceSourceForm();
+    const store = new RunnerStore();
+    store.init(form);
+
+    store.setAnswer(color.id, color.options[1].id);
+    const control = store.answers.get(copy.id);
+    expect(control?.value).toBe(copy.options[1].id);
+    expect(control?.valid).toBe(true);
+  });
+
+  it('copies a static choice default into a choice target on init', () => {
+    const { form, color, echo, copy } = choiceSourceForm();
+    color.defaultValue = { kind: 'static', value: color.options[0].id };
+    const store = new RunnerStore();
+    store.init(form);
+
+    expect(store.answers.get(color.id)?.value).toBe(color.options[0].id);
+    expect(store.answers.get(echo.id)?.value).toBe('Option 1');
+    expect(store.answers.get(copy.id)?.value).toBe(copy.options[0].id);
+  });
+
+  it('resolves defaults that read fields placed later in the form', () => {
+    const { form, color, copy } = choiceSourceForm();
+    color.defaultValue = { kind: 'static', value: color.options[1].id };
+    form.pages[0].children.reverse();
+    const store = new RunnerStore();
+    store.init(form);
+
+    expect(store.answers.get(copy.id)?.value).toBe(copy.options[1].id);
+  });
+
+  it('keeps restored choice answers as option ids', () => {
+    const { form, color, echo, copy } = choiceSourceForm();
+    const store = new RunnerStore();
+    store.init(form, { [color.id]: color.options[0].id });
+
+    expect(store.answers.get(color.id)?.value).toBe(color.options[0].id);
+    expect(store.answers.get(echo.id)?.value).toBe('Option 1');
+    expect(store.answers.get(copy.id)?.value).toBe(copy.options[0].id);
   });
 });
 

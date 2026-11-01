@@ -2,6 +2,7 @@ import type { ElementDefinition } from '@shared/model/form.model';
 import type { FieldValue } from '@shared/model/values.model';
 import { describe, expect, it } from 'vitest';
 import {
+  choiceValueFromLabels,
   interpolateTemplate,
   parseTemplate,
   templateReferences,
@@ -59,6 +60,17 @@ describe('templateValues', () => {
     expect(interpolateTemplate('{{q_color | upper}} / {{q_tags}} / {{q_name}}', v)).toBe(
       'GREEN / Blue, Green / o1',
     );
+  });
+
+  it('maps labels back to the option ids of a choice element', () => {
+    const color = elements['q_color'] as Parameters<typeof choiceValueFromLabels>[0];
+    const tags = elements['q_tags'] as Parameters<typeof choiceValueFromLabels>[0];
+    expect(choiceValueFromLabels(color, 'Green')).toBe('o2');
+    expect(choiceValueFromLabels(color, ['Blue', 'Green'])).toBe('o1');
+    expect(choiceValueFromLabels(color, 'Red')).toBeNull();
+    expect(choiceValueFromLabels(tags, ['Green', 'Red', 'Blue'])).toEqual(['o2', 'o1']);
+    expect(choiceValueFromLabels(tags, 'Blue')).toEqual(['o1']);
+    expect(choiceValueFromLabels(tags, null)).toEqual([]);
   });
 
   it('renders removed options and empty answers as nothing', () => {
