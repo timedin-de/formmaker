@@ -249,6 +249,7 @@ const en = {
   'panel.remove': 'Remove',
   'panel.defaultMessage': 'This field fails the "{rule}" check.',
   'panel.option': 'Option',
+  'panel.removedOption': '[removed option]',
 
   // validation rule names
   'val.required': 'Required',

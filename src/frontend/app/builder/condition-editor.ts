@@ -7,7 +7,9 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { isChoice } from '@shared/helper';
 import { type FormDocument } from '@shared/model';
+import type { ChoiceElement } from '@shared/model/form.model';
 import type {
   Condition,
   ConditionGroup,
@@ -16,6 +18,7 @@ import type {
 } from '@shared/model/conditions.model';
 import { CONDITION_OPERATORS, emptyCondition } from '@shared/model/conditions.model';
 import { I18nService } from '../core/i18n';
+import { OptionPicker } from './option-picker';
 import { QuestionInputField } from './question-input-field';
 import { QuestionSelector } from './question-selector';
 
@@ -54,6 +57,7 @@ export interface ConditionFieldOption {
     MatSelectModule,
     MatTooltipModule,
     MatDividerModule,
+    OptionPicker,
     QuestionSelector,
     QuestionInputField,
   ],
@@ -120,6 +124,25 @@ export class ConditionEditor {
   set$(index: number, which: 'operand', raw: string): void {
     this.mutate((g) => {
       g.conditions[index].operand = { kind: 'literal', value: parseLiteral(raw) };
+    });
+  }
+
+  /** The choice question a condition tests, if any; its literals are option ids. */
+  choiceOf(cond: Condition): ChoiceElement | null {
+    const el = cond.fieldId ? this.form().elements[cond.fieldId] : undefined;
+    return el && isChoice(el) ? el : null;
+  }
+
+  setOptionOperand(index: number, value: string | string[] | null): void {
+    const id = Array.isArray(value) ? (value[0] ?? null) : value;
+    this.mutate((g) => {
+      g.conditions[index].operand = { kind: 'literal', value: id };
+    });
+  }
+
+  setOptionList(index: number, value: string | string[] | null): void {
+    this.mutate((g) => {
+      g.conditions[index].values = Array.isArray(value) ? value : value ? [value] : [];
     });
   }
 
