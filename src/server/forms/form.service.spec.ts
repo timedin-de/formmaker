@@ -442,6 +442,13 @@ describe('FormService.addSubmission', () => {
       await expect(submit({ q1: 'o1' })).resolves.toBeDefined();
       await expectRejected({ q1: 'One' });
     });
+
+    it('rejects numeric answers for numeric-looking option ids', async () => {
+      const options = [{ id: '1', label: 'One' }];
+      form = formOf([page('p1', [choice('q1', { options })])]);
+      await expect(submit({ q1: '1' })).resolves.toBeDefined();
+      await expectRejected({ q1: 1 });
+    });
   });
 
   describe('regex patterns (RE2)', () => {
