@@ -229,6 +229,8 @@ const de: typeof en = {
   'panel.options': 'Optionen',
   'panel.optionLabel': 'Bezeichnung',
   'panel.addOption': 'Option hinzufügen',
+  'panel.addOptionFailed': 'Die Option konnte nicht hinzugefügt werden.',
+  'panel.removeOptionFailed': 'Die Option konnte nicht entfernt werden.',
   'panel.defaultValue': 'Standardwert',
   'panel.none': 'Keiner',
   'panel.static': 'Statisch',

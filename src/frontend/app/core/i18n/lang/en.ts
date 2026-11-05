@@ -224,6 +224,8 @@ const en = {
   'panel.options': 'Options',
   'panel.optionLabel': 'Label',
   'panel.addOption': 'Add option',
+  'panel.addOptionFailed': 'The option could not be added.',
+  'panel.removeOptionFailed': 'The option could not be removed.',
   'panel.defaultValue': 'Default value',
   'panel.none': 'None',
   'panel.static': 'Static',
