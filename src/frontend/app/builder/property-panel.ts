@@ -9,6 +9,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { has, isChoice } from '@shared/helper';
 import { childrenOf } from '@shared/model/form-tree';
@@ -23,10 +24,11 @@ import type {
   TimeElement,
 } from '@shared/model/form.model';
 import { DEFAULT_TIME_INTERVAL, TIME_INTERVAL_UNITS } from '@shared/model/form.model';
-import { uuid } from '@shared/model/ids';
 import { VALIDATION_RULE_TYPES } from '@shared/model/validation.model';
+import { SNACK_TIME_ERROR } from '../core/consts';
 import { I18nService } from '../core/i18n';
 import { fieldMeta } from '../core/model/field-registry';
+import { ApiError } from '../core/state/api-client';
 import { type DesignerStore } from '../core/state/designer.store';
 import { ConditionEditor } from './condition-editor';
 import { OptionPicker } from './option-picker';
@@ -65,6 +67,7 @@ const INPUT_TYPES = ['text', 'email', 'url', 'phone', 'number'] as const;
 export class PropertyPanel {
   readonly store = input.required<DesignerStore>();
   protected readonly i18n = inject(I18nService);
+  private readonly snack = inject(MatSnackBar);
 
   protected readonly WIDTHS = WIDTHS;
   protected readonly INPUT_TYPES = INPUT_TYPES;
@@ -126,22 +129,32 @@ export class PropertyPanel {
 
   patchOption(index: number, patch: Partial<Pick<ChoiceOption, 'label'>>): void {
     const choice = this.choice();
-    const options = choice.options.map((o, i) => (i === index ? { ...o, ...patch } : o));
-    this.patch({ options });
+    this.store().patchOption(choice.id, choice.options[index].id, patch);
   }
 
-  addOption(): void {
+  async addOption(): Promise<void> {
     const choice = this.choice();
-    const options = choice.options ?? [];
-    const idx = options.length + 1;
-    this.patch({
-      options: [...options, { id: uuid(), label: `${this.i18n.t('panel.option')} ${idx}` }],
-    });
+    const label = `${this.i18n.t('panel.option')} ${choice.options.length + 1}`;
+    try {
+      await this.store().addOption(choice.id, label);
+    } catch (error) {
+      this.reportOptionError(error, this.i18n.t('panel.addOptionFailed'));
+    }
   }
 
-  removeOption(index: number): void {
+  async removeOption(index: number): Promise<void> {
     const choice = this.choice();
-    this.patch({ options: choice.options.filter((_, i) => i !== index) });
+    try {
+      await this.store().removeOption(choice.id, choice.options[index].id);
+    } catch (error) {
+      this.reportOptionError(error, this.i18n.t('panel.removeOptionFailed'));
+    }
+  }
+
+  /** `ApiClient` already shows its own message for rate limiting (429). */
+  private reportOptionError(error: unknown, message: string): void {
+    if (error instanceof ApiError && error.status === 429) return;
+    this.snack.open(message, 'OK', { duration: SNACK_TIME_ERROR });
   }
 
   moveOption(index: number, dir: -1 | 1): void {

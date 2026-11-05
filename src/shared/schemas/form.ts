@@ -101,6 +101,18 @@ export const createElementSchema = z.strictObject({
 
 export type CreateElementRequest = z.infer<typeof createElementSchema>;
 
+export const createOptionSchema = z.strictObject({
+  label: z.string(),
+});
+
+export type CreateOptionRequest = z.infer<typeof createOptionSchema>;
+
+export const updateOptionSchema = z.strictObject({
+  label: z.optional(z.string()),
+});
+
+export type UpdateOptionRequest = z.infer<typeof updateOptionSchema>;
+
 export function stripFormOwnership(value: unknown): unknown {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return value;
   const { ownerId: _ownerId, owner: _owner, ...form } = value as Record<string, unknown>;

@@ -1,7 +1,7 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import {
-  type ChoiceElement,
   childrenOf,
+  type ChoiceElement,
   type ConditionGroup,
   type FieldValue,
   FORM_SCHEMA_VERSION,
@@ -192,6 +192,89 @@ describe('FormService element creation', () => {
         { type: 'text', label: 'x', parentId: 'p1', afterId: 'q2' },
       ),
     ).rejects.toBeInstanceOf(NotFoundException);
+    expect(saveForm).not.toHaveBeenCalled();
+  });
+});
+
+describe('FormService.addOption', () => {
+  let saveForm: ReturnType<typeof vi.fn>;
+  let service: FormService;
+
+  beforeEach(() => {
+    saveForm = vi.fn();
+    service = new FormService({ saveForm } as unknown as Repository);
+  });
+
+  const savedChoice = (id: string) =>
+    (saveForm.mock.calls[0][1] as FormDefinition).elements[id] as ChoiceElement;
+
+  it('appends an option and persists it for the owner', async () => {
+    const form = formOf([page('p1', [choice('q1')])]);
+    const created = await service.addOption({ form, ownerId: 'owner-1' }, 'q1', {
+      label: 'Maybe',
+    });
+
+    expect(created).toMatchObject({ label: 'Maybe' });
+    expect(created.id).toBeTruthy();
+    expect(saveForm).toHaveBeenCalledWith('owner-1', expect.objectContaining({ id: 'form-1' }));
+  });
+
+  it('throws 404 without saving for an unknown element', async () => {
+    const form = formOf([page('p1', [choice('q1')])]);
+    await expect(
+      service.addOption({ form, ownerId: 'owner-1' }, 'gone', { label: 'x' }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    expect(saveForm).not.toHaveBeenCalled();
+  });
+
+  it('throws 400 without saving for an element without options', async () => {
+    const form = formOf([page('p1', [text('q1')])]);
+    await expect(
+      service.addOption({ form, ownerId: 'owner-1' }, 'q1', { label: 'x' }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(saveForm).not.toHaveBeenCalled();
+  });
+
+  it('merges a patch into an option and persists it', async () => {
+    const form = formOf([page('p1', [choice('q1')])]);
+    const updated = await service.updateOption({ form, ownerId: 'owner-1' }, 'q1', 'no', {
+      label: 'Nope',
+    });
+
+    expect(updated).toEqual({ id: 'no', label: 'Nope' });
+    expect(savedChoice('q1').options).toEqual([
+      { id: 'yes', label: 'Yes' },
+      { id: 'no', label: 'Nope' },
+    ]);
+  });
+
+  it('removes an option and persists the form', async () => {
+    const form = formOf([page('p1', [choice('q1')])]);
+    await service.deleteOption({ form, ownerId: 'owner-1' }, 'q1', 'yes');
+    expect(savedChoice('q1').options.map((o) => o.id)).toEqual(['no']);
+  });
+
+  it('throws 404 without saving for an unknown option', async () => {
+    const form = formOf([page('p1', [choice('q1')])]);
+    const owned = { form, ownerId: 'owner-1' };
+    await expect(service.updateOption(owned, 'q1', 'gone', { label: 'x' })).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+    await expect(service.deleteOption(owned, 'q1', 'gone')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+    expect(saveForm).not.toHaveBeenCalled();
+  });
+
+  it('throws 400 without saving when patching or deleting on an element without options', async () => {
+    const form = formOf([page('p1', [text('q1')])]);
+    const owned = { form, ownerId: 'owner-1' };
+    await expect(service.updateOption(owned, 'q1', 'o1', { label: 'x' })).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
+    await expect(service.deleteOption(owned, 'q1', 'o1')).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
     expect(saveForm).not.toHaveBeenCalled();
   });
 });
