@@ -7,6 +7,7 @@ import {
   FORM_SCHEMA_VERSION,
   type FormDefinition,
   getParent,
+  type GroupElement,
   type TextElement,
 } from '@shared/model';
 import {
@@ -139,6 +140,24 @@ describe('FormService element creation', () => {
     expect(savedChildren('p1')).toEqual(['q1', created.id, 'q2']);
   });
 
+  it('uses the localized default texts sent by the client', async () => {
+    const form = formOf([page('p1', [])]);
+    const defaults = { option: 'Auswahl', scaleMin: 'Niedrig', scaleMax: 'Hoch' };
+    const choice = await service.addElement(
+      { form, ownerId: 'owner-1' },
+      { type: 'dropdown', label: 'Pick', parentId: 'p1', defaults },
+    );
+    const scale = await service.addElement(
+      { form, ownerId: 'owner-1' },
+      { type: 'scale', label: 'Rate', parentId: 'p1', defaults },
+    );
+
+    expect(choice).toMatchObject({
+      options: [{ label: 'Auswahl 1' }, { label: 'Auswahl 2' }],
+    });
+    expect(scale).toMatchObject({ minLabel: 'Niedrig', maxLabel: 'Hoch' });
+  });
+
   it('appends to the end of a page without afterId', async () => {
     const form = formOf([page('p1', [text('q1')])]);
     const created = await service.addElement(
@@ -191,6 +210,115 @@ describe('FormService element creation', () => {
         { form, ownerId: 'owner-1' },
         { type: 'text', label: 'x', parentId: 'p1', afterId: 'q2' },
       ),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    expect(saveForm).not.toHaveBeenCalled();
+  });
+});
+
+describe('FormService cloning', () => {
+  let saveForm: ReturnType<typeof vi.fn>;
+  let service: FormService;
+
+  beforeEach(() => {
+    saveForm = vi.fn();
+    service = new FormService({ saveForm } as unknown as Repository);
+  });
+
+  const saved = (): FormDefinition => saveForm.mock.calls[0][1] as FormDefinition;
+
+  /** Ids of the children of the page or group `parentId` in the saved form. */
+  const savedChildren = (parentId: string): string[] => {
+    const parent = getParent(saved(), parentId);
+    return parent ? childrenOf(saved(), parent).map((e) => e.id) : [];
+  };
+
+  it('clones an element subtree after its source and remaps references', async () => {
+    const form = formOf([
+      page('p1', [
+        text('q1'),
+        group('g1', [
+          text('a'),
+          text('b', { defaultValue: { kind: 'fromField', fieldId: 'a' } }),
+          text('c', {
+            enabledWhen: {
+              logic: 'all',
+              conditions: [
+                {
+                  fieldId: 'b',
+                  operator: 'between',
+                  operand: { kind: 'field', fieldId: 'a' },
+                  operandTo: { kind: 'field', fieldId: 'a' },
+                },
+              ],
+              groups: [],
+            },
+          }),
+        ]),
+      ]),
+    ]);
+
+    const clone = await service.cloneElement({ form, ownerId: 'owner-1' }, 'g1', {
+      suffix: '(Kopie)',
+    });
+
+    expect(clone.element.id).not.toBe('g1');
+    expect(clone.element.label).toBe('g1 (Kopie)');
+    expect(saveForm).toHaveBeenCalledWith('owner-1', expect.objectContaining({ id: 'form-1' }));
+    expect(savedChildren('p1')).toEqual(['q1', 'g1', clone.element.id]);
+    expect((saved().elements[clone.element.id] as GroupElement).children).toEqual(
+      clone.subtree.map((el) => el.id),
+    );
+
+    const [copiedA, copiedB, copiedC] = clone.subtree as TextElement[];
+    expect(copiedB.defaultValue).toEqual({ kind: 'fromField', fieldId: copiedA.id });
+    const condition = copiedC.enabledWhen?.conditions[0];
+    expect(condition?.fieldId).toBe(copiedB.id);
+    expect(condition?.operand).toEqual({ kind: 'field', fieldId: copiedA.id });
+    expect(condition?.operandTo).toEqual({ kind: 'field', fieldId: copiedA.id });
+
+    expect((saved().elements['b'] as TextElement).defaultValue).toEqual({
+      kind: 'fromField',
+      fieldId: 'a',
+    });
+  });
+
+  it('throws 404 without saving for an unknown element', async () => {
+    const form = formOf([page('p1', [text('q1')])]);
+    await expect(
+      service.cloneElement({ form, ownerId: 'owner-1' }, 'gone', { suffix: '(Kopie)' }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    expect(saveForm).not.toHaveBeenCalled();
+  });
+
+  it('clones a page with all elements and remaps same-page references', async () => {
+    const form = formOf([
+      page('p1', [text('q1'), text('q2', { defaultValue: { kind: 'fromField', fieldId: 'q1' } })]),
+      page('p2', [text('q3')]),
+    ]);
+
+    const clone = await service.clonePage({ form, ownerId: 'owner-1' }, 'p1', {
+      suffix: '(Kopie)',
+    });
+
+    expect(clone.page.title).toBe('p1 (Kopie)');
+    expect(clone.page.id).not.toBe('p1');
+    expect(saved().pages.map((p) => p.id)).toEqual(['p1', 'p2', clone.page.id]);
+    expect(clone.page.children).toHaveLength(2);
+
+    const [copiedQ1, copiedQ2] = clone.elements as TextElement[];
+    expect(copiedQ1.id).not.toBe('q1');
+    expect(copiedQ2.label).toBe('q2 (Kopie)');
+    expect(copiedQ2.defaultValue).toEqual({ kind: 'fromField', fieldId: copiedQ1.id });
+    expect((saved().elements['q2'] as TextElement).defaultValue).toEqual({
+      kind: 'fromField',
+      fieldId: 'q1',
+    });
+  });
+
+  it('throws 404 without saving for an unknown page', async () => {
+    const form = formOf([page('p1', [text('q1')])]);
+    await expect(
+      service.clonePage({ form, ownerId: 'owner-1' }, 'gone', { suffix: '(Kopie)' }),
     ).rejects.toBeInstanceOf(NotFoundException);
     expect(saveForm).not.toHaveBeenCalled();
   });

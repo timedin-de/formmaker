@@ -11,6 +11,12 @@ import {
 import type { Submission, SubmissionCreate } from '@shared/model/submission.model';
 import {
   choiceOptionSchema,
+  cloneElementResponseSchema,
+  clonePageResponseSchema,
+  type CloneElementResponse,
+  type ClonePageResponse,
+  type CreateElementRequest,
+  type CreateOptionRequest,
   elementDefinitionSchema,
   formDefinitionSchema,
   formsWithOwnerSchema,
@@ -18,8 +24,6 @@ import {
   pageDefinitionSchema,
   submissionSchema,
   submissionsSchema,
-  type CreateElementRequest,
-  type CreateOptionRequest,
   type UpdateOptionRequest,
 } from '@shared/schemas';
 import {
@@ -134,6 +138,17 @@ export class FormsRepository {
     return page;
   }
 
+  /** Clones a page with its elements on the server; returns the copy as generated there. */
+  async clonePage(formId: string, pageId: string, suffix: string): Promise<ClonePageResponse> {
+    const clone = await this.api.request(
+      clonePageResponseSchema,
+      `/api/forms/${encodeURIComponent(formId)}/pages/${encodeURIComponent(pageId)}/clone`,
+      { method: 'POST', body: JSON.stringify({ suffix }) },
+    );
+    removeCache(FORM_CACHE_PREFIX + formId);
+    return clone;
+  }
+
   async deletePage(formId: string, pageId: string) {
     await this.api.request(
       undefined,
@@ -152,6 +167,21 @@ export class FormsRepository {
     );
     removeCache(FORM_CACHE_PREFIX + formId);
     return element;
+  }
+
+  /** Clones an element subtree on the server; returns the copy as generated there. */
+  async cloneElement(
+    formId: string,
+    elementId: string,
+    suffix: string,
+  ): Promise<CloneElementResponse> {
+    const clone = await this.api.request(
+      cloneElementResponseSchema,
+      `/api/forms/${encodeURIComponent(formId)}/elements/${encodeURIComponent(elementId)}/clone`,
+      { method: 'POST', body: JSON.stringify({ suffix }) },
+    );
+    removeCache(FORM_CACHE_PREFIX + formId);
+    return clone;
   }
 
   /** Appends a new option to a choice element on the server; returns the option as generated there. */
