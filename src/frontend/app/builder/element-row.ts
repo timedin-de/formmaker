@@ -53,7 +53,7 @@ export class ElementRow {
   }
 
   duplicate(): void {
-    this.store().duplicateElement(this.el().id);
+    void this.store().duplicateElement(this.el().id);
   }
 
   remove(): void {

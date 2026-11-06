@@ -12,7 +12,7 @@ import {
   type SaveFormDefinition,
 } from '../model';
 import { conditionGroupSchema } from './conditions';
-import { formElementsSchema } from './elements';
+import { elementDefinitionSchema, formElementsSchema } from './elements';
 
 export const pageDefinitionSchema = z.strictObject({
   id: z.string(),
@@ -92,14 +92,47 @@ export const createPageSchema = z.strictObject({
   title: z.string(),
 });
 
+/** Max length of a localized default text the client sends along with a create/clone request. */
+const DEFAULT_TEXT_MAX = 50;
+const defaultTextSchema = z.string().check(z.maxLength(DEFAULT_TEXT_MAX));
+
 export const createElementSchema = z.strictObject({
   type: z.enum(ELEMENT_TYPES),
   label: z.string(),
   parentId: z.string().check(z.minLength(1)),
   afterId: z.optional(z.nullable(z.string())),
+  /** Localized default texts for the new element (see `ElementDefaultTexts`). */
+  defaults: z.optional(
+    z.strictObject({
+      option: z.optional(defaultTextSchema),
+      scaleMin: z.optional(defaultTextSchema),
+      scaleMax: z.optional(defaultTextSchema),
+    }),
+  ),
 });
 
 export type CreateElementRequest = z.infer<typeof createElementSchema>;
+
+export const cloneRequestSchema = z.strictObject({
+  /** Localized suffix appended to the copied labels/titles, e.g. "(copy)". */
+  suffix: defaultTextSchema,
+});
+
+export type CloneRequest = z.infer<typeof cloneRequestSchema>;
+
+export const cloneElementResponseSchema = z.strictObject({
+  element: elementDefinitionSchema,
+  subtree: z.array(elementDefinitionSchema),
+});
+
+export type CloneElementResponse = z.infer<typeof cloneElementResponseSchema>;
+
+export const clonePageResponseSchema = z.strictObject({
+  page: pageDefinitionSchema,
+  elements: z.array(elementDefinitionSchema),
+});
+
+export type ClonePageResponse = z.infer<typeof clonePageResponseSchema>;
 
 export const createOptionSchema = z.strictObject({
   label: z.string(),

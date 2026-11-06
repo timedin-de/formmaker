@@ -1,5 +1,5 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
-import { catchFn, dict, has, walkConditionGroup } from '@shared/helper';
+import { catchFn } from '@shared/helper';
 import {
   addPage,
   insertElement,
@@ -11,7 +11,6 @@ import {
 } from '@shared/model/form-ops';
 import {
   childrenOf,
-  descendants,
   type ElementParent,
   type FormDocument,
   getElement,
@@ -26,7 +25,7 @@ import type {
   PageDefinition,
   SaveFormDefinition,
 } from '@shared/model/form.model';
-import { type ElementId, elementId, uuid } from '@shared/model/ids';
+import type { ElementId } from '@shared/model/ids';
 import { parseFormData, type UpdateOptionRequest } from '@shared/schemas';
 import { I18nService } from '../i18n/translation.service';
 import { FormsRepository } from './forms.repository';
@@ -148,24 +147,16 @@ export class DesignerStore {
     return page;
   }
 
-  clonePage(pageId: string): void {
-    const form = this.form();
-    const src = form.pages.find((p) => p.id === pageId);
-    if (!src) return;
-    // Every element of the page is cloned at once, so references between them
-    // point at the copies while references to other pages stay as they are.
-    const { rootIds, elements } = cloneSubtrees(form, src.children);
-    for (const el of elements) {
-      if (rootIds.includes(el.id)) el.label = `${el.label} (copy)`;
-    }
-    const copy: PageDefinition = {
-      ...structuredCloneSafe(src),
-      id: uuid(),
-      title: `${src.title} (copy)`,
-      children: rootIds,
-    };
-    this.patchDocument(addPage(form, copy, elements));
-    this.selectedId.set(copy.id);
+  /** Clones a page on the server (which persists it) and appends it locally. */
+  async clonePage(pageId: string): Promise<PageDefinition | undefined> {
+    const suffix = this.i18n.t('builder.copySuffix');
+    const clone = await this.createOnServer((form) =>
+      this.repository.clonePage(form.id, pageId, suffix),
+    );
+    this.applyServerChange((f) => addPage(f, clone.page, clone.elements));
+    this.activePageId.set(clone.page.id);
+    this.selectedId.set(null);
+    return clone.page;
   }
 
   async removePage(pageId: string) {
@@ -197,6 +188,11 @@ export class DesignerStore {
         label: label ?? this.i18n.t(`q.${type}`),
         parentId,
         afterId,
+        defaults: {
+          option: this.i18n.t('panel.option'),
+          scaleMin: this.i18n.t('builder.scaleMin'),
+          scaleMax: this.i18n.t('builder.scaleMax'),
+        },
       }),
     );
     // The tree may have changed during the request: if `afterId` is gone, append instead.
@@ -304,24 +300,27 @@ export class DesignerStore {
     if (next) this.patchDocument(next);
   }
 
-  duplicateElement(elementId: string): void {
-    const form = this.form();
-    const parent = parentOf(form, elementId);
-    if (!parent) return;
-    // Only ids inside the duplicated subtree are mapped, so references to other
-    // fields keep pointing at the originals.
-    const {
-      rootIds: [copyId],
-      elements,
-    } = cloneSubtrees(form, [elementId]);
-    const copy = elements.find((el) => el.id === copyId);
-    if (!copy) return;
-    copy.label = `${copy.label} (copy)`;
-    const subtree = elements.filter((el) => el !== copy);
-    const next = insertElement(form, parent.id, elementId, copy, subtree);
-    if (!next) return;
-    this.patchDocument(next);
-    this.selectedId.set(copy.id);
+  /**
+   * Duplicates an element on the server (which persists it) right after the
+   * original and inserts the returned copy at the same spot locally.
+   */
+  async duplicateElement(elementId: string): Promise<ElementDefinition | undefined> {
+    const suffix = this.i18n.t('builder.copySuffix');
+    const clone = await this.createOnServer((form) =>
+      this.repository.cloneElement(form.id, elementId, suffix),
+    );
+    let copy: ElementDefinition | undefined;
+    this.applyServerChange((f) => {
+      // The tree may have changed during the request. If the source is gone,
+      // skip the copy locally (as with other server-side creations).
+      const parent = parentOf(f, elementId);
+      if (!parent) return f;
+      const next = insertElement(f, parent.id, elementId, clone.element, clone.subtree);
+      if (next) copy = clone.element;
+      return next ?? f;
+    });
+    if (copy) this.selectedId.set(copy.id);
+    return copy;
   }
 
   select(id: string | null): void {
@@ -434,72 +433,4 @@ export class DesignerStore {
   private schedulePersist(): void {
     this.persist();
   }
-}
-
-/**
- * Deep-clones the elements `ids` and everything below them with fresh ids.
- * References between the cloned elements (defaults, conditions) are remapped
- * to the copies; references to elements outside the clone stay untouched.
- * Returns the ids of the copied roots, in order, and all copied elements.
- */
-function cloneSubtrees(
-  form: FormDocument,
-  ids: ElementId[],
-): { rootIds: ElementId[]; elements: ElementDefinition[] } {
-  const originals = ids.flatMap((id) => {
-    const el = getElement(form, id);
-    if (!el) return [];
-    return el.type === 'group' ? [el, ...descendants(form, el)] : [el];
-  });
-
-  const idMap = dict<ElementId, ElementId>();
-  for (const el of originals) idMap[el.id] = elementId('q');
-
-  const elements = originals.map((el) => {
-    const copy = structuredCloneSafe(el);
-    copy.id = idMap[el.id];
-    if ('options' in copy) copy.options = copy.options.map((o) => ({ ...o, id: uuid() }));
-    if (copy.type === 'group') copy.children = copy.children.map((id) => idMap[id] ?? id);
-    remapElementReferences(copy, idMap);
-    return copy;
-  });
-  return { rootIds: ids.filter((id) => idMap[id]).map((id) => idMap[id]), elements };
-}
-
-/**
- * Point `defaultValue` / condition field references at their cloned counterparts.
- * Ids missing from `idMap` (i.e. fields outside the cloned tree) stay untouched.
- */
-function remapElementReferences(e: ElementDefinition, idMap: Record<ElementId, ElementId>): void {
-  function map<T extends object>(
-    target: T,
-    attribute: { [K in keyof T]: T[K] extends ElementId ? K : never }[keyof T],
-  ) {
-    if (idMap[target[attribute] as ElementId]) {
-      (target[attribute] as string) = idMap[target[attribute] as ElementId];
-    }
-  }
-
-  if (has(e, 'defaultValue') && e.defaultValue?.kind === 'fromField') {
-    if (idMap[e.defaultValue.fieldId]) {
-      e.defaultValue.fieldId = idMap[e.defaultValue.fieldId];
-    }
-  }
-
-  if (e.enabledWhen) {
-    walkConditionGroup(e.enabledWhen, (condition) => {
-      map(condition, 'fieldId');
-      if (condition.operand?.kind === 'field') {
-        map(condition.operand, 'fieldId');
-      }
-      if (condition.operandTo?.kind === 'field') {
-        map(condition.operandTo, 'fieldId');
-      }
-    });
-  }
-}
-
-function structuredCloneSafe<T>(value: T): T {
-  if (typeof structuredClone === 'function') return structuredClone(value);
-  return JSON.parse(JSON.stringify(value));
 }

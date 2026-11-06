@@ -82,8 +82,9 @@ export class BuilderCanvas {
     });
   }
 
-  clonePage(page: PageDefinition) {
-    this.store().clonePage(page.id);
+  async clonePage(page: PageDefinition): Promise<void> {
+    const clone = await this.store().clonePage(page.id);
+    if (clone) this.showPage(clone.id);
   }
 
   removePage(page: PageDefinition): void {
@@ -118,11 +119,16 @@ export class BuilderCanvas {
     if (dialog && event.target === dialog.nativeElement) this.paleteTarget.set(false);
   }
 
-  async addPage() {
+  async addPage(): Promise<void> {
     const { id } = await this.store().addPage();
+    this.showPage(id);
+  }
+
+  /** Points `?page=` at `pageId`, which makes it the active page. */
+  private showPage(pageId: string): void {
     this.router.navigate([], {
       relativeTo: this.route,
-      queryParams: { page: id },
+      queryParams: { page: pageId },
       queryParamsHandling: 'merge',
     });
   }
