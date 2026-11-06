@@ -202,12 +202,16 @@ export class FormsRepository {
     return option;
   }
 
-  /** Patches an option of a choice element on the server; returns the option as stored there. */
+  /**
+   * Patches an option of a choice element on the server; returns the option as stored there.
+   * `keepalive` lets the request outlive the page, e.g. when sent while it is being closed.
+   */
   async updateOption(
     formId: string,
     elementId: string,
     optionId: string,
     patch: UpdateOptionRequest,
+    { keepalive = false }: { keepalive?: boolean } = {},
   ): Promise<ChoiceOption> {
     const option = await this.api.request(
       choiceOptionSchema,
@@ -215,6 +219,7 @@ export class FormsRepository {
       {
         method: 'PATCH',
         body: JSON.stringify(patch),
+        keepalive,
       },
     );
     removeCache(FORM_CACHE_PREFIX + formId);

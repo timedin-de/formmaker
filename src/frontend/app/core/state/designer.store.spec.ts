@@ -400,6 +400,24 @@ describe('DesignerStore server-side creation', () => {
       expect(store.dirty()).toBe(false);
     });
 
+    it('sends a pending edit at once with keepalive when the page is closed', async () => {
+      const choice = loadedChoice();
+      const option = choice.options[0];
+
+      store.patchOption(choice.id, option.id, { label: 'Closing' });
+      window.dispatchEvent(new Event('pagehide'));
+
+      expect(repo.updateOption).toHaveBeenCalledWith(
+        store.form().id,
+        choice.id,
+        option.id,
+        { label: 'Closing' },
+        { keepalive: true },
+      );
+      await vi.advanceTimersByTimeAsync(OPTION_PATCH_DELAY_MS);
+      expect(repo.updateOption).toHaveBeenCalledTimes(1);
+    });
+
     it('keeps the edit and marks the form dirty when the send fails', async () => {
       const choice = loadedChoice();
       const option = choice.options[0];
