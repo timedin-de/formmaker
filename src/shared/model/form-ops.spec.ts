@@ -156,6 +156,11 @@ describe('clonePage', () => {
     expect(clone!.elements.filter((el) => el.label.includes(COPY_SUFFIX))).toEqual([]);
     expect(copiedSecond.defaultValue).toEqual({ kind: 'fromField', fieldId: copiedFirst.id });
     expect(copiedThird.enabledWhen?.conditions[0].fieldId).toBe(copiedSecond.id);
+
+    // A top-level field that refers into the group follows the copied group child.
+    const copiedTop = copiedElements.get(clone!.page.children[1]) as TextElement;
+    expect(copiedTop.defaultValue).toEqual({ kind: 'fromField', fieldId: copiedFirst.id });
+    expect(copiedTop.enabledWhen?.conditions[0].fieldId).toBe(copiedFirst.id);
   });
 
   it('leaves references to elements on other pages untouched', () => {
