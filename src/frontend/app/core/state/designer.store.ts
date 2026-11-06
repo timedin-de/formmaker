@@ -1,4 +1,4 @@
-import { computed, inject, Injectable, signal } from '@angular/core';
+import { computed, DestroyRef, inject, Injectable, signal } from '@angular/core';
 import { catchFn } from '@shared/helper';
 import {
   addPage,
@@ -93,6 +93,10 @@ export class DesignerStore {
 
   constructor() {
     void this.hydrate();
+    // Option edits wait a moment before they are sent; don't lose them when the tab closes.
+    const flush = () => this.flushOptionPatches();
+    window.addEventListener('pagehide', flush);
+    inject(DestroyRef).onDestroy(() => window.removeEventListener('pagehide', flush));
   }
 
   async hydrate(): Promise<void> {
@@ -401,6 +405,20 @@ export class DesignerStore {
       });
     this.creations = run;
     return run;
+  }
+
+  /**
+   * Sends every unsent option edit right away, past the creation queue and with
+   * `keepalive`, so it still reaches the server while the page is being closed.
+   */
+  private flushOptionPatches(): void {
+    for (const [key, { formId, elementId, optionId, patch, timer }] of this.optionPatches) {
+      clearTimeout(timer);
+      this.optionPatches.delete(key);
+      void this.repository
+        .updateOption(formId, elementId, optionId, patch, { keepalive: true })
+        .catch(() => undefined);
+    }
   }
 
   private scheduleOptionPatch(key: string, pending: Omit<PendingOptionPatch, 'timer'>): void {
