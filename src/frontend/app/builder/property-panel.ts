@@ -1,4 +1,4 @@
-import { Component, computed, inject, input } from '@angular/core';
+import { Component, computed, effect, inject, input } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
@@ -68,6 +68,15 @@ export class PropertyPanel {
   readonly store = input.required<DesignerStore>();
   protected readonly i18n = inject(I18nService);
   private readonly snack = inject(MatSnackBar);
+
+  constructor() {
+    effect(() => {
+      const error = this.store().optionPatchError();
+      if (!error) return;
+      this.store().optionPatchError.set(null);
+      this.reportOptionError(error, this.i18n.t('panel.patchOptionFailed'));
+    });
+  }
 
   protected readonly WIDTHS = WIDTHS;
   protected readonly INPUT_TYPES = INPUT_TYPES;
@@ -151,9 +160,9 @@ export class PropertyPanel {
     }
   }
 
-  /** `ApiClient` already shows its own message for rate limiting (429). */
+  /** Shows `message`, unless `ApiClient` already showed one for `error` (e.g. rate limiting). */
   private reportOptionError(error: unknown, message: string): void {
-    if (error instanceof ApiError && error.status === 429) return;
+    if (error instanceof ApiError && error.handled) return;
     this.snack.open(message, 'OK', { duration: SNACK_TIME_ERROR });
   }
 

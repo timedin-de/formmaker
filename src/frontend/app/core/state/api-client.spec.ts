@@ -109,9 +109,15 @@ describe('api-client request', () => {
     } as unknown as Response);
     const message = TestBed.inject(I18nService).t('error.rateLimited');
 
-    await expect(request(undefined, '/x')).rejects.toEqual(new ApiError(message, 429));
+    await expect(request(undefined, '/x')).rejects.toEqual(new ApiError(message, 429, true));
     expect(snack.open).toHaveBeenCalledWith(message, 'OK', { duration: SNACK_TIME_ERROR });
     expect(auth.expireSession).not.toHaveBeenCalled();
+  });
+
+  it('does not mark errors it did not show a message for as handled', async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ error: 'nope' }, 500, false));
+
+    await expect(request(undefined, '/x')).rejects.toMatchObject({ status: 500, handled: false });
   });
 
   it('expires the session on 401 with a stored token', async () => {

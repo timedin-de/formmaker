@@ -13,6 +13,8 @@ export class ApiError extends Error {
   constructor(
     message: string,
     readonly status: number,
+    /** `ApiClient` already showed a message for this error (e.g. rate limiting). */
+    readonly handled = false,
   ) {
     super(message);
     this.name = 'ApiError';
@@ -60,7 +62,7 @@ export class ApiClient {
     if (res.status === 429) {
       const message = this.i18n.t('error.rateLimited');
       this.snack.open(message, 'OK', { duration: SNACK_TIME_ERROR });
-      return new ApiError(message, res.status);
+      return new ApiError(message, res.status, true);
     }
     // A 401 means the session is no longer valid. Without a token it is not a session
     // problem, and the logout call itself must not recurse into another logout.

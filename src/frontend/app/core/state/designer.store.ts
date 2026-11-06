@@ -71,6 +71,8 @@ export class DesignerStore {
   readonly activePageId = signal<string | null>(null);
   /** Optional reference form (imported) read-only compare. */
   readonly dirty = signal(false);
+  /** Last failed option edit, read and cleared by the property panel to show a message. */
+  readonly optionPatchError = signal<unknown>(null);
 
   readonly selectedElement = computed(() => {
     const id = this.selectedId();
@@ -118,6 +120,7 @@ export class DesignerStore {
     this._form.set(form);
     this.selectedId.set(null);
     this.dirty.set(false);
+    this.optionPatchError.set(null);
     this.persist();
   }
 
@@ -126,6 +129,7 @@ export class DesignerStore {
     this.selectedId.set(null);
     this.activePageId.set(def.pages[0]?.id ?? null);
     this.dirty.set(false);
+    this.optionPatchError.set(null);
     this.persist();
   }
 
@@ -385,9 +389,10 @@ export class DesignerStore {
         if (isLoaded()) await this.saveIfDirty();
         await this.repository.updateOption(formId, elementId, optionId, patch);
       })
-      .catch(() => {
+      .catch((error: unknown) => {
         if (!isLoaded()) return;
         this.dirty.set(true);
+        this.optionPatchError.set(error);
       })
       .finally(() => {
         if (this.optionPatches.get(key) === pending) {
