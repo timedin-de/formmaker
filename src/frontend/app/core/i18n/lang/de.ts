@@ -166,6 +166,7 @@ const de: typeof en = {
   'builder.scaleMin': 'Niedrig',
   'builder.scaleMax': 'Hoch',
   'builder.pageN': 'Seite {n}',
+  'builder.clonePageFailed': 'Die Seite konnte nicht dupliziert werden.',
 
   // Import
   'import.failed': 'Import fehlgeschlagen: {message}',
@@ -201,6 +202,7 @@ const de: typeof en = {
   'row.moveInGroup': 'In Gruppe',
   'row.moveDown': 'Nach unten',
   'row.duplicate': 'Duplizieren',
+  'row.duplicateFailed': 'Das Element konnte nicht dupliziert werden.',
   'row.delete': 'Löschen',
   'row.addChild': 'Kind hinzufügen',
 

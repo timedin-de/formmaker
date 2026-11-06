@@ -7,6 +7,7 @@ import { has } from '@shared/helper';
 import type { ElementDefinition, Elements, ElementType } from '@shared/model/form.model';
 import { I18nService } from '../core/i18n';
 import { fieldMeta } from '../core/model/field-registry';
+import { Notifier } from '../core/notifier';
 import { type DesignerStore } from '../core/state/designer.store';
 import { canSortAt, DropDragState } from './drop-sort';
 import { PropertiesModal } from './properties-modal';
@@ -22,6 +23,7 @@ export class ElementRow {
   readonly store = input.required<DesignerStore>();
   protected readonly i18n = inject(I18nService);
   protected readonly modal = inject(PropertiesModal);
+  private readonly notifier = inject(Notifier);
 
   readonly dropLists = input<string[]>([]);
   readonly dropElement = output<CdkDragDrop<Elements, Elements, string>>();
@@ -52,8 +54,12 @@ export class ElementRow {
     this.store().moveElement(this.el().id, dir);
   }
 
-  duplicate(): void {
-    void this.store().duplicateElement(this.el().id);
+  async duplicate(): Promise<void> {
+    try {
+      await this.store().duplicateElement(this.el().id);
+    } catch (error) {
+      this.notifier.apiError(error, 'row.duplicateFailed');
+    }
   }
 
   remove(): void {

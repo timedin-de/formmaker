@@ -20,6 +20,7 @@ import { type ConditionGroup, descendants } from '@shared/model';
 import type { Elements, ElementType, PageDefinition } from '@shared/model/form.model';
 import { first } from 'rxjs';
 import { I18nService } from '../core/i18n';
+import { Notifier } from '../core/notifier';
 import { type DesignerStore } from '../core/state/designer.store';
 import { ConditionEditor } from './condition-editor';
 import { canSortAt, DropDragState } from './drop-sort';
@@ -54,6 +55,7 @@ export class BuilderCanvas {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   protected readonly i18n = inject(I18nService);
+  private readonly notifier = inject(Notifier);
   protected readonly canEnter = inject(DropDragState).canEnter;
 
   readonly store = input.required<DesignerStore>();
@@ -83,8 +85,12 @@ export class BuilderCanvas {
   }
 
   async clonePage(page: PageDefinition): Promise<void> {
-    const clone = await this.store().clonePage(page.id);
-    if (clone) this.showPage(clone.id);
+    try {
+      const clone = await this.store().clonePage(page.id);
+      if (clone) this.showPage(clone.id);
+    } catch (error) {
+      this.notifier.apiError(error, 'builder.clonePageFailed');
+    }
   }
 
   removePage(page: PageDefinition): void {
