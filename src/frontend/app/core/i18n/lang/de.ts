@@ -162,6 +162,7 @@ const de: typeof en = {
   'builder.copySuffix': '(Kopie)',
   'builder.scaleMin': 'Niedrig',
   'builder.scaleMax': 'Hoch',
+  'builder.pageN': 'Seite {n}',
 
   // Import
   'import.failed': 'Import fehlgeschlagen: {message}',
