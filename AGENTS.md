@@ -14,7 +14,7 @@ Node ≥ 24.22.1 is required (Angular 22 CLI needs ≥ 24.15; 24.22.1 / 26.12.1 
 | Dev UI + API together | `npm start` (UI on :4200, proxies `/api` to :3000)                                                         |
 | UI only / API only    | `npm run start:frontend` / `npm run start:api`                                                             |
 | Frontend unit tests   | `npm run test:ci` (`ng test`, Vitest + jsdom)                                                              |
-| Single frontend spec  | `npx ng test --watch=false --include src/shared/engine/engine.spec.ts`                                     |
+| Single frontend spec  | `npx ng test --watch=false --include ../shared/engine/engine.spec.ts` (path relative to `src/frontend`)    |
 | Server tests          | `npm run test:server`                                                                                      |
 | Single server spec    | `npx vitest run -c vitest.server.config.ts src/server/forms/form.service.spec.ts`                          |
 | E2E (3 browsers)      | `npm run e2e` (Playwright starts the API + UI servers itself)                                              |
@@ -25,7 +25,8 @@ Node ≥ 24.22.1 is required (Angular 22 CLI needs ≥ 24.15; 24.22.1 / 26.12.1 
 | Full gate             | `npm run check` (lint, format:check, i18n:check, typecheck, typecheck:server, test:ci, test:server, build) |
 
 Which runner picks up which spec: `ng test` runs every `src/**/*.spec.ts` **except** `src/server/**`
-(so `src/shared` specs run here). `test:server` runs only `src/server/**/*.spec.ts`. All specs, server specs included, are
+(so `src/shared` specs run here). Its `--include` resolves against the project root `src/frontend`, so a
+frontend spec is `app/core/state/designer.store.spec.ts` and a shared one `../shared/...`. `test:server` runs only `src/server/**/*.spec.ts`. All specs, server specs included, are
 typechecked by `typecheck` (`tsconfig.spec.json`); `typecheck:server` covers only server app code.
 
 ## Layout
