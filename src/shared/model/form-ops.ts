@@ -214,20 +214,15 @@ export function cloneElement(
  * Deep-clones the page `pageId` and every element it reaches with fresh ids.
  * References between the copied elements are remapped to the copies, including
  * page conditions that point at an element of the copied page; references to
- * elements on other pages stay untouched. The page title and the labels of its
- * root elements get the localized `suffix`. Returns null when there is no such
- * page.
+ * elements on other pages stay untouched. Only the page title gets the localized
+ * `suffix`; the copied elements keep their labels. Returns null when there is no
+ * such page.
  */
 export function clonePage(form: FormDocument, pageId: PageId, suffix: string): PageClone | null {
   const source = form.pages.find((page) => page.id === pageId);
   if (!source) return null;
 
   const { rootIds, elements, idMap } = cloneSubtrees(form, source.children);
-  const roots = new Set(rootIds);
-  for (const element of elements) {
-    if (roots.has(element.id)) element.label = `${element.label} ${suffix}`;
-  }
-
   const page = structuredClone(source);
   page.id = elementId('page');
   page.title = `${source.title} ${suffix}`;
