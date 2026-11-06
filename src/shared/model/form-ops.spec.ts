@@ -74,6 +74,9 @@ describe('cloneElement', () => {
 
     expect(copiedGroup.id).not.toBe(group.id);
     expect(copiedGroup.label).toBe('Group (copy)');
+    expect(clone!.subtree.map((el) => el.label)).toEqual(
+      group.children.map((id) => form.elements[id].label),
+    );
     expect(copiedGroup.children).toEqual([copiedFirst.id, copiedSecond.id, copiedThird.id]);
     expect(new Set([copiedGroup.id, ...clone!.subtree.map((el) => el.id)]).size).toBe(4);
 
@@ -148,7 +151,9 @@ describe('clonePage', () => {
     expect(clone?.page.id).not.toBe(page.id);
     expect(clone?.page.title).toBe('Page 1 (copy)');
     expect(copiedGroup.id).not.toBe(group.id);
-    expect(copiedGroup.label).toBe('Group (copy)');
+    // Only the page title is marked as a copy, not the elements on it.
+    expect(copiedGroup.label).toBe('Group');
+    expect(clone!.elements.filter((el) => el.label.includes(COPY_SUFFIX))).toEqual([]);
     expect(copiedSecond.defaultValue).toEqual({ kind: 'fromField', fieldId: copiedFirst.id });
     expect(copiedThird.enabledWhen?.conditions[0].fieldId).toBe(copiedSecond.id);
 

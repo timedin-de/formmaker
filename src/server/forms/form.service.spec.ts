@@ -315,7 +315,7 @@ describe('FormService cloning', () => {
 
     const [copiedQ1, copiedQ2] = clone.elements as TextElement[];
     expect(copiedQ1.id).not.toBe('q1');
-    expect(copiedQ2.label).toBe('q2 (Kopie)');
+    expect(copiedQ2.label).toBe('q2');
     expect(copiedQ2.defaultValue).toEqual({ kind: 'fromField', fieldId: copiedQ1.id });
     expect((saved().elements['q2'] as TextElement).defaultValue).toEqual({
       kind: 'fromField',
