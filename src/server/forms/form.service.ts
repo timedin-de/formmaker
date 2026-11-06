@@ -65,7 +65,8 @@ export class FormService {
     return await this.repository.form(id);
   }
 
-  async newForm(user: User) {
+  /** Creates an empty form with one page titled `pageTitle` (localized by the client). */
+  async newForm(user: User, pageTitle?: string) {
     const now = new Date().toISOString();
     const form: FormDefinition = {
       id: uuid(),
@@ -81,7 +82,7 @@ export class FormService {
         navigation: 'auto',
         enableAutoSave: true,
       },
-      pages: [createPage()],
+      pages: [createPage(pageTitle)],
       elements: {},
     };
     return await this.repository.saveForm(user.id, form);

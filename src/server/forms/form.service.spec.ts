@@ -19,7 +19,7 @@ import {
 import 'reflect-metadata';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useRe2Regex } from '../common/re2-regex';
-import type { Repository } from '../repository';
+import type { Repository, User } from '../repository';
 import { FormService } from './form.service';
 
 function text(id: string, extra: Partial<TextElement> = {}): TextElement {
@@ -117,6 +117,14 @@ describe('FormService element creation', () => {
     const parent = getParent(saved(), parentId);
     return parent ? childrenOf(saved(), parent).map((e) => e.id) : [];
   };
+
+  it('creates a new form whose first page has the localized title', async () => {
+    const user = { id: 'owner-1', email: 'a@b.c', role: 'editor' } as unknown as User;
+    await service.newForm(user, 'Seite 1');
+
+    expect(saveForm).toHaveBeenCalledWith('owner-1', expect.anything());
+    expect(saved().pages.map((p) => p.title)).toEqual(['Seite 1']);
+  });
 
   it('appends a generated page and persists it for the owner', async () => {
     const form = formOf([page('p1', [])]);

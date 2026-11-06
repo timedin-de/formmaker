@@ -43,7 +43,7 @@ function editorHeaders(session: ApiSession): Record<string, string> {
 }
 
 export async function createForm(session: ApiSession, form: unknown): Promise<string> {
-  const res = await session.request.post('/api/forms', {
+  const res = await session.request.post('/api/forms/import', {
     headers: editorHeaders(session),
     data: form,
   });

@@ -114,7 +114,7 @@ export class DesignerStore {
   // ---- actions ---------------------------------------------------------------
 
   async createEmpty(): Promise<void> {
-    const form = await this.repository.newForm();
+    const form = await this.repository.newForm(this.i18n.t('builder.pageN', { n: 1 }));
     this._form.set(form);
     this.selectedId.set(null);
     this.dirty.set(false);
@@ -140,7 +140,7 @@ export class DesignerStore {
   /** Creates a page on the server (which persists it) and appends it locally. */
   async addPage(): Promise<PageDefinition> {
     const page = await this.createOnServer((form) =>
-      this.repository.addPage(form.id, `Page ${form.pages.length + 1}`),
+      this.repository.addPage(form.id, this.i18n.t('builder.pageN', { n: form.pages.length + 1 })),
     );
     this.applyServerChange((f) => addPage(f, page));
     this.activePageId.set(page.id);

@@ -146,7 +146,11 @@ describe('DesignerStore server-side creation', () => {
   const clonedElement = text('Copy');
   const clonedPage = createPage('Page 2');
   const i18n = {
-    t: vi.fn((key: string) => (key === 'builder.copySuffix' ? '(copy)' : key)),
+    t: vi.fn((key: string, params?: Record<string, unknown>) => {
+      if (key === 'builder.copySuffix') return '(copy)';
+      if (key === 'builder.pageN') return `Page ${String(params?.['n'])}`;
+      return key;
+    }),
   };
   const repo = {
     saveForm: vi.fn(async () => calls.push('save')),

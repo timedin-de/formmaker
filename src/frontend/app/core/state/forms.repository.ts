@@ -17,6 +17,7 @@ import {
   type ClonePageResponse,
   type CreateElementRequest,
   type CreateOptionRequest,
+  type NewFormRequest,
   elementDefinitionSchema,
   formDefinitionSchema,
   formsWithOwnerSchema,
@@ -88,10 +89,12 @@ export class FormsRepository {
     return portable;
   }
 
-  async newForm(): Promise<FormDefinition> {
+  /** Creates an empty form on the server whose first page is titled `pageTitle`. */
+  async newForm(pageTitle: string): Promise<FormDefinition> {
     await this.init();
     const saved = await this.api.request(formWithOwnerSchema, '/api/forms', {
       method: 'POST',
+      body: JSON.stringify({ pageTitle } satisfies NewFormRequest),
     });
     this.upsert([saved]);
     writeCache(FORM_CACHE_PREFIX + saved.id, toPortableForm(saved));
@@ -101,7 +104,7 @@ export class FormsRepository {
 
   async importForm(form: FormDefinition): Promise<FormDefinition> {
     await this.init();
-    const saved = await this.api.request(formWithOwnerSchema, '/api/forms', {
+    const saved = await this.api.request(formWithOwnerSchema, '/api/forms/import', {
       method: 'POST',
       body: JSON.stringify(form),
     });
