@@ -160,6 +160,7 @@ const en = {
   'builder.copySuffix': '(copy)',
   'builder.scaleMin': 'Low',
   'builder.scaleMax': 'High',
+  'builder.pageN': 'Page {n}',
 
   // import
   'import.failed': 'Import failed: {message}',

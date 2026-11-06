@@ -14,6 +14,9 @@ import {
 import { conditionGroupSchema } from './conditions';
 import { elementDefinitionSchema, formElementsSchema } from './elements';
 
+/** Max length of a localized default text the client sends along with a create/clone request. */
+const DEFAULT_TEXT_MAX = 50;
+
 export const pageDefinitionSchema = z.strictObject({
   id: z.string(),
   title: z.string(),
@@ -92,8 +95,17 @@ export const createPageSchema = z.strictObject({
   title: z.string(),
 });
 
-/** Max length of a localized default text the client sends along with a create/clone request. */
-const DEFAULT_TEXT_MAX = 50;
+/** Body of `POST /api/forms`, which creates a new empty form. */
+export const newFormSchema = z._default(
+  z.strictObject({
+    /** Localized title of the form's first page, e.g. "Page 1". */
+    pageTitle: z.optional(z.string().check(z.maxLength(DEFAULT_TEXT_MAX))),
+  }),
+  {},
+);
+
+export type NewFormRequest = z.infer<typeof newFormSchema>;
+
 const defaultTextSchema = z.string().check(z.maxLength(DEFAULT_TEXT_MAX));
 
 export const createElementSchema = z.strictObject({
