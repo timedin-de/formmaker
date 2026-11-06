@@ -146,14 +146,19 @@ export const clonePageResponseSchema = z.strictObject({
 
 export type ClonePageResponse = z.infer<typeof clonePageResponseSchema>;
 
+/** Max length of an option label sent to the option endpoints. */
+const OPTION_LABEL_MAX = 1000;
+
+const optionLabelSchema = z.string().check(z.maxLength(OPTION_LABEL_MAX));
+
 export const createOptionSchema = z.strictObject({
-  label: z.string(),
+  label: optionLabelSchema,
 });
 
 export type CreateOptionRequest = z.infer<typeof createOptionSchema>;
 
 export const updateOptionSchema = z.strictObject({
-  label: z.optional(z.string()),
+  label: z.optional(optionLabelSchema),
 });
 
 export type UpdateOptionRequest = z.infer<typeof updateOptionSchema>;
