@@ -13,6 +13,7 @@ import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -20,6 +21,7 @@ import { type ConditionGroup, descendants } from '@shared/model';
 import type { Elements, ElementType, PageDefinition } from '@shared/model/form.model';
 import { first } from 'rxjs';
 import { I18nService } from '../core/i18n';
+import { reportApiError } from '../core/state/api-client';
 import { type DesignerStore } from '../core/state/designer.store';
 import { ConditionEditor } from './condition-editor';
 import { canSortAt, DropDragState } from './drop-sort';
@@ -54,6 +56,7 @@ export class BuilderCanvas {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   protected readonly i18n = inject(I18nService);
+  private readonly snack = inject(MatSnackBar);
   protected readonly canEnter = inject(DropDragState).canEnter;
 
   readonly store = input.required<DesignerStore>();
@@ -83,8 +86,12 @@ export class BuilderCanvas {
   }
 
   async clonePage(page: PageDefinition): Promise<void> {
-    const clone = await this.store().clonePage(page.id);
-    if (clone) this.showPage(clone.id);
+    try {
+      const clone = await this.store().clonePage(page.id);
+      if (clone) this.showPage(clone.id);
+    } catch (error) {
+      reportApiError(this.snack, error, this.i18n.t('builder.clonePageFailed'));
+    }
   }
 
   removePage(page: PageDefinition): void {

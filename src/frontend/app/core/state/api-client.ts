@@ -26,6 +26,12 @@ export function apiErrorMessage(error: unknown): string {
   return error instanceof Error && error.message ? error.message : 'request failed';
 }
 
+/** Shows `message` for a failed request, unless `ApiClient` already showed one (e.g. rate limiting). */
+export function reportApiError(snack: MatSnackBar, error: unknown, message: string): void {
+  if (error instanceof ApiError && error.handled) return;
+  snack.open(message, 'OK', { duration: SNACK_TIME_ERROR });
+}
+
 @Injectable({ providedIn: 'root' })
 export class ApiClient {
   // AuthService is resolved lazily: it depends on this client through its repositories.

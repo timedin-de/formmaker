@@ -158,6 +158,7 @@ const en = {
   'builder.scaleMin': 'Low',
   'builder.scaleMax': 'High',
   'builder.pageN': 'Page {n}',
+  'builder.clonePageFailed': 'The page could not be duplicated.',
 
   // import
   'import.failed': 'Import failed: {message}',
@@ -193,6 +194,7 @@ const en = {
   'row.moveInGroup': 'Move in group',
   'row.moveDown': 'Move down',
   'row.duplicate': 'Duplicate',
+  'row.duplicateFailed': 'The element could not be duplicated.',
   'row.delete': 'Delete',
   'row.addChild': 'Add child',
 
