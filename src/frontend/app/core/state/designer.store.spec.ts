@@ -385,6 +385,7 @@ describe('DesignerStore server-side creation', () => {
         label: 'Last',
       });
       expect(calls).toEqual(['updateOption']);
+      expect(store.optionPatchError()).toBeNull();
     });
 
     it('saves unsaved edits before sending a pending option edit', async () => {
@@ -408,6 +409,7 @@ describe('DesignerStore server-side creation', () => {
       await vi.advanceTimersByTimeAsync(OPTION_PATCH_DELAY_MS);
 
       expect(store.dirty()).toBe(true);
+      expect(store.optionPatchError()).toEqual(new Error('offline'));
       const stored = store.form().elements[choice.id] as ChoiceElement;
       expect(stored.options[0].label).toBe('Kept');
     });

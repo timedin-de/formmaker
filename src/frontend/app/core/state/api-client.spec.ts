@@ -118,6 +118,12 @@ describe('api-client request', () => {
     expect(auth.expireSession).not.toHaveBeenCalled();
   });
 
+  it('does not mark errors it did not show a message for as handled', async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ error: 'nope' }, 500, false));
+
+    await expect(request(undefined, '/x')).rejects.toMatchObject({ status: 500, handled: false });
+  });
+
   it('expires the session on 401 with a stored token', async () => {
     sessionStorage.setItem('formmaker.token', 'stale');
     fetchMock.mockResolvedValue(jsonResponse({ error: 'authentication required' }, 401, false));

@@ -233,6 +233,7 @@ const en = {
   'panel.addOption': 'Add option',
   'panel.addOptionFailed': 'The option could not be added.',
   'panel.removeOptionFailed': 'The option could not be removed.',
+  'panel.patchOptionFailed': 'The option change could not be saved.',
   'panel.defaultValue': 'Default value',
   'panel.none': 'None',
   'panel.static': 'Static',
