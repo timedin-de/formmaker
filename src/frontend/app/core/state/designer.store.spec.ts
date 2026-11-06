@@ -1,10 +1,8 @@
 import { TestBed } from '@angular/core/testing';
-import type { ConditionGroup } from '@shared/model/conditions.model';
 import { createElement, createPage } from '@shared/model/form-factory';
 import type {
   ChoiceElement,
   ElementDefinition,
-  FormDefinition,
   GroupElement,
   PageDefinition,
   TextElement,
@@ -16,180 +14,13 @@ import {
 } from '@shared/schemas';
 import { addToGroup, getElements, newForm } from '@test/helper';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { I18nService } from '../i18n/translation.service';
 import { DesignerStore, OPTION_PATCH_DELAY_MS } from './designer.store';
 import { FormsRepository } from './forms.repository';
-
-function conditions(fieldId: string): ConditionGroup {
-  return {
-    logic: 'all',
-    conditions: [{ fieldId, operator: 'isNotEmpty' }],
-    groups: [],
-  };
-}
 
 function text(label: string): TextElement {
   return createElement('text', label) as TextElement;
 }
-
-/** Page with a group (nested children) plus a top-level field that depends on a child. */
-function pageWithNestedDeps(form: FormDefinition): { page: PageDefinition; group: GroupElement } {
-  const page = createPage('Page 1');
-  const group = createElement('group', 'Group');
-  const first = text('First');
-  const second = text('Second');
-  second.defaultValue = { kind: 'fromField', fieldId: first.id };
-  const third = text('Third');
-  third.enabledWhen = {
-    logic: 'all',
-    conditions: [
-      {
-        fieldId: second.id,
-        operator: 'between',
-        operand: { kind: 'field', fieldId: first.id },
-        operandTo: { kind: 'field', fieldId: first.id },
-      },
-    ],
-    groups: [],
-  };
-
-  addToGroup([first, second, third], group, form);
-
-  const top = text('Top');
-  top.enabledWhen = conditions(first.id);
-  top.defaultValue = { kind: 'fromField', fieldId: first.id };
-
-  addToGroup([group, top], page, form);
-  return { page, group };
-}
-
-describe('DesignerStore clone', () => {
-  let store: DesignerStore;
-
-  beforeEach(() => {
-    localStorage.clear();
-    TestBed.configureTestingModule({ providers: [DesignerStore] });
-    store = TestBed.inject(DesignerStore);
-  });
-
-  it('clonePage remaps same-page references of nested group children', () => {
-    const form = newForm('Demo');
-    const { page, group } = pageWithNestedDeps(form);
-    form.pages = [page];
-    store.load(form);
-
-    store.clonePage(page.id);
-
-    const copy = store.form().pages[1];
-    const copiedGroup = getElements(copy, store.form())[0] as GroupElement;
-    const [copiedFirst, copiedSecond, copiedThird] = getElements(
-      copiedGroup,
-      store.form(),
-    ) as TextElement[];
-    const copiedTop = getElements(copy, store.form())[1] as TextElement;
-
-    expect(copiedGroup.id).not.toBe(group.id);
-    expect(copiedFirst.id).not.toBe(group.children[0]);
-    expect(copiedSecond.id).not.toBe(group.children[1]);
-    expect(copiedThird.id).not.toBe(group.children[2]);
-
-    expect(copiedSecond.defaultValue).toEqual({ kind: 'fromField', fieldId: copiedFirst.id });
-    const nestedCondition = copiedThird.enabledWhen?.conditions[0];
-    expect(nestedCondition?.fieldId).toBe(copiedSecond.id);
-    expect(nestedCondition?.operand).toEqual({ kind: 'field', fieldId: copiedFirst.id });
-    expect(nestedCondition?.operandTo).toEqual({ kind: 'field', fieldId: copiedFirst.id });
-    expect(copiedTop.defaultValue).toEqual({ kind: 'fromField', fieldId: copiedFirst.id });
-    expect(copiedTop.enabledWhen?.conditions[0].fieldId).toBe(copiedFirst.id);
-  });
-
-  it('clonePage leaves references to other pages untouched', () => {
-    const form = newForm('Demo');
-
-    const source = createPage('Source');
-    const sourceField = text('Source field');
-    addToGroup(sourceField, source, form);
-
-    const target = createPage('Target');
-    const targetField = text('Target field');
-    targetField.defaultValue = { kind: 'fromField', fieldId: sourceField.id };
-    targetField.enabledWhen = conditions(sourceField.id);
-    addToGroup(targetField, target, form);
-
-    form.pages = [source, target];
-    store.load(form);
-
-    store.clonePage(target.id);
-
-    const copy = store.form().elements[store.form().pages[2].children[0]] as TextElement;
-    expect(copy.id).not.toBe(targetField.id);
-    expect(copy.defaultValue).toEqual({ kind: 'fromField', fieldId: sourceField.id });
-    expect(copy.enabledWhen?.conditions[0].fieldId).toBe(sourceField.id);
-  });
-
-  it('duplicateElement keeps group children ids unique', () => {
-    const form = newForm('Demo');
-    const { page, group } = pageWithNestedDeps(form);
-    form.pages = [page];
-    store.load(form);
-
-    store.duplicateElement(group.id);
-
-    const [, copy] = getElements(store.form().pages[0], store.form()) as [
-      GroupElement,
-      GroupElement,
-    ];
-    const [firstCopy, secondCopy, thirdCopy] = getElements(copy, store.form());
-    expect(copy.id).not.toBe(group.id);
-    expect(firstCopy.id).not.toBe(group.children[0]);
-    expect(secondCopy.id).not.toBe(group.children[1]);
-    expect(thirdCopy.id).not.toBe(group.children[2]);
-    expect(getElements(copy, form)).toHaveLength(3);
-  });
-
-  it('duplicateElement remaps references inside the duplicated subtree', () => {
-    const form = newForm('Demo');
-    const { page, group } = pageWithNestedDeps(form);
-    form.pages = [page];
-    store.load(form);
-
-    store.duplicateElement(group.id);
-
-    const copy = getElements(store.form().pages[0], store.form())[1] as GroupElement;
-    const [firstCopy, secondCopy, thirdCopy] = getElements(copy, store.form()) as TextElement[];
-    const [firstOriginal, , thirdOriginal] = group.children.map(
-      (id) => form.elements[id],
-    ) as TextElement[];
-
-    expect((secondCopy.defaultValue as { fieldId: string }).fieldId).toBe(firstCopy.id);
-    const condition = thirdCopy.enabledWhen?.conditions[0];
-    expect(condition?.fieldId).toBe(secondCopy.id);
-    expect(condition?.operand).toEqual({ kind: 'field', fieldId: firstCopy.id });
-    expect(condition?.operandTo).toEqual({ kind: 'field', fieldId: firstCopy.id });
-
-    // The original group keeps its own references.
-    expect((form.elements[group.children[1]] as TextElement).defaultValue).toEqual({
-      kind: 'fromField',
-      fieldId: firstOriginal.id,
-    });
-    expect(thirdOriginal.enabledWhen?.conditions[0].fieldId).toBe(group.children[1]);
-  });
-
-  it('duplicateElement leaves references to other fields untouched', () => {
-    const form = newForm('Demo');
-    const { page } = pageWithNestedDeps(form);
-    form.pages = [page];
-    store.load(form);
-
-    const top = getElements(page, form)[1] as TextElement;
-    const nestedFirstId = (getElements(page, form)[0] as GroupElement).children[0];
-
-    store.duplicateElement(top.id);
-
-    const copy = getElements(store.form().pages[0], store.form())[2] as TextElement;
-    expect(copy.id).not.toBe(top.id);
-    expect(copy.defaultValue).toEqual({ kind: 'fromField', fieldId: nestedFirstId });
-    expect(copy.enabledWhen?.conditions[0].fieldId).toBe(nestedFirstId);
-  });
-});
 
 describe('DesignerStore moveElementTo', () => {
   let store: DesignerStore;
@@ -312,6 +143,11 @@ describe('DesignerStore moveElementTo', () => {
 describe('DesignerStore server-side creation', () => {
   let store: DesignerStore;
   const calls: string[] = [];
+  const clonedElement = text('Copy');
+  const clonedPage = createPage('Page 2');
+  const i18n = {
+    t: vi.fn((key: string) => (key === 'builder.copySuffix' ? '(copy)' : key)),
+  };
   const repo = {
     saveForm: vi.fn(async () => calls.push('save')),
     addPage: vi.fn(async (_formId: string, title: string) => {
@@ -321,6 +157,14 @@ describe('DesignerStore server-side creation', () => {
     addElement: vi.fn(async (_formId: string, request: CreateElementRequest) => {
       calls.push('addElement');
       return createElement(request.type, request.label);
+    }),
+    cloneElement: vi.fn(async (_formId: string, _elementId: string, _suffix: string) => {
+      calls.push('cloneElement');
+      return { element: clonedElement, subtree: [] as ElementDefinition[] };
+    }),
+    clonePage: vi.fn(async (_formId: string, _pageId: string, _suffix: string) => {
+      calls.push('clonePage');
+      return { page: clonedPage, elements: [] as ElementDefinition[] };
     }),
     addOption: vi.fn(async (_formId: string, _elementId: string, request: CreateOptionRequest) => {
       calls.push('addOption');
@@ -347,7 +191,11 @@ describe('DesignerStore server-side creation', () => {
     calls.length = 0;
     vi.clearAllMocks();
     TestBed.configureTestingModule({
-      providers: [DesignerStore, { provide: FormsRepository, useValue: repo }],
+      providers: [
+        DesignerStore,
+        { provide: FormsRepository, useValue: repo },
+        { provide: I18nService, useValue: i18n },
+      ],
     });
     store = TestBed.inject(DesignerStore);
   });
@@ -377,6 +225,11 @@ describe('DesignerStore server-side creation', () => {
       label: 'Age',
       parentId: page.id,
       afterId: getElements(page, store.form())[0].id,
+      defaults: {
+        option: 'panel.option',
+        scaleMin: 'builder.scaleMin',
+        scaleMax: 'builder.scaleMax',
+      },
     });
     expect(getElements(store.form().pages[0], store.form())[1]).toEqual(el);
     expect(store.selectedId()).toBe(el.id);
@@ -399,6 +252,70 @@ describe('DesignerStore server-side creation', () => {
     expect(repo.addPage).toHaveBeenCalledWith(store.form().id, 'Page 2');
     expect(store.form().pages.at(-1)).toEqual(page);
     expect(store.activePageId()).toBe(page.id);
+  });
+
+  it('inserts the server-cloned element after its source and selects it', async () => {
+    const { page, group } = loaded();
+    const before = getElements(page, store.form());
+    const copy = await store.duplicateElement(group.id);
+
+    expect(repo.cloneElement).toHaveBeenCalledWith(store.form().id, group.id, '(copy)');
+    expect(copy).toBe(clonedElement);
+    expect(getElements(store.form().pages[0], store.form()).map((el) => el.id)).toEqual([
+      before[0].id,
+      group.id,
+      clonedElement.id,
+      before[2].id,
+    ]);
+    expect(store.selectedId()).toBe(clonedElement.id);
+    expect(store.dirty()).toBe(false);
+  });
+
+  it('appends the server-cloned page and activates it', async () => {
+    const { page, group } = loaded();
+    store.select(group.id);
+
+    const copy = await store.clonePage(page.id);
+
+    expect(repo.clonePage).toHaveBeenCalledWith(store.form().id, page.id, '(copy)');
+    expect(copy).toBe(clonedPage);
+    expect(store.form().pages.at(-1)).toBe(clonedPage);
+    expect(store.activePageId()).toBe(clonedPage.id);
+    expect(store.selectedId()).toBeNull();
+    expect(store.dirty()).toBe(false);
+  });
+
+  it('drops the duplicate locally when its source was removed during the request', async () => {
+    const { page, group } = loaded();
+    repo.cloneElement.mockImplementationOnce(async () => {
+      store.load({
+        ...store.form(),
+        pages: [
+          {
+            ...page,
+            children: getElements(page, store.form())
+              .filter((el) => el.id !== group.id)
+              .map((el) => el.id),
+          },
+        ],
+      });
+      return { element: clonedElement, subtree: [] };
+    });
+
+    const copy = await store.duplicateElement(group.id);
+
+    expect(copy).toBeUndefined();
+    expect(store.selectedId()).toBeNull();
+    expect(getElements(store.form().pages[0], store.form())).toHaveLength(2);
+  });
+
+  it('saves unsaved edits before cloning', async () => {
+    const { group } = loaded();
+    store.rename('Renamed');
+
+    await store.duplicateElement(group.id);
+
+    expect(calls).toEqual(['save', 'cloneElement']);
   });
 
   function loadedChoice(): ChoiceElement {

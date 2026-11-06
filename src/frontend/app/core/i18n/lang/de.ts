@@ -159,6 +159,9 @@ const de: typeof en = {
   'builder.saveMsg': 'Formular gespeichert',
   'builder.untitled': 'Unbenanntes Formular ({date})',
   'builder.properties': 'Eigenschaften bearbeiten',
+  'builder.copySuffix': '(Kopie)',
+  'builder.scaleMin': 'Niedrig',
+  'builder.scaleMax': 'Hoch',
 
   // Import
   'import.failed': 'Import fehlgeschlagen: {message}',

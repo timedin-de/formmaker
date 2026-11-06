@@ -20,10 +20,41 @@ export function createPage(title = 'New page'): PageDefinition {
   };
 }
 
-export function createElement(type: QuestionType, label: string): QuestionDefinition;
-export function createElement(type: 'group', label: string): GroupElement;
-export function createElement(type: ElementType, label: string): ElementDefinition;
-export function createElement(type: ElementType, label: string): ElementDefinition {
+/** Localized default texts of a new element; missing ones fall back to English. */
+export interface ElementDefaultTexts {
+  /** Prefix of the default choice options, numbered as "<option> 1", "<option> 2". */
+  option?: string;
+  scaleMin?: string;
+  scaleMax?: string;
+}
+
+function defaultOptions(option = 'Option') {
+  return [
+    { id: uuid(), label: `${option} 1` },
+    { id: uuid(), label: `${option} 2` },
+  ];
+}
+
+export function createElement(
+  type: QuestionType,
+  label: string,
+  defaults?: ElementDefaultTexts,
+): QuestionDefinition;
+export function createElement(
+  type: 'group',
+  label: string,
+  defaults?: ElementDefaultTexts,
+): GroupElement;
+export function createElement(
+  type: ElementType,
+  label: string,
+  defaults?: ElementDefaultTexts,
+): ElementDefinition;
+export function createElement(
+  type: ElementType,
+  label: string,
+  defaults: ElementDefaultTexts = {},
+): ElementDefinition {
   const base = {
     type,
     description: '',
@@ -60,32 +91,11 @@ export function createElement(type: ElementType, label: string): ElementDefiniti
     case 'boolean':
       return { ...qBase, type: 'boolean' };
     case 'choice':
-      return {
-        ...qBase,
-        type: 'choice',
-        options: [
-          { id: uuid(), label: 'Option 1' },
-          { id: uuid(), label: 'Option 2' },
-        ],
-      };
+      return { ...qBase, type: 'choice', options: defaultOptions(defaults.option) };
     case 'dropdown':
-      return {
-        ...qBase,
-        type: 'dropdown',
-        options: [
-          { id: uuid(), label: 'Option 1' },
-          { id: uuid(), label: 'Option 2' },
-        ],
-      };
+      return { ...qBase, type: 'dropdown', options: defaultOptions(defaults.option) };
     case 'multiChoice':
-      return {
-        ...qBase,
-        type: 'multiChoice',
-        options: [
-          { id: uuid(), label: 'Option 1' },
-          { id: uuid(), label: 'Option 2' },
-        ],
-      };
+      return { ...qBase, type: 'multiChoice', options: defaultOptions(defaults.option) };
     case 'scale':
       return {
         ...qBase,
@@ -93,8 +103,8 @@ export function createElement(type: ElementType, label: string): ElementDefiniti
         min: 0,
         max: 10,
         step: 1,
-        minLabel: 'Low',
-        maxLabel: 'High',
+        minLabel: defaults.scaleMin ?? 'Low',
+        maxLabel: defaults.scaleMax ?? 'High',
       };
     case 'file':
       return { ...qBase, type: 'file', multiple: false };

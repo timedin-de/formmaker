@@ -154,6 +154,9 @@ const en = {
   'builder.saveMsg': 'Form saved',
   'builder.untitled': 'Untitled form ({date})',
   'builder.properties': 'Properties',
+  'builder.copySuffix': '(copy)',
+  'builder.scaleMin': 'Low',
+  'builder.scaleMax': 'High',
 
   // import
   'import.failed': 'Import failed: {message}',

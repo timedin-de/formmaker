@@ -21,6 +21,8 @@ import {
   uuid,
 } from '@shared/model';
 import {
+  type CloneRequest,
+  cloneRequestSchema,
   type CreateElementRequest,
   createElementSchema,
   type CreateOptionRequest,
@@ -137,6 +139,19 @@ export class FormsController {
     return this.formService.addPage(item, body.title);
   }
 
+  @Post(':formId/pages/:pageId/clone')
+  @HttpCode(201)
+  @UseGuards(AuthGuard)
+  async clonePage(
+    @CurrentUser() user: User,
+    @Param('formId') formId: string,
+    @Param('pageId') pageId: string,
+    @Body(new ZodValidationPipe(cloneRequestSchema)) body: CloneRequest,
+  ) {
+    const item = await this.managedForm(formId, user);
+    return this.formService.clonePage(item, pageId, body);
+  }
+
   @Delete(':formId/pages/:pageId')
   @HttpCode(204)
   @UseGuards(AuthGuard)
@@ -159,6 +174,19 @@ export class FormsController {
   ) {
     const item = await this.managedForm(id, user);
     return this.formService.addElement(item, body);
+  }
+
+  @Post(':formId/elements/:elementId/clone')
+  @HttpCode(201)
+  @UseGuards(AuthGuard)
+  async cloneElement(
+    @CurrentUser() user: User,
+    @Param('formId') formId: string,
+    @Param('elementId') elementId: string,
+    @Body(new ZodValidationPipe(cloneRequestSchema)) body: CloneRequest,
+  ) {
+    const item = await this.managedForm(formId, user);
+    return this.formService.cloneElement(item, elementId, body);
   }
 
   @Delete(':formId/elements/:elementId')
