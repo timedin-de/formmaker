@@ -21,19 +21,23 @@ import {
   uuid,
 } from '@shared/model';
 import {
+  type CloneRequest,
+  cloneRequestSchema,
   type CreateElementRequest,
   createElementSchema,
   type CreateOptionRequest,
   createOptionSchema,
   createPageSchema,
   formDefinitionSchema,
+  type NewFormRequest,
+  newFormSchema,
   saveFormDefinitionSchema,
   stripFormOwnership,
   submissionCreateSchema,
   type UpdateOptionRequest,
   updateOptionSchema,
 } from '@shared/schemas';
-import * as z from 'zod/mini';
+import type * as z from 'zod/mini';
 import { AuthGuard } from '../auth/auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
@@ -50,9 +54,9 @@ class SaveFormBodyPipe extends ZodValidationPipe<SaveFormDefinition> {
     return super.transform(stripFormOwnership(value));
   }
 }
-class OptionalFormBodyPipe extends ZodValidationPipe<FormDefinition | undefined> {
+class ImportFormBodyPipe extends ZodValidationPipe<FormDefinition> {
   constructor() {
-    super(z.optional(formDefinitionSchema));
+    super(formDefinitionSchema);
   }
 
   override transform(value: unknown) {
@@ -85,19 +89,27 @@ export class FormsController {
     return user.role === 'admin' ? this.repository.allForms() : this.repository.forms(user.id);
   }
 
+  /** Creates a new empty form with one page. */
   @Post()
   @HttpCode(201)
   @UseGuards(AuthGuard)
   async createForm(
     @CurrentUser() user: User,
-    @Body(new OptionalFormBodyPipe()) body: FormDefinition,
+    @Body(new ZodValidationPipe(newFormSchema)) body: NewFormRequest,
   ) {
-    if (body) {
-      body.id = uuid();
-      return this.repository.saveForm(user.id, body);
-    }
-    const form = await this.formService.newForm(user);
-    return form;
+    return this.formService.newForm(user, body.pageTitle);
+  }
+
+  /** Imports a full form definition as a new form owned by the user. */
+  @Post('import')
+  @HttpCode(201)
+  @UseGuards(AuthGuard)
+  async importForm(
+    @CurrentUser() user: User,
+    @Body(new ImportFormBodyPipe()) body: FormDefinition,
+  ) {
+    body.id = uuid();
+    return this.repository.saveForm(user.id, body);
   }
 
   // Public by id: existing share links stay usable without revealing the form catalogue.
@@ -137,6 +149,19 @@ export class FormsController {
     return this.formService.addPage(item, body.title);
   }
 
+  @Post(':formId/pages/:pageId/clone')
+  @HttpCode(201)
+  @UseGuards(AuthGuard)
+  async clonePage(
+    @CurrentUser() user: User,
+    @Param('formId') formId: string,
+    @Param('pageId') pageId: string,
+    @Body(new ZodValidationPipe(cloneRequestSchema)) body: CloneRequest,
+  ) {
+    const item = await this.managedForm(formId, user);
+    return this.formService.clonePage(item, pageId, body);
+  }
+
   @Delete(':formId/pages/:pageId')
   @HttpCode(204)
   @UseGuards(AuthGuard)
@@ -159,6 +184,19 @@ export class FormsController {
   ) {
     const item = await this.managedForm(id, user);
     return this.formService.addElement(item, body);
+  }
+
+  @Post(':formId/elements/:elementId/clone')
+  @HttpCode(201)
+  @UseGuards(AuthGuard)
+  async cloneElement(
+    @CurrentUser() user: User,
+    @Param('formId') formId: string,
+    @Param('elementId') elementId: string,
+    @Body(new ZodValidationPipe(cloneRequestSchema)) body: CloneRequest,
+  ) {
+    const item = await this.managedForm(formId, user);
+    return this.formService.cloneElement(item, elementId, body);
   }
 
   @Delete(':formId/elements/:elementId')

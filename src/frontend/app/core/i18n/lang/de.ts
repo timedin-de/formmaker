@@ -159,6 +159,11 @@ const de: typeof en = {
   'builder.saveMsg': 'Formular gespeichert',
   'builder.untitled': 'Unbenanntes Formular ({date})',
   'builder.properties': 'Eigenschaften bearbeiten',
+  'builder.copySuffix': '(Kopie)',
+  'builder.scaleMin': 'Niedrig',
+  'builder.scaleMax': 'Hoch',
+  'builder.pageN': 'Seite {n}',
+  'builder.clonePageFailed': 'Die Seite konnte nicht dupliziert werden.',
 
   // Import
   'import.failed': 'Import fehlgeschlagen: {message}',
@@ -194,6 +199,7 @@ const de: typeof en = {
   'row.moveInGroup': 'In Gruppe',
   'row.moveDown': 'Nach unten',
   'row.duplicate': 'Duplizieren',
+  'row.duplicateFailed': 'Das Element konnte nicht dupliziert werden.',
   'row.delete': 'Löschen',
   'row.addChild': 'Kind hinzufügen',
 
@@ -231,6 +237,7 @@ const de: typeof en = {
   'panel.addOption': 'Option hinzufügen',
   'panel.addOptionFailed': 'Die Option konnte nicht hinzugefügt werden.',
   'panel.removeOptionFailed': 'Die Option konnte nicht entfernt werden.',
+  'panel.patchOptionFailed': 'Die Änderung der Option konnte nicht gespeichert werden.',
   'panel.defaultValue': 'Standardwert',
   'panel.none': 'Keiner',
   'panel.static': 'Statisch',

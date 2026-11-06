@@ -1,6 +1,14 @@
+import type { Condition, ConditionGroup } from './conditions.model';
+import {
+  descendants,
+  type FormDocument,
+  getElement,
+  getParent,
+  parentOf,
+  subtreeIds,
+} from './form-tree';
 import type { ElementDefinition, FormElements, PageDefinition } from './form.model';
-import { type FormDocument, getElement, getParent, parentOf, subtreeIds } from './form-tree';
-import type { ElementId, PageId } from './ids';
+import { type ElementId, elementId, type PageId, uuid } from './ids';
 
 /*
  * Immutable edits of a form document, shared by the designer and the server.
@@ -166,4 +174,134 @@ export function removePage<T extends FormDocument>(form: T, pageId: PageId): T {
     pages: form.pages.filter((p) => p !== page),
     elements: withoutElements(form.elements, ids),
   };
+}
+
+/** A fresh-id copy of an element and everything below it. */
+export interface ElementClone {
+  /** The copied element itself. */
+  element: ElementDefinition;
+  /** Every element below the copy, in document order. */
+  subtree: ElementDefinition[];
+}
+
+/** A fresh-id copy of a page and every element it reaches. */
+export interface PageClone {
+  page: PageDefinition;
+  /** Every element the copied page reaches, in document order. */
+  elements: ElementDefinition[];
+}
+
+/**
+ * Deep-clones the element `id` and everything below it with fresh ids.
+ * References between the copied elements (defaults, conditions) are remapped
+ * to the copies; references to elements outside the clone stay untouched.
+ * The root's label gets the localized `suffix`. Returns null when there is no
+ * such element.
+ */
+export function cloneElement(
+  form: FormDocument,
+  id: ElementId,
+  suffix: string,
+): ElementClone | null {
+  const { rootIds, elements } = cloneSubtrees(form, [id]);
+  const element = elements.find((el) => el.id === rootIds[0]);
+  if (!element) return null;
+  element.label = `${element.label} ${suffix}`;
+  return { element, subtree: elements.filter((el) => el.id !== element.id) };
+}
+
+/**
+ * Deep-clones the page `pageId` and every element it reaches with fresh ids.
+ * References between the copied elements are remapped to the copies, including
+ * page conditions that point at an element of the copied page; references to
+ * elements on other pages stay untouched. Only the page title gets the localized
+ * `suffix`; the copied elements keep their labels. Returns null when there is no
+ * such page.
+ */
+export function clonePage(form: FormDocument, pageId: PageId, suffix: string): PageClone | null {
+  const source = form.pages.find((page) => page.id === pageId);
+  if (!source) return null;
+
+  const { rootIds, elements, idMap } = cloneSubtrees(form, source.children);
+  const page = structuredClone(source);
+  page.id = elementId('page');
+  page.title = `${source.title} ${suffix}`;
+  page.children = rootIds;
+  if (page.enabledWhen) remapConditionGroup(page.enabledWhen, idMap);
+  return { page, elements };
+}
+
+/**
+ * Deep-clones the elements `ids` and everything below them with fresh ids.
+ * References between the cloned elements (defaults, conditions) are remapped
+ * to the copies; references to elements outside the clone stay untouched.
+ * Returns the ids of the copied roots, in order, all copied elements, and the
+ * old → new id map.
+ */
+function cloneSubtrees(
+  form: FormDocument,
+  ids: ElementId[],
+): {
+  rootIds: ElementId[];
+  elements: ElementDefinition[];
+  idMap: Record<ElementId, ElementId>;
+} {
+  const originals = ids.flatMap((id) => {
+    const el = getElement(form, id);
+    if (!el) return [];
+    return el.type === 'group' ? [el, ...descendants(form, el)] : [el];
+  });
+
+  const idMap: Record<ElementId, ElementId> = {};
+  for (const el of originals) idMap[el.id] = elementId('q');
+
+  const elements = originals.map((el) => {
+    const copy = structuredClone(el);
+    copy.id = idMap[el.id];
+    if ('options' in copy) copy.options = copy.options.map((o) => ({ ...o, id: uuid() }));
+    if (copy.type === 'group') copy.children = copy.children.map((id) => idMap[id] ?? id);
+    remapElementReferences(copy, idMap);
+    return copy;
+  });
+  return { rootIds: ids.filter((id) => idMap[id]).map((id) => idMap[id]), elements, idMap };
+}
+
+/**
+ * Point `defaultValue` / condition field references at their cloned counterparts.
+ * Ids missing from `idMap` (i.e. fields outside the cloned tree) stay untouched.
+ */
+function remapElementReferences(e: ElementDefinition, idMap: Record<ElementId, ElementId>): void {
+  if ('defaultValue' in e && e.defaultValue?.kind === 'fromField') {
+    if (idMap[e.defaultValue.fieldId]) {
+      e.defaultValue.fieldId = idMap[e.defaultValue.fieldId];
+    }
+  }
+
+  if (e.enabledWhen) remapConditionGroup(e.enabledWhen, idMap);
+}
+
+function remapConditionGroup(group: ConditionGroup, idMap: Record<ElementId, ElementId>): void {
+  walkConditions(group, (condition) => {
+    mapReference(condition, 'fieldId', idMap);
+    if (condition.operand?.kind === 'field') {
+      mapReference(condition.operand, 'fieldId', idMap);
+    }
+    if (condition.operandTo?.kind === 'field') {
+      mapReference(condition.operandTo, 'fieldId', idMap);
+    }
+  });
+}
+
+function walkConditions(group: ConditionGroup, visit: (condition: Condition) => void): void {
+  for (const condition of group.conditions) visit(condition);
+  for (const nested of group.groups) walkConditions(nested, visit);
+}
+
+function mapReference<T extends object>(
+  target: T,
+  attribute: { [K in keyof T]: T[K] extends ElementId ? K : never }[keyof T],
+  idMap: Record<ElementId, ElementId>,
+): void {
+  const id = target[attribute] as ElementId;
+  if (idMap[id]) (target[attribute] as string) = idMap[id];
 }

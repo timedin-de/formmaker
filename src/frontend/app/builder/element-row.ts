@@ -2,11 +2,13 @@ import { CdkDrag, type CdkDragDrop, CdkDragHandle, CdkDropList } from '@angular/
 import { Component, computed, inject, input, output } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { has } from '@shared/helper';
 import type { ElementDefinition, Elements, ElementType } from '@shared/model/form.model';
 import { I18nService } from '../core/i18n';
 import { fieldMeta } from '../core/model/field-registry';
+import { reportApiError } from '../core/state/api-client';
 import { type DesignerStore } from '../core/state/designer.store';
 import { canSortAt, DropDragState } from './drop-sort';
 import { PropertiesModal } from './properties-modal';
@@ -22,6 +24,7 @@ export class ElementRow {
   readonly store = input.required<DesignerStore>();
   protected readonly i18n = inject(I18nService);
   protected readonly modal = inject(PropertiesModal);
+  private readonly snack = inject(MatSnackBar);
 
   readonly dropLists = input<string[]>([]);
   readonly dropElement = output<CdkDragDrop<Elements, Elements, string>>();
@@ -52,8 +55,12 @@ export class ElementRow {
     this.store().moveElement(this.el().id, dir);
   }
 
-  duplicate(): void {
-    this.store().duplicateElement(this.el().id);
+  async duplicate(): Promise<void> {
+    try {
+      await this.store().duplicateElement(this.el().id);
+    } catch (error) {
+      reportApiError(this.snack, error, this.i18n.t('row.duplicateFailed'));
+    }
   }
 
   remove(): void {

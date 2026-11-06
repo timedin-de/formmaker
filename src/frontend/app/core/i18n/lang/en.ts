@@ -154,6 +154,11 @@ const en = {
   'builder.saveMsg': 'Form saved',
   'builder.untitled': 'Untitled form ({date})',
   'builder.properties': 'Properties',
+  'builder.copySuffix': '(copy)',
+  'builder.scaleMin': 'Low',
+  'builder.scaleMax': 'High',
+  'builder.pageN': 'Page {n}',
+  'builder.clonePageFailed': 'The page could not be duplicated.',
 
   // import
   'import.failed': 'Import failed: {message}',
@@ -189,6 +194,7 @@ const en = {
   'row.moveInGroup': 'Move in group',
   'row.moveDown': 'Move down',
   'row.duplicate': 'Duplicate',
+  'row.duplicateFailed': 'The element could not be duplicated.',
   'row.delete': 'Delete',
   'row.addChild': 'Add child',
 
@@ -226,6 +232,7 @@ const en = {
   'panel.addOption': 'Add option',
   'panel.addOptionFailed': 'The option could not be added.',
   'panel.removeOptionFailed': 'The option could not be removed.',
+  'panel.patchOptionFailed': 'The option change could not be saved.',
   'panel.defaultValue': 'Default value',
   'panel.none': 'None',
   'panel.static': 'Static',

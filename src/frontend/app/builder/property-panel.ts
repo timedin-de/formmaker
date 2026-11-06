@@ -1,4 +1,4 @@
-import { Component, computed, inject, input } from '@angular/core';
+import { Component, computed, effect, inject, input } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
@@ -25,10 +25,9 @@ import type {
 } from '@shared/model/form.model';
 import { DEFAULT_TIME_INTERVAL, TIME_INTERVAL_UNITS } from '@shared/model/form.model';
 import { VALIDATION_RULE_TYPES } from '@shared/model/validation.model';
-import { SNACK_TIME_ERROR } from '../core/consts';
 import { I18nService } from '../core/i18n';
 import { fieldMeta } from '../core/model/field-registry';
-import { ApiError } from '../core/state/api-client';
+import { reportApiError } from '../core/state/api-client';
 import { type DesignerStore } from '../core/state/designer.store';
 import { ConditionEditor } from './condition-editor';
 import { OptionPicker } from './option-picker';
@@ -68,6 +67,15 @@ export class PropertyPanel {
   readonly store = input.required<DesignerStore>();
   protected readonly i18n = inject(I18nService);
   private readonly snack = inject(MatSnackBar);
+
+  constructor() {
+    effect(() => {
+      const error = this.store().optionPatchError();
+      if (!error) return;
+      this.store().optionPatchError.set(null);
+      this.reportOptionError(error, this.i18n.t('panel.patchOptionFailed'));
+    });
+  }
 
   protected readonly WIDTHS = WIDTHS;
   protected readonly INPUT_TYPES = INPUT_TYPES;
@@ -151,10 +159,8 @@ export class PropertyPanel {
     }
   }
 
-  /** `ApiClient` already shows its own message for rate limiting (429). */
   private reportOptionError(error: unknown, message: string): void {
-    if (error instanceof ApiError && error.status === 429) return;
-    this.snack.open(message, 'OK', { duration: SNACK_TIME_ERROR });
+    reportApiError(this.snack, error, message);
   }
 
   moveOption(index: number, dir: -1 | 1): void {

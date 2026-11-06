@@ -11,6 +11,13 @@ import {
 import type { Submission, SubmissionCreate } from '@shared/model/submission.model';
 import {
   choiceOptionSchema,
+  cloneElementResponseSchema,
+  clonePageResponseSchema,
+  type CloneElementResponse,
+  type ClonePageResponse,
+  type CreateElementRequest,
+  type CreateOptionRequest,
+  type NewFormRequest,
   elementDefinitionSchema,
   formDefinitionSchema,
   formsWithOwnerSchema,
@@ -18,8 +25,6 @@ import {
   pageDefinitionSchema,
   submissionSchema,
   submissionsSchema,
-  type CreateElementRequest,
-  type CreateOptionRequest,
   type UpdateOptionRequest,
 } from '@shared/schemas';
 import {
@@ -84,10 +89,12 @@ export class FormsRepository {
     return portable;
   }
 
-  async newForm(): Promise<FormDefinition> {
+  /** Creates an empty form on the server whose first page is titled `pageTitle`. */
+  async newForm(pageTitle: string): Promise<FormDefinition> {
     await this.init();
     const saved = await this.api.request(formWithOwnerSchema, '/api/forms', {
       method: 'POST',
+      body: JSON.stringify({ pageTitle } satisfies NewFormRequest),
     });
     this.upsert([saved]);
     writeCache(FORM_CACHE_PREFIX + saved.id, toPortableForm(saved));
@@ -97,7 +104,7 @@ export class FormsRepository {
 
   async importForm(form: FormDefinition): Promise<FormDefinition> {
     await this.init();
-    const saved = await this.api.request(formWithOwnerSchema, '/api/forms', {
+    const saved = await this.api.request(formWithOwnerSchema, '/api/forms/import', {
       method: 'POST',
       body: JSON.stringify(form),
     });
@@ -134,6 +141,17 @@ export class FormsRepository {
     return page;
   }
 
+  /** Clones a page with its elements on the server; returns the copy as generated there. */
+  async clonePage(formId: string, pageId: string, suffix: string): Promise<ClonePageResponse> {
+    const clone = await this.api.request(
+      clonePageResponseSchema,
+      `/api/forms/${encodeURIComponent(formId)}/pages/${encodeURIComponent(pageId)}/clone`,
+      { method: 'POST', body: JSON.stringify({ suffix }) },
+    );
+    removeCache(FORM_CACHE_PREFIX + formId);
+    return clone;
+  }
+
   async deletePage(formId: string, pageId: string) {
     await this.api.request(
       undefined,
@@ -154,6 +172,21 @@ export class FormsRepository {
     return element;
   }
 
+  /** Clones an element subtree on the server; returns the copy as generated there. */
+  async cloneElement(
+    formId: string,
+    elementId: string,
+    suffix: string,
+  ): Promise<CloneElementResponse> {
+    const clone = await this.api.request(
+      cloneElementResponseSchema,
+      `/api/forms/${encodeURIComponent(formId)}/elements/${encodeURIComponent(elementId)}/clone`,
+      { method: 'POST', body: JSON.stringify({ suffix }) },
+    );
+    removeCache(FORM_CACHE_PREFIX + formId);
+    return clone;
+  }
+
   /** Appends a new option to a choice element on the server; returns the option as generated there. */
   async addOption(
     formId: string,
@@ -169,12 +202,16 @@ export class FormsRepository {
     return option;
   }
 
-  /** Patches an option of a choice element on the server; returns the option as stored there. */
+  /**
+   * Patches an option of a choice element on the server; returns the option as stored there.
+   * `keepalive` lets the request outlive the page, e.g. when sent while it is being closed.
+   */
   async updateOption(
     formId: string,
     elementId: string,
     optionId: string,
     patch: UpdateOptionRequest,
+    { keepalive = false }: { keepalive?: boolean } = {},
   ): Promise<ChoiceOption> {
     const option = await this.api.request(
       choiceOptionSchema,
@@ -182,6 +219,7 @@ export class FormsRepository {
       {
         method: 'PATCH',
         body: JSON.stringify(patch),
+        keepalive,
       },
     );
     removeCache(FORM_CACHE_PREFIX + formId);

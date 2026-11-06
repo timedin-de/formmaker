@@ -7,15 +7,20 @@ import {
   childrenOf,
   type ChoiceElement,
   type ChoiceOption,
+  cloneElement as cloneElementTree,
+  clonePage as clonePageTree,
   createElement,
   createPage,
+  type ElementClone,
   type ElementDefinition,
   elementId,
   FORM_SCHEMA_VERSION,
   type FormDefinition,
   getElement,
   insertElement,
+  type PageClone,
   type PageDefinition,
+  parentOf,
   removeElement,
   removePage,
   type SubmissionCreate,
@@ -23,6 +28,7 @@ import {
   uuid,
 } from '@shared/model';
 import {
+  type CloneRequest,
   type CreateElementRequest,
   type CreateOptionRequest,
   type UpdateOptionRequest,
@@ -59,7 +65,8 @@ export class FormService {
     return await this.repository.form(id);
   }
 
-  async newForm(user: User) {
+  /** Creates an empty form with one page titled `pageTitle` (localized by the client). */
+  async newForm(user: User, pageTitle?: string) {
     const now = new Date().toISOString();
     const form: FormDefinition = {
       id: uuid(),
@@ -75,7 +82,7 @@ export class FormService {
         navigation: 'auto',
         enableAutoSave: true,
       },
-      pages: [createPage()],
+      pages: [createPage(pageTitle)],
       elements: {},
     };
     return await this.repository.saveForm(user.id, form);
@@ -88,6 +95,18 @@ export class FormService {
     return page;
   }
 
+  /** Clones a page with all of its elements and appends it to the stored form. */
+  async clonePage(
+    { form, ownerId }: OwnedForm,
+    pageId: string,
+    { suffix }: CloneRequest,
+  ): Promise<PageClone> {
+    const clone = clonePageTree(form, pageId, suffix);
+    if (!clone) throw new NotFoundException({ error: `no page with id: ${pageId}` });
+    await this.repository.saveForm(ownerId, addPage(form, clone.page, clone.elements));
+    return clone;
+  }
+
   /** Removes a page and all of its elements from the stored form. */
   async deletePage({ form, ownerId }: OwnedForm, pageId: string): Promise<void> {
     await this.repository.saveForm(ownerId, removePage(form, pageId));
@@ -96,9 +115,9 @@ export class FormService {
   /** Inserts a new element into a page or group of the stored form and returns it. */
   async addElement(
     { form, ownerId }: OwnedForm,
-    { type, label, parentId, afterId = null }: CreateElementRequest,
+    { type, label, parentId, afterId = null, defaults }: CreateElementRequest,
   ): Promise<ElementDefinition> {
-    const element = createElement(type, label);
+    const element = createElement(type, label, defaults);
     const next = insertElement(form, parentId, afterId, element);
     if (!next) {
       throw new NotFoundException({
@@ -109,6 +128,25 @@ export class FormService {
     }
     await this.repository.saveForm(ownerId, next);
     return element;
+  }
+
+  /**
+   * Clones an element and everything below it right after the original in the
+   * stored form, and returns the copy.
+   */
+  async cloneElement(
+    { form, ownerId }: OwnedForm,
+    id: string,
+    { suffix }: CloneRequest,
+  ): Promise<ElementClone> {
+    const clone = cloneElementTree(form, id, suffix);
+    const parent = parentOf(form, id);
+    if (!clone || !parent) throw new NotFoundException({ error: `no element with id: ${id}` });
+
+    const next = insertElement(form, parent.id, id, clone.element, clone.subtree);
+    if (!next) throw new NotFoundException({ error: `element ${id} is not on any page` });
+    await this.repository.saveForm(ownerId, next);
+    return clone;
   }
 
   /** Removes an element and everything below it from the stored form. */
