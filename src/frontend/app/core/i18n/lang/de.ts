@@ -238,6 +238,7 @@ const de: typeof en = {
   'panel.addOption': 'Option hinzufügen',
   'panel.addOptionFailed': 'Die Option konnte nicht hinzugefügt werden.',
   'panel.removeOptionFailed': 'Die Option konnte nicht entfernt werden.',
+  'panel.patchOptionFailed': 'Die Änderung der Option konnte nicht gespeichert werden.',
   'panel.defaultValue': 'Standardwert',
   'panel.none': 'Keiner',
   'panel.static': 'Statisch',
