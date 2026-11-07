@@ -17,12 +17,28 @@ updates:
         patterns:
           - '@vitest/*'
           - 'vitest'
+      # Angular and Vitest packages must move in lockstep (exact peer versions),
+      # so keep them out of the type-based groups below.
       dev-dependencies:
         dependency-type: development
         update-types: [minor, patch]
+        exclude-patterns:
+          - '@angular/*'
+          - '@angular-devkit/*'
+          - 'angular-eslint'
+          - 'ng-packagr'
+          - '@vitest/*'
+          - 'vitest'
       production-dependencies:
         dependency-type: production
         update-types: [minor, patch]
+        exclude-patterns:
+          - '@angular/*'
+          - '@angular-devkit/*'
+          - 'angular-eslint'
+          - 'ng-packagr'
+          - '@vitest/*'
+          - 'vitest'
 
   - package-ecosystem: github-actions
     directory: /
