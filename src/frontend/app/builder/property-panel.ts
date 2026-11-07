@@ -9,7 +9,6 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { has, isChoice } from '@shared/helper';
 import { childrenOf } from '@shared/model/form-tree';
@@ -25,10 +24,10 @@ import type {
 } from '@shared/model/form.model';
 import { DEFAULT_TIME_INTERVAL, TIME_INTERVAL_UNITS } from '@shared/model/form.model';
 import { VALIDATION_RULE_TYPES } from '@shared/model/validation.model';
-import { SNACK_TIME_ERROR } from '../core/consts';
 import { I18nService } from '../core/i18n';
 import { fieldMeta } from '../core/model/field-registry';
-import { ApiError } from '../core/state/api-client';
+import { Notifier } from '../core/notifier';
+import { ApiError } from '../core/state/api-error';
 import { type DesignerStore } from '../core/state/designer.store';
 import { ConditionEditor } from './condition-editor';
 import { OptionPicker } from './option-picker';
@@ -67,7 +66,7 @@ const INPUT_TYPES = ['text', 'email', 'url', 'phone', 'number'] as const;
 export class PropertyPanel {
   readonly store = input.required<DesignerStore>();
   protected readonly i18n = inject(I18nService);
-  private readonly snack = inject(MatSnackBar);
+  private readonly notifier = inject(Notifier);
 
   protected readonly WIDTHS = WIDTHS;
   protected readonly INPUT_TYPES = INPUT_TYPES;
@@ -138,7 +137,7 @@ export class PropertyPanel {
     try {
       await this.store().addOption(choice.id, label);
     } catch (error) {
-      this.reportOptionError(error, this.i18n.t('panel.addOptionFailed'));
+      this.notifier.apiError(error, 'panel.addOptionFailed');
     }
   }
 
@@ -147,14 +146,14 @@ export class PropertyPanel {
     try {
       await this.store().removeOption(choice.id, choice.options[index].id);
     } catch (error) {
-      this.reportOptionError(error, this.i18n.t('panel.removeOptionFailed'));
+      this.notifier.apiError(error, 'panel.removeOptionFailed');
     }
   }
 
   /** `ApiClient` already shows its own message for rate limiting (429). */
   private reportOptionError(error: unknown, message: string): void {
     if (error instanceof ApiError && error.status === 429) return;
-    this.snack.open(message, 'OK', { duration: SNACK_TIME_ERROR });
+    this.notifier.errorText(message);
   }
 
   moveOption(index: number, dir: -1 | 1): void {

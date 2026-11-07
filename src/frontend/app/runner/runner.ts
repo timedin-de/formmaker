@@ -10,17 +10,16 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatRadioModule } from '@angular/material/radio';
 import { MatSelectModule } from '@angular/material/select';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatTooltip } from '@angular/material/tooltip';
 import { ActivatedRoute, Router } from '@angular/router';
 import { formName } from '@shared/helper';
 import type { Submission } from '@shared/model/submission.model';
 import { first, switchMap, tap } from 'rxjs';
-import { SNACK_TIME_ERROR, SNACK_TIME_OK } from '../core/consts';
 import { downloadBlob, submissionToPdf, toSlug } from '../core/export';
 import { I18nService } from '../core/i18n';
 import { MarkdownPipe } from '../core/markdown';
+import { Notifier } from '../core/notifier';
 import { FormsRepository } from '../core/state/forms.repository';
 import type { RunnerPage } from '../core/state/runner.model';
 import { RunnerStore } from '../core/state/runner.store';
@@ -39,7 +38,6 @@ import { QuestionList } from './questionList/question-list';
     MatProgressBarModule,
     MatRadioModule,
     MatSelectModule,
-    MatSnackBarModule,
     MatToolbarModule,
     QuestionList,
     MarkdownPipe,
@@ -55,7 +53,7 @@ export class Runner {
   private readonly repo = inject(FormsRepository);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
-  private readonly snack = inject(MatSnackBar);
+  private readonly notifier = inject(Notifier);
   protected readonly i18n = inject(I18nService);
 
   protected readonly Math = Math;
@@ -94,14 +92,10 @@ export class Runner {
             this.submitted.set(false);
             this.formLoaded.set(true);
             if (this.store.restoredDraft()) {
-              this.snack.open(this.i18n.t('runner.draftRestored'), 'OK', {
-                duration: SNACK_TIME_OK,
-              });
+              this.notifier.ok('runner.draftRestored');
             }
           } else {
-            this.snack.open(this.i18n.t('runner.formNotFound'), 'OK', {
-              duration: SNACK_TIME_ERROR,
-            });
+            this.notifier.error('runner.formNotFound');
             void this.router.navigate(['/']);
           }
         }),
@@ -153,15 +147,15 @@ export class Runner {
     try {
       const submission = await this.repo.addSubmission(result.submission);
       if (!submission) {
-        this.snack.open(this.i18n.t('errors.unknown'), 'OK', { duration: SNACK_TIME_ERROR });
+        this.notifier.error('errors.unknown');
         return;
       }
       this.store.clearDraft();
       this.submitted.set(true);
       this.lastSubmission.set(submission);
-      this.snack.open(this.i18n.t('runner.submitted'), 'OK', { duration: SNACK_TIME_OK });
+      this.notifier.ok('runner.submitted');
     } catch {
-      this.snack.open(this.i18n.t('errors.unknown'), 'OK', { duration: SNACK_TIME_ERROR });
+      this.notifier.error('errors.unknown');
     } finally {
       this.submitting.set(false);
     }
@@ -176,7 +170,7 @@ export class Runner {
       const blob = await submissionToPdf({ ...form, name }, submission, this.i18n);
       downloadBlob(blob, toSlug(this.i18n.t('pdf.receipt', { name })) + '.pdf');
     } catch {
-      this.snack.open(this.i18n.t('export.failed'), 'OK', { duration: SNACK_TIME_ERROR });
+      this.notifier.error('export.failed');
     }
   }
 

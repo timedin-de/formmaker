@@ -6,6 +6,9 @@ const en = {
   'app.logout': 'Log out',
   'app.menu': 'Language',
 
+  // common
+  'common.ok': 'OK',
+
   // login
   'login.title': 'Sign in',
   'login.subtitle': 'Editor access — respondents only need the share link.',

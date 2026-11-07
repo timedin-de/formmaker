@@ -7,6 +7,9 @@ const de: typeof en = {
   'app.logout': 'Abmelden',
   'app.menu': 'Sprache',
 
+  // common
+  'common.ok': 'OK',
+
   // login
   'login.title': 'Anmelden',
   'login.subtitle': 'Editor-Zugriff — Teilnehmende brauchen nur den Teilen-Link.',

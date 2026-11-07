@@ -3,14 +3,12 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatIconModule } from '@angular/material/icon';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { ActivatedRoute, Router } from '@angular/router';
 import { formName } from '@shared/helper';
 import type { FormDefinition } from '@shared/model/form.model';
 import type { Submission } from '@shared/model/submission.model';
-import { SNACK_TIME_ERROR, SNACK_TIME_OK } from '../core/consts';
 import {
   buildColumns,
   downloadBlob,
@@ -19,6 +17,7 @@ import {
   type ExportChannel,
 } from '../core/export';
 import { I18nService } from '../core/i18n';
+import { Notifier } from '../core/notifier';
 import { FormsRepository } from '../core/state/forms.repository';
 
 @Component({
@@ -27,7 +26,6 @@ import { FormsRepository } from '../core/state/forms.repository';
     MatCardModule,
     MatDividerModule,
     MatIconModule,
-    MatSnackBarModule,
     MatToolbarModule,
     MatTooltipModule,
   ],
@@ -39,7 +37,7 @@ export class Results {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly repo = inject(FormsRepository);
-  private readonly snack = inject(MatSnackBar);
+  private readonly notifier = inject(Notifier);
   protected readonly i18n = inject(I18nService);
 
   private readonly formId = signal<string | null>(null);
@@ -110,7 +108,7 @@ export class Results {
     if (!formId) return;
     await this.repo.deleteSubmission(formId, id);
     this.submissions.set(await this.repo.submissionsFor(formId));
-    this.snack.open(this.i18n.t('results.submissionDeleted'), 'OK', { duration: SNACK_TIME_OK });
+    this.notifier.ok('results.submissionDeleted');
   }
 
   async clearAll(): Promise<void> {
@@ -118,7 +116,7 @@ export class Results {
     if (!formId) return;
     await this.repo.clearSubmissions(formId);
     this.submissions.set(await this.repo.submissionsFor(formId));
-    this.snack.open(this.i18n.t('results.allCleared'), 'OK', { duration: SNACK_TIME_OK });
+    this.notifier.ok('results.allCleared');
   }
 
   async runChannel(ch: ExportChannel): Promise<void> {
@@ -133,11 +131,9 @@ export class Results {
       } else {
         window.location.assign(artifact.url);
       }
-      this.snack.open(this.i18n.t(ch.doneKey ?? 'export.exported'), 'OK', {
-        duration: SNACK_TIME_OK,
-      });
+      this.notifier.ok(ch.doneKey ?? 'export.exported');
     } catch {
-      this.snack.open(this.i18n.t('export.failed'), 'OK', { duration: SNACK_TIME_ERROR });
+      this.notifier.error('export.failed');
     }
   }
 }
