@@ -7,6 +7,7 @@ import {
   type PageDefinition,
   uuid,
 } from '@shared/model';
+import { dict } from '@shared/helper';
 import { createPage } from '@shared/model/form-factory';
 
 export function newForm(name = 'Untitled form'): FormDefinition {
@@ -49,7 +50,7 @@ export function pageNode(page: PageDefinition, elements: ElementNode[]): PageNod
 
 /** Builds the pages and element map of a form from pages with inline children. */
 export function documentFromTree(pages: PageNode[]): FormDocument {
-  const elements: Record<string, ElementDefinition> = {};
+  const elements = dict<ElementDefinition>();
   const add = (nodes: ElementNode[]): string[] =>
     nodes.map((node) => {
       if (node.type === 'group') {

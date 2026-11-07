@@ -1,4 +1,4 @@
-import { isChoice } from '@shared/helper';
+import { dict, isChoice } from '@shared/helper';
 import { childrenOf, type ElementParent } from '@shared/model/form-tree';
 import type { ElementDefinition, FormDefinition } from '@shared/model/form.model';
 import type { Submission } from '@shared/model/submission.model';
@@ -135,7 +135,7 @@ export function rowForSubmission(
   columns: ExportColumn[],
   ctx: ExportContext,
 ): Record<string, { text: string; additional?: unknown }> {
-  const row: Record<string, { text: string; additional?: unknown }> = {};
+  const row = dict<{ text: string; additional?: unknown }>();
   for (const column of columns) {
     row[column.fieldId] = formatValueForExport(
       submission.values[column.fieldId],

@@ -6,7 +6,7 @@ import {
   templateValues,
   validateElementValue,
 } from '@shared/engine';
-import { isChoice, isQuestion } from '@shared/helper';
+import { dict, isChoice, isQuestion } from '@shared/helper';
 import { childrenOf, walkElements } from '@shared/model/form-tree';
 import {
   type ElementDefinition,
@@ -58,7 +58,7 @@ export class RunnerStore {
 
   private evaluator: FormEvaluator;
   private readonly draft = new RunnerDraft();
-  private previousValues: ValuesMap = {};
+  private previousValues: ValuesMap = dict<FieldValue>();
   private defaultsInitDone = false;
   private changeSub: { unsubscribe: () => void } | null = null;
   private draftSub: { unsubscribe: () => void } | null = null;
@@ -200,7 +200,7 @@ export class RunnerStore {
   }
 
   rawValues(): ValuesMap {
-    const out: Record<string, FieldValue> = {};
+    const out = dict<FieldValue>();
     for (const [id, control] of Object.entries(this.answers.controls)) {
       out[id] = (control as FormControl).getRawValue() ?? null;
     }
@@ -378,7 +378,7 @@ export class RunnerStore {
     const evalResult = this.evaluation();
     if (!form || !evalResult) return null;
 
-    const values: Record<string, FieldValue> = {};
+    const values = dict<FieldValue>();
     const visibleAnswerKeys: string[] = [];
 
     const collectGroup = (group: GroupElement, parentVisible: boolean): void => {

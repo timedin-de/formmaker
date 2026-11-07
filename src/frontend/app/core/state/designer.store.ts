@@ -1,5 +1,5 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
-import { catchFn, has, walkConditionGroup } from '@shared/helper';
+import { catchFn, dict, has, walkConditionGroup } from '@shared/helper';
 import {
   addPage,
   insertElement,
@@ -452,7 +452,7 @@ function cloneSubtrees(
     return el.type === 'group' ? [el, ...descendants(form, el)] : [el];
   });
 
-  const idMap: Record<ElementId, ElementId> = {};
+  const idMap = dict<ElementId, ElementId>();
   for (const el of originals) idMap[el.id] = elementId('q');
 
   const elements = originals.map((el) => {
