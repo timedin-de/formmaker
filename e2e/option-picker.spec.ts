@@ -7,6 +7,7 @@ import {
   loginApi,
   makeForm,
   seedField,
+  showWhen,
   uniqueName,
   uuid,
 } from './helpers';
@@ -39,16 +40,7 @@ test('picks choice options by label for conditions and static defaults', async (
             { id: greenId, label: 'Green' },
           ],
         },
-        {
-          ...seedField('text', detailsId, 'Details'),
-          enabledWhen: {
-            logic: 'all',
-            conditions: [
-              { fieldId: colorId, operator: 'eq', operand: { kind: 'literal', value: blueId } },
-            ],
-            groups: [],
-          },
-        },
+        { ...seedField('text', detailsId, 'Details'), enabledWhen: showWhen(colorId, blueId) },
       ],
     ),
   );
@@ -73,10 +65,7 @@ test('picks choice options by label for conditions and static defaults', async (
   await page.getByRole('button', { name: 'Save', exact: true }).click();
   await expect
     .poll(async () => {
-      const elements = (await getForm(session, formId)).elements as Record<
-        string,
-        Record<string, unknown>
-      >;
+      const { elements } = await getForm(session, formId);
       return [elements[colorId].defaultValue, elements[detailsId].enabledWhen];
     })
     .toEqual([

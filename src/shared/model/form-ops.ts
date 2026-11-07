@@ -1,3 +1,4 @@
+import { dict } from '@shared/helper';
 import type { Condition, ConditionGroup } from './conditions.model';
 import {
   descendants,
@@ -222,12 +223,12 @@ export function clonePage(form: FormDocument, pageId: PageId, suffix: string): P
   const source = form.pages.find((page) => page.id === pageId);
   if (!source) return null;
 
-  const { rootIds, elements, idMap } = cloneSubtrees(form, source.children);
+  const { rootIds, elements, idMap, optionMaps } = cloneSubtrees(form, source.children);
   const page = structuredClone(source);
   page.id = elementId('page');
   page.title = `${source.title} ${suffix}`;
   page.children = rootIds;
-  if (page.enabledWhen) remapConditionGroup(page.enabledWhen, idMap);
+  if (page.enabledWhen) remapConditionGroup(page.enabledWhen, idMap, optionMaps);
   return { page, elements };
 }
 
@@ -235,8 +236,10 @@ export function clonePage(form: FormDocument, pageId: PageId, suffix: string): P
  * Deep-clones the elements `ids` and everything below them with fresh ids.
  * References between the cloned elements (defaults, conditions) are remapped
  * to the copies; references to elements outside the clone stay untouched.
- * Returns the ids of the copied roots, in order, all copied elements, and the
- * old → new id map.
+ * Choice options get fresh ids too, and static defaults and condition values
+ * that select a copied option are remapped to the copied option.
+ * Returns the ids of the copied roots, in order, all copied elements, the
+ * old → new id map, and per original choice id its old → new option id map.
  */
 function cloneSubtrees(
   form: FormDocument,
@@ -245,6 +248,7 @@ function cloneSubtrees(
   rootIds: ElementId[];
   elements: ElementDefinition[];
   idMap: Record<ElementId, ElementId>;
+  optionMaps: OptionMaps;
 } {
   const originals = ids.flatMap((id) => {
     const el = getElement(form, id);
@@ -252,36 +256,85 @@ function cloneSubtrees(
     return el.type === 'group' ? [el, ...descendants(form, el)] : [el];
   });
 
-  const idMap: Record<ElementId, ElementId> = {};
-  for (const el of originals) idMap[el.id] = elementId('q');
+  const idMap: Record<ElementId, ElementId> = dict();
+  const optionMaps = dict<OptionMaps[ElementId]>();
+  for (const el of originals) {
+    idMap[el.id] = elementId('q');
+    if ('options' in el) {
+      const options = dict<string>();
+      for (const o of el.options) options[o.id] = uuid();
+      optionMaps[el.id] = options;
+    }
+  }
 
   const elements = originals.map((el) => {
     const copy = structuredClone(el);
     copy.id = idMap[el.id];
-    if ('options' in copy) copy.options = copy.options.map((o) => ({ ...o, id: uuid() }));
+    if ('options' in copy) {
+      const options = optionMaps[el.id];
+      copy.options = copy.options.map((o) => ({ ...o, id: options[o.id] }));
+      if (copy.defaultValue?.kind === 'static') {
+        copy.defaultValue.value = mapOptionValue(copy.defaultValue.value, options);
+      }
+    }
     if (copy.type === 'group') copy.children = copy.children.map((id) => idMap[id] ?? id);
-    remapElementReferences(copy, idMap);
+    remapElementReferences(copy, idMap, optionMaps);
     return copy;
   });
-  return { rootIds: ids.filter((id) => idMap[id]).map((id) => idMap[id]), elements, idMap };
+  return {
+    rootIds: ids.filter((id) => idMap[id]).map((id) => idMap[id]),
+    elements,
+    idMap,
+    optionMaps,
+  };
+}
+
+/** Per original choice id, the old → new id map of its options. */
+type OptionMaps = Record<ElementId, Record<string, string>>;
+
+/** Replaces option ids found in `options` (a single id or a list of ids); other values stay. */
+function mapOptionValue<V>(value: V, options: Record<string, string> | undefined): V {
+  if (!options) return value;
+  if (typeof value === 'string') return (options[value] ?? value) as V;
+  if (Array.isArray(value)) {
+    return value.map((v: unknown) => (typeof v === 'string' ? (options[v] ?? v) : v)) as V;
+  }
+  return value;
 }
 
 /**
  * Point `defaultValue` / condition field references at their cloned counterparts.
  * Ids missing from `idMap` (i.e. fields outside the cloned tree) stay untouched.
  */
-function remapElementReferences(e: ElementDefinition, idMap: Record<ElementId, ElementId>): void {
+function remapElementReferences(
+  e: ElementDefinition,
+  idMap: Record<ElementId, ElementId>,
+  optionMaps: OptionMaps,
+): void {
   if ('defaultValue' in e && e.defaultValue?.kind === 'fromField') {
     if (idMap[e.defaultValue.fieldId]) {
       e.defaultValue.fieldId = idMap[e.defaultValue.fieldId];
     }
   }
 
-  if (e.enabledWhen) remapConditionGroup(e.enabledWhen, idMap);
+  if (e.enabledWhen) remapConditionGroup(e.enabledWhen, idMap, optionMaps);
 }
 
-function remapConditionGroup(group: ConditionGroup, idMap: Record<ElementId, ElementId>): void {
+function remapConditionGroup(
+  group: ConditionGroup,
+  idMap: Record<ElementId, ElementId>,
+  optionMaps: OptionMaps,
+): void {
   walkConditions(group, (condition) => {
+    // Option values belong to the tested field, so look them up before its id is remapped.
+    const options = condition.fieldId ? optionMaps[condition.fieldId] : undefined;
+    if (condition.operand?.kind === 'literal') {
+      condition.operand.value = mapOptionValue(condition.operand.value, options);
+    }
+    if (condition.operandTo?.kind === 'literal') {
+      condition.operandTo.value = mapOptionValue(condition.operandTo.value, options);
+    }
+    if (condition.values) condition.values = mapOptionValue(condition.values, options);
     mapReference(condition, 'fieldId', idMap);
     if (condition.operand?.kind === 'field') {
       mapReference(condition.operand, 'fieldId', idMap);

@@ -6,6 +6,7 @@ import {
   makeForm,
   seedField,
   seedGroup,
+  showWhen,
   uniqueName,
   uuid,
   type SeedElement,
@@ -57,15 +58,6 @@ test('fills a multi-page form from its public share link and stores the submissi
 
   await deleteForm(session, formId);
 });
-
-/** A single-condition group that is satisfied when `fieldId` equals `value`. */
-function showWhen(fieldId: string, value: string): Record<string, unknown> {
-  return {
-    logic: 'all',
-    conditions: [{ fieldId, operator: 'eq', operand: { kind: 'literal', value } }],
-    groups: [],
-  };
-}
 
 test('submits when a required field is hidden by a condition', async ({ page, request }) => {
   const formName = uniqueName('runner-hidden');

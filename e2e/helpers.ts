@@ -53,10 +53,21 @@ export async function createForm(session: ApiSession, form: unknown): Promise<st
   return body.id as string;
 }
 
-/** Structural view of a stored form, enough to assert element order. */
+/** An element of a stored form; type-specific props stay `unknown` unless typed below. */
+export interface StoredElement {
+  id: string;
+  label: string;
+  children?: string[];
+  options?: { id: string; label: string }[];
+  defaultValue?: unknown;
+  enabledWhen?: unknown;
+  [key: string]: unknown;
+}
+
+/** Structural view of a stored form, enough to assert element order and references. */
 export interface StoredForm {
-  pages: { children: string[] }[];
-  elements: Record<string, { label: string; children?: string[] }>;
+  pages: { id: string; children: string[] }[];
+  elements: Record<string, StoredElement>;
 }
 
 export async function getForm(session: ApiSession, formId: string): Promise<StoredForm> {
@@ -77,6 +88,15 @@ export async function deleteForm(session: ApiSession, formId: string): Promise<v
 const EMPTY_GROUP = { logic: 'all', conditions: [], groups: [] } as const;
 
 export type SeedElement = Record<string, unknown> & { id: string };
+
+/** A single-condition group that is satisfied when `fieldId` equals `value`. */
+export function showWhen(fieldId: string, value: string): Record<string, unknown> {
+  return {
+    logic: 'all',
+    conditions: [{ fieldId, operator: 'eq', operand: { kind: 'literal', value } }],
+    groups: [],
+  };
+}
 
 export interface SeedPage {
   title: string;
