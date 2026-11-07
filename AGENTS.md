@@ -106,4 +106,5 @@ scripts/            copy-icons.mjs (icon bundling), build-server.mjs (ncc bundle
 ## Code conventions
 
 Strict TypeScript: no `any` (use `unknown` + guards), no unused imports. Don't leave `console.log`
-in app code. Run `npm run format` (Prettier) before committing.
+in app code. Run `npm run format` (Prettier) before committing. Create id-keyed maps with `dict<V>()`
+from `@shared/helper`, not `{}`.

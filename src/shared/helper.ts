@@ -19,6 +19,14 @@ export function has<T extends object, K extends PropertyKey>(
   return attribute in object;
 }
 
+/**
+ * Empty map without a prototype, for objects keyed by ids or other data, so keys like
+ * `__proto__` or `constructor` are stored as plain entries.
+ */
+export function dict<V, K extends PropertyKey = string>(): Record<K, V> {
+  return Object.create(null) as Record<K, V>;
+}
+
 export type CatchFnResult<T> = { data: T; error: null } | { data: null; error: unknown };
 
 /** Execute a synchronous operation that may throw without losing its error. */

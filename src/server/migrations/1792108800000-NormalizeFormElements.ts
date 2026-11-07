@@ -13,7 +13,7 @@ function isObject(value: unknown): value is JsonObject {
  * a fresh one, so no element is lost when they are keyed by id.
  */
 function flatten(form: JsonObject, pages: unknown[]): JsonObject {
-  const elements: Record<string, JsonObject> = {};
+  const elements: Record<string, JsonObject> = Object.create(null);
   const childIds = (nodes: unknown): string[] => {
     if (!Array.isArray(nodes)) return [];
     return nodes.filter(isObject).map(({ elements: nested, ...el }) => {
