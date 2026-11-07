@@ -4,7 +4,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthService } from '../auth/auth.service';
 import { SNACK_TIME_ERROR } from '../consts';
 import { I18nService } from '../i18n/translation.service';
-import { ApiClient, ApiError, apiErrorMessage } from './api-client';
+import { ApiClient } from './api-client';
+import { ApiError, apiErrorMessage } from './api-error';
 
 function jsonResponse(body: unknown, status = 200, ok = true): Response {
   return {
@@ -107,10 +108,13 @@ describe('api-client request', () => {
       status: 429,
       json: () => Promise.reject(new SyntaxError('Too many requests')),
     } as unknown as Response);
-    const message = TestBed.inject(I18nService).t('error.rateLimited');
+    const i18n = TestBed.inject(I18nService);
+    const message = i18n.t('error.rateLimited');
 
-    await expect(request(undefined, '/x')).rejects.toEqual(new ApiError(message, 429));
-    expect(snack.open).toHaveBeenCalledWith(message, 'OK', { duration: SNACK_TIME_ERROR });
+    await expect(request(undefined, '/x')).rejects.toEqual(new ApiError(message, 429, true));
+    expect(snack.open).toHaveBeenCalledWith(message, i18n.t('common.ok'), {
+      duration: SNACK_TIME_ERROR,
+    });
     expect(auth.expireSession).not.toHaveBeenCalled();
   });
 

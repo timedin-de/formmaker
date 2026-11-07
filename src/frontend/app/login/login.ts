@@ -5,12 +5,11 @@ import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import { AuthService } from '../core/auth/auth.service';
 import { PasswordField, TextField } from '../core/components';
-import { SNACK_TIME_ERROR } from '../core/consts';
 import { I18nService, type TranslationKey } from '../core/i18n';
+import { Notifier } from '../core/notifier';
 import { fieldMatchValidator } from '../core/validators';
 
 @Component({
@@ -20,7 +19,6 @@ import { fieldMatchValidator } from '../core/validators';
     MatIconModule,
     MatInputModule,
     MatFormFieldModule,
-    MatSnackBarModule,
     PasswordField,
     TextField,
     ReactiveFormsModule,
@@ -32,7 +30,7 @@ import { fieldMatchValidator } from '../core/validators';
 export class Login {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
-  private readonly snack = inject(MatSnackBar);
+  private readonly notifier = inject(Notifier);
   protected readonly i18n = inject(I18nService);
   protected readonly fb = inject(FormBuilder);
 
@@ -71,7 +69,7 @@ export class Login {
         ? null
         : 'login.error';
     if (error) {
-      this.snack.open(this.i18n.t(error), 'OK', { duration: SNACK_TIME_ERROR });
+      this.notifier.error(error);
       return;
     }
     const redirect = (this.router.currentNavigation()?.extras.state as { redirect?: string } | null)

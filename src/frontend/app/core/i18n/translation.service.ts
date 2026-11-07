@@ -81,9 +81,14 @@ export class I18nService {
       dict = await loadTranslations(lang);
     } catch (error) {
       // Uses the still-active dictionary; falls back to the key if none has loaded yet.
-      this.snack.open(this.t('errors.translationsLoad', { lang }), 'OK', {
-        duration: SNACK_TIME_ERROR,
-      });
+      // Not `Notifier`: it depends on this service.
+      this.snack.open(
+        this.t('errors.translationsLoad', { lang }),
+        this.dict()['common.ok'] ?? 'OK',
+        {
+          duration: SNACK_TIME_ERROR,
+        },
+      );
       console.error(`Failed to load "${lang}" translations`, error);
       return;
     }

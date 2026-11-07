@@ -4,18 +4,17 @@ import { MatCardModule } from '@angular/material/card';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltip } from '@angular/material/tooltip';
 import { RouterLink } from '@angular/router';
 import { formName } from '@shared/helper';
 import { countQuestions } from '@shared/model/form-tree';
 import { toPortableForm, type FormDefinition, type FormWithOwner } from '@shared/model/form.model';
 import { FormImportModal } from '../core/components';
-import { SNACK_TIME_ERROR, SNACK_TIME_OK } from '../core/consts';
 import { downloadJSON } from '../core/export/file';
 import { FormImportService } from '../core/export/import';
 import { I18nService } from '../core/i18n';
 import { MarkdownPipe } from '../core/markdown';
+import { Notifier } from '../core/notifier';
 import { FormsRepository } from '../core/state/forms.repository';
 
 @Component({
@@ -25,7 +24,6 @@ import { FormsRepository } from '../core/state/forms.repository';
     MatIconModule,
     MatCardModule,
     MatDividerModule,
-    MatSnackBarModule,
     MarkdownPipe,
     MatTooltip,
     FormImportModal,
@@ -37,7 +35,7 @@ import { FormsRepository } from '../core/state/forms.repository';
 })
 export class LandingComponent {
   private readonly repo = inject(FormsRepository);
-  private readonly snack = inject(MatSnackBar);
+  private readonly notifier = inject(Notifier);
   protected readonly i18n = inject(I18nService);
   readonly forms = signal<FormWithOwner[] | undefined>(undefined);
   private readonly importService = inject(FormImportService);
@@ -88,9 +86,9 @@ export class LandingComponent {
     const url = `${location.origin}/runner/${form.id}`;
     try {
       await navigator.clipboard.writeText(url);
-      this.snack.open(this.i18n.t('landing.linkCopied'), 'OK', { duration: SNACK_TIME_OK });
+      this.notifier.ok('landing.linkCopied');
     } catch {
-      this.snack.open(url, 'OK', { duration: SNACK_TIME_ERROR });
+      this.notifier.errorText(url);
     }
   }
 
@@ -120,9 +118,7 @@ export class LandingComponent {
     const name = formName(form, this.i18n);
     this.showTextModal.set(false);
     await this.refresh();
-    this.snack.open(this.i18n.t('landing.imported', { name }), 'OK', {
-      duration: SNACK_TIME_OK,
-    });
+    this.notifier.ok('landing.imported', { name });
   }
 
   async remove(form: FormDefinition): Promise<void> {

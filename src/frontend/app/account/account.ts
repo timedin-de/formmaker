@@ -12,15 +12,14 @@ import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import type { UserRole } from '@shared/model/user.model';
 import { AuthService } from '../core/auth/auth.service';
 import { PasswordField } from '../core/components';
 import { TextField } from '../core/components/text-field/text-field';
-import { SNACK_TIME_ERROR, SNACK_TIME_OK } from '../core/consts';
+import { Notifier } from '../core/notifier';
 import { I18nService } from '../core/i18n';
-import { apiErrorMessage } from '../core/state/api-client';
+import { apiErrorMessage } from '../core/state/api-error';
 import { UsersRepository } from '../core/state/users.repository';
 import { fieldMatchValidator } from '../core/validators';
 
@@ -43,7 +42,7 @@ import { fieldMatchValidator } from '../core/validators';
 export class Account {
   private readonly auth = inject(AuthService);
   private readonly users = inject(UsersRepository);
-  private readonly snack = inject(MatSnackBar);
+  private readonly notifier = inject(Notifier);
   private readonly router = inject(Router);
   protected readonly i18n = inject(I18nService);
 
@@ -102,7 +101,7 @@ export class Account {
       formDir.resetForm();
       this.emailForm.controls.email.setValue(email);
 
-      this.snack.open(this.i18n.t('account.emailSaved'), 'OK', { duration: SNACK_TIME_OK });
+      this.notifier.ok('account.emailSaved');
     } catch (error) {
       this.fail(apiErrorMessage(error));
     }
@@ -117,7 +116,7 @@ export class Account {
     try {
       await this.users.changePassword(currentPassword, newPassword);
       formDir.resetForm();
-      this.snack.open(this.i18n.t('account.passwordChanged'), 'OK', { duration: SNACK_TIME_OK });
+      this.notifier.ok('account.passwordChanged');
     } catch (error) {
       this.fail(apiErrorMessage(error));
     }
@@ -131,7 +130,7 @@ export class Account {
     try {
       await this.users.deleteAccount(value);
       await this.auth.expireSession();
-      this.snack.open(this.i18n.t('account.accountDeleted'), 'OK', { duration: SNACK_TIME_OK });
+      this.notifier.ok('account.accountDeleted');
       await this.router.navigate(['/login']);
     } catch (error) {
       this.fail(apiErrorMessage(error));
@@ -143,6 +142,6 @@ export class Account {
   }
 
   private fail(message: string): void {
-    this.snack.open(message, 'OK', { duration: SNACK_TIME_ERROR });
+    this.notifier.errorText(message);
   }
 }

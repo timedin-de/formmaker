@@ -8,7 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthService } from '../core/auth/auth.service';
 import { SNACK_TIME_ERROR, SNACK_TIME_OK } from '../core/consts';
 import { I18nService } from '../core/i18n';
-import { ApiError } from '../core/state/api-client';
+import { ApiError } from '../core/state/api-error';
 import { UsersRepository } from '../core/state/users.repository';
 import { Account } from './account';
 
@@ -189,7 +189,7 @@ describe('Account actions', () => {
     expect(users.updateEmail).toHaveBeenCalledWith('new@formmaker.local', 'formmaker');
     expect(component.user()?.email).toBe('new@formmaker.local');
     expect(component.emailForm.value.email).toBe('new@formmaker.local');
-    expect(snack.open).toHaveBeenCalledWith(i18n.t('account.emailSaved'), 'OK', {
+    expect(snack.open).toHaveBeenCalledWith(i18n.t('account.emailSaved'), i18n.t('common.ok'), {
       duration: SNACK_TIME_OK,
     });
   });
@@ -202,7 +202,7 @@ describe('Account actions', () => {
     await component.saveEmail(formDir());
 
     expect(component.user()?.email).toBeUndefined();
-    expect(snack.open).toHaveBeenCalledWith('email already exists', 'OK', {
+    expect(snack.open).toHaveBeenCalledWith('email already exists', i18n.t('common.ok'), {
       duration: SNACK_TIME_ERROR,
     });
   });
@@ -227,9 +227,13 @@ describe('Account actions', () => {
     await component.savePassword(formDir());
 
     expect(users.changePassword).toHaveBeenCalledWith('formmaker', 'newpassword');
-    expect(snack.open).toHaveBeenCalledWith(i18n.t('account.passwordChanged'), 'OK', {
-      duration: SNACK_TIME_OK,
-    });
+    expect(snack.open).toHaveBeenCalledWith(
+      i18n.t('account.passwordChanged'),
+      i18n.t('common.ok'),
+      {
+        duration: SNACK_TIME_OK,
+      },
+    );
   });
 
   it('reports a server error when the current password is wrong', async () => {
@@ -243,7 +247,7 @@ describe('Account actions', () => {
 
     await component.savePassword(formDir());
 
-    expect(snack.open).toHaveBeenCalledWith('invalid password', 'OK', {
+    expect(snack.open).toHaveBeenCalledWith('invalid password', i18n.t('common.ok'), {
       duration: SNACK_TIME_ERROR,
     });
   });
@@ -263,7 +267,7 @@ describe('Account actions', () => {
 
     expect(users.deleteAccount).toHaveBeenCalledWith('formmaker');
     expect(navigate).toHaveBeenCalledWith(['/login']);
-    expect(snack.open).toHaveBeenCalledWith(i18n.t('account.accountDeleted'), 'OK', {
+    expect(snack.open).toHaveBeenCalledWith(i18n.t('account.accountDeleted'), i18n.t('common.ok'), {
       duration: SNACK_TIME_OK,
     });
   });
@@ -276,7 +280,7 @@ describe('Account actions', () => {
     await component.deleteAccount();
 
     expect(navigate).not.toHaveBeenCalled();
-    expect(snack.open).toHaveBeenCalledWith('invalid password', 'OK', {
+    expect(snack.open).toHaveBeenCalledWith('invalid password', i18n.t('common.ok'), {
       duration: SNACK_TIME_ERROR,
     });
   });

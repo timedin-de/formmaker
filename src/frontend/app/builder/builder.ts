@@ -6,7 +6,6 @@ import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSidenavModule } from '@angular/material/sidenav';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -14,9 +13,9 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { formName } from '@shared/helper';
 import { toPortableForm } from '@shared/model/form.model';
 import { pairwise, startWith } from 'rxjs';
-import { SNACK_TIME_OK } from '../core/consts';
 import { downloadJSON } from '../core/export/file';
 import { I18nService } from '../core/i18n';
+import { Notifier } from '../core/notifier';
 import { DesignerStore } from '../core/state/designer.store';
 import { FormsRepository } from '../core/state/forms.repository';
 import { BuilderCanvas } from './canvas';
@@ -34,7 +33,6 @@ import { PropertyPanel } from './property-panel';
     MatInputModule,
     MatSidenavModule,
     MatTabsModule,
-    MatSnackBarModule,
     MatTooltipModule,
     BuilderCanvas,
     BuilderPalette,
@@ -50,7 +48,7 @@ export class BuilderComponent {
   private readonly repo = inject(FormsRepository);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
-  private readonly snack = inject(MatSnackBar);
+  private readonly notifier = inject(Notifier);
   protected readonly i18n = inject(I18nService);
   protected readonly modal = inject(PropertiesModal);
 
@@ -74,9 +72,7 @@ export class BuilderComponent {
           if (loaded) {
             const name = formName(loaded, this.i18n);
             this.store.load(loaded);
-            this.snack.open(this.i18n.t('builder.editing', { name }), 'OK', {
-              duration: SNACK_TIME_OK,
-            });
+            this.notifier.ok('builder.editing', { name });
           } else {
             await this.store.createEmpty();
             this.router.navigate([], {
@@ -115,7 +111,7 @@ export class BuilderComponent {
   async save(): Promise<void> {
     await this.repo.saveForm(this.store.form());
     this.saved.set(true);
-    this.snack.open(this.i18n.t('builder.saveMsg'), 'OK', { duration: SNACK_TIME_OK });
+    this.notifier.ok('builder.saveMsg');
   }
 
   async preview(): Promise<void> {
