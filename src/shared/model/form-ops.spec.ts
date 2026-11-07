@@ -115,6 +115,58 @@ describe('cloneElement', () => {
     expect(clone.options.map((o) => o.id)).not.toEqual(choice.options.map((o) => o.id));
   });
 
+  it('remaps static defaults and condition values that select a copied option', () => {
+    const form = newForm('Demo');
+    const page = createPage('Page 1');
+    const group = createElement('group', 'Group');
+    const multi = createElement('multiChoice', 'Pick') as ChoiceElement;
+    const [a, b] = multi.options.map((o) => o.id);
+    multi.defaultValue = { kind: 'static', value: [a, 'unknown'] };
+    const dependent = text('Dependent');
+    dependent.enabledWhen = {
+      logic: 'all',
+      conditions: [
+        { fieldId: multi.id, operator: 'eq', operand: { kind: 'literal', value: b } },
+        { fieldId: multi.id, operator: 'hasAnyOf', values: [a, b] },
+      ],
+      groups: [],
+    };
+    addToGroup([multi, dependent], group, form);
+    addToGroup(group, page, form);
+    form.pages = [page];
+
+    const clone = cloneElement(form, group.id, COPY_SUFFIX);
+    const [copiedMulti, copiedDependent] = clone?.subtree as [ChoiceElement, TextElement];
+    const [newA, newB] = copiedMulti.options.map((o) => o.id);
+
+    expect(copiedMulti.defaultValue).toEqual({ kind: 'static', value: [newA, 'unknown'] });
+    const [eq, anyOf] = copiedDependent.enabledWhen!.conditions;
+    expect(eq.operand).toEqual({ kind: 'literal', value: newB });
+    expect(anyOf.values).toEqual([newA, newB]);
+    expect(multi.defaultValue).toEqual({ kind: 'static', value: [a, 'unknown'] });
+  });
+
+  it('leaves condition values on choices outside the clone untouched', () => {
+    const form = newForm('Demo');
+    const page = createPage('Page 1');
+    const choice = createElement('choice', 'Pick') as ChoiceElement;
+    const optionId = choice.options[0].id;
+    const dependent = text('Dependent');
+    dependent.enabledWhen = {
+      logic: 'all',
+      conditions: [
+        { fieldId: choice.id, operator: 'eq', operand: { kind: 'literal', value: optionId } },
+      ],
+      groups: [],
+    };
+    addToGroup([choice, dependent], page, form);
+    form.pages = [page];
+
+    const clone = cloneElement(form, dependent.id, COPY_SUFFIX)?.element as TextElement;
+
+    expect(clone.enabledWhen?.conditions[0].operand).toEqual({ kind: 'literal', value: optionId });
+  });
+
   it('does not modify the original elements', () => {
     const form = newForm('Demo');
     const { page, group } = pageWithNestedDeps(form);
