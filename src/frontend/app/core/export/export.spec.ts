@@ -13,6 +13,7 @@ import { EXPORT_CHANNELS } from './channels';
 import { buildColumnBlocks, buildColumns, buildExportTable, formatValueForExport } from './columns';
 import { submissionsToCsv, toCsv } from './csv-exporter';
 import type { ExportContext } from './context';
+import { submissionToPdf } from './pdf-exporter';
 import { buildReceipt } from './receipt';
 
 /** Translates every key to itself. */
@@ -274,6 +275,30 @@ describe('buildReceipt', () => {
       indent: 0,
       additional: { dataUrl: PNG_1X1 },
     });
+  });
+});
+
+describe('submissionToPdf', () => {
+  function signedSubmission(dataUrl: string): { form: NamedFormDefinition; sub: Submission } {
+    const form = newForm('Signed') as NamedFormDefinition;
+    const sign = createElement('signature', 'Sign here');
+    addToGroup(sign, form.pages[0], form);
+    const sub: Submission = {
+      id: 's1',
+      formId: form.id,
+      formVersion: 1,
+      submittedAt: '2026-01-01T00:00:00Z',
+      durationMs: 1000,
+      values: { [sign.id]: { dataUrl, width: 1, height: 1, mimeType: 'image/png' } },
+    };
+    return { form, sub };
+  }
+
+  it('renders a signature image', async () => {
+    const { form, sub } = signedSubmission(PNG_1X1);
+    const blob = await submissionToPdf(form, sub, ctx);
+    expect(blob.type).toBe('application/pdf');
+    expect(await blob.text()).toContain('/Subtype /Image');
   });
 });
 

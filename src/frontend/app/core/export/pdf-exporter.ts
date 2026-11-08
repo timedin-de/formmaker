@@ -209,7 +209,6 @@ export async function submissionToPdf(
     valueX: MARGIN + 180,
     gapAfter: 8,
   });
-  y = state.value;
 
   const buffer = doc.output('arraybuffer');
   return new Blob([buffer], { type: 'application/pdf' });
@@ -285,8 +284,9 @@ function renderBlocks(
       typeof block.additional.dataUrl === 'string'
         ? block.additional.dataUrl
         : null;
+    const imageSize = imageUrl ? fitImage(doc, imageUrl, MARGIN + CONTENT_W - x) : null;
     // keep an image together with its label
-    if (imageUrl) ensureSpace(labelLines.length * lineHeight + 160);
+    if (imageSize) ensureSpace(labelLines.length * lineHeight + imageSize.height);
     for (const line of labelLines) {
       ensureSpace(14);
       doc.text(line, x, state.value);
@@ -295,10 +295,11 @@ function renderBlocks(
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(30, 30, 30);
     const valueWrap = CONTENT_W - (opts.valueX - MARGIN) - 12;
-    if (imageUrl) {
-      ensureSpace(160);
-      doc.addImage(imageUrl, 'JPEG', x, state.value, 460, 160);
-      state.value += 160;
+    if (imageUrl && imageSize) {
+      ensureSpace(imageSize.height);
+      doc.addImage(imageUrl, 'JPEG', x, state.value, imageSize.width, imageSize.height);
+      state.value += imageSize.height;
+      state.value += opts.gapAfter ?? 8;
       continue;
     }
     const valueLines = wrap(doc, block.value, valueWrap);
@@ -309,6 +310,23 @@ function renderBlocks(
     }
     state.value += opts.gapAfter ?? 8;
   }
+}
+
+const MAX_IMAGE_H = 200;
+
+/**
+ * Scale an image to fit `maxWidth` × `MAX_IMAGE_H` (never upscaling) while
+ * keeping its aspect ratio. Returns null when the image has no size.
+ */
+function fitImage(
+  doc: jsPDF,
+  dataUrl: string,
+  maxWidth: number,
+): { width: number; height: number } | null {
+  const { width, height } = doc.getImageProperties(dataUrl);
+  if (!width || !height) return null;
+  const scale = Math.min(1, maxWidth / width, MAX_IMAGE_H / height);
+  return { width: width * scale, height: height * scale };
 }
 
 function wrap(doc: jsPDF, text: string, width: number): string[] {
