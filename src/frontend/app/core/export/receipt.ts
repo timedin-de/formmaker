@@ -55,7 +55,7 @@ export function buildReceipt(
     if (hasAnswers) {
       blocks.splice(start, 0, {
         kind: 'page',
-        label: page.title?.trim() || `Page ${index + 1}`,
+        label: page.title?.trim() || ctx.t('builder.pageN', { n: index + 1 }),
         indent: 0,
       });
     }

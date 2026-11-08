@@ -406,6 +406,10 @@ const de: typeof en = {
   'export.exported': 'Export abgeschlossen',
   'export.failed': 'Export fehlgeschlagen',
   'export.removedOption': '[entfernte Option]',
+  'export.yes': 'Ja',
+  'export.no': 'Nein',
+  'export.signature': '[Unterschrift]',
+  'export.attachment': '[Anhang]',
 
   // PDF
   'pdf.receipt': '{name}-beleg',

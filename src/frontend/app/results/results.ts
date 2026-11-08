@@ -43,7 +43,9 @@ export class Results {
   private readonly formId = signal<string | null>(null);
   protected readonly form = signal<FormDefinition | undefined>(undefined);
   protected readonly submissions = signal<Submission[]>([]);
-  protected readonly columns = computed(() => (this.form() ? buildColumns(this.form()!) : []));
+  protected readonly columns = computed(() =>
+    this.form() ? buildColumns(this.form()!, this.i18n) : [],
+  );
   protected readonly channels = EXPORT_CHANNELS;
 
   constructor() {

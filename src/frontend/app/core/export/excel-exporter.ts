@@ -25,7 +25,7 @@ export async function submissionsToExcel(
   workbook.creator = 'FormMaker';
   workbook.created = new Date();
 
-  const columns = buildColumns(form);
+  const columns = buildColumns(form, ctx);
   const sheet = workbook.addWorksheet(options.sheetName ?? 'Responses');
   sheet.views = [{ state: 'frozen', ySplit: 1 }];
 

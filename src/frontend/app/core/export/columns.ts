@@ -28,7 +28,7 @@ export interface ExportTable {
  * Sections (visual dividers) are skipped. Page and group headings are only
  * emitted when they contain at least one exported field.
  */
-export function buildColumnBlocks(form: FormDefinition): ExportColumnBlock[] {
+export function buildColumnBlocks(form: FormDefinition, ctx: ExportContext): ExportColumnBlock[] {
   const blocks: ExportColumnBlock[] = [];
   let pageNum = 0;
   for (const page of form.pages) {
@@ -58,7 +58,7 @@ export function buildColumnBlocks(form: FormDefinition): ExportColumnBlock[] {
     if (hasFields) {
       blocks.splice(start, 0, {
         kind: 'page',
-        label: page.title?.trim() || `Page ${pageNum}`,
+        label: page.title?.trim() || ctx.t('builder.pageN', { n: pageNum }),
         indent: 0,
       });
     }
@@ -67,8 +67,8 @@ export function buildColumnBlocks(form: FormDefinition): ExportColumnBlock[] {
 }
 
 /** Flatten the form's questions into export columns (groups keep a ` / ` path). */
-export function buildColumns(form: FormDefinition): ExportColumn[] {
-  return buildColumnBlocks(form)
+export function buildColumns(form: FormDefinition, ctx: ExportContext): ExportColumn[] {
+  return buildColumnBlocks(form, ctx)
     .filter((b): b is Extract<ExportColumnBlock, { kind: 'field' }> => b.kind === 'field')
     .map((b) => b.column);
 }
@@ -98,18 +98,18 @@ export function displayValue(
 /** Without an `element`, values are formatted as stored (no option labels). */
 export function formatValueForExport(
   raw: FieldValue | undefined,
-  element?: ElementDefinition,
-  ctx?: ExportContext,
+  element: ElementDefinition | undefined,
+  ctx: ExportContext,
 ): {
   text: string;
   additional?: unknown;
 } {
-  const value = element && ctx ? displayValue(raw, element, ctx) : raw;
+  const value = displayValue(raw, element, ctx);
   if (value === null || value === undefined) return { text: '' };
   if (typeof value === 'string') return { text: value };
   if (typeof value === 'number') return { text: String(value) };
   if (typeof value === 'boolean')
-    return { text: value ? 'Yes' : 'No', additional: { boolean: value } };
+    return { text: ctx.t(value ? 'export.yes' : 'export.no'), additional: { boolean: value } };
   if (Array.isArray(value)) {
     return {
       text: value
@@ -123,8 +123,10 @@ export function formatValueForExport(
     };
   }
   if (typeof value === 'object') {
-    if ('dataUrl' in value) return { text: '[signature]', additional: { dataUrl: value.dataUrl } };
-    return { text: '[attachment]', additional: value };
+    if ('dataUrl' in value) {
+      return { text: ctx.t('export.signature'), additional: { dataUrl: value.dataUrl } };
+    }
+    return { text: ctx.t('export.attachment'), additional: value };
   }
   return { text: '' };
 }
@@ -151,7 +153,7 @@ export function buildExportTable(
   submissions: Submission[],
   ctx: ExportContext,
 ): ExportTable {
-  const columns = buildColumns(form);
+  const columns = buildColumns(form, ctx);
   return {
     columns,
     rows: submissions.map((s) => rowForSubmission(form, s, columns, ctx)),

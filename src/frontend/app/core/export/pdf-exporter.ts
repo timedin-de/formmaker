@@ -21,7 +21,7 @@ export async function submissionsToPdf(
   ctx: ExportContext,
 ): Promise<Blob> {
   const doc = new jsPDF({ unit: 'pt', format: 'a4' });
-  const columnBlocks = buildColumnBlocks(form);
+  const columnBlocks = buildColumnBlocks(form, ctx);
   let y = MARGIN;
 
   const ensureSpace = (needed = 60): void => {
@@ -62,7 +62,9 @@ export async function submissionsToPdf(
   y += 20;
 
   const answeredOf = (fieldId: string): number =>
-    submissions.filter((s) => formatValueForExport(s.values[fieldId]).text !== '').length;
+    submissions.filter(
+      (s) => formatValueForExport(s.values[fieldId], form.elements[fieldId], ctx).text !== '',
+    ).length;
 
   const colW = Math.min(220, CONTENT_W * 0.6);
   const rateW = 70;
