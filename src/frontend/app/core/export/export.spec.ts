@@ -13,7 +13,7 @@ import { EXPORT_CHANNELS } from './channels';
 import { buildColumnBlocks, buildColumns, buildExportTable, formatValueForExport } from './columns';
 import { submissionsToCsv, toCsv } from './csv-exporter';
 import type { ExportContext } from './context';
-import { submissionToPdf } from './pdf-exporter';
+import { submissionsToPdf, submissionToPdf } from './pdf-exporter';
 import { buildReceipt } from './receipt';
 
 /** Translates every key to itself. */
@@ -305,6 +305,33 @@ describe('submissionToPdf', () => {
     const { form, sub } = signedSubmission('data:image/png;base64,AAAA');
     const blob = await submissionToPdf(form, sub, ctx);
     expect(await blob.text()).not.toContain('/Subtype /Image');
+  });
+});
+
+describe('submissionsToPdf', () => {
+  it('keeps the duration line clear of the first page heading', async () => {
+    const form = demoForm() as NamedFormDefinition;
+    const [nameEl] = form.pages[0].children;
+    const sub: Submission = {
+      id: 's1',
+      formId: form.id,
+      formVersion: 1,
+      submittedAt: '2026-01-01T00:00:00Z',
+      durationMs: 65_000,
+      values: { [nameEl]: 'Ada' },
+    };
+    const pdf = await (await submissionsToPdf(form, [sub], ctx)).text();
+    // PDF y runs bottom-up; take the last match, since the page heading also
+    // appears earlier in the summary table
+    const yOf = (label: string): number => {
+      const matches = [...pdf.matchAll(/[\d.]+ ([\d.]+) Td\n\((.*?)\) Tj/g)].filter(
+        (m) => m[2] === label,
+      );
+      const last = matches.at(-1);
+      if (!last) throw new Error(`no text "${label}" in pdf`);
+      return Number(last[1]);
+    };
+    expect(yOf('Duration: 1m 5s') - yOf('Details')).toBeGreaterThanOrEqual(14);
   });
 });
 

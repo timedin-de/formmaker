@@ -132,15 +132,14 @@ export async function submissionsToPdf(
     doc.setFontSize(11);
     doc.setTextColor(20, 90, 180);
     doc.text(`#${s + 1} — ${new Date(sub.submittedAt).toLocaleString()}`, MARGIN, y);
-    y += 6;
+    y += 18;
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
     if (sub.durationMs) {
       doc.setTextColor(110, 110, 110);
-      doc.text(`Duration: ${formatDuration(sub.durationMs)}`, MARGIN, y + 12);
-      y += 6;
+      doc.text(`Duration: ${formatDuration(sub.durationMs)}`, MARGIN, y - 4);
+      y += 14;
     }
-    y += 12;
     const state: { value: number } = { value: y };
     renderBlocks(doc, buildReceipt(form, sub, ctx), state, {
       fontSize: 9,
