@@ -46,7 +46,7 @@ export async function submissionsToPdf(
     ctx.t('pdf.pages', { n: form.pages.length }),
     ctx.t('pdf.questions', { n: countQuestions(form) }),
     ctx.t('results.submissions', { n: submissions.length }),
-    new Date().toLocaleDateString(),
+    new Date().toLocaleDateString(ctx.t('common.locale')),
   ].join(' · ');
   doc.text(meta, MARGIN, y);
   y += 22;
@@ -133,7 +133,8 @@ export async function submissionsToPdf(
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(11);
     doc.setTextColor(20, 90, 180);
-    doc.text(`#${s + 1} — ${new Date(sub.submittedAt).toLocaleString()}`, MARGIN, y);
+    const submittedAt = new Date(sub.submittedAt).toLocaleString(ctx.t('common.locale'));
+    doc.text(`#${s + 1} — ${submittedAt}`, MARGIN, y);
     y += 18;
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
@@ -184,7 +185,7 @@ export async function submissionToPdf(
   doc.setFontSize(10);
   doc.setTextColor(110, 110, 110);
   const submitted = ctx.t('pdf.submitted', {
-    date: new Date(submission.submittedAt).toLocaleString(),
+    date: new Date(submission.submittedAt).toLocaleString(ctx.t('common.locale')),
   });
   if (submission.durationMs) {
     const duration = ctx.t('pdf.duration', {
