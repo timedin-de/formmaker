@@ -41,7 +41,7 @@ export function submissionsToCsv(
   ctx: ExportContext,
   formatter: CsvFormatter = (value, element) => formatValueForExport(value, element, ctx),
 ): Blob {
-  const columns = buildColumns(form);
+  const columns = buildColumns(form, ctx);
   const header = columns.map((c) => c.label);
   const rows = submissions.map((s) =>
     columns.map((c) => formatter(s.values[c.fieldId], form.elements[c.fieldId]).text),

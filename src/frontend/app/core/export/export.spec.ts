@@ -7,6 +7,7 @@ import {
   type NamedFormDefinition,
 } from '@shared/model/form.model';
 import type { Submission } from '@shared/model/submission.model';
+import type { FieldValue } from '@shared/model/values.model';
 import { addToGroup, newForm } from '@test/helper';
 import { describe, expect, it } from 'vitest';
 import { EXPORT_CHANNELS } from './channels';
@@ -20,6 +21,12 @@ import { buildReceipt } from './receipt';
 
 /** Translates every key to itself. */
 const ctx: ExportContext = { t: (key) => key };
+
+/** Translates with a real dictionary, filling in `{param}` placeholders. */
+const ctxFor = (dict: Record<string, string>): ExportContext => ({
+  t: (key, params) =>
+    (dict[key] ?? key).replace(/\{(\w+)\}/g, (m, name: string) => String(params?.[name] ?? m)),
+});
 
 const PNG_1X1 =
   'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
@@ -56,7 +63,7 @@ describe('toPortableForm', () => {
 
 describe('buildColumns', () => {
   it('flattens questions into columns', () => {
-    const cols = buildColumns(demoForm());
+    const cols = buildColumns(demoForm(), ctx);
     expect(cols).toHaveLength(2);
     expect(cols[0].label).toContain('Full name');
   });
@@ -66,7 +73,7 @@ describe('buildColumns', () => {
     const group = createElement('group', 'Address');
     addToGroup([createElement('text', 'Street'), createElement('text', 'City')], group, form);
     addToGroup(group, form.pages[0], form);
-    const cols = buildColumns(form);
+    const cols = buildColumns(form, ctx);
     expect(cols.map((c) => c.label)).toEqual(
       expect.arrayContaining([expect.stringContaining('Street'), expect.stringContaining('City')]),
     );
@@ -81,7 +88,7 @@ describe('buildColumnBlocks', () => {
     const group = createElement('group', 'Address');
     addToGroup([street, city], group, form);
     addToGroup(group, form.pages[0], form);
-    expect(buildColumnBlocks(form)).toEqual([
+    expect(buildColumnBlocks(form, ctx)).toEqual([
       { kind: 'page', label: 'New page', indent: 0 },
       { kind: 'group', label: 'Address', indent: 0 },
       {
@@ -96,29 +103,36 @@ describe('buildColumnBlocks', () => {
         column: { fieldId: city.id, label: expect.stringContaining('City') as unknown as string },
       },
     ]);
-    expect(buildColumns(form)).toHaveLength(2);
+    expect(buildColumns(form, ctx)).toHaveLength(2);
+  });
+
+  it('labels untitled pages in the export language', () => {
+    const form = demoForm();
+    form.pages[0].title = '  ';
+    expect(buildColumnBlocks(form, ctxFor(de))[0]).toEqual({
+      kind: 'page',
+      label: 'Seite 1',
+      indent: 0,
+    });
   });
 });
 
 describe('formatValueForExport', () => {
   it('formats kinds of values', () => {
-    expect(formatValueForExport(null)).toEqual({ text: '' });
-    expect(formatValueForExport('x')).toEqual({ text: 'x' });
-    expect(formatValueForExport(3)).toEqual({ text: '3' });
-    expect(formatValueForExport(true)).toEqual({ text: 'Yes', additional: { boolean: true } });
-    expect(formatValueForExport(false)).toEqual({ text: 'No', additional: { boolean: false } });
-    expect(formatValueForExport(['a', 'b'])).toEqual({ text: 'a, b' });
-    expect(formatValueForExport([{ name: 'f.pdf', size: 2, mimeType: 'application/pdf' }])).toEqual(
-      { text: 'f.pdf' },
-    );
+    const format = (value: FieldValue): { text: string } =>
+      formatValueForExport(value, undefined, ctx);
+    expect(format(null)).toEqual({ text: '' });
+    expect(format('x')).toEqual({ text: 'x' });
+    expect(format(3)).toEqual({ text: '3' });
+    expect(format(true)).toEqual({ text: 'export.yes', additional: { boolean: true } });
+    expect(format(false)).toEqual({ text: 'export.no', additional: { boolean: false } });
+    expect(format(['a', 'b'])).toEqual({ text: 'a, b' });
+    expect(format([{ name: 'f.pdf', size: 2, mimeType: 'application/pdf' }])).toEqual({
+      text: 'f.pdf',
+    });
     expect(
-      formatValueForExport({
-        dataUrl: 'data:image/png;base64,AA',
-        width: 1,
-        height: 1,
-        mimeType: 'image/png',
-      }),
-    ).toMatchObject({ text: '[signature]' });
+      format({ dataUrl: 'data:image/png;base64,AA', width: 1, height: 1, mimeType: 'image/png' }),
+    ).toMatchObject({ text: 'export.signature' });
   });
 
   it('shows option labels instead of ids for choice answers', () => {
@@ -273,7 +287,7 @@ describe('buildReceipt', () => {
     expect(blocks[1]).toEqual({
       kind: 'answer',
       label: 'Sign here',
-      value: '[signature]',
+      value: 'export.signature',
       indent: 0,
       additional: { dataUrl: PNG_1X1 },
     });
@@ -311,12 +325,6 @@ describe('submissionToPdf', () => {
 });
 
 describe('submissionsToPdf', () => {
-  /** Translates with a real dictionary, filling in `{param}` placeholders. */
-  const ctxFor = (dict: Record<string, string>): ExportContext => ({
-    t: (key, params) =>
-      (dict[key] ?? key).replace(/\{(\w+)\}/g, (m, name: string) => String(params?.[name] ?? m)),
-  });
-
   function timedSubmission(form: FormDefinition): Submission {
     const [nameEl] = form.pages[0].children;
     return {

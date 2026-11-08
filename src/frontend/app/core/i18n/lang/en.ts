@@ -400,6 +400,10 @@ const en = {
   'export.exported': 'Export finished',
   'export.failed': 'Export failed',
   'export.removedOption': '[removed option]',
+  'export.yes': 'Yes',
+  'export.no': 'No',
+  'export.signature': '[signature]',
+  'export.attachment': '[attachment]',
 
   // PDF
   'pdf.receipt': '{name}-receipt',
