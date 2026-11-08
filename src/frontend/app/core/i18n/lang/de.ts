@@ -381,6 +381,8 @@ const de: typeof en = {
   'sig.signAbove': 'Hier unterschreiben',
   'sig.clear': 'Löschen',
   'sig.placeholder': 'Signaturfeld lädt. Bitte warten...',
+  'sig.loadFailed': 'Das Signaturfeld konnte nicht geladen werden. Bitte laden Sie die Seite neu.',
+  'sig.reload': 'Neu laden',
 
   'q.invalid': 'Dieses Feld ist ungültig.',
   // password field
