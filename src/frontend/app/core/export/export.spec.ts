@@ -300,6 +300,12 @@ describe('submissionToPdf', () => {
     expect(blob.type).toBe('application/pdf');
     expect(await blob.text()).toContain('/Subtype /Image');
   });
+
+  it('falls back to text when the signature image is unreadable', async () => {
+    const { form, sub } = signedSubmission('data:image/png;base64,AAAA');
+    const blob = await submissionToPdf(form, sub, ctx);
+    expect(await blob.text()).not.toContain('/Subtype /Image');
+  });
 });
 
 describe('EXPORT_CHANNELS', () => {
