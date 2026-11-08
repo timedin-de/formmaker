@@ -195,6 +195,11 @@ export class QuestionInput {
     control.markAsTouched();
   }
 
+  /** A failed `@defer` chunk load can't be retried in place, so reload the page. */
+  reload(): void {
+    location.reload();
+  }
+
   /** `step` in seconds for the native time pickers. */
   timeStep(el: ElementDefinition): number {
     if (has(el, 'timeInterval')) {

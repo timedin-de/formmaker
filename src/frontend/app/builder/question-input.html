@@ -183,6 +183,13 @@
         <div class="signature-pad-placeholder">
           <span>{{ i18n.t('sig.placeholder') }}</span>
         </div>
+      } @error {
+        <div class="signature-pad-placeholder error" role="alert">
+          <span>{{ i18n.t('sig.loadFailed') }}</span>
+          <button mat-stroked-button type="button" (click)="reload()">
+            {{ i18n.t('sig.reload') }}
+          </button>
+        </div>
       }
     }
   }

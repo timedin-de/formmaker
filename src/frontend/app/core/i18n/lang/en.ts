@@ -376,6 +376,8 @@ const en = {
   'sig.signAbove': 'Sign above',
   'sig.clear': 'Clear',
   'sig.placeholder': 'Signature field is loading. Please wait...',
+  'sig.loadFailed': 'The signature field could not be loaded. Please reload the page.',
+  'sig.reload': 'Reload',
   'q.invalid': 'This field is invalid.',
   // password field
   'password.show': 'Show password',
