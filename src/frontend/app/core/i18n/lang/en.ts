@@ -8,6 +8,7 @@ const en = {
 
   // common
   'common.ok': 'OK',
+  'common.locale': 'en-US',
 
   // login
   'login.title': 'Sign in',

@@ -9,6 +9,7 @@ const de: typeof en = {
 
   // common
   'common.ok': 'OK',
+  'common.locale': 'de-DE',
 
   // login
   'login.title': 'Anmelden',

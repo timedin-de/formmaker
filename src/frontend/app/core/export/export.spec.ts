@@ -19,8 +19,8 @@ import type { ExportContext } from './context';
 import { submissionsToPdf, submissionToPdf } from './pdf-exporter';
 import { buildReceipt } from './receipt';
 
-/** Translates every key to itself. */
-const ctx: ExportContext = { t: (key) => key };
+/** Translates every key to itself (except the locale, which must be a valid tag). */
+const ctx: ExportContext = { t: (key) => (key === 'common.locale' ? 'en-US' : key) };
 
 /** Translates with a real dictionary, filling in `{param}` placeholders. */
 const ctxFor = (dict: Record<string, string>): ExportContext => ({
@@ -365,6 +365,8 @@ describe('submissionsToPdf', () => {
     const texts = textRuns(pdf).map((r) => r.text);
     expect(texts).toEqual(expect.arrayContaining(['Feld', 'Beantwortet', 'Dauer: 1 min 5 s']));
     expect(texts).not.toContain('Field');
+    const submittedAt = new Date('2026-01-01T00:00:00Z').toLocaleString('de-DE');
+    expect(texts.some((t) => t.endsWith(submittedAt))).toBe(true);
   });
 });
 

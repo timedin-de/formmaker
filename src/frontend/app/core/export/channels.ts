@@ -85,9 +85,8 @@ export const mailChannel: ExportChannel = {
   doneKey: 'export.exported',
   build(form, submissions, ctx) {
     const times = submissions.map((s) => new Date(s.submittedAt).getTime()).sort((a, b) => a - b);
-    const range = times.length
-      ? `${new Date(times[0]).toLocaleString()} – ${new Date(times[times.length - 1]).toLocaleString()}`
-      : '';
+    const format = (time: number): string => new Date(time).toLocaleString(ctx.t('common.locale'));
+    const range = times.length ? `${format(times[0])} – ${format(times[times.length - 1])}` : '';
     const subject = ctx.t('results.mailSubject', {
       name: form.name,
       n: String(submissions.length),
