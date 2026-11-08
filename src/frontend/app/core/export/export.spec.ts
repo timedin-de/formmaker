@@ -146,6 +146,19 @@ describe('formatValueForExport', () => {
     expect(formatValueForExport('gone', choice, ctx)).toEqual({ text: 'export.removedOption' });
     expect(formatValueForExport(null, choice, ctx)).toEqual({ text: '' });
   });
+
+  it('shows date and time answers in the export language', () => {
+    const deCtx = ctxFor(de);
+    const format = (type: 'date' | 'time' | 'dateTime', value: string): string =>
+      formatValueForExport(value, createElement(type, 'When'), deCtx).text;
+    expect(format('date', '2026-01-05')).toBe('5.1.2026');
+    expect(format('time', '14:07')).toBe('14:07');
+    expect(format('dateTime', '2026-01-05T14:07')).toBe('5.1.2026, 14:07');
+    expect(formatValueForExport('2026-01-05', createElement('date', 'When'), ctxFor(en)).text).toBe(
+      '1/5/2026',
+    );
+    expect(format('date', 'not a date')).toBe('not a date');
+  });
 });
 
 describe('toCsv', () => {

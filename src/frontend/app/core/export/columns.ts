@@ -87,12 +87,41 @@ export function displayValue(
   element: ElementDefinition | undefined,
   ctx: ExportContext,
 ): FieldValue | undefined {
-  if (!element || !isChoice(element) || value === null || value === undefined || value === '') {
-    return value;
+  if (!element || value === null || value === undefined || value === '') return value;
+  if (typeof value === 'string' && isDateType(element.type)) {
+    return localizeDate(value, element.type, ctx.t('common.locale'));
   }
+  if (!isChoice(element)) return value;
   const label = (id: unknown): string =>
     element.options.find((o) => o.id === id)?.label ?? ctx.t('export.removedOption');
   return Array.isArray(value) ? value.map(label) : label(value);
+}
+
+type DateType = 'date' | 'time' | 'dateTime';
+
+function isDateType(type: string): type is DateType {
+  return type === 'date' || type === 'time' || type === 'dateTime';
+}
+
+/**
+ * Date answers are wall-clock strings without a time zone (`yyyy-MM-dd`,
+ * `HH:mm[:ss]`, `yyyy-MM-ddTHH:mm`). Parse them as local time so the shown
+ * day never shifts, and keep the stored text if it cannot be parsed.
+ */
+function localizeDate(value: string, type: DateType, locale: string): string {
+  const time = { hour: '2-digit', minute: '2-digit' } as const;
+  if (type === 'date') {
+    const date = new Date(`${value}T00:00`);
+    return isNaN(date.getTime()) ? value : date.toLocaleDateString(locale);
+  }
+  if (type === 'time') {
+    const date = new Date(`1970-01-01T${value}`);
+    return isNaN(date.getTime()) ? value : date.toLocaleTimeString(locale, time);
+  }
+  const date = new Date(value);
+  return isNaN(date.getTime())
+    ? value
+    : date.toLocaleString(locale, { year: 'numeric', month: 'numeric', day: 'numeric', ...time });
 }
 
 /** Without an `element`, values are formatted as stored (no option labels). */
