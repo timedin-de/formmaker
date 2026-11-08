@@ -297,10 +297,14 @@ function renderBlocks(
     const valueWrap = CONTENT_W - (opts.valueX - MARGIN) - 12;
     if (imageUrl && imageSize) {
       ensureSpace(imageSize.height);
-      doc.addImage(imageUrl, 'JPEG', x, state.value, imageSize.width, imageSize.height);
-      state.value += imageSize.height;
-      state.value += opts.gapAfter ?? 8;
-      continue;
+      try {
+        doc.addImage(imageUrl, 'PNG', x, state.value, imageSize.width, imageSize.height);
+        state.value += imageSize.height;
+        state.value += opts.gapAfter ?? 8;
+        continue;
+      } catch {
+        // unreadable image: fall through and print the text value instead
+      }
     }
     const valueLines = wrap(doc, block.value, valueWrap);
     for (const line of valueLines) {
@@ -316,14 +320,20 @@ const MAX_IMAGE_H = 200;
 
 /**
  * Scale an image to fit `maxWidth` × `MAX_IMAGE_H` (never upscaling) while
- * keeping its aspect ratio. Returns null when the image has no size.
+ * keeping its aspect ratio. Returns null when the image cannot be read.
  */
 function fitImage(
   doc: jsPDF,
   dataUrl: string,
   maxWidth: number,
 ): { width: number; height: number } | null {
-  const { width, height } = doc.getImageProperties(dataUrl);
+  let props: { width: number; height: number };
+  try {
+    props = doc.getImageProperties(dataUrl);
+  } catch {
+    return null;
+  }
+  const { width, height } = props;
   if (!width || !height) return null;
   const scale = Math.min(1, maxWidth / width, MAX_IMAGE_H / height);
   return { width: width * scale, height: height * scale };
