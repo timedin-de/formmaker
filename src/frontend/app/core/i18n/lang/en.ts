@@ -403,6 +403,18 @@ const en = {
 
   // PDF
   'pdf.receipt': '{name}-receipt',
+  'pdf.pages': '{n} page(s)',
+  'pdf.questions': '{n} question(s)',
+  'pdf.summary': 'Results summary',
+  'pdf.field': 'Field',
+  'pdf.answered': 'Answered',
+  'pdf.rate': 'Rate',
+  'pdf.duration': 'Duration: {duration}',
+  'pdf.submitted': 'Submitted {date}',
+  'pdf.yourAnswers': 'Your answers',
+  'pdf.noAnswers': 'No answers.',
+  'pdf.seconds': '{s}s',
+  'pdf.minutes': '{m}m {s}s',
 
   // API errors
   'error.rateLimited': "You're being rate limited. Please wait a moment and try again.",

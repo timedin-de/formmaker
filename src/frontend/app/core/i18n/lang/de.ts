@@ -409,6 +409,18 @@ const de: typeof en = {
 
   // PDF
   'pdf.receipt': '{name}-beleg',
+  'pdf.pages': '{n} Seite(n)',
+  'pdf.questions': '{n} Frage(n)',
+  'pdf.summary': 'Ergebnisübersicht',
+  'pdf.field': 'Feld',
+  'pdf.answered': 'Beantwortet',
+  'pdf.rate': 'Quote',
+  'pdf.duration': 'Dauer: {duration}',
+  'pdf.submitted': 'Eingereicht am {date}',
+  'pdf.yourAnswers': 'Deine Antworten',
+  'pdf.noAnswers': 'Keine Antworten.',
+  'pdf.seconds': '{s} s',
+  'pdf.minutes': '{m} min {s} s',
 
   // API errors
   'error.rateLimited': 'Zu viele Anfragen. Bitte warte einen Moment und versuche es erneut.',
