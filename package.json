@@ -82,7 +82,7 @@
     "@vitest/coverage-v8": "^5.0.5",
     "angular-eslint": "22.6.0",
     "concurrently": "^10.0.6",
-    "eslint": "^10.13.0",
+    "eslint": "^10.14.0",
     "istanbul-lib-coverage": "^3.2.2",
     "istanbul-lib-report": "^3.0.1",
     "istanbul-reports": "^3.2.0",
