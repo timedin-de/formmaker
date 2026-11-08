@@ -12,6 +12,8 @@ import { describe, expect, it } from 'vitest';
 import { EXPORT_CHANNELS } from './channels';
 import { buildColumnBlocks, buildColumns, buildExportTable, formatValueForExport } from './columns';
 import { submissionsToCsv, toCsv } from './csv-exporter';
+import de from '../i18n/lang/de';
+import en from '../i18n/lang/en';
 import type { ExportContext } from './context';
 import { submissionsToPdf, submissionToPdf } from './pdf-exporter';
 import { buildReceipt } from './receipt';
@@ -309,10 +311,15 @@ describe('submissionToPdf', () => {
 });
 
 describe('submissionsToPdf', () => {
-  it('keeps the duration line clear of the first page heading', async () => {
-    const form = demoForm() as NamedFormDefinition;
+  /** Translates with a real dictionary, filling in `{param}` placeholders. */
+  const ctxFor = (dict: Record<string, string>): ExportContext => ({
+    t: (key, params) =>
+      (dict[key] ?? key).replace(/\{(\w+)\}/g, (m, name: string) => String(params?.[name] ?? m)),
+  });
+
+  function timedSubmission(form: FormDefinition): Submission {
     const [nameEl] = form.pages[0].children;
-    const sub: Submission = {
+    return {
       id: 's1',
       formId: form.id,
       formVersion: 1,
@@ -320,18 +327,36 @@ describe('submissionsToPdf', () => {
       durationMs: 65_000,
       values: { [nameEl]: 'Ada' },
     };
-    const pdf = await (await submissionsToPdf(form, [sub], ctx)).text();
-    // PDF y runs bottom-up; take the last match, since the page heading also
-    // appears earlier in the summary table
+  }
+
+  /** Text runs of an (uncompressed) PDF, with their y position (bottom-up). */
+  function textRuns(pdf: string): { y: number; text: string }[] {
+    return [...pdf.matchAll(/[\d.]+ ([\d.]+) Td\n\((.*?)\) Tj/g)].map((m) => ({
+      y: Number(m[1]),
+      text: m[2],
+    }));
+  }
+
+  it('keeps the duration line clear of the first page heading', async () => {
+    const form = demoForm() as NamedFormDefinition;
+    const pdf = await (await submissionsToPdf(form, [timedSubmission(form)], ctxFor(en))).text();
+    // take the last match, since the page heading also appears earlier in the summary table
     const yOf = (label: string): number => {
-      const matches = [...pdf.matchAll(/[\d.]+ ([\d.]+) Td\n\((.*?)\) Tj/g)].filter(
-        (m) => m[2] === label,
-      );
-      const last = matches.at(-1);
+      const last = textRuns(pdf)
+        .filter((r) => r.text === label)
+        .at(-1);
       if (!last) throw new Error(`no text "${label}" in pdf`);
-      return Number(last[1]);
+      return last.y;
     };
     expect(yOf('Duration: 1m 5s') - yOf('Details')).toBeGreaterThanOrEqual(14);
+  });
+
+  it('uses the given language for its labels', async () => {
+    const form = demoForm() as NamedFormDefinition;
+    const pdf = await (await submissionsToPdf(form, [timedSubmission(form)], ctxFor(de))).text();
+    const texts = textRuns(pdf).map((r) => r.text);
+    expect(texts).toEqual(expect.arrayContaining(['Feld', 'Beantwortet', 'Dauer: 1 min 5 s']));
+    expect(texts).not.toContain('Field');
   });
 });
 

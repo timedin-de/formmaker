@@ -43,9 +43,9 @@ export async function submissionsToPdf(
   doc.setTextColor(110, 110, 110);
   const meta = [
     `v${form.version}`,
-    `${form.pages.length} pages`,
-    `${countQuestions(form)} questions`,
-    `${submissions.length} submission(s)`,
+    ctx.t('pdf.pages', { n: form.pages.length }),
+    ctx.t('pdf.questions', { n: countQuestions(form) }),
+    ctx.t('results.submissions', { n: submissions.length }),
     new Date().toLocaleDateString(),
   ].join(' · ');
   doc.text(meta, MARGIN, y);
@@ -58,7 +58,7 @@ export async function submissionsToPdf(
   // --- summary table ---
   doc.setFontSize(13);
   doc.setTextColor(30, 30, 30);
-  doc.text(drawWord(doc, 'Results summary'), MARGIN, y + 12);
+  doc.text(drawWord(doc, ctx.t('pdf.summary')), MARGIN, y + 12);
   y += 20;
 
   const answeredOf = (fieldId: string): number =>
@@ -74,9 +74,9 @@ export async function submissionsToPdf(
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9);
   doc.setTextColor(40, 40, 40);
-  doc.text(drawWord(doc, 'Field'), MARGIN + 12, y + 12);
-  doc.text('Answered', MARGIN + 12 + colW, y + 12);
-  doc.text('Rate', MARGIN + 12 + colW + ansW, y + 12);
+  doc.text(drawWord(doc, ctx.t('pdf.field')), MARGIN + 12, y + 12);
+  doc.text(ctx.t('pdf.answered'), MARGIN + 12 + colW, y + 12);
+  doc.text(ctx.t('pdf.rate'), MARGIN + 12 + colW + ansW, y + 12);
   y += rowH;
 
   let fieldIndex = 0;
@@ -137,7 +137,11 @@ export async function submissionsToPdf(
     doc.setFontSize(9);
     if (sub.durationMs) {
       doc.setTextColor(110, 110, 110);
-      doc.text(`Duration: ${formatDuration(sub.durationMs)}`, MARGIN, y - 4);
+      doc.text(
+        ctx.t('pdf.duration', { duration: formatDuration(sub.durationMs, ctx) }),
+        MARGIN,
+        y - 4,
+      );
       y += 14;
     }
     const state: { value: number } = { value: y };
@@ -177,27 +181,29 @@ export async function submissionToPdf(
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
   doc.setTextColor(110, 110, 110);
+  const submitted = ctx.t('pdf.submitted', {
+    date: new Date(submission.submittedAt).toLocaleString(),
+  });
   if (submission.durationMs) {
-    doc.text(
-      `Submitted ${new Date(submission.submittedAt).toLocaleString()} · Duration: ${formatDuration(submission.durationMs)}`,
-      MARGIN,
-      y,
-    );
+    const duration = ctx.t('pdf.duration', {
+      duration: formatDuration(submission.durationMs, ctx),
+    });
+    doc.text(`${submitted} · ${duration}`, MARGIN, y);
   } else {
-    doc.text(`Submitted ${new Date(submission.submittedAt).toLocaleString()}`, MARGIN, y);
+    doc.text(submitted, MARGIN, y);
   }
   y += 22;
 
   doc.setFontSize(13);
   doc.setTextColor(30, 30, 30);
-  doc.text(drawWord(doc, 'Your answers'), MARGIN, y + 12);
+  doc.text(drawWord(doc, ctx.t('pdf.yourAnswers')), MARGIN, y + 12);
   y += 22;
 
   const blocks = buildReceipt(form, submission, ctx);
   doc.setFontSize(10);
   if (blocks.length === 0) {
     doc.setTextColor(110, 110, 110);
-    doc.text('No answers.', MARGIN, y);
+    doc.text(ctx.t('pdf.noAnswers'), MARGIN, y);
     y += 14;
   }
   const state: { value: number } = { value: y };
@@ -346,8 +352,8 @@ function drawWord(doc: jsPDF, text: string): string {
   return doc.splitTextToSize(text, CONTENT_W - 24)[0] as string;
 }
 
-function formatDuration(ms: number): string {
+function formatDuration(ms: number, ctx: ExportContext): string {
   const s = Math.round(ms / 1000);
-  if (s < 60) return `${s}s`;
-  return `${Math.floor(s / 60)}m ${s % 60}s`;
+  if (s < 60) return ctx.t('pdf.seconds', { s });
+  return ctx.t('pdf.minutes', { m: Math.floor(s / 60), s: s % 60 });
 }
