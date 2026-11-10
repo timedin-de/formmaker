@@ -2,7 +2,7 @@ import { addToGroup, getElements, newForm } from '@test/helper';
 import { describe, expect, it } from 'vitest';
 import type { ConditionGroup } from './conditions.model';
 import { createElement, createPage } from './form-factory';
-import { cloneElement, clonePage, moveOptionTo, patchElement } from './form-ops';
+import { cloneElement, clonePage, moveOptionTo, patchElement, patchPage } from './form-ops';
 import type {
   ChoiceElement,
   FormDefinition,
@@ -373,5 +373,40 @@ describe('moveOptionTo', () => {
 
     expect(moveOptionTo(form, 'gone', 'a', 0)).toBeNull();
     expect(moveOptionTo(form, choice.id, 'gone', 0)).toBeNull();
+  });
+});
+
+describe('patchPage', () => {
+  function withPage(): { form: FormDefinition; page: PageDefinition } {
+    const form = newForm('Demo');
+    const page = createPage('Page 1');
+    const el = text('Name');
+    page.enabledWhen = conditions(el.id);
+    addToGroup(el, page, form);
+    form.pages = [page];
+    return { form, page };
+  }
+
+  it('replaces the patched fields and leaves the input untouched', () => {
+    const { form, page } = withPage();
+
+    const next = patchPage(form, page.id, { title: 'Contact', subtitle: 'How to reach you' });
+
+    expect(next.pages[0]).toMatchObject({ title: 'Contact', subtitle: 'How to reach you' });
+    expect(next.pages[0].enabledWhen).toEqual(page.enabledWhen);
+    expect(form.pages[0].title).toBe('Page 1');
+  });
+
+  it('removes the condition set to null', () => {
+    const { form, page } = withPage();
+
+    expect(patchPage(form, page.id, { enabledWhen: null }).pages[0]).not.toHaveProperty(
+      'enabledWhen',
+    );
+  });
+
+  it('returns the input for an unknown page', () => {
+    const { form } = withPage();
+    expect(patchPage(form, 'gone', { title: 'x' })).toBe(form);
   });
 });
