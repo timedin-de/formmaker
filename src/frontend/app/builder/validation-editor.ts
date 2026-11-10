@@ -1,4 +1,4 @@
-import { Component, computed, inject, input } from '@angular/core';
+import { Component, computed, inject, input, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatOption } from '@angular/material/core';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
@@ -42,6 +42,8 @@ export class ValidationEditor {
   readonly validations = input.required<ValidationRule[]>();
   readonly element = input.required<ElementDefinition>();
 
+  readonly isPending = signal(false);
+
   /** Rules offered for this question type, minus non-repeatable rules it already has. */
   protected readonly validationRuleTypes = computed(() => {
     const element = this.element();
@@ -60,6 +62,8 @@ export class ValidationEditor {
   async addRule(event: MatSelectChange): Promise<void> {
     const rule = event.value as ValidationRuleType;
     event.source.value = undefined;
+    if (this.isPending()) return;
+    this.isPending.set(true);
     try {
       await this.store.addValidationRule(this.element().id, {
         rule,
@@ -67,6 +71,8 @@ export class ValidationEditor {
       });
     } catch (error) {
       this.notifier.apiError(error, 'panel.addRuleFailed');
+    } finally {
+      this.isPending.set(false);
     }
   }
 
