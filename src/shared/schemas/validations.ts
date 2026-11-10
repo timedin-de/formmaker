@@ -15,3 +15,14 @@ export const validationRuleSchema = z.strictObject({
   expression: z.optional(z.string()),
   accept: z.optional(z.string()),
 }) satisfies z.ZodMiniType<ValidationRule>;
+
+/** Max length of a rule message sent to the validation rule endpoint. */
+const RULE_MESSAGE_MAX = 1000;
+
+/** Body of `POST /forms/:formId/elements/:elementId/validations`; the server assigns the id. */
+export const createValidationRuleSchema = z.strictObject({
+  rule: validationRuleTypeSchema,
+  message: z.string().check(z.maxLength(RULE_MESSAGE_MAX)),
+});
+
+export type CreateValidationRuleRequest = z.infer<typeof createValidationRuleSchema>;

@@ -1,7 +1,7 @@
 import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { FORM_VERSION } from '@shared/consts';
 import { evalConditionGroup, validateElementValue } from '@shared/engine';
-import { isQuestionOrGroup } from '@shared/helper';
+import { isQuestion, isQuestionOrGroup } from '@shared/helper';
 import {
   addPage,
   childrenOf,
@@ -23,14 +23,18 @@ import {
   parentOf,
   removeElement,
   removePage,
+  REPEATABLE_RULES,
   type SubmissionCreate,
   updateElement,
   uuid,
+  type ValidationRule,
+  ValidationsByQuestionType,
 } from '@shared/model';
 import {
   type CloneRequest,
   type CreateElementRequest,
   type CreateOptionRequest,
+  type CreateValidationRuleRequest,
   type UpdateOptionRequest,
 } from '@shared/schemas';
 import { Repository, type User } from '../repository';
@@ -193,6 +197,34 @@ export class FormService {
     const current = choiceOption(element, optionId);
     const options = element.options.filter((o) => o !== current);
     await this.repository.saveForm(ownerId, updateElement(form, elementId, { options }));
+  }
+
+  /**
+   * Appends a validation rule to a question and returns it. Throws 404 for an unknown
+   * element and 400 for a non-question, a rule its type doesn't offer, or a second copy
+   * of a rule that can't repeat.
+   */
+  async addValidationRule(
+    { form, ownerId }: OwnedForm,
+    elementId: string,
+    { rule, message }: CreateValidationRuleRequest,
+  ): Promise<ValidationRule> {
+    const element = getElement(form, elementId);
+    if (!element) throw new NotFoundException({ error: `no element with id: ${elementId}` });
+    if (!isQuestion(element))
+      throw new BadRequestException({ error: `element ${elementId} has no validations` });
+    if (!ValidationsByQuestionType[element.type].includes(rule))
+      throw new BadRequestException({ error: `rule ${rule} is not offered for ${element.type}` });
+    const validations = element.validations ?? [];
+    if (!REPEATABLE_RULES.includes(rule) && validations.some((r) => r.rule === rule))
+      throw new BadRequestException({ error: `element ${elementId} already has rule ${rule}` });
+
+    const created: ValidationRule = { id: uuid(), rule, message };
+    await this.repository.saveForm(
+      ownerId,
+      updateElement(form, elementId, { validations: [...validations, created] }),
+    );
+    return created;
   }
 
   async addSubmission(submission: SubmissionCreate) {

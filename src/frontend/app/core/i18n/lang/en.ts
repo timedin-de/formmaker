@@ -250,6 +250,7 @@ const en = {
   'panel.alwaysVisible': 'Always visible',
   'panel.validation': 'Validation',
   'panel.addRule': 'Add a rule',
+  'panel.addRuleFailed': 'The rule could not be added.',
   'panel.message': 'Message',
   'panel.value': 'Value',
   'panel.from': 'From',

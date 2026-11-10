@@ -28,6 +28,8 @@ import {
   type CreateOptionRequest,
   createOptionSchema,
   createPageSchema,
+  type CreateValidationRuleRequest,
+  createValidationRuleSchema,
   formDefinitionSchema,
   type NewFormRequest,
   newFormSchema,
@@ -249,6 +251,19 @@ export class FormsController {
   ) {
     const item = await this.managedForm(formId, user);
     await this.formService.deleteOption(item, elementId, optionId);
+  }
+
+  @Post(':formId/elements/:elementId/validations')
+  @HttpCode(201)
+  @UseGuards(AuthGuard)
+  async addValidationRule(
+    @CurrentUser() user: User,
+    @Param('formId') formId: string,
+    @Param('elementId') elementId: string,
+    @Body(new ZodValidationPipe(createValidationRuleSchema)) body: CreateValidationRuleRequest,
+  ) {
+    const item = await this.managedForm(formId, user);
+    return this.formService.addValidationRule(item, elementId, body);
   }
 
   @Delete(':id')

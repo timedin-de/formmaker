@@ -255,6 +255,7 @@ const de: typeof en = {
   'panel.alwaysVisible': 'Immer sichtbar',
   'panel.validation': 'Validierung',
   'panel.addRule': 'Regel hinzufügen',
+  'panel.addRuleFailed': 'Die Regel konnte nicht hinzugefügt werden.',
   'panel.message': 'Meldung',
   'panel.value': 'Wert',
   'panel.from': 'Von',
