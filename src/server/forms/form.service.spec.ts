@@ -314,6 +314,93 @@ describe('FormService moveElement', () => {
   });
 });
 
+describe('FormService updateElement', () => {
+  let saveForm: ReturnType<typeof vi.fn>;
+  let service: FormService;
+
+  beforeEach(() => {
+    saveForm = vi.fn();
+    service = new FormService({ saveForm } as unknown as Repository);
+  });
+
+  const saved = (): FormDefinition => saveForm.mock.calls[0][1] as FormDefinition;
+  const sample = () =>
+    formOf([page('p1', [text('q1', { enabledWhen: isNotEmpty('q2') }), text('q2')])]);
+
+  it('merges the patch, stores it for the owner and returns the stored element', async () => {
+    const updated = await service.updateElement({ form: sample(), ownerId: 'owner-1' }, 'q1', {
+      label: 'Name',
+      description: 'As in your passport',
+      required: true,
+    });
+
+    expect(saveForm).toHaveBeenCalledWith('owner-1', expect.objectContaining({ id: 'form-1' }));
+    expect(updated).toMatchObject({ label: 'Name', description: 'As in your passport' });
+    expect(saved().elements['q1']).toEqual(updated);
+    expect(saved().elements['q1']).toMatchObject({ required: true, placeholder: '' });
+  });
+
+  it('removes a field sent as null', async () => {
+    await service.updateElement({ form: sample(), ownerId: 'owner-1' }, 'q1', {
+      enabledWhen: null,
+    });
+
+    expect(saved().elements['q1']).not.toHaveProperty('enabledWhen');
+  });
+
+  it('pairs the children of a group copying its default from another group', async () => {
+    const form = formOf([page('p1', [group('g1', [text('a')]), group('g2', [text('b')])])]);
+
+    await service.updateElement({ form, ownerId: 'owner-1' }, 'g2', {
+      defaultValue: { kind: 'fromField', fieldId: 'g1' },
+    });
+
+    expect(saved().elements['b']).toMatchObject({
+      defaultValue: { kind: 'fromField', fieldId: 'a' },
+    });
+  });
+
+  it('throws 404 without saving for an unknown element', async () => {
+    await expect(
+      service.updateElement({ form: sample(), ownerId: 'owner-1' }, 'gone', { label: 'x' }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    expect(saveForm).not.toHaveBeenCalled();
+  });
+
+  it('throws 400 without saving for a field the element type lacks', async () => {
+    await expect(
+      service.updateElement({ form: sample(), ownerId: 'owner-1' }, 'q1', { rows: 4 }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(saveForm).not.toHaveBeenCalled();
+  });
+
+  it('throws 400 without saving when removing a field the type requires', async () => {
+    const form = formOf([
+      page('p1', [
+        {
+          id: 's1',
+          type: 'scale',
+          label: 's1',
+          description: undefined,
+          width: 12,
+          required: false,
+          validations: [],
+          readonly: false,
+          defaultValue: null,
+          min: 1,
+          max: 5,
+          step: 1,
+        },
+      ]),
+    ]);
+
+    await expect(
+      service.updateElement({ form, ownerId: 'owner-1' }, 's1', { step: null }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(saveForm).not.toHaveBeenCalled();
+  });
+});
+
 describe('FormService cloning', () => {
   let saveForm: ReturnType<typeof vi.fn>;
   let service: FormService;

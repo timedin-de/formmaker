@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { createElement, createPage } from '@shared/model/form-factory';
+import type { ElementPatch } from '@shared/model/form-ops';
 import type {
   ChoiceElement,
   ElementDefinition,
@@ -18,7 +19,7 @@ import { addToGroup, getElements, newForm } from '@test/helper';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { I18nService } from '../i18n/translation.service';
 import { ApiError } from './api-error';
-import { DesignerStore, OPTION_PATCH_DELAY_MS } from './designer.store';
+import { DesignerStore, PATCH_DELAY_MS } from './designer.store';
 import { FormsRepository } from './forms.repository';
 
 function text(label: string): TextElement {
@@ -274,6 +275,13 @@ describe('DesignerStore server-side creation', () => {
     deleteValidationRule: vi.fn(async () => {
       calls.push('deleteValidationRule');
     }),
+    updateElement: vi.fn(async (_formId: string, _elementId: string, _patch: ElementPatch) => {
+      calls.push('updateElement');
+      return text('Patched');
+    }),
+    deleteElement: vi.fn(async () => {
+      calls.push('deleteElement');
+    }),
   };
 
   beforeEach(() => {
@@ -420,7 +428,7 @@ describe('DesignerStore server-side creation', () => {
 
   it('saves unsaved edits, then appends a server-generated option', async () => {
     const choice = loadedChoice();
-    store.updateElement(choice.id, { label: 'Renamed' });
+    store.rename('Renamed');
 
     const option = await store.addOption(choice.id, 'Option 3');
 
@@ -450,7 +458,7 @@ describe('DesignerStore server-side creation', () => {
 
   it('saves unsaved edits, then appends a server-generated validation rule', async () => {
     const choice = loadedChoice();
-    store.updateElement(choice.id, { label: 'Renamed' });
+    store.rename('Renamed');
 
     const rule = await store.addValidationRule(choice.id, { rule: 'required', message: 'Needed' });
 
@@ -603,14 +611,18 @@ describe('DesignerStore server-side creation', () => {
       expect(store.dirty()).toBe(false);
       expect(repo.updateOption).not.toHaveBeenCalled();
 
-      await vi.advanceTimersByTimeAsync(OPTION_PATCH_DELAY_MS);
+      await vi.advanceTimersByTimeAsync(PATCH_DELAY_MS);
 
       expect(repo.updateOption).toHaveBeenCalledTimes(1);
-      expect(repo.updateOption).toHaveBeenCalledWith(store.form().id, choice.id, option.id, {
-        label: 'Last',
-      });
+      expect(repo.updateOption).toHaveBeenCalledWith(
+        store.form().id,
+        choice.id,
+        option.id,
+        { label: 'Last' },
+        { keepalive: false },
+      );
       expect(calls).toEqual(['updateOption']);
-      expect(store.optionPatchError()).toBeNull();
+      expect(store.patchError()).toBeNull();
     });
 
     it('saves unsaved edits before sending a pending option edit', async () => {
@@ -619,7 +631,7 @@ describe('DesignerStore server-side creation', () => {
       store.rename('Renamed');
 
       store.patchOption(choice.id, option.id, { label: 'Renamed option' });
-      await vi.advanceTimersByTimeAsync(OPTION_PATCH_DELAY_MS);
+      await vi.advanceTimersByTimeAsync(PATCH_DELAY_MS);
 
       expect(calls).toEqual(['save', 'updateOption']);
       expect(store.dirty()).toBe(false);
@@ -639,7 +651,7 @@ describe('DesignerStore server-side creation', () => {
         { label: 'Closing' },
         { keepalive: true },
       );
-      await vi.advanceTimersByTimeAsync(OPTION_PATCH_DELAY_MS);
+      await vi.advanceTimersByTimeAsync(PATCH_DELAY_MS);
       expect(repo.updateOption).toHaveBeenCalledTimes(1);
     });
 
@@ -649,10 +661,13 @@ describe('DesignerStore server-side creation', () => {
       repo.updateOption.mockRejectedValueOnce(new Error('offline'));
 
       store.patchOption(choice.id, option.id, { label: 'Kept' });
-      await vi.advanceTimersByTimeAsync(OPTION_PATCH_DELAY_MS);
+      await vi.advanceTimersByTimeAsync(PATCH_DELAY_MS);
 
       expect(store.dirty()).toBe(true);
-      expect(store.optionPatchError()).toEqual(new Error('offline'));
+      expect(store.patchError()).toEqual({
+        error: new Error('offline'),
+        message: 'panel.patchOptionFailed',
+      });
       const stored = store.form().elements[choice.id] as ChoiceElement;
       expect(stored.options[0].label).toBe('Kept');
     });
@@ -663,7 +678,7 @@ describe('DesignerStore server-side creation', () => {
 
       store.patchOption(choice.id, option.id, { label: 'Doomed' });
       await store.removeOption(choice.id, option.id);
-      await vi.advanceTimersByTimeAsync(OPTION_PATCH_DELAY_MS);
+      await vi.advanceTimersByTimeAsync(PATCH_DELAY_MS);
 
       expect(repo.updateOption).not.toHaveBeenCalled();
       expect(repo.deleteOption).toHaveBeenCalledWith(store.form().id, choice.id, option.id);
@@ -683,11 +698,187 @@ describe('DesignerStore server-side creation', () => {
 
       await vi.advanceTimersByTimeAsync(0);
 
-      expect(repo.updateOption).toHaveBeenCalledWith(store.form().id, choice.id, option.id, {
-        label: 'Retried',
-      });
+      expect(repo.updateOption).toHaveBeenCalledWith(
+        store.form().id,
+        choice.id,
+        option.id,
+        { label: 'Retried' },
+        { keepalive: false },
+      );
       const stored = store.form().elements[choice.id] as ChoiceElement;
       expect(stored.options[0].label).toBe('Retried');
+    });
+  });
+
+  describe('element edits', () => {
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => vi.useRealTimers());
+
+    const element = (id: string) => store.form().elements[id];
+
+    it('applies edits at once and sends them merged after the delay', async () => {
+      const choice = loadedChoice();
+
+      store.updateElement(choice.id, { label: 'Fir' });
+      store.updateElement(choice.id, { label: 'First', required: true });
+
+      expect(element(choice.id)).toMatchObject({ label: 'First', required: true });
+      expect(store.dirty()).toBe(false);
+      expect(repo.updateElement).not.toHaveBeenCalled();
+
+      await vi.advanceTimersByTimeAsync(PATCH_DELAY_MS);
+
+      expect(repo.updateElement).toHaveBeenCalledTimes(1);
+      expect(repo.updateElement).toHaveBeenCalledWith(
+        store.form().id,
+        choice.id,
+        { label: 'First', required: true },
+        { keepalive: false },
+      );
+      expect(store.dirty()).toBe(false);
+    });
+
+    it('sends label, description and required edited one after another as one request', async () => {
+      const choice = loadedChoice();
+      const pause = () => vi.advanceTimersByTimeAsync(PATCH_DELAY_MS - 500);
+
+      store.updateElement(choice.id, { label: 'Your name' });
+      await pause();
+      store.updateElement(choice.id, { description: 'As in your passport' });
+      await pause();
+      store.updateElement(choice.id, { required: true });
+      expect(repo.updateElement).not.toHaveBeenCalled();
+
+      await vi.advanceTimersByTimeAsync(PATCH_DELAY_MS);
+
+      expect(repo.updateElement).toHaveBeenCalledTimes(1);
+      expect(repo.updateElement).toHaveBeenCalledWith(
+        store.form().id,
+        choice.id,
+        { label: 'Your name', description: 'As in your passport', required: true },
+        { keepalive: false },
+      );
+    });
+
+    it('sends the edits of an element at once when another element is selected', async () => {
+      const { page, group } = loaded();
+      const [first] = getElements(page, store.form());
+      store.select(group.id);
+
+      store.updateElement(group.id, { label: 'Renamed' });
+      store.select(group.id);
+      await vi.advanceTimersByTimeAsync(0);
+      expect(repo.updateElement).not.toHaveBeenCalled();
+
+      store.select(first.id);
+      await vi.advanceTimersByTimeAsync(0);
+      expect(repo.updateElement).toHaveBeenCalledWith(
+        store.form().id,
+        group.id,
+        { label: 'Renamed' },
+        { keepalive: false },
+      );
+    });
+
+    it('removes a field set to undefined and sends null for it', async () => {
+      const choice = loadedChoice();
+      const condition = { logic: 'all' as const, conditions: [], groups: [] };
+      store.updateElement(choice.id, { enabledWhen: condition });
+      await vi.advanceTimersByTimeAsync(PATCH_DELAY_MS);
+
+      store.updateElement(choice.id, { enabledWhen: undefined });
+      await vi.advanceTimersByTimeAsync(PATCH_DELAY_MS);
+
+      expect(element(choice.id)).not.toHaveProperty('enabledWhen');
+      expect(repo.updateElement).toHaveBeenLastCalledWith(
+        store.form().id,
+        choice.id,
+        { enabledWhen: null },
+        { keepalive: false },
+      );
+    });
+
+    it('pairs up the children when a group takes its default from another group', () => {
+      const { group } = loaded();
+      const source = createElement('group', 'Source') as GroupElement;
+      const sourceChild = text('Source child');
+      addToGroup(sourceChild, source, store.form());
+      addToGroup(source, store.form().pages[0], store.form());
+      const [child] = getElements(group, store.form());
+
+      store.updateElement(group.id, { defaultValue: { kind: 'fromField', fieldId: source.id } });
+
+      expect(element(child.id)).toMatchObject({
+        defaultValue: { kind: 'fromField', fieldId: sourceChild.id },
+      });
+    });
+
+    it('sends a pending edit before a following creation', async () => {
+      const { group } = loaded();
+
+      store.updateElement(group.id, { label: 'Renamed' });
+      await store.duplicateElement(group.id);
+
+      expect(calls).toEqual(['updateElement', 'cloneElement']);
+      await vi.advanceTimersByTimeAsync(PATCH_DELAY_MS);
+      expect(repo.updateElement).toHaveBeenCalledTimes(1);
+    });
+
+    it('sends a pending edit at once with keepalive when the page is closed', () => {
+      const choice = loadedChoice();
+
+      store.updateElement(choice.id, { label: 'Closing' });
+      window.dispatchEvent(new Event('pagehide'));
+
+      expect(repo.updateElement).toHaveBeenCalledWith(
+        store.form().id,
+        choice.id,
+        { label: 'Closing' },
+        { keepalive: true },
+      );
+    });
+
+    it('drops pending edits of a removed element and everything below it', async () => {
+      const { group } = loaded();
+      const [child] = getElements(group, store.form());
+
+      store.updateElement(child.id, { label: 'Doomed' });
+      await store.removeElement(group.id);
+      await vi.advanceTimersByTimeAsync(PATCH_DELAY_MS);
+
+      expect(repo.updateElement).not.toHaveBeenCalled();
+      expect(calls).toEqual(['deleteElement']);
+    });
+
+    it('sends the dropped edit after all when removing the element fails', async () => {
+      const { group } = loaded();
+      repo.deleteElement.mockRejectedValueOnce(new Error('delete failed'));
+
+      store.updateElement(group.id, { label: 'Kept' });
+      await expect(store.removeElement(group.id)).rejects.toThrow('delete failed');
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(repo.updateElement).toHaveBeenCalledWith(
+        store.form().id,
+        group.id,
+        { label: 'Kept' },
+        { keepalive: false },
+      );
+    });
+
+    it('reports a failed send with the element message and marks the form dirty', async () => {
+      const choice = loadedChoice();
+      repo.updateElement.mockRejectedValueOnce(new Error('offline'));
+
+      store.updateElement(choice.id, { label: 'Kept' });
+      await vi.advanceTimersByTimeAsync(PATCH_DELAY_MS);
+
+      expect(store.dirty()).toBe(true);
+      expect(store.patchError()).toEqual({
+        error: new Error('offline'),
+        message: 'panel.patchElementFailed',
+      });
+      expect(element(choice.id).label).toBe('Kept');
     });
   });
 

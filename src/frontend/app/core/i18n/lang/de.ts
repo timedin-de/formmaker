@@ -205,6 +205,7 @@ const de: typeof en = {
   'row.duplicate': 'Duplizieren',
   'row.duplicateFailed': 'Das Element konnte nicht dupliziert werden.',
   'row.moveFailed': 'Das Element konnte nicht verschoben werden.',
+  'panel.patchElementFailed': 'Die Änderung am Element konnte nicht gespeichert werden.',
   'row.delete': 'Löschen',
   'row.addChild': 'Kind hinzufügen',
 

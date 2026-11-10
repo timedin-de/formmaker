@@ -2,7 +2,7 @@ import { addToGroup, getElements, newForm } from '@test/helper';
 import { describe, expect, it } from 'vitest';
 import type { ConditionGroup } from './conditions.model';
 import { createElement, createPage } from './form-factory';
-import { cloneElement, clonePage } from './form-ops';
+import { cloneElement, clonePage, patchElement } from './form-ops';
 import type {
   ChoiceElement,
   FormDefinition,
@@ -250,5 +250,92 @@ describe('clonePage', () => {
     const clone = clonePage(form, page.id, COPY_SUFFIX);
 
     expect(clone?.page.enabledWhen?.conditions[0].fieldId).toBe(clone?.page.children[0]);
+  });
+});
+
+describe('patchElement', () => {
+  function single(): { form: FormDefinition; el: TextElement } {
+    const form = newForm('Demo');
+    const page = createPage('Page 1');
+    const el = text('Name');
+    el.enabledWhen = conditions(el.id);
+    addToGroup(el, page, form);
+    form.pages = [page];
+    return { form, el };
+  }
+
+  function defaultOf(form: FormDefinition, id: string): unknown {
+    const el = form.elements[id];
+    return 'defaultValue' in el ? el.defaultValue : undefined;
+  }
+
+  const fromField = (fieldId: string) => ({ kind: 'fromField' as const, fieldId });
+
+  it('replaces the patched fields and leaves the input untouched', () => {
+    const { form, el } = single();
+
+    const next = patchElement(form, el.id, { label: 'Full name', required: true });
+
+    expect(next.elements[el.id]).toMatchObject({ label: 'Full name', required: true });
+    expect(form.elements[el.id].label).toBe('Name');
+  });
+
+  it('removes a field set to null but keeps a null default value', () => {
+    const { form, el } = single();
+    const withDefault = patchElement(form, el.id, {
+      defaultValue: { kind: 'static', value: 'x' },
+    });
+
+    const next = patchElement(withDefault, el.id, { enabledWhen: null, defaultValue: null });
+
+    expect(next.elements[el.id]).not.toHaveProperty('enabledWhen');
+    expect(defaultOf(next, el.id)).toBeNull();
+  });
+
+  it('returns the input for an unknown element', () => {
+    const { form } = single();
+    expect(patchElement(form, 'gone', { label: 'x' })).toBe(form);
+  });
+
+  it('pairs the children of a group copying from another group, recursively', () => {
+    const form = newForm('Demo');
+    const page = createPage('Page 1');
+    const source = createElement('group', 'Source') as GroupElement;
+    const target = createElement('group', 'Target') as GroupElement;
+    const sourceInner = createElement('group', 'Source inner') as GroupElement;
+    const targetInner = createElement('group', 'Target inner') as GroupElement;
+    const [a, b, deep] = [text('A'), text('B'), text('Deep')];
+    const [x, y, z, deepCopy] = [text('X'), text('Y'), text('Z'), text('Deep copy')];
+    addToGroup(deep, sourceInner, form);
+    addToGroup(deepCopy, targetInner, form);
+    addToGroup([a, sourceInner, b], source, form);
+    // The target has one child more than the source: that one keeps its default.
+    addToGroup([x, targetInner, y, z], target, form);
+    addToGroup([source, target], page, form);
+    form.pages = [page];
+
+    const next = patchElement(form, target.id, { defaultValue: fromField(source.id) });
+
+    expect(defaultOf(next, target.id)).toEqual(fromField(source.id));
+    expect(defaultOf(next, x.id)).toEqual(fromField(a.id));
+    expect(defaultOf(next, targetInner.id)).toEqual(fromField(sourceInner.id));
+    expect(defaultOf(next, deepCopy.id)).toEqual(fromField(deep.id));
+    expect(defaultOf(next, y.id)).toEqual(fromField(b.id));
+    expect(defaultOf(next, z.id)).toBeNull();
+    expect(getElements(target, next).map((e) => e.id)).toEqual([x.id, targetInner.id, y.id, z.id]);
+  });
+
+  it('pairs no children when the source is not a group', () => {
+    const form = newForm('Demo');
+    const page = createPage('Page 1');
+    const group = createElement('group', 'Group') as GroupElement;
+    const [child, other] = [text('Child'), text('Other')];
+    addToGroup(child, group, form);
+    addToGroup([group, other], page, form);
+    form.pages = [page];
+
+    const next = patchElement(form, group.id, { defaultValue: fromField(other.id) });
+
+    expect(defaultOf(next, child.id)).toBeNull();
   });
 });

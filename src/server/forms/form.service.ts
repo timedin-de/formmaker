@@ -22,6 +22,7 @@ import {
   insertElement,
   moveElementTo,
   type PageClone,
+  patchElement,
   type PageDefinition,
   parentOf,
   type QuestionDefinition,
@@ -41,7 +42,9 @@ import {
   type CreateElementRequest,
   type CreateOptionRequest,
   type CreateValidationRuleRequest,
+  elementDefinitionSchema,
   type MoveElementRequest,
+  type UpdateElementRequest,
   type UpdateOptionRequest,
   type UpdateValidationRuleRequest,
 } from '@shared/schemas';
@@ -242,6 +245,32 @@ export class FormService {
     const next = moveElementTo(form, id, parentId, index);
     if (!next) throw new NotFoundException({ error: `element ${id} is not on any page` });
     await this.repository.saveForm(ownerId, next);
+  }
+
+  /**
+   * Applies `patch` to an element (see `patchElement`) and returns the element as
+   * stored. Throws 404 for an unknown element and 400 when the patched element is
+   * invalid, e.g. a field its type lacks or a scale without `min`.
+   */
+  async updateElement(
+    { form, ownerId }: OwnedForm,
+    id: string,
+    patch: UpdateElementRequest,
+  ): Promise<ElementDefinition> {
+    if (!getElement(form, id)) throw new NotFoundException({ error: `no element with id: ${id}` });
+    const next = patchElement(form, id, patch);
+    const parsed = elementDefinitionSchema.safeParse(next.elements[id]);
+    if (!parsed.success) {
+      throw new BadRequestException({
+        error: `invalid patch for element ${id}`,
+        details: parsed.error.issues,
+      });
+    }
+    await this.repository.saveForm(ownerId, {
+      ...next,
+      elements: { ...next.elements, [id]: parsed.data },
+    });
+    return parsed.data;
   }
 
   /** Removes an element and everything below it from the stored form. */

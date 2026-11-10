@@ -28,6 +28,7 @@ import {
   pageDefinitionSchema,
   submissionSchema,
   submissionsSchema,
+  type UpdateElementRequest,
   type UpdateOptionRequest,
   type UpdateValidationRuleRequest,
   validationRuleSchema,
@@ -207,6 +208,25 @@ export class FormsRepository {
     );
     removeCache(FORM_CACHE_PREFIX + formId);
     return clone;
+  }
+
+  /**
+   * Patches the fields of an element on the server; returns the element as stored there.
+   * `keepalive` lets the request outlive the page, e.g. when sent while it is being closed.
+   */
+  async updateElement(
+    formId: string,
+    elementId: string,
+    patch: UpdateElementRequest,
+    { keepalive = false }: { keepalive?: boolean } = {},
+  ): Promise<ElementDefinition> {
+    const element = await this.api.request(elementDefinitionSchema, elementUrl(formId, elementId), {
+      method: 'PATCH',
+      body: JSON.stringify(patch),
+      keepalive,
+    });
+    removeCache(FORM_CACHE_PREFIX + formId);
+    return element;
   }
 
   /** Moves an element with everything below it on the server (see `MoveElementRequest`). */

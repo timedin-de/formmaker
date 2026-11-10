@@ -20,6 +20,8 @@ import {
   createValidationRuleSchema,
   type MoveElementRequest,
   moveElementSchema,
+  type UpdateElementRequest,
+  updateElementSchema,
   type UpdateOptionRequest,
   updateOptionSchema,
   type UpdateValidationRuleRequest,
@@ -74,6 +76,18 @@ export class FormElementsController {
   ) {
     const item = await managedForm(this.repository, formId, user);
     await this.formService.moveElement(item, elementId, body);
+  }
+
+  @Patch(':elementId')
+  @HttpCode(200)
+  async updateElement(
+    @CurrentUser() user: User,
+    @Param('formId') formId: string,
+    @Param('elementId') elementId: string,
+    @Body(new ZodValidationPipe(updateElementSchema)) body: UpdateElementRequest,
+  ) {
+    const item = await managedForm(this.repository, formId, user);
+    return this.formService.updateElement(item, elementId, body);
   }
 
   @Delete(':elementId')
