@@ -80,6 +80,26 @@ const en = {
   'account.role.editor': 'Editor',
   'account.passwordChanged': 'Password was changed successfully',
   'account.accountDeleted': 'Account was deleted successfully',
+  'account.encryption': 'Submission encryption',
+  'account.encryption.hint':
+    'Respondents encrypt their answers in the browser with your public key. Only you can read them, after unlocking your key with its passphrase. The server never sees the passphrase or the encrypted answers.',
+  'account.encryption.none': 'You have no encryption key yet. Create one to use encrypted forms.',
+  'account.encryption.fingerprint': 'Key fingerprint:',
+  'account.encryption.passphrase': 'Key passphrase',
+  'account.encryption.confirmPassphrase': 'Repeat passphrase',
+  'account.encryption.newPassphrase': 'New key passphrase',
+  'account.encryption.passphraseHint':
+    'At least {n} characters, different from your login password. It cannot be recovered: if you lose it, the encrypted answers are lost too.',
+  'account.encryption.create': 'Create key',
+  'account.encryption.created': 'Encryption key created',
+  'account.encryption.changePassphrase': 'Change passphrase',
+  'account.encryption.passphraseChanged': 'Passphrase changed',
+  'account.encryption.replace': 'Replace key',
+  'account.encryption.replaceHint':
+    'A new key makes every answer encrypted with the current key unreadable for good. Your forms switch to the new key.',
+  'account.encryption.replaced': 'Encryption key replaced',
+  'account.encryption.wrongPassphrase': 'Wrong passphrase',
+  'account.encryption.unavailable': 'Encryption needs a secure connection (HTTPS).',
 
   // results
   'results.title': 'Results',
@@ -97,6 +117,19 @@ const en = {
   'results.mailSubject': 'FormMaker — {name}: {n} submission(s)',
   'results.mailBody': 'Form answers for {name}\n{n} submission(s)\n{range}',
   'results.back': 'Back',
+  'results.locked': 'Encrypted',
+  'results.unlock.title': 'Encrypted answers',
+  'results.unlock.hint':
+    '{n} submission(s) contain encrypted answers. Enter your key passphrase to read them; they are decrypted in this browser only.',
+  'results.unlock.passphrase': 'Key passphrase',
+  'results.unlock.submit': 'Unlock',
+  'results.unlock.wrong': 'Wrong passphrase',
+  'results.unlock.noKey': 'You have no encryption key, so these answers cannot be read here.',
+  'results.unlock.otherKey':
+    '{n} submission(s) were encrypted with another key and cannot be read with yours.',
+  'results.unlock.exportLocked': 'Exports are available once every answer is decrypted.',
+  'results.unlock.decrypted': 'Encrypted answers are decrypted in this browser only.',
+  'results.unlock.lock': 'Lock',
 
   // runner
   'runner.back': 'Back',
@@ -116,6 +149,15 @@ const en = {
   'runner.draftRestored': 'Draft restored from an earlier session.',
   'runner.downloadPdf': 'Download PDF',
   'runner.progress': 'Progress',
+  'runner.encrypted':
+    'Your answers are end-to-end encrypted. Only the owner of this form can read them.',
+  'runner.encryptedFields':
+    'Answers marked with a lock are end-to-end encrypted. Only the owner of this form can read them.',
+  'runner.encryptedQuestion': 'Encrypted answer',
+  'runner.encryptionUnavailable':
+    'This form cannot accept answers yet: its owner has not set up an encryption key.',
+  'runner.encryptionKeyChanged': 'This form was updated. Reload the page and submit again.',
+  'runner.insecure': 'This form encrypts answers and needs a secure connection (HTTPS).',
 
   // Errors
   'errors.invalidJson': 'Invalid JSON.',
@@ -163,6 +205,22 @@ const en = {
   'builder.scaleMax': 'High',
   'builder.pageN': 'Page {n}',
   'builder.clonePageFailed': 'The page could not be duplicated.',
+  'builder.encryption': 'Encryption',
+  'builder.encryption.title': 'Submission encryption',
+  'builder.encryption.off': 'Off',
+  'builder.encryption.form': 'Whole form',
+  'builder.encryption.fields': 'Selected questions',
+  'builder.encryption.offHint':
+    'Answers are stored in plain text and fully validated by the server.',
+  'builder.encryption.formHint':
+    'Every answer is end-to-end encrypted. The server cannot validate any of them: required fields, rules and conditions are only checked in the respondent’s browser.',
+  'builder.encryption.fieldsHint':
+    'Only questions marked “Encrypt answer” in their properties are encrypted. The server still validates all other answers.',
+  'builder.encryption.count': '{n} question(s) encrypted.',
+  'builder.encryption.key': 'Answers are encrypted for the key',
+  'builder.encryption.noKey':
+    'The form owner has no encryption key yet, so the form cannot accept answers. Create one on the account page.',
+  'builder.encryption.account': 'Open account',
 
   // import
   'import.failed': 'Import failed: {message}',
@@ -193,6 +251,7 @@ const en = {
   'row.required': 'required',
   'row.conditional': 'conditional',
   'row.default': 'default',
+  'row.encrypted': 'encrypted',
   'row.drag': 'Drag to reorder',
   'row.moveUp': 'Move up',
   'row.moveInGroup': 'Move in group',
@@ -230,6 +289,10 @@ const en = {
   'panel.collapsible': 'Collapsible group',
   'panel.required': 'Required',
   'panel.readOnly': 'Read only',
+  'panel.encrypted': 'Encrypt answer',
+  'panel.encryptedHint':
+    'Only checked in the browser: the server cannot validate this answer or conditions that depend on it.',
+  'panel.encryptedForm': 'All answers of this form are encrypted.',
   'panel.width': 'Width',
   'panel.options': 'Options',
   'panel.optionLabel': 'Label',

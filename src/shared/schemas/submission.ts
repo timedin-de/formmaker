@@ -1,11 +1,19 @@
 import * as z from 'zod/mini';
 import { type Submission, type SubmissionCreate } from '../model';
+import { encryptedValuesSchema } from './encryption';
 import { fieldValueSchema } from './fieldValue';
+
+/** Answers keyed by element id. */
+export const submissionValuesSchema = z.record(
+  z.string().check(z.minLength(1), z.maxLength(128)),
+  fieldValueSchema,
+);
 
 export const submissionCreateSchema = z.strictObject({
   formId: z.string().check(z.minLength(1), z.maxLength(128)),
   durationMs: z.number().check(z.nonnegative()),
-  values: z.record(z.string().check(z.minLength(1), z.maxLength(128)), fieldValueSchema),
+  values: submissionValuesSchema,
+  encrypted: z.optional(encryptedValuesSchema),
 }) satisfies z.ZodMiniType<SubmissionCreate>;
 
 export const submissionSchema = z.object({

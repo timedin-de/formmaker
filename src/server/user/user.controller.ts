@@ -12,10 +12,17 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   UseGuards,
 } from '@nestjs/common';
-import { type PublicUser } from '@shared/model';
-import { accountDeleteSchema, userCreateSchema } from '@shared/schemas';
+import { importPublicKey, keyIdOf } from '@shared/crypto';
+import { type PublicUser, type UserEncryptionKey } from '@shared/model';
+import {
+  accountDeleteSchema,
+  type SaveEncryptionKeyRequest,
+  saveEncryptionKeySchema,
+  userCreateSchema,
+} from '@shared/schemas';
 import * as z from 'zod/mini';
 import { hashPassword, publicUser, verifyPassword } from '../auth/auth-helper';
 import { AdminGuard, AuthGuard } from '../auth/auth.guard';
@@ -35,6 +42,47 @@ export class UserController {
   @UseGuards(AuthGuard)
   me(@CurrentUser() user: User): PublicUser {
     return publicUser(user);
+  }
+
+  /** The caller's encryption key pair; the private key is wrapped with their passphrase. */
+  @Get('me/encryption-key')
+  @UseGuards(AuthGuard)
+  async encryptionKey(@CurrentUser() user: User): Promise<UserEncryptionKey> {
+    const key = await this.repository.encryptionKey(user.id);
+    if (!key) throw new NotFoundException({ error: 'no encryption key' });
+    return key;
+  }
+
+  /**
+   * Stores the caller's key pair. Rewrapping the same key (new passphrase) is
+   * always allowed; a different key needs `replace: true`, because answers
+   * encrypted for the old key can no longer be read.
+   */
+  @Put('me/encryption-key')
+  @HttpCode(200)
+  @UseGuards(AuthGuard)
+  async saveEncryptionKey(
+    @CurrentUser() user: User,
+    @Body(new ZodValidationPipe(saveEncryptionKeySchema)) body: SaveEncryptionKeyRequest,
+  ): Promise<UserEncryptionKey> {
+    const { replace, ...key } = body;
+    let keyId: string;
+    try {
+      // Importing also rejects points that are not on the curve.
+      await importPublicKey(key.publicKey);
+      keyId = await keyIdOf(key.publicKey);
+    } catch {
+      throw new BadRequestException({ error: 'invalid public key' });
+    }
+    if (keyId !== key.keyId)
+      throw new BadRequestException({ error: 'keyId does not match the public key' });
+
+    const existing = await this.repository.encryptionKey(user.id);
+    if (existing && existing.keyId !== key.keyId && !replace)
+      throw new ConflictException({ error: 'an encryption key already exists' });
+
+    await this.repository.saveEncryptionKey(user.id, key);
+    return key;
   }
 
   @Delete('me')

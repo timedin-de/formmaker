@@ -62,6 +62,16 @@
         @if (page.subtitle) {
           <div class="subtitle" [innerHTML]="page.subtitle | markdown: true"></div>
         }
+        @if (encryptionNotice(); as notice) {
+          <p
+            class="encryption-notice"
+            [class.warn]="notice.warn"
+            [attr.role]="notice.warn ? 'alert' : null"
+          >
+            <mat-icon [svgIcon]="notice.warn ? 'lock_open' : 'lock'"></mat-icon>
+            <span>{{ i18n.t(notice.key) }}</span>
+          </p>
+        }
       </header>
 
       <fm-question-list [store]="store" [elements]="page.elements"></fm-question-list>

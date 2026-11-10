@@ -13,6 +13,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatTooltip } from '@angular/material/tooltip';
 import { ActivatedRoute, Router } from '@angular/router';
+import { cryptoAvailable, EncryptionUnavailableError, sealSubmission } from '@shared/crypto';
 import { formName } from '@shared/helper';
 import type { Submission } from '@shared/model/submission.model';
 import { first, switchMap, tap } from 'rxjs';
@@ -20,6 +21,7 @@ import { downloadBlob, submissionToPdf, toSlug } from '../core/export';
 import { I18nService } from '../core/i18n';
 import { MarkdownPipe } from '../core/markdown';
 import { Notifier } from '../core/notifier';
+import { ApiError } from '../core/state/api-error';
 import { FormsRepository } from '../core/state/forms.repository';
 import type { RunnerPage } from '../core/state/runner.model';
 import { RunnerStore } from '../core/state/runner.store';
@@ -63,6 +65,15 @@ export class Runner {
   protected readonly submitting = signal(false);
 
   protected pageSignal = computed<RunnerPage | null>(() => this.store.currentPage());
+  /** Notice about encrypted answers, or why the form cannot encrypt them. */
+  protected readonly encryptionNotice = computed(() => {
+    const encryption = this.store.form()?.settings.encryption;
+    if (!encryption) return null;
+    if (!cryptoAvailable()) return { key: 'runner.insecure', warn: true } as const;
+    if (!encryption.publicKey) return { key: 'runner.encryptionUnavailable', warn: true } as const;
+    const key = encryption.mode === 'form' ? 'runner.encrypted' : 'runner.encryptedFields';
+    return { key, warn: false } as const;
+  });
   protected submitLabel = computed(
     () => this.store.form()?.settings?.submitLabel ?? this.i18n.t('runner.submit'),
   );
@@ -143,19 +154,25 @@ export class Runner {
       this.store.revealFirstInvalid();
       return;
     }
+    const form = this.store.form();
+    if (!form) return;
     this.submitting.set(true);
     try {
-      const submission = await this.repo.addSubmission(result.submission);
-      if (!submission) {
-        this.notifier.error('errors.unknown');
-        return;
-      }
+      const sealed = await sealSubmission(form, result.submission);
+      const { encrypted: _encrypted, ...submission } = await this.repo.addSubmission(sealed);
       this.store.clearDraft();
       this.submitted.set(true);
-      this.lastSubmission.set(submission);
+      // The receipt is built here, from the answers in plain text; the server never had them.
+      this.lastSubmission.set({ ...submission, values: result.submission.values });
       this.notifier.ok('runner.submitted');
-    } catch {
-      this.notifier.error('errors.unknown');
+    } catch (error) {
+      if (error instanceof EncryptionUnavailableError)
+        this.notifier.error('runner.encryptionUnavailable');
+      else if (form.settings.encryption && error instanceof ApiError && error.status === 409) {
+        // The owner's key changed: a reload must fetch the form with the new one.
+        this.repo.forgetForm(form.id);
+        this.notifier.error('runner.encryptionKeyChanged');
+      } else this.notifier.error('errors.unknown');
     } finally {
       this.submitting.set(false);
     }

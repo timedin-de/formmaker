@@ -3,6 +3,7 @@ export * from './conditions';
 export * from './defaultValue';
 export * from './draft';
 export * from './elements';
+export * from './encryption';
 export * from './fieldValue';
 export * from './form';
 export * from './submission';

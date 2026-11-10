@@ -23,14 +23,19 @@ references to element ids that don't exist. All ids are plain strings (any uniqu
 
 ### `settings` (FormSettings)
 
-| key              | type                       | default      | notes                                                              |
-| ---------------- | -------------------------- | ------------ | ------------------------------------------------------------------ |
-| `name`           | string                     | –            | overrides form name                                                |
-| `submitLabel`    | string                     | –            | button text                                                        |
-| `showProgress`   | bool                       | –            | progress bar                                                       |
-| `allowBack`      | bool                       | –            | back-navigation                                                    |
-| `navigation`     | `'linear'\|'free'\|'auto'` | **required** | linear=strict order, free=jump via progress, auto=skip gated pages |
-| `enableAutoSave` | bool                       | –            | local autosave                                                     |
+| key              | type                           | default      | notes                                                              |
+| ---------------- | ------------------------------ | ------------ | ------------------------------------------------------------------ |
+| `name`           | string                         | –            | overrides form name                                                |
+| `submitLabel`    | string                         | –            | button text                                                        |
+| `showProgress`   | bool                           | –            | progress bar                                                       |
+| `allowBack`      | bool                           | –            | back-navigation                                                    |
+| `navigation`     | `'linear'\|'free'\|'auto'`     | **required** | linear=strict order, free=jump via progress, auto=skip gated pages |
+| `enableAutoSave` | bool                           | –            | local autosave                                                     |
+| `encryption`     | `{ mode, keyId?, publicKey? }` | –            | end-to-end encrypted answers, see below                            |
+
+`encryption.mode` is `'form'` (every answer is encrypted) or `'fields'` (only questions with
+`encrypted: true`). `keyId` and `publicKey` are set by the server from the form owner's key;
+values sent by the client are replaced on save and import.
 
 ### `pages` (PageDefinition[])
 
@@ -47,7 +52,8 @@ references to element ids that don't exist. All ids are plain strings (any uniqu
 Every element: `id`, `type`, `label` (required); `description` (optional, Markdown),
 `width` (default 1), `enabledWhen` (optional ConditionGroup).
 **Questions** additionally have `required` (default false), `validations` (default []),
-`readonly` (default false), `defaultValue` (default null).
+`readonly` (default false), `defaultValue` (default null), and `encrypted` (optional; encrypts
+the answer when `settings.encryption.mode` is `'fields'`).
 
 - `width` = 12-column fraction: `n/12` (`1/12`…`12/12`), default `1` = full row.
 - `label`, `description`, `placeholder`, validation `message`s support **piping**:

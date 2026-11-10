@@ -85,6 +85,27 @@ const de: typeof en = {
   'account.role.editor': 'Bearbeiter',
   'account.passwordChanged': 'Passwort wurde erfolgreich geändert',
   'account.accountDeleted': 'Konto wurde erfolgreich gelöscht',
+  'account.encryption': 'Verschlüsselung der Antworten',
+  'account.encryption.hint':
+    'Befragte verschlüsseln ihre Antworten im Browser mit deinem öffentlichen Schlüssel. Nur du kannst sie lesen, nachdem du deinen Schlüssel mit seiner Passphrase entsperrt hast. Der Server sieht weder die Passphrase noch die verschlüsselten Antworten.',
+  'account.encryption.none':
+    'Du hast noch keinen Schlüssel. Erstelle einen, um verschlüsselte Formulare zu nutzen.',
+  'account.encryption.fingerprint': 'Fingerabdruck des Schlüssels:',
+  'account.encryption.passphrase': 'Schlüssel-Passphrase',
+  'account.encryption.confirmPassphrase': 'Passphrase wiederholen',
+  'account.encryption.newPassphrase': 'Neue Schlüssel-Passphrase',
+  'account.encryption.passphraseHint':
+    'Mindestens {n} Zeichen, nicht dein Login-Passwort. Sie lässt sich nicht wiederherstellen: Geht sie verloren, sind auch die verschlüsselten Antworten verloren.',
+  'account.encryption.create': 'Schlüssel erstellen',
+  'account.encryption.created': 'Schlüssel erstellt',
+  'account.encryption.changePassphrase': 'Passphrase ändern',
+  'account.encryption.passphraseChanged': 'Passphrase geändert',
+  'account.encryption.replace': 'Schlüssel ersetzen',
+  'account.encryption.replaceHint':
+    'Ein neuer Schlüssel macht alle mit dem aktuellen Schlüssel verschlüsselten Antworten endgültig unlesbar. Deine Formulare verwenden danach den neuen Schlüssel.',
+  'account.encryption.replaced': 'Schlüssel ersetzt',
+  'account.encryption.wrongPassphrase': 'Falsche Passphrase',
+  'account.encryption.unavailable': 'Verschlüsselung benötigt eine sichere Verbindung (HTTPS).',
 
   // results
   'results.title': 'Ergebnisse',
@@ -102,6 +123,20 @@ const de: typeof en = {
   'results.mailSubject': 'FormMaker — {name}: {n} Einreichung(en)',
   'results.mailBody': 'Formularantworten für {name}\n{n} Einreichung(en)\n{range}',
   'results.back': 'Zurück',
+  'results.locked': 'Verschlüsselt',
+  'results.unlock.title': 'Verschlüsselte Antworten',
+  'results.unlock.hint':
+    '{n} Einreichung(en) enthalten verschlüsselte Antworten. Gib deine Schlüssel-Passphrase ein, um sie zu lesen; entschlüsselt wird nur in diesem Browser.',
+  'results.unlock.passphrase': 'Schlüssel-Passphrase',
+  'results.unlock.submit': 'Entsperren',
+  'results.unlock.wrong': 'Falsche Passphrase',
+  'results.unlock.noKey':
+    'Du hast keinen Schlüssel, deshalb können diese Antworten hier nicht gelesen werden.',
+  'results.unlock.otherKey':
+    '{n} Einreichung(en) wurden mit einem anderen Schlüssel verschlüsselt und können mit deinem nicht gelesen werden.',
+  'results.unlock.exportLocked': 'Exporte sind möglich, sobald alle Antworten entschlüsselt sind.',
+  'results.unlock.decrypted': 'Verschlüsselte Antworten sind nur in diesem Browser entschlüsselt.',
+  'results.unlock.lock': 'Sperren',
 
   // runner
   'runner.back': 'Zurück',
@@ -121,6 +156,17 @@ const de: typeof en = {
   'runner.draftRestored': 'Entwurf aus einer früheren Sitzung wiederhergestellt.',
   'runner.downloadPdf': 'PDF herunterladen',
   'runner.progress': 'Fortschritt',
+  'runner.encrypted':
+    'Deine Antworten sind Ende-zu-Ende-verschlüsselt. Nur die Person, der dieses Formular gehört, kann sie lesen.',
+  'runner.encryptedFields':
+    'Mit einem Schloss markierte Antworten sind Ende-zu-Ende-verschlüsselt. Nur die Person, der dieses Formular gehört, kann sie lesen.',
+  'runner.encryptedQuestion': 'Verschlüsselte Antwort',
+  'runner.encryptionUnavailable':
+    'Dieses Formular nimmt noch keine Antworten an: Für das Formular ist noch kein Schlüssel eingerichtet.',
+  'runner.encryptionKeyChanged':
+    'Dieses Formular wurde geändert. Lade die Seite neu und sende erneut.',
+  'runner.insecure':
+    'Dieses Formular verschlüsselt Antworten und benötigt eine sichere Verbindung (HTTPS).',
 
   // Errors
   'errors.invalidJson': 'Ungültiges JSON',
@@ -168,6 +214,22 @@ const de: typeof en = {
   'builder.scaleMax': 'Hoch',
   'builder.pageN': 'Seite {n}',
   'builder.clonePageFailed': 'Die Seite konnte nicht dupliziert werden.',
+  'builder.encryption': 'Verschlüsselung',
+  'builder.encryption.title': 'Verschlüsselung der Antworten',
+  'builder.encryption.off': 'Aus',
+  'builder.encryption.form': 'Ganzes Formular',
+  'builder.encryption.fields': 'Ausgewählte Fragen',
+  'builder.encryption.offHint':
+    'Antworten werden im Klartext gespeichert und vom Server vollständig geprüft.',
+  'builder.encryption.formHint':
+    'Alle Antworten werden Ende-zu-Ende-verschlüsselt. Der Server kann keine davon prüfen: Pflichtfelder, Regeln und Bedingungen werden nur im Browser der Befragten geprüft.',
+  'builder.encryption.fieldsHint':
+    'Nur Fragen mit „Antwort verschlüsseln“ in ihren Eigenschaften werden verschlüsselt. Alle anderen Antworten prüft der Server weiterhin.',
+  'builder.encryption.count': '{n} Frage(n) verschlüsselt.',
+  'builder.encryption.key': 'Antworten werden verschlüsselt für den Schlüssel',
+  'builder.encryption.noKey':
+    'Für das Formular ist noch kein Schlüssel eingerichtet, daher nimmt es keine Antworten an. Erstelle einen auf der Kontoseite.',
+  'builder.encryption.account': 'Konto öffnen',
 
   // Import
   'import.failed': 'Import fehlgeschlagen: {message}',
@@ -198,6 +260,7 @@ const de: typeof en = {
   'row.required': 'Pflicht',
   'row.conditional': 'bedingt',
   'row.default': 'Standard',
+  'row.encrypted': 'verschlüsselt',
   'row.drag': 'Zum Umsortieren ziehen',
   'row.moveUp': 'Nach oben',
   'row.moveInGroup': 'In Gruppe',
@@ -235,6 +298,10 @@ const de: typeof en = {
   'panel.collapsible': 'Einklappbare Gruppe',
   'panel.required': 'Pflichtfeld',
   'panel.readOnly': 'Nur lesen',
+  'panel.encrypted': 'Antwort verschlüsseln',
+  'panel.encryptedHint':
+    'Nur im Browser geprüft: Der Server kann diese Antwort und davon abhängige Bedingungen nicht prüfen.',
+  'panel.encryptedForm': 'Alle Antworten dieses Formulars werden verschlüsselt.',
   'panel.width': 'Breite',
   'panel.options': 'Optionen',
   'panel.optionLabel': 'Bezeichnung',

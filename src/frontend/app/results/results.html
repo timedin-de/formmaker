@@ -13,7 +13,11 @@
   </div>
   <span class="spacer"></span>
   @for (ch of channels; track ch.id) {
-    <button mat-button (click)="runChannel(ch)" [disabled]="submissions().length === 0">
+    <button
+      mat-button
+      (click)="runChannel(ch)"
+      [disabled]="submissions().length === 0 || lockedCount() > 0"
+    >
       <mat-icon [svgIcon]="ch.icon"></mat-icon>
       <span class="btn-label">{{ i18n.t(ch.labelKey) }}</span>
     </button>
@@ -25,6 +29,60 @@
 </mat-toolbar>
 <div class="body">
   <h1>{{ i18n.t('results.title') }}</h1>
+
+  @if (lockedCount() > 0) {
+    <mat-card class="unlock-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon svgIcon="lock" class="title-icon"></mat-icon>
+          {{ i18n.t('results.unlock.title') }}
+        </mat-card-title>
+        <mat-card-subtitle>
+          {{ i18n.t('results.unlock.hint', { n: lockedCount() }) }}
+        </mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        @if (!encryption.available) {
+          <p class="error" role="alert">{{ i18n.t('account.encryption.unavailable') }}</p>
+        } @else if (encryption.unlocked()) {
+          <p class="error" role="alert">
+            {{ i18n.t('results.unlock.otherKey', { n: lockedCount() }) }}
+          </p>
+        } @else {
+          <div class="unlock-form">
+            <fm-password
+              [formControl]="passphrase"
+              [label]="i18n.t('results.unlock.passphrase')"
+              inputAutocomplete="current-password"
+              (enter)="unlock()"
+            />
+            <button
+              mat-flat-button
+              color="primary"
+              type="button"
+              [disabled]="unlocking()"
+              (click)="unlock()"
+            >
+              <mat-icon svgIcon="lock_open"></mat-icon>
+              {{ i18n.t('results.unlock.submit') }}
+            </button>
+          </div>
+          @if (unlockError(); as error) {
+            <p class="error" role="alert">{{ i18n.t(error) }}</p>
+          }
+        }
+        <p class="hint">{{ i18n.t('results.unlock.exportLocked') }}</p>
+      </mat-card-content>
+    </mat-card>
+  } @else if (encryption.unlocked() && submissions().length > 0) {
+    <p class="unlocked-note">
+      <mat-icon svgIcon="lock_open"></mat-icon>
+      <span>{{ i18n.t('results.unlock.decrypted') }}</span>
+      <button mat-button type="button" (click)="lock()">
+        {{ i18n.t('results.unlock.lock') }}
+      </button>
+    </p>
+  }
 
   @if (submissions().length === 0) {
     <div class="empty">

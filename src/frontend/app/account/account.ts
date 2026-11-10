@@ -22,9 +22,11 @@ import { I18nService } from '../core/i18n';
 import { apiErrorMessage } from '../core/state/api-error';
 import { UsersRepository } from '../core/state/users.repository';
 import { fieldMatchValidator } from '../core/validators';
+import { EncryptionKeyCard } from './encryption-key-card';
 
 @Component({
   imports: [
+    EncryptionKeyCard,
     MatButtonModule,
     MatCardModule,
     MatFormFieldModule,

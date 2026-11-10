@@ -2,21 +2,25 @@ import { childrenOf } from '@shared/model';
 import { formDefinitionSchema } from '@shared/schemas';
 import { DataSource } from 'typeorm';
 import { describe, expect, it } from 'vitest';
+import { EncryptionKeyEntity } from '../entities/encryption-key.js';
 import { FormEntity, SubmissionEntity } from '../entities/form.js';
 import { SessionEntity, UserEntity } from '../entities/user.js';
 import { migrations } from './index.js';
+
+/** Tables the old `synchronize` created, before migrations existed. */
+const legacyEntities = [UserEntity, SessionEntity, FormEntity, SubmissionEntity];
 
 function source(synchronize: boolean): DataSource {
   return new DataSource({
     type: 'better-sqlite3',
     database: ':memory:',
-    entities: [UserEntity, SessionEntity, FormEntity, SubmissionEntity],
+    entities: synchronize ? legacyEntities : [...legacyEntities, EncryptionKeyEntity],
     migrations,
     synchronize,
   });
 }
 
-const tables = ['forms', 'sessions', 'submissions', 'users'];
+const tables = ['encryption_keys', 'forms', 'sessions', 'submissions', 'users'];
 
 describe('migrations', () => {
   it('builds the full schema on an empty database without drift', async () => {

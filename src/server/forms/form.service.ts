@@ -1,10 +1,14 @@
-import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { FORM_VERSION } from '@shared/consts';
-import { evalConditionGroup, validateElementValue } from '@shared/engine';
-import { isQuestionOrGroup } from '@shared/helper';
+import { submissionIssue } from '@shared/engine';
 import {
   addPage,
-  childrenOf,
   type ChoiceElement,
   type ChoiceOption,
   cloneElement as cloneElementTree,
@@ -14,6 +18,7 @@ import {
   type ElementClone,
   type ElementDefinition,
   elementId,
+  encryptedElementIds,
   FORM_SCHEMA_VERSION,
   type FormDefinition,
   getElement,
@@ -199,6 +204,13 @@ export class FormService {
     const form = await this.getForm(submission.formId);
     if (!form?.form) throw new NotFoundException({ error: 'not found' });
 
+    const issue = submissionIssue(
+      form.form,
+      submission.values,
+      checkEncryption(form.form, submission),
+    );
+    if (issue) throw new BadRequestException({ error: issue });
+
     const saved = {
       ...submission,
       id: elementId('submission'),
@@ -206,48 +218,26 @@ export class FormService {
       formName: form.form.name,
       submittedAt: new Date().toISOString(),
     };
-
-    const values = submission.values;
-    const seen: string[] = [];
-
-    const validateIfVisible = (e: ElementDefinition, parentVisible: boolean) => {
-      if (!isQuestionOrGroup(e)) return;
-
-      const visible = parentVisible && evalConditionGroup(e.enabledWhen, values);
-      if (e.type === 'group') {
-        for (const child of childrenOf(form.form, e)) validateIfVisible(child, visible);
-        return;
-      }
-      const value = values[e.id];
-      if (visible) {
-        if (value !== undefined) {
-          seen.push(e.id);
-        }
-
-        const validation = validateElementValue(e, value, values);
-        if (!validation.valid) {
-          throw new BadRequestException({
-            error: `value for field ${e.id} is invalid: ${validation.failures.map((x) => x.message).join(', ')}`,
-          });
-        }
-      } else if (value !== undefined)
-        throw new BadRequestException({
-          error: `submission contains value for invisible element: ${e.id}`,
-        });
-    };
-    for (const page of form.form.pages) {
-      const visible = evalConditionGroup(page.enabledWhen, values);
-      for (const el of childrenOf(form.form, page)) validateIfVisible(el, visible);
-    }
-    const unknown = Object.keys(values).find((valueId) => !seen.includes(valueId));
-
-    if (unknown) {
-      throw new BadRequestException({
-        error: `submission contains value for non-existent element: ${unknown}`,
-      });
-    }
-
     await this.repository.addSubmission(saved);
     return saved;
   }
+}
+
+/**
+ * Checks the encrypted part of a submission against the form's encryption
+ * settings and returns the ids of the answers the server cannot see.
+ */
+function checkEncryption(form: FormDefinition, submission: SubmissionCreate): Set<string> {
+  const encryption = form.settings.encryption;
+  if (!encryption) {
+    if (submission.encrypted)
+      throw new BadRequestException({ error: 'form does not accept encrypted submissions' });
+    return new Set();
+  }
+  if (!encryption.keyId) throw new ConflictException({ error: 'form owner has no encryption key' });
+  if (!submission.encrypted)
+    throw new BadRequestException({ error: 'form requires encrypted submissions' });
+  if (submission.encrypted.keyId !== encryption.keyId)
+    throw new ConflictException({ error: 'encryption key of the form has changed' });
+  return encryptedElementIds(form);
 }

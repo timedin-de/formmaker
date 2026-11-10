@@ -25,6 +25,9 @@
             @if (has(el, 'defaultValue') && el.defaultValue) {
               <span class="logic-badge">{{ i18n.t('row.default') }}</span>
             }
+            @if (encrypted()) {
+              <span class="logic-badge">{{ i18n.t('row.encrypted') }}</span>
+            }
           </span>
         </span>
       </button>

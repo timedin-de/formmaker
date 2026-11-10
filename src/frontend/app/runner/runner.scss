@@ -102,6 +102,22 @@
       margin: 0;
     }
   }
+  .encryption-notice {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 12px 0 0;
+    font-size: 13px;
+    color: var(--mat-sys-on-surface-variant);
+
+    &.warn {
+      color: var(--mat-sys-error);
+    }
+
+    mat-icon {
+      flex: none;
+    }
+  }
 }
 .nav {
   display: flex;

@@ -1,0 +1,120 @@
+<mat-card class="card section">
+  <mat-card-header>
+    <mat-card-title>
+      <mat-icon svgIcon="enhanced_encryption" class="title-icon"></mat-icon>
+      {{ i18n.t('account.encryption') }}
+    </mat-card-title>
+    <mat-card-subtitle>{{ i18n.t('account.encryption.hint') }}</mat-card-subtitle>
+  </mat-card-header>
+
+  @if (!encryption.available) {
+    <mat-card-content>
+      <p class="error">{{ i18n.t('account.encryption.unavailable') }}</p>
+    </mat-card-content>
+  } @else if (encryption.key() === undefined) {
+    <mat-card-content>
+      <p class="hint">{{ i18n.t('account.loading') }}</p>
+    </mat-card-content>
+  } @else if (encryption.key() === null || mode() === 'replace') {
+    <form [formGroup]="createForm" #createDir="ngForm" (ngSubmit)="create(createDir)">
+      <mat-card-content>
+        @if (mode() === 'replace') {
+          <p class="error">{{ i18n.t('account.encryption.replaceHint') }}</p>
+        } @else {
+          <p class="hint">{{ i18n.t('account.encryption.none') }}</p>
+        }
+        <fm-password
+          formControlName="passphrase"
+          required
+          [label]="i18n.t('account.encryption.passphrase')"
+          inputAutocomplete="new-password"
+        />
+        <fm-password
+          formControlName="confirm"
+          required
+          [label]="i18n.t('account.encryption.confirmPassphrase')"
+          inputAutocomplete="new-password"
+        />
+        @if (createForm.dirty && createForm.errors) {
+          <p class="error">{{ i18n.error(createForm.errors) }}</p>
+        }
+        <p class="hint">{{ i18n.t('account.encryption.passphraseHint', { n: MIN }) }}</p>
+      </mat-card-content>
+      <mat-card-actions align="end">
+        @if (mode() === 'replace') {
+          <button mat-button type="button" (click)="cancel()">
+            {{ i18n.t('account.cancel') }}
+          </button>
+        }
+        <button
+          mat-flat-button
+          [color]="mode() === 'replace' ? 'warn' : 'primary'"
+          type="submit"
+          [disabled]="createForm.invalid || busy()"
+        >
+          <mat-icon svgIcon="key"></mat-icon>
+          {{
+            i18n.t(
+              mode() === 'replace' ? 'account.encryption.replace' : 'account.encryption.create'
+            )
+          }}
+        </button>
+      </mat-card-actions>
+    </form>
+  } @else if (mode() === 'change') {
+    <form [formGroup]="changeForm" #changeDir="ngForm" (ngSubmit)="change(changeDir)">
+      <mat-card-content>
+        <fm-password
+          formControlName="current"
+          required
+          [label]="i18n.t('account.encryption.passphrase')"
+          inputAutocomplete="current-password"
+        />
+        <fm-password
+          formControlName="passphrase"
+          required
+          [label]="i18n.t('account.encryption.newPassphrase')"
+          inputAutocomplete="new-password"
+        />
+        <fm-password
+          formControlName="confirm"
+          required
+          [label]="i18n.t('account.encryption.confirmPassphrase')"
+          inputAutocomplete="new-password"
+        />
+        @if (changeForm.dirty && changeForm.errors) {
+          <p class="error">{{ i18n.error(changeForm.errors) }}</p>
+        }
+        <p class="hint">{{ i18n.t('account.encryption.passphraseHint', { n: MIN }) }}</p>
+      </mat-card-content>
+      <mat-card-actions align="end">
+        <button mat-button type="button" (click)="cancel()">{{ i18n.t('account.cancel') }}</button>
+        <button
+          mat-flat-button
+          color="primary"
+          type="submit"
+          [disabled]="changeForm.invalid || busy()"
+        >
+          <mat-icon svgIcon="save"></mat-icon>
+          {{ i18n.t('account.encryption.changePassphrase') }}
+        </button>
+      </mat-card-actions>
+    </form>
+  } @else {
+    <mat-card-content>
+      <p class="hint">
+        {{ i18n.t('account.encryption.fingerprint') }}
+        <code data-testid="key-fingerprint">{{ fingerprint() }}</code>
+      </p>
+    </mat-card-content>
+    <mat-card-actions align="end">
+      <button mat-button color="warn" type="button" (click)="mode.set('replace')">
+        {{ i18n.t('account.encryption.replace') }}
+      </button>
+      <button mat-stroked-button type="button" (click)="mode.set('change')">
+        <mat-icon svgIcon="lock"></mat-icon>
+        {{ i18n.t('account.encryption.changePassphrase') }}
+      </button>
+    </mat-card-actions>
+  }
+</mat-card>

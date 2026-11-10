@@ -1,0 +1,41 @@
+<div class="encryption">
+  <mat-button-toggle-group
+    [value]="mode()"
+    (change)="setMode($event.value)"
+    [attr.aria-label]="i18n.t('builder.encryption.title')"
+  >
+    <mat-button-toggle value="off">{{ i18n.t('builder.encryption.off') }}</mat-button-toggle>
+    <mat-button-toggle value="form">{{ i18n.t('builder.encryption.form') }}</mat-button-toggle>
+    <mat-button-toggle value="fields">{{ i18n.t('builder.encryption.fields') }}</mat-button-toggle>
+  </mat-button-toggle-group>
+
+  @switch (mode()) {
+    @case ('off') {
+      <p class="hint">{{ i18n.t('builder.encryption.offHint') }}</p>
+    }
+    @case ('form') {
+      <p class="hint">{{ i18n.t('builder.encryption.formHint') }}</p>
+    }
+    @case ('fields') {
+      <p class="hint">{{ i18n.t('builder.encryption.fieldsHint') }}</p>
+      <p class="hint">{{ i18n.t('builder.encryption.count', { n: encryptedCount() }) }}</p>
+    }
+  }
+
+  @if (mode() !== 'off') {
+    @if (fingerprint(); as fp) {
+      <p class="status">
+        <mat-icon svgIcon="lock"></mat-icon>
+        <span
+          >{{ i18n.t('builder.encryption.key') }} <code>{{ fp }}</code></span
+        >
+      </p>
+    } @else {
+      <p class="status warn" role="alert">
+        <mat-icon svgIcon="key"></mat-icon>
+        <span>{{ i18n.t('builder.encryption.noKey') }}</span>
+      </p>
+      <a mat-stroked-button routerLink="/account">{{ i18n.t('builder.encryption.account') }}</a>
+    }
+  }
+</div>

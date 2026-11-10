@@ -1,4 +1,7 @@
 import { expect, type APIRequestContext, type Page } from '@playwright/test';
+import { generateEncryptionKey, sealSubmission } from '../src/shared/crypto';
+import type { FormDefinition, UserEncryptionKey } from '../src/shared/model';
+import { MIN_KEY_WRAP_ITERATIONS, submissionValuesSchema } from '../src/shared/schemas';
 
 /** Editor password; matches `DEFAULT_PASSWORD` in src/server/auth.ts. */
 export const USERNAME = 'admin@formmaker.local';
@@ -36,6 +39,65 @@ export async function loginApi(request: APIRequestContext): Promise<ApiSession> 
   const body = (await res.json()) as { token?: string };
   expect(body.token).toBeTruthy();
   return { request, token: body.token as string };
+}
+
+export interface UserSession extends ApiSession {
+  email: string;
+  password: string;
+}
+
+/**
+ * Registers a fresh editor. Encryption keys are per user, so tests that set one
+ * use their own account instead of the shared admin.
+ */
+export async function registerUser(request: APIRequestContext): Promise<UserSession> {
+  const email = `user-${uuid()}@formmaker.local`;
+  const password = 'formmaker1';
+  const res = await request.post('/api/auth/register', { data: { email, password } });
+  expect(res.ok()).toBeTruthy();
+  const login = await request.post('/api/auth/login', { data: { email, password } });
+  expect(login.ok()).toBeTruthy();
+  const { token } = (await login.json()) as { token: string };
+  return { request, token, email, password };
+}
+
+/** Sign in through the UI as `user`. */
+export async function loginAs(page: Page, user: UserSession): Promise<void> {
+  await page.goto('/login');
+  await page.getByLabel('Email address', { exact: true }).fill(user.email);
+  await page.getByLabel('Password', { exact: true }).fill(user.password);
+  await page.getByRole('button', { name: 'Sign in' }).click();
+  await page.waitForURL((url) => url.pathname === '/');
+}
+
+/** Stores a new encryption key for the user, wrapped with `passphrase`. */
+export async function setEncryptionKey(
+  session: ApiSession,
+  passphrase: string,
+): Promise<UserEncryptionKey> {
+  const { key } = await generateEncryptionKey(passphrase, MIN_KEY_WRAP_ITERATIONS);
+  const res = await session.request.put('/api/users/me/encryption-key', {
+    headers: editorHeaders(session),
+    data: key,
+  });
+  expect(res.ok(), await res.text()).toBeTruthy();
+  return key;
+}
+
+/** Encrypts `values` the way the runner does and posts them as a submission. */
+export async function addSealedSubmission(
+  session: ApiSession,
+  formId: string,
+  values: Record<string, unknown>,
+): Promise<void> {
+  const form = (await (await session.request.get(`/api/forms/${formId}`)).json()) as FormDefinition;
+  const sealed = await sealSubmission(form, {
+    formId,
+    durationMs: 61_000,
+    values: submissionValuesSchema.parse(values),
+  });
+  const res = await session.request.post(`/api/forms/${formId}/submissions`, { data: sealed });
+  expect(res.ok(), await res.text()).toBeTruthy();
 }
 
 function editorHeaders(session: ApiSession): Record<string, string> {
