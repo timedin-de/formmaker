@@ -158,8 +158,12 @@ export class PropertyPanel {
     }
   }
 
-  moveOption(index: number, dir: -1 | 1): void {
-    this.store().moveOption(this.choice().id, index, dir);
+  async moveOption(index: number, dir: -1 | 1): Promise<void> {
+    try {
+      await this.store().moveOption(this.choice().id, index, dir);
+    } catch (error) {
+      this.notifier.apiError(error, 'panel.moveOptionFailed');
+    }
   }
 
   // ---- default value ----------------------------------------------------------

@@ -3,6 +3,7 @@ import { createElement, createPage } from '@shared/model/form-factory';
 import type { ElementPatch } from '@shared/model/form-ops';
 import type {
   ChoiceElement,
+  ChoiceOption,
   ElementDefinition,
   GroupElement,
   PageDefinition,
@@ -328,6 +329,9 @@ describe('DesignerStore server-side creation', () => {
     deleteOption: vi.fn(async () => {
       calls.push('deleteOption');
     }),
+    moveOption: vi.fn(async () => {
+      calls.push('moveOption');
+    }),
     addValidationRule: vi.fn(
       async (_formId: string, _elementId: string, request: CreateValidationRuleRequest) => {
         calls.push('addValidationRule');
@@ -489,10 +493,11 @@ describe('DesignerStore server-side creation', () => {
     expect(calls).toEqual(['save', 'cloneElement']);
   });
 
-  function loadedChoice(): ChoiceElement {
+  function loadedChoice(options?: ChoiceOption[]): ChoiceElement {
     const form = newForm('Demo');
     const page = createPage('Page 1');
     const choice = createElement('dropdown', 'Pick') as ChoiceElement;
+    if (options) choice.options = options;
     addToGroup(choice, page, form);
     form.pages = [page];
     store.load(form);
@@ -780,6 +785,88 @@ describe('DesignerStore server-side creation', () => {
       );
       const stored = store.form().elements[choice.id] as ChoiceElement;
       expect(stored.options[0].label).toBe('Retried');
+    });
+  });
+
+  describe('option moves', () => {
+    const optionIds = (id: string) =>
+      (store.form().elements[id] as ChoiceElement).options.map((o) => o.id);
+
+    it('moves an option at once and sends its new index', async () => {
+      const choice = loadedChoice();
+      const [first, second] = choice.options.map((o) => o.id);
+
+      await store.moveOption(choice.id, 0, 1);
+
+      expect(optionIds(choice.id)).toEqual([second, first]);
+      expect(repo.moveOption).toHaveBeenCalledWith(store.form().id, choice.id, first, {
+        index: 1,
+      });
+      expect(store.dirty()).toBe(false);
+    });
+
+    it('sends nothing when the option is already at the edge', async () => {
+      const choice = loadedChoice();
+
+      await store.moveOption(choice.id, 0, -1);
+
+      expect(repo.moveOption).not.toHaveBeenCalled();
+    });
+
+    it('moves the option back when the server rejects the move', async () => {
+      const choice = loadedChoice();
+      const before = optionIds(choice.id);
+      repo.moveOption.mockRejectedValueOnce(new Error('offline'));
+
+      await expect(store.moveOption(choice.id, 0, 1)).rejects.toThrow('offline');
+
+      expect(optionIds(choice.id)).toEqual(before);
+      expect(store.dirty()).toBe(false);
+    });
+
+    it('leaves a move out of the save of earlier edits sent ahead of it', async () => {
+      const choice = loadedChoice();
+      const before = optionIds(choice.id);
+      store.rename('Renamed');
+      repo.moveOption.mockRejectedValueOnce(new Error('offline'));
+
+      await expect(store.moveOption(choice.id, 0, 1)).rejects.toThrow('offline');
+
+      expect(repo.saveForm).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: 'Renamed',
+          elements: expect.objectContaining({
+            [choice.id]: expect.objectContaining({
+              options: before.map((id) => expect.objectContaining({ id })),
+            }),
+          }),
+        }),
+      );
+      expect(optionIds(choice.id)).toEqual(before);
+      expect(store.dirty()).toBe(false);
+    });
+
+    it('takes back a later move unsent when an earlier one fails', async () => {
+      const choice = loadedChoice([
+        { id: 'a', label: 'A' },
+        { id: 'b', label: 'B' },
+        { id: 'c', label: 'C' },
+      ]);
+      let fail!: (error: Error) => void;
+      repo.moveOption.mockImplementationOnce(
+        () => new Promise<undefined>((_, reject) => (fail = reject)),
+      );
+
+      const first = store.moveOption(choice.id, 0, 1);
+      const second = store.moveOption(choice.id, 1, 1);
+      expect(optionIds(choice.id)).toEqual(['b', 'c', 'a']);
+      await vi.waitFor(() => expect(fail).toBeDefined());
+      fail(new Error('offline'));
+
+      await expect(first).rejects.toThrow('offline');
+      await second;
+      expect(repo.moveOption).toHaveBeenCalledTimes(1);
+      expect(optionIds(choice.id)).toEqual(['a', 'b', 'c']);
     });
   });
 

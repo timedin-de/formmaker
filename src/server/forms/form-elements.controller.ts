@@ -20,6 +20,8 @@ import {
   createValidationRuleSchema,
   type MoveElementRequest,
   moveElementSchema,
+  type MoveOptionRequest,
+  moveOptionSchema,
   type UpdateElementRequest,
   updateElementSchema,
   type UpdateOptionRequest,
@@ -130,6 +132,20 @@ export class FormElementsController {
   ) {
     return changeManagedForm(this.repository, formId, user, (item) =>
       this.formService.updateOption(item, elementId, optionId, body),
+    );
+  }
+
+  @Post(':elementId/options/:optionId/move')
+  @HttpCode(204)
+  async moveOption(
+    @CurrentUser() user: User,
+    @Param('formId') formId: string,
+    @Param('elementId') elementId: string,
+    @Param('optionId') optionId: string,
+    @Body(new ZodValidationPipe(moveOptionSchema)) body: MoveOptionRequest,
+  ) {
+    await changeManagedForm(this.repository, formId, user, (item) =>
+      this.formService.moveOption(item, elementId, optionId, body),
     );
   }
 

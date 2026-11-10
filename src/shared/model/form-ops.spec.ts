@@ -2,7 +2,7 @@ import { addToGroup, getElements, newForm } from '@test/helper';
 import { describe, expect, it } from 'vitest';
 import type { ConditionGroup } from './conditions.model';
 import { createElement, createPage } from './form-factory';
-import { cloneElement, clonePage, patchElement } from './form-ops';
+import { cloneElement, clonePage, moveOptionTo, patchElement } from './form-ops';
 import type {
   ChoiceElement,
   FormDefinition,
@@ -337,5 +337,41 @@ describe('patchElement', () => {
     const next = patchElement(form, group.id, { defaultValue: fromField(other.id) });
 
     expect(defaultOf(next, child.id)).toBeNull();
+  });
+});
+
+describe('moveOptionTo', () => {
+  function withChoice(): { form: FormDefinition; choice: ChoiceElement } {
+    const form = newForm('Demo');
+    const page = createPage('Page 1');
+    const choice = createElement('choice', 'Pick') as ChoiceElement;
+    choice.options = ['A', 'B', 'C'].map((label) => ({ id: label.toLowerCase(), label }));
+    addToGroup(choice, page, form);
+    form.pages = [page];
+    return { form, choice };
+  }
+
+  const ids = (form: FormDefinition, id: string) =>
+    (form.elements[id] as ChoiceElement).options.map((o) => o.id);
+
+  it('moves an option to the index counted after taking it out', () => {
+    const { form, choice } = withChoice();
+
+    expect(ids(moveOptionTo(form, choice.id, 'a', 2)!, choice.id)).toEqual(['b', 'c', 'a']);
+    expect(ids(moveOptionTo(form, choice.id, 'c', 0)!, choice.id)).toEqual(['c', 'a', 'b']);
+    expect(ids(form, choice.id)).toEqual(['a', 'b', 'c']);
+  });
+
+  it('clamps an index past the end', () => {
+    const { form, choice } = withChoice();
+
+    expect(ids(moveOptionTo(form, choice.id, 'a', 9)!, choice.id)).toEqual(['b', 'c', 'a']);
+  });
+
+  it('returns null for an unknown element or option', () => {
+    const { form, choice } = withChoice();
+
+    expect(moveOptionTo(form, 'gone', 'a', 0)).toBeNull();
+    expect(moveOptionTo(form, choice.id, 'gone', 0)).toBeNull();
   });
 });
