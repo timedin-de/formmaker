@@ -20,6 +20,7 @@ import { downloadBlob, submissionToPdf, toSlug } from '../core/export';
 import { I18nService } from '../core/i18n';
 import { MarkdownPipe } from '../core/markdown';
 import { Notifier } from '../core/notifier';
+import { PendingActions } from '../core/pending-actions';
 import { FormsRepository } from '../core/state/forms.repository';
 import type { RunnerPage } from '../core/state/runner.model';
 import { RunnerStore } from '../core/state/runner.store';
@@ -48,7 +49,7 @@ import { QuestionList } from './questionList/question-list';
   templateUrl: './runner.html',
   styleUrl: './runner.scss',
 })
-export class Runner {
+export class Runner extends PendingActions {
   readonly store = inject(RunnerStore);
   private readonly repo = inject(FormsRepository);
   private readonly route = inject(ActivatedRoute);
@@ -60,7 +61,6 @@ export class Runner {
   protected readonly formLoaded = signal(false);
   protected lastSubmission = signal<Submission | null>(null);
   protected readonly submitted = signal(false);
-  protected readonly submitting = signal(false);
 
   protected pageSignal = computed<RunnerPage | null>(() => this.store.currentPage());
   protected submitLabel = computed(
@@ -68,6 +68,7 @@ export class Runner {
   );
 
   constructor() {
+    super();
     this.route.queryParams.pipe(first()).subscribe((q) => {
       if (q['page']) {
         this.store.goTo(q['page']);
@@ -134,17 +135,15 @@ export class Runner {
   }
 
   async submit(): Promise<void> {
-    if (this.submitting()) return;
-    const result = this.store.submit();
-    if (!result) {
-      for (const page of this.store.pages()) {
-        if (page.visible) this.store.markPageTouched(page);
+    await this.whilePending(async () => {
+      const result = this.store.submit();
+      if (!result) {
+        for (const page of this.store.pages()) {
+          if (page.visible) this.store.markPageTouched(page);
+        }
+        this.store.revealFirstInvalid();
+        return;
       }
-      this.store.revealFirstInvalid();
-      return;
-    }
-    this.submitting.set(true);
-    try {
       const submission = await this.repo.addSubmission(result.submission);
       if (!submission) {
         this.notifier.error('errors.unknown');
@@ -154,11 +153,7 @@ export class Runner {
       this.submitted.set(true);
       this.lastSubmission.set(submission);
       this.notifier.ok('runner.submitted');
-    } catch {
-      this.notifier.error('errors.unknown');
-    } finally {
-      this.submitting.set(false);
-    }
+    }, 'errors.unknown');
   }
 
   async downloadReceipt(): Promise<void> {
