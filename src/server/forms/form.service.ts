@@ -2,7 +2,7 @@ import { BadRequestException, Inject, Injectable, NotFoundException } from '@nes
 import { FORM_VERSION } from '@shared/consts';
 import { evalConditionGroup, validateElementValue } from '@shared/engine';
 import { compileRegex } from '@shared/engine/regex';
-import { isQuestion, isQuestionOrGroup } from '@shared/helper';
+import { isChoice, isQuestion, isQuestionOrGroup } from '@shared/helper';
 import {
   addPage,
   childrenOf,
@@ -49,13 +49,25 @@ export interface OwnedForm {
   ownerId: string;
 }
 
-/** The question `id`, or throws 404 / 400. */
-function questionElement(form: FormDefinition, id: string): QuestionDefinition {
+/**
+ * The element `id` if it passes `guard`; throws 404 when there is none and 400 with
+ * "element <id> has <lacks>" when it is of the wrong kind.
+ */
+function elementOf<T extends ElementDefinition>(
+  form: FormDefinition,
+  id: string,
+  guard: (element: ElementDefinition) => element is T,
+  lacks: string,
+): T {
   const element = getElement(form, id);
   if (!element) throw new NotFoundException({ error: `no element with id: ${id}` });
-  if (!isQuestion(element))
-    throw new BadRequestException({ error: `element ${id} has no validations` });
+  if (!guard(element)) throw new BadRequestException({ error: `element ${id} has ${lacks}` });
   return element;
+}
+
+/** The question `id`, or throws 404 / 400. */
+function questionElement(form: FormDefinition, id: string): QuestionDefinition {
+  return elementOf(form, id, isQuestion, 'no validations');
 }
 
 /** The validation rule `id` of `element`, or throws 404. */
@@ -105,11 +117,7 @@ function assertRuleFields(rule: ValidationRule): void {
 
 /** The choice, dropdown or multi choice element `id`, or throws 404 / 400. */
 function choiceElement(form: FormDefinition, id: string): ChoiceElement {
-  const element = getElement(form, id);
-  if (!element) throw new NotFoundException({ error: `no element with id: ${id}` });
-  if (element.type !== 'choice' && element.type !== 'dropdown' && element.type !== 'multiChoice')
-    throw new BadRequestException({ error: `element ${id} has no options` });
-  return element;
+  return elementOf(form, id, isChoice, 'no options');
 }
 
 /** The option `id` of `element`, or throws 404. */
