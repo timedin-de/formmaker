@@ -9,6 +9,7 @@ import {
   type FormSettings,
   type FormWithOwner,
   type PageDefinition,
+  type PagePatch,
   type SaveFormDefinition,
 } from '../model';
 import { conditionGroupSchema } from './conditions';
@@ -94,6 +95,20 @@ export const formsWithOwnerSchema = z.array(formWithOwnerSchema);
 export const createPageSchema = z.strictObject({
   title: z.string(),
 });
+
+/** Max length of a page title sent to the page PATCH endpoint. */
+const PAGE_TITLE_MAX = 1000;
+/** Max length of a page subtitle sent to the page PATCH endpoint. */
+const PAGE_SUBTITLE_MAX = 10_000;
+
+/** Body of `PATCH /api/forms/:formId/pages/:pageId`; null removes the condition. */
+export const updatePageSchema = z.strictObject({
+  title: z.optional(z.string().check(z.maxLength(PAGE_TITLE_MAX))),
+  subtitle: z.optional(z.string().check(z.maxLength(PAGE_SUBTITLE_MAX))),
+  enabledWhen: z.optional(z.nullable(conditionGroupSchema)),
+}) satisfies z.ZodMiniType<PagePatch>;
+
+export type UpdatePageRequest = z.infer<typeof updatePageSchema>;
 
 /** Body of `POST /api/forms`, which creates a new empty form. */
 export const newFormSchema = z._default(

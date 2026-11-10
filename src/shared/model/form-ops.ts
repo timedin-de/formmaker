@@ -164,6 +164,28 @@ export function patchElement<T extends FormDocument>(
   return def?.kind === 'fromField' ? pairGroupDefaults(next, id, def.fieldId) : next;
 }
 
+/** A change to the fields of a page, as sent to the page PATCH endpoint; null removes. */
+export interface PagePatch {
+  title?: string;
+  subtitle?: string;
+  enabledWhen?: ConditionGroup | null;
+}
+
+/**
+ * Applies `patch` to the page `pageId`: null removes a field, other values replace it.
+ * Returns the input when there is no such page.
+ */
+export function patchPage<T extends FormDocument>(form: T, pageId: PageId, patch: PagePatch): T {
+  const page = form.pages.find((p) => p.id === pageId);
+  if (!page) return form;
+  const patched: PageDefinition = { ...page };
+  if (patch.title !== undefined) patched.title = patch.title;
+  if (patch.subtitle !== undefined) patched.subtitle = patch.subtitle;
+  if (patch.enabledWhen === null) delete patched.enabledWhen;
+  else if (patch.enabledWhen !== undefined) patched.enabledWhen = patch.enabledWhen;
+  return { ...form, pages: form.pages.map((p) => (p === page ? patched : p)) };
+}
+
 /** Removes the element `id` together with everything below it. */
 export function removeElement<T extends FormDocument>(form: T, id: ElementId): T {
   const parent = parentOf(form, id);

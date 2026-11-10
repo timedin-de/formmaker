@@ -202,6 +202,7 @@ const en = {
   'row.moveFailed': 'The element could not be moved.',
   'panel.patchElementFailed': 'The change to the element could not be saved.',
   'panel.moveOptionFailed': 'The option could not be moved.',
+  'canvas.patchPageFailed': 'The change to the page could not be saved.',
   'row.delete': 'Delete',
   'row.addChild': 'Add child',
 

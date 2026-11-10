@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { createElement, createPage } from '@shared/model/form-factory';
-import type { ElementPatch } from '@shared/model/form-ops';
+import type { ElementPatch, PagePatch } from '@shared/model/form-ops';
 import type {
   ChoiceElement,
   ElementDefinition,
@@ -284,6 +284,13 @@ describe('DesignerStore server-side creation', () => {
     }),
     deleteElement: vi.fn(async () => {
       calls.push('deleteElement');
+    }),
+    updatePage: vi.fn(async (_formId: string, pageId: string, _patch: PagePatch) => {
+      calls.push('updatePage');
+      return createPage(pageId);
+    }),
+    deletePage: vi.fn(async () => {
+      calls.push('deletePage');
     }),
   };
 
@@ -919,6 +926,90 @@ describe('DesignerStore server-side creation', () => {
         message: 'panel.patchElementFailed',
       });
       expect(element(choice.id).label).toBe('Kept');
+    });
+  });
+
+  describe('page edits', () => {
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => vi.useRealTimers());
+
+    const pageOf = (id: string) => store.form().pages.find((p) => p.id === id);
+    const condition = { logic: 'all' as const, conditions: [], groups: [] };
+
+    it('applies title and subtitle at once and sends them as one request', async () => {
+      const { page } = loaded();
+
+      store.updatePage(page.id, { title: 'Contact' });
+      store.updatePage(page.id, { subtitle: 'How to reach you' });
+
+      expect(pageOf(page.id)).toMatchObject({ title: 'Contact', subtitle: 'How to reach you' });
+      expect(store.dirty()).toBe(false);
+      await vi.advanceTimersByTimeAsync(PATCH_DELAY_MS);
+
+      expect(repo.updatePage).toHaveBeenCalledTimes(1);
+      expect(repo.updatePage).toHaveBeenCalledWith(
+        store.form().id,
+        page.id,
+        { title: 'Contact', subtitle: 'How to reach you' },
+        { keepalive: false },
+      );
+    });
+
+    it('removes the condition set to undefined and sends null for it', async () => {
+      const { page } = loaded();
+      store.updatePage(page.id, { enabledWhen: condition });
+      store.updatePage(page.id, { enabledWhen: undefined });
+
+      expect(pageOf(page.id)).not.toHaveProperty('enabledWhen');
+      await vi.advanceTimersByTimeAsync(PATCH_DELAY_MS);
+      expect(repo.updatePage).toHaveBeenCalledWith(
+        store.form().id,
+        page.id,
+        { enabledWhen: null },
+        { keepalive: false },
+      );
+    });
+
+    it('sends the edits of a page at once when another page is activated', async () => {
+      const { page } = loaded();
+      const other = await store.addPage();
+      store.selectPage(page.id);
+
+      store.updatePage(page.id, { title: 'Contact' });
+      store.selectPage(other.id);
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(repo.updatePage).toHaveBeenCalledWith(
+        store.form().id,
+        page.id,
+        { title: 'Contact' },
+        { keepalive: false },
+      );
+    });
+
+    it('drops pending edits of a removed page and of its elements', async () => {
+      const { page, group } = loaded();
+
+      store.updatePage(page.id, { title: 'Doomed' });
+      store.updateElement(group.id, { label: 'Doomed too' });
+      await store.removePage(page.id);
+      await vi.advanceTimersByTimeAsync(PATCH_DELAY_MS);
+
+      expect(repo.updatePage).not.toHaveBeenCalled();
+      expect(repo.updateElement).not.toHaveBeenCalled();
+    });
+
+    it('reports a failed send with the page message', async () => {
+      const { page } = loaded();
+      repo.updatePage.mockRejectedValueOnce(new Error('offline'));
+
+      store.updatePage(page.id, { title: 'Contact' });
+      await vi.advanceTimersByTimeAsync(PATCH_DELAY_MS);
+
+      expect(store.patchError()).toEqual({
+        error: new Error('offline'),
+        message: 'canvas.patchPageFailed',
+      });
     });
   });
 

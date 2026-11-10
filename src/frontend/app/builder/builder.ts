@@ -94,6 +94,14 @@ export class BuilderComponent {
         }
       });
 
+    // Element, option and page edits are sent in the background; report a failed one.
+    effect(() => {
+      const failed = this.store.patchError();
+      if (!failed) return;
+      this.store.patchError.set(null);
+      this.notifier.apiError(failed.error, failed.message);
+    });
+
     effect(() => {
       // Auto-mark unsaved whenever the form struct changes after initial load.
       if (this.store._form()) return;

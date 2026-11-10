@@ -8,6 +8,8 @@ import {
   moveElementTo,
   moveOptionTo,
   patchElement,
+  type PagePatch,
+  patchPage,
   removeElement,
   removePage,
   updateElement,
@@ -43,17 +45,18 @@ import { FormsRepository } from './forms.repository';
 
 const STORAGE_KEY = 'formmaker.designer.v1';
 /**
- * How long an edit waits for further edits of the same element before it is sent, so
- * e.g. changing the label and description and ticking "required" is one request.
- * Each edit restarts the wait; leaving the element sends at once (see `select`).
+ * How long an edit waits for further edits of the same element or page before it is
+ * sent, so e.g. changing the label and description and ticking "required" is one
+ * request. Each edit restarts the wait; leaving the element or page sends at once
+ * (see `select`, `selectPage`).
  */
 export const PATCH_DELAY_MS = 3000;
 
 /** An edit that is applied locally but not sent yet; see `queuePatch`. */
 interface PendingPatch {
   formId: string;
-  /** The element the edit belongs to, so removing the element drops it. */
-  elementId: ElementId;
+  /** The element or page the edit belongs to, so removing it drops the edit. */
+  targetId: string;
   /** Every edit of the same thing since the last send, merged. */
   patch: object;
   send: (keepalive: boolean) => Promise<unknown>;
@@ -76,11 +79,18 @@ function elementKey(elementId: ElementId): string {
   return `element:${elementId}`;
 }
 
-/** `patch` with every undefined field set to null, which removes it (see `ElementPatch`). */
-function toElementPatch(patch: ElementPatch): ElementPatch {
+function pageKey(pageId: string): string {
+  return `page:${pageId}`;
+}
+
+/**
+ * `patch` with every undefined field set to null, which removes it (JSON has no
+ * undefined; see `ElementPatch`, `PagePatch`).
+ */
+function withNulls<P extends ElementPatch | PagePatch>(patch: P): P {
   return Object.fromEntries(
     Object.entries(patch).map(([key, value]) => [key, value === undefined ? null : value]),
-  );
+  ) as P;
 }
 
 /** Replaces the options of the choice element `elementId`; returns the input without one. */
@@ -218,16 +228,29 @@ export class DesignerStore {
   async removePage(pageId: string) {
     const page = this.form().pages.find((p) => p.id === pageId);
     const ids = page?.children.flatMap((id) => subtreeIds(this.form(), id)) ?? [];
-    await this.withoutPatchesOf(ids, () => this.repository.deletePage(this.form().id, pageId));
+    await this.withoutPatchesOf([pageId, ...ids], () =>
+      this.repository.deletePage(this.form().id, pageId),
+    );
     this.applyServerChange((f) => removePage(f, pageId));
     const pages = this.form().pages;
     if (this.activePageId() === pageId) this.activePageId.set(pages[0]?.id ?? null);
   }
 
-  updatePage(pageId: string, patch: Partial<PageDefinition>): void {
-    this.patchForm({
-      pages: this.form().pages.map((p) => (p.id === pageId ? { ...p, ...patch } : p)),
-    });
+  /**
+   * Applies a page edit locally right away (an undefined field is removed) and sends
+   * it to the server shortly after, merged with further edits of the same page.
+   */
+  updatePage(pageId: string, patch: PagePatch): void {
+    const request = withNulls(patch);
+    this.applyServerChange((f) => patchPage(f, pageId, request));
+    this.queuePatch(
+      pageKey(pageId),
+      pageId,
+      request,
+      'canvas.patchPageFailed',
+      (formId, merged, keepalive) =>
+        this.repository.updatePage(formId, pageId, merged, { keepalive }),
+    );
   }
 
   /**
@@ -271,7 +294,7 @@ export class DesignerStore {
    * the same element, so typing a label sends one request rather than one per key.
    */
   updateElement(elementId: ElementId, patch: ElementPatch): void {
-    const request = toElementPatch(patch);
+    const request = withNulls(patch);
     this.applyServerChange((f) => patchElement(f, elementId, request));
     this.queuePatch(
       elementKey(elementId),
@@ -480,15 +503,19 @@ export class DesignerStore {
     this.selectedId.set(id);
   }
 
-  /** Sends the unsent edits of the element `elementId` and its options right away. */
-  sendEditsOf(elementId: ElementId): void {
+  /** Sends the unsent edits of the element or page `id` (and its options) right away. */
+  sendEditsOf(id: string): void {
     for (const [key, pending] of [...this.patches]) {
-      if (pending.elementId === elementId) void this.sendPatch(key);
+      if (pending.targetId === id) void this.sendPatch(key);
     }
   }
 
+  /** Activates a page; unsent edits of the page active before are sent right away. */
   selectPage(id: string): void {
-    if (this.form().pages.find((page) => page.id === id)) this.activePageId.set(id);
+    if (!this.form().pages.find((page) => page.id === id)) return;
+    const previous = this.activePageId();
+    if (previous && previous !== id) this.sendEditsOf(previous);
+    this.activePageId.set(id);
   }
 
   // ---- internals -------------------------------------------------------------
@@ -561,13 +588,13 @@ export class DesignerStore {
   }
 
   /**
-   * Queues the edit `patch` of the element `elementId` (or one of its options) under
-   * `key`, merged with an unsent earlier edit of the same key, and sends it with `send`
-   * once no further edit arrives for `PATCH_DELAY_MS`.
+   * Queues the edit `patch` of the element or page `targetId` (or one of its options)
+   * under `key`, merged with an unsent earlier edit of the same key, and sends it with
+   * `send` once no further edit arrives for `PATCH_DELAY_MS`.
    */
   private queuePatch<P extends object>(
     key: string,
-    elementId: ElementId,
+    targetId: string,
     patch: P,
     failed: TranslationKey,
     send: (formId: string, patch: P, keepalive: boolean) => Promise<unknown>,
@@ -579,7 +606,7 @@ export class DesignerStore {
     const merged: P = { ...(pending?.patch as P | undefined), ...patch };
     this.schedulePatch(key, {
       formId,
-      elementId,
+      targetId,
       patch: merged,
       failed,
       send: (keepalive) => send(formId, merged, keepalive),
@@ -659,10 +686,10 @@ export class DesignerStore {
     }
   }
 
-  /** `withoutPatches` for every unsent edit of the elements `elementIds` and their options. */
-  private withoutPatchesOf(elementIds: ElementId[], remove: () => Promise<void>): Promise<void> {
-    const ids = new Set(elementIds);
-    return this.withoutPatches((_key, pending) => ids.has(pending.elementId), remove);
+  /** `withoutPatches` for every unsent edit of the elements or pages `targetIds`. */
+  private withoutPatchesOf(targetIds: string[], remove: () => Promise<void>): Promise<void> {
+    const ids = new Set(targetIds);
+    return this.withoutPatches((_key, pending) => ids.has(pending.targetId), remove);
   }
 
   /**

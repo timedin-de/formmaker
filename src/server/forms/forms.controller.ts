@@ -20,9 +20,6 @@ import {
   uuid,
 } from '@shared/model';
 import {
-  type CloneRequest,
-  cloneRequestSchema,
-  createPageSchema,
   formDefinitionSchema,
   type NewFormRequest,
   newFormSchema,
@@ -30,7 +27,6 @@ import {
   stripFormOwnership,
   submissionCreateSchema,
 } from '@shared/schemas';
-import type * as z from 'zod/mini';
 import { AuthGuard } from '../auth/auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
@@ -117,43 +113,6 @@ export class FormsController {
     if (!canManage(existing.ownerId, user))
       throw new ForbiddenException({ error: 'not form owner of form' });
     return this.repository.saveForm(existing?.ownerId ?? user.id, { ...existing.form, ...form });
-  }
-
-  @Post(':id/pages')
-  @HttpCode(201)
-  @UseGuards(AuthGuard)
-  async addPage(
-    @CurrentUser() user: User,
-    @Param('id') id: string,
-    @Body(new ZodValidationPipe(createPageSchema)) body: z.infer<typeof createPageSchema>,
-  ) {
-    const item = await managedForm(this.repository, id, user);
-    return this.formService.addPage(item, body.title);
-  }
-
-  @Post(':formId/pages/:pageId/clone')
-  @HttpCode(201)
-  @UseGuards(AuthGuard)
-  async clonePage(
-    @CurrentUser() user: User,
-    @Param('formId') formId: string,
-    @Param('pageId') pageId: string,
-    @Body(new ZodValidationPipe(cloneRequestSchema)) body: CloneRequest,
-  ) {
-    const item = await managedForm(this.repository, formId, user);
-    return this.formService.clonePage(item, pageId, body);
-  }
-
-  @Delete(':formId/pages/:pageId')
-  @HttpCode(204)
-  @UseGuards(AuthGuard)
-  async deletePage(
-    @CurrentUser() user: User,
-    @Param('formId') formId: string,
-    @Param('pageId') pageId: string,
-  ) {
-    const item = await managedForm(this.repository, formId, user);
-    return this.formService.deletePage(item, pageId);
   }
 
   @Delete(':id')

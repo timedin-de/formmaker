@@ -376,6 +376,45 @@ describe('FormService moveOption', () => {
   });
 });
 
+describe('FormService updatePage', () => {
+  let saveForm: ReturnType<typeof vi.fn>;
+  let service: FormService;
+
+  beforeEach(() => {
+    saveForm = vi.fn();
+    service = new FormService({ saveForm } as unknown as Repository);
+  });
+
+  const saved = (): FormDefinition => saveForm.mock.calls[0][1] as FormDefinition;
+  const sample = () => formOf([page('p1', [text('q1')], isNotEmpty('q1')), page('p2', [])]);
+
+  it('merges the patch, stores it for the owner and returns the stored page', async () => {
+    const updated = await service.updatePage({ form: sample(), ownerId: 'owner-1' }, 'p1', {
+      title: 'Contact',
+      subtitle: 'How to reach you',
+    });
+
+    expect(saveForm).toHaveBeenCalledWith('owner-1', expect.objectContaining({ id: 'form-1' }));
+    expect(updated).toMatchObject({ id: 'p1', title: 'Contact', children: ['q1'] });
+    expect(saved().pages).toEqual([updated, expect.objectContaining({ id: 'p2' })]);
+  });
+
+  it('removes the condition sent as null', async () => {
+    await service.updatePage({ form: sample(), ownerId: 'owner-1' }, 'p1', {
+      enabledWhen: null,
+    });
+
+    expect(saved().pages[0]).not.toHaveProperty('enabledWhen');
+  });
+
+  it('throws 404 without saving for an unknown page', async () => {
+    await expect(
+      service.updatePage({ form: sample(), ownerId: 'owner-1' }, 'gone', { title: 'x' }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    expect(saveForm).not.toHaveBeenCalled();
+  });
+});
+
 describe('FormService updateElement', () => {
   let saveForm: ReturnType<typeof vi.fn>;
   let service: FormService;

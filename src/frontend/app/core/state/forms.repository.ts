@@ -21,6 +21,7 @@ import {
   type CreateValidationRuleRequest,
   type MoveElementRequest,
   type MoveOptionRequest,
+  type UpdatePageRequest,
   type NewFormRequest,
   elementDefinitionSchema,
   formDefinitionSchema,
@@ -175,6 +176,25 @@ export class FormsRepository {
     );
     removeCache(FORM_CACHE_PREFIX + formId);
     return clone;
+  }
+
+  /**
+   * Patches the fields of a page on the server; returns the page as stored there.
+   * `keepalive` lets the request outlive the page, e.g. when sent while it is being closed.
+   */
+  async updatePage(
+    formId: string,
+    pageId: string,
+    patch: UpdatePageRequest,
+    { keepalive = false }: { keepalive?: boolean } = {},
+  ): Promise<PageDefinition> {
+    const page = await this.api.request(
+      pageDefinitionSchema,
+      `/api/forms/${encodeURIComponent(formId)}/pages/${encodeURIComponent(pageId)}`,
+      { method: 'PATCH', body: JSON.stringify(patch), keepalive },
+    );
+    removeCache(FORM_CACHE_PREFIX + formId);
+    return page;
   }
 
   async deletePage(formId: string, pageId: string) {

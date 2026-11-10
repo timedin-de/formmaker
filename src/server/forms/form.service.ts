@@ -24,6 +24,7 @@ import {
   moveOptionTo,
   type PageClone,
   patchElement,
+  patchPage,
   type PageDefinition,
   parentOf,
   type QuestionDefinition,
@@ -48,6 +49,7 @@ import {
   type MoveOptionRequest,
   type UpdateElementRequest,
   type UpdateOptionRequest,
+  type UpdatePageRequest,
   type UpdateValidationRuleRequest,
 } from '@shared/schemas';
 import { Repository, type User } from '../repository';
@@ -184,6 +186,22 @@ export class FormService {
     if (!clone) throw new NotFoundException({ error: `no page with id: ${pageId}` });
     await this.repository.saveForm(ownerId, addPage(form, clone.page, clone.elements));
     return clone;
+  }
+
+  /**
+   * Applies `patch` to a page (see `patchPage`) and returns the page as stored.
+   * Throws 404 for an unknown page.
+   */
+  async updatePage(
+    { form, ownerId }: OwnedForm,
+    pageId: string,
+    patch: UpdatePageRequest,
+  ): Promise<PageDefinition> {
+    const next = patchPage(form, pageId, patch);
+    const page = next.pages.find((p) => p.id === pageId);
+    if (!page) throw new NotFoundException({ error: `no page with id: ${pageId}` });
+    await this.repository.saveForm(ownerId, next);
+    return page;
   }
 
   /** Removes a page and all of its elements from the stored form. */

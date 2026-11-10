@@ -1,4 +1,4 @@
-import { Component, computed, effect, inject, input } from '@angular/core';
+import { Component, computed, inject, input } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
@@ -65,16 +65,6 @@ export class PropertyPanel {
   readonly store = input.required<DesignerStore>();
   protected readonly i18n = inject(I18nService);
   private readonly notifier = inject(Notifier);
-
-  constructor() {
-    effect(() => {
-      const failed = this.store().patchError();
-      if (!failed) return;
-      this.store().patchError.set(null);
-
-      this.notifier.apiError(failed.error, failed.message);
-    });
-  }
 
   protected readonly WIDTHS = WIDTHS;
   protected readonly INPUT_TYPES = INPUT_TYPES;
