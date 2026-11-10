@@ -26,7 +26,12 @@ import type {
   SaveFormDefinition,
 } from '@shared/model/form.model';
 import type { ElementId } from '@shared/model/ids';
-import { parseFormData, type UpdateOptionRequest } from '@shared/schemas';
+import type { ValidationRule } from '@shared/model/validation.model';
+import {
+  type CreateValidationRuleRequest,
+  parseFormData,
+  type UpdateOptionRequest,
+} from '@shared/schemas';
 import { I18nService } from '../i18n/translation.service';
 import { FormsRepository } from './forms.repository';
 
@@ -236,6 +241,25 @@ export class DesignerStore {
     );
     this.applyServerChange((f) => updateOptions(f, elementId, (options) => [...options, option]));
     return option;
+  }
+
+  /**
+   * Creates a validation rule on the server (which persists it) for the question
+   * `elementId` and appends it locally. Skipped locally if the element is gone by then.
+   */
+  async addValidationRule(
+    elementId: ElementId,
+    request: CreateValidationRuleRequest,
+  ): Promise<ValidationRule> {
+    const rule = await this.createOnServer((form) =>
+      this.repository.addValidationRule(form.id, elementId, request),
+    );
+    this.applyServerChange((f) => {
+      const el = getElement(f, elementId);
+      if (!el || !('validations' in el)) return f;
+      return updateElement(f, elementId, { validations: [...(el.validations ?? []), rule] });
+    });
+    return rule;
   }
 
   /**

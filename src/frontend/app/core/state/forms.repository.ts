@@ -9,6 +9,7 @@ import {
   type PageDefinition,
 } from '@shared/model/form.model';
 import type { Submission, SubmissionCreate } from '@shared/model/submission.model';
+import type { ValidationRule } from '@shared/model/validation.model';
 import {
   choiceOptionSchema,
   cloneElementResponseSchema,
@@ -17,6 +18,7 @@ import {
   type ClonePageResponse,
   type CreateElementRequest,
   type CreateOptionRequest,
+  type CreateValidationRuleRequest,
   type NewFormRequest,
   elementDefinitionSchema,
   formDefinitionSchema,
@@ -26,6 +28,7 @@ import {
   submissionSchema,
   submissionsSchema,
   type UpdateOptionRequest,
+  validationRuleSchema,
 } from '@shared/schemas';
 import {
   FORM_CACHE_PREFIX,
@@ -224,6 +227,21 @@ export class FormsRepository {
     );
     removeCache(FORM_CACHE_PREFIX + formId);
     return option;
+  }
+
+  /** Appends a validation rule to a question on the server; returns the rule as generated there. */
+  async addValidationRule(
+    formId: string,
+    elementId: string,
+    request: CreateValidationRuleRequest,
+  ): Promise<ValidationRule> {
+    const rule = await this.api.request(
+      validationRuleSchema,
+      `/api/forms/${encodeURIComponent(formId)}/elements/${encodeURIComponent(elementId)}/validations`,
+      { method: 'POST', body: JSON.stringify(request) },
+    );
+    removeCache(FORM_CACHE_PREFIX + formId);
+    return rule;
   }
 
   async deleteOption(formId: string, elementId: string, optionId: string) {

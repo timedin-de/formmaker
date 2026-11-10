@@ -10,6 +10,7 @@ import type {
 import {
   type CreateElementRequest,
   type CreateOptionRequest,
+  type CreateValidationRuleRequest,
   type UpdateOptionRequest,
 } from '@shared/schemas';
 import { addToGroup, getElements, newForm } from '@test/helper';
@@ -188,6 +189,12 @@ describe('DesignerStore server-side creation', () => {
     deleteOption: vi.fn(async () => {
       calls.push('deleteOption');
     }),
+    addValidationRule: vi.fn(
+      async (_formId: string, _elementId: string, request: CreateValidationRuleRequest) => {
+        calls.push('addValidationRule');
+        return { id: 'rule-new', ...request };
+      },
+    ),
   };
 
   beforeEach(() => {
@@ -358,6 +365,39 @@ describe('DesignerStore server-side creation', () => {
     });
 
     await store.addOption(choice.id, 'Option 3');
+
+    expect(store.form().elements[choice.id]).toBeUndefined();
+  });
+
+  it('saves unsaved edits, then appends a server-generated validation rule', async () => {
+    const choice = loadedChoice();
+    store.updateElement(choice.id, { label: 'Renamed' });
+
+    const rule = await store.addValidationRule(choice.id, { rule: 'required', message: 'Needed' });
+
+    expect(calls).toEqual(['save', 'addValidationRule']);
+    expect(repo.addValidationRule).toHaveBeenCalledWith(store.form().id, choice.id, {
+      rule: 'required',
+      message: 'Needed',
+    });
+    expect(rule).toEqual({ id: 'rule-new', rule: 'required', message: 'Needed' });
+    const stored = store.form().elements[choice.id] as ChoiceElement;
+    expect(stored.validations).toEqual([rule]);
+    expect(store.dirty()).toBe(false);
+  });
+
+  it('drops the validation rule locally when its element was removed during the request', async () => {
+    const choice = loadedChoice();
+    repo.addValidationRule.mockImplementationOnce(async (_formId, _elementId, request) => {
+      store.load({
+        ...store.form(),
+        pages: [{ ...store.form().pages[0], children: [] }],
+        elements: {},
+      });
+      return { id: 'rule-new', ...request };
+    });
+
+    await store.addValidationRule(choice.id, { rule: 'required', message: 'Needed' });
 
     expect(store.form().elements[choice.id]).toBeUndefined();
   });

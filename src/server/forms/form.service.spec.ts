@@ -415,6 +415,72 @@ describe('FormService.addOption', () => {
   });
 });
 
+describe('FormService.addValidationRule', () => {
+  let saveForm: ReturnType<typeof vi.fn>;
+  let service: FormService;
+
+  beforeEach(() => {
+    saveForm = vi.fn();
+    service = new FormService({ saveForm } as unknown as Repository);
+  });
+
+  const savedText = (id: string) =>
+    (saveForm.mock.calls[0][1] as FormDefinition).elements[id] as TextElement;
+
+  it('appends a rule with a server-generated id and persists it for the owner', async () => {
+    const form = formOf([page('p1', [text('q1')])]);
+    const created = await service.addValidationRule({ form, ownerId: 'owner-1' }, 'q1', {
+      rule: 'email',
+      message: 'Not an email',
+    });
+
+    expect(created).toEqual({ id: expect.any(String), rule: 'email', message: 'Not an email' });
+    expect(saveForm).toHaveBeenCalledWith('owner-1', expect.objectContaining({ id: 'form-1' }));
+    expect(savedText('q1').validations).toEqual([created]);
+  });
+
+  it('allows a repeatable rule more than once', async () => {
+    const existing = { id: 'r1', rule: 'pattern' as const, message: 'x', pattern: 'a' };
+    const form = formOf([page('p1', [text('q1', { validations: [existing] })])]);
+    const created = await service.addValidationRule({ form, ownerId: 'owner-1' }, 'q1', {
+      rule: 'pattern',
+      message: 'y',
+    });
+
+    expect(created.id).not.toBe('r1');
+    expect(savedText('q1').validations).toEqual([existing, created]);
+  });
+
+  it('throws 404 without saving for an unknown element', async () => {
+    const form = formOf([page('p1', [text('q1')])]);
+    await expect(
+      service.addValidationRule({ form, ownerId: 'owner-1' }, 'gone', {
+        rule: 'email',
+        message: 'x',
+      }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    expect(saveForm).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['a non-question', formOf([page('p1', [group('g1', [])])]), 'g1', 'email'],
+    ['a rule its type does not offer', formOf([page('p1', [text('q1')])]), 'q1', 'minFiles'],
+    [
+      'a second non-repeatable rule',
+      formOf([
+        page('p1', [text('q1', { validations: [{ id: 'r1', rule: 'email', message: 'x' }] })]),
+      ]),
+      'q1',
+      'email',
+    ],
+  ] as const)('throws 400 without saving for %s', async (_case, form, elementId, rule) => {
+    await expect(
+      service.addValidationRule({ form, ownerId: 'owner-1' }, elementId, { rule, message: 'x' }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(saveForm).not.toHaveBeenCalled();
+  });
+});
+
 describe('FormService.addSubmission', () => {
   let form: FormDefinition | null;
   let addSubmission: ReturnType<typeof vi.fn>;

@@ -11,13 +11,13 @@ import {
   type ElementDefinition,
   type QuestionDefinition,
   REPEATABLE_RULES,
-  uuid,
   type ValidationRule,
   type ValidationRuleType,
   ValidationsByQuestionType,
 } from '@shared/model';
 import { DesignerStore } from '../core';
 import { I18nService } from '../core/i18n';
+import { Notifier } from '../core/notifier';
 
 @Component({
   templateUrl: './validation-editor.html',
@@ -37,6 +37,7 @@ import { I18nService } from '../core/i18n';
 export class ValidationEditor {
   protected readonly i18n = inject(I18nService);
   private readonly store = inject(DesignerStore);
+  private readonly notifier = inject(Notifier);
 
   readonly validations = input.required<ValidationRule[]>();
   readonly element = input.required<ElementDefinition>();
@@ -55,10 +56,18 @@ export class ValidationEditor {
     this.store.updateElement(this.element().id, patch);
   }
 
-  addRule(event: MatSelectChange): void {
-    const el = this.element() as QuestionDefinition;
-    this.patch({ validations: [...(el.validations ?? []), this.validationRule(event.value)] });
+  /** Creates the picked rule on the server, which assigns its id. */
+  async addRule(event: MatSelectChange): Promise<void> {
+    const rule = event.value as ValidationRuleType;
     event.source.value = undefined;
+    try {
+      await this.store.addValidationRule(this.element().id, {
+        rule,
+        message: this.i18n.t(`errors.${rule}`),
+      });
+    } catch (error) {
+      this.notifier.apiError(error, 'panel.addRuleFailed');
+    }
   }
 
   removeRule(id: string): void {
@@ -128,9 +137,5 @@ export class ValidationEditor {
     if (s === '') return '';
     const n = Number(s);
     return s !== '' && !Number.isNaN(n) && /^-?\d*\.?\d+$/.test(s) ? n : s;
-  }
-
-  validationRule(rule: ValidationRuleType): ValidationRule {
-    return { id: uuid(), rule, message: this.i18n.t(`errors.${rule}`) };
   }
 }
