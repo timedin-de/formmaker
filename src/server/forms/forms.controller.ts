@@ -8,7 +8,6 @@ import {
   Inject,
   NotFoundException,
   Param,
-  Patch,
   Post,
   Put,
   UnprocessableEntityException,
@@ -23,21 +22,13 @@ import {
 import {
   type CloneRequest,
   cloneRequestSchema,
-  type CreateElementRequest,
-  createElementSchema,
-  type CreateOptionRequest,
-  createOptionSchema,
   createPageSchema,
-  type CreateValidationRuleRequest,
-  createValidationRuleSchema,
   formDefinitionSchema,
   type NewFormRequest,
   newFormSchema,
   saveFormDefinitionSchema,
   stripFormOwnership,
   submissionCreateSchema,
-  type UpdateOptionRequest,
-  updateOptionSchema,
 } from '@shared/schemas';
 import type * as z from 'zod/mini';
 import { AuthGuard } from '../auth/auth.guard';
@@ -46,6 +37,7 @@ import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import { Repository, type User } from '../repository';
 import { FormService } from './form.service';
 import { type FormDefinition } from './forms.model';
+import { canManage, managedForm } from './managed-form';
 
 class SaveFormBodyPipe extends ZodValidationPipe<SaveFormDefinition> {
   constructor() {
@@ -66,24 +58,12 @@ class ImportFormBodyPipe extends ZodValidationPipe<FormDefinition> {
   }
 }
 
-function canManage(ownerId: string, user: User): boolean {
-  return user.role === 'admin' || user.id === ownerId;
-}
-
 @Controller('forms')
 export class FormsController {
   constructor(
     @Inject(Repository) private readonly repository: Repository,
     @Inject(FormService) private readonly formService: FormService,
   ) {}
-
-  /** Loads a form the user may manage, or throws 404 / 403. */
-  private async managedForm(id: string, user: User) {
-    const item = await this.repository.form(id);
-    if (!item) throw new NotFoundException({ error: 'not found' });
-    if (!canManage(item.ownerId, user)) throw new ForbiddenException({ error: 'not form owner' });
-    return item;
-  }
 
   @Get()
   @UseGuards(AuthGuard)
@@ -147,7 +127,7 @@ export class FormsController {
     @Param('id') id: string,
     @Body(new ZodValidationPipe(createPageSchema)) body: z.infer<typeof createPageSchema>,
   ) {
-    const item = await this.managedForm(id, user);
+    const item = await managedForm(this.repository, id, user);
     return this.formService.addPage(item, body.title);
   }
 
@@ -160,7 +140,7 @@ export class FormsController {
     @Param('pageId') pageId: string,
     @Body(new ZodValidationPipe(cloneRequestSchema)) body: CloneRequest,
   ) {
-    const item = await this.managedForm(formId, user);
+    const item = await managedForm(this.repository, formId, user);
     return this.formService.clonePage(item, pageId, body);
   }
 
@@ -172,112 +152,22 @@ export class FormsController {
     @Param('formId') formId: string,
     @Param('pageId') pageId: string,
   ) {
-    const item = await this.managedForm(formId, user);
+    const item = await managedForm(this.repository, formId, user);
     return this.formService.deletePage(item, pageId);
-  }
-
-  @Post(':id/elements')
-  @HttpCode(201)
-  @UseGuards(AuthGuard)
-  async addElement(
-    @CurrentUser() user: User,
-    @Param('id') id: string,
-    @Body(new ZodValidationPipe(createElementSchema)) body: CreateElementRequest,
-  ) {
-    const item = await this.managedForm(id, user);
-    return this.formService.addElement(item, body);
-  }
-
-  @Post(':formId/elements/:elementId/clone')
-  @HttpCode(201)
-  @UseGuards(AuthGuard)
-  async cloneElement(
-    @CurrentUser() user: User,
-    @Param('formId') formId: string,
-    @Param('elementId') elementId: string,
-    @Body(new ZodValidationPipe(cloneRequestSchema)) body: CloneRequest,
-  ) {
-    const item = await this.managedForm(formId, user);
-    return this.formService.cloneElement(item, elementId, body);
-  }
-
-  @Delete(':formId/elements/:elementId')
-  @HttpCode(204)
-  @UseGuards(AuthGuard)
-  async deleteElement(
-    @CurrentUser() user: User,
-    @Param('formId') formId: string,
-    @Param('elementId') elementId: string,
-  ) {
-    const item = await this.managedForm(formId, user);
-    return this.formService.deleteElement(item, elementId);
-  }
-
-  @Post(':formId/elements/:elementId/options')
-  @HttpCode(201)
-  @UseGuards(AuthGuard)
-  async addOption(
-    @CurrentUser() user: User,
-    @Param('formId') formId: string,
-    @Param('elementId') elementId: string,
-    @Body(new ZodValidationPipe(createOptionSchema)) body: CreateOptionRequest,
-  ) {
-    const item = await this.managedForm(formId, user);
-    return this.formService.addOption(item, elementId, body);
-  }
-
-  @Patch(':formId/elements/:elementId/options/:optionId')
-  @HttpCode(200)
-  @UseGuards(AuthGuard)
-  async updateOption(
-    @CurrentUser() user: User,
-    @Param('formId') formId: string,
-    @Param('elementId') elementId: string,
-    @Param('optionId') optionId: string,
-    @Body(new ZodValidationPipe(updateOptionSchema)) body: UpdateOptionRequest,
-  ) {
-    const item = await this.managedForm(formId, user);
-    return this.formService.updateOption(item, elementId, optionId, body);
-  }
-
-  @Delete(':formId/elements/:elementId/options/:optionId')
-  @HttpCode(204)
-  @UseGuards(AuthGuard)
-  async deleteOption(
-    @CurrentUser() user: User,
-    @Param('formId') formId: string,
-    @Param('elementId') elementId: string,
-    @Param('optionId') optionId: string,
-  ) {
-    const item = await this.managedForm(formId, user);
-    await this.formService.deleteOption(item, elementId, optionId);
-  }
-
-  @Post(':formId/elements/:elementId/validations')
-  @HttpCode(201)
-  @UseGuards(AuthGuard)
-  async addValidationRule(
-    @CurrentUser() user: User,
-    @Param('formId') formId: string,
-    @Param('elementId') elementId: string,
-    @Body(new ZodValidationPipe(createValidationRuleSchema)) body: CreateValidationRuleRequest,
-  ) {
-    const item = await this.managedForm(formId, user);
-    return this.formService.addValidationRule(item, elementId, body);
   }
 
   @Delete(':id')
   @HttpCode(204)
   @UseGuards(AuthGuard)
   async deleteForm(@CurrentUser() user: User, @Param('id') id: string) {
-    const item = await this.managedForm(id, user);
+    const item = await managedForm(this.repository, id, user);
     await this.repository.deleteForm(item.form.id);
   }
 
   @Get(':id/submissions')
   @UseGuards(AuthGuard)
   async getSubmissions(@CurrentUser() user: User, @Param('id') id: string) {
-    const item = await this.managedForm(id, user);
+    const item = await managedForm(this.repository, id, user);
     return this.repository.submissions(item.form.id);
   }
 
@@ -297,7 +187,7 @@ export class FormsController {
   @HttpCode(204)
   @UseGuards(AuthGuard)
   async clearSubmissions(@CurrentUser() user: User, @Param('id') id: string) {
-    const item = await this.managedForm(id, user);
+    const item = await managedForm(this.repository, id, user);
     await this.repository.clearSubmissions(item.form.id);
   }
 
@@ -309,7 +199,7 @@ export class FormsController {
     @Param('id') id: string,
     @Param('submissionId') submissionId: string,
   ) {
-    const item = await this.managedForm(id, user);
+    const item = await managedForm(this.repository, id, user);
     if (!(await this.repository.deleteSubmission(item.form.id, submissionId)))
       throw new NotFoundException({ error: 'not found' });
   }
