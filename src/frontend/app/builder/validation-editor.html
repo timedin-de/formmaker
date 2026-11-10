@@ -1,7 +1,11 @@
 <div class="section">
   <div class="sec-title">{{ i18n.t('panel.validation') }}</div>
   <mat-form-field appearance="outline" subscriptSizing="dynamic">
-    <mat-select [placeholder]="i18n.t('panel.addRule')" (selectionChange)="addRule($event)">
+    <mat-select
+      [disabled]="isPending()"
+      [placeholder]="i18n.t('panel.addRule')"
+      (selectionChange)="addRule($event)"
+    >
       @for (r of validationRuleTypes(); track r) {
         <mat-option [value]="r">{{ i18n.t(`val.${r}`) }}</mat-option>
       }
