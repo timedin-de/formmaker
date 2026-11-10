@@ -43,12 +43,26 @@ import {
 } from './api-cache';
 import { ApiClient } from './api-client';
 
+/** `/api/forms/:formId/elements`, or the element `elementId` below it. */
+function elementUrl(formId: string, elementId?: string): string {
+  const base = `/api/forms/${encodeURIComponent(formId)}/elements`;
+  return elementId === undefined ? base : `${base}/${encodeURIComponent(elementId)}`;
+}
+
+function optionsUrl(formId: string, elementId: string): string {
+  return `${elementUrl(formId, elementId)}/options`;
+}
+
 function optionUrl(formId: string, elementId: string, optionId: string): string {
-  return `/api/forms/${encodeURIComponent(formId)}/elements/${encodeURIComponent(elementId)}/options/${encodeURIComponent(optionId)}`;
+  return `${optionsUrl(formId, elementId)}/${encodeURIComponent(optionId)}`;
+}
+
+function validationsUrl(formId: string, elementId: string): string {
+  return `${elementUrl(formId, elementId)}/validations`;
 }
 
 function validationRuleUrl(formId: string, elementId: string, ruleId: string): string {
-  return `/api/forms/${encodeURIComponent(formId)}/elements/${encodeURIComponent(elementId)}/validations/${encodeURIComponent(ruleId)}`;
+  return `${validationsUrl(formId, elementId)}/${encodeURIComponent(ruleId)}`;
 }
 
 /** Server-backed persistence with a short-lived local response cache. */
@@ -171,11 +185,10 @@ export class FormsRepository {
 
   /** Creates and persists a new element on the server; returns the element as generated there. */
   async addElement(formId: string, request: CreateElementRequest): Promise<ElementDefinition> {
-    const element = await this.api.request(
-      elementDefinitionSchema,
-      `/api/forms/${encodeURIComponent(formId)}/elements`,
-      { method: 'POST', body: JSON.stringify(request) },
-    );
+    const element = await this.api.request(elementDefinitionSchema, elementUrl(formId), {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
     removeCache(FORM_CACHE_PREFIX + formId);
     return element;
   }
@@ -188,7 +201,7 @@ export class FormsRepository {
   ): Promise<CloneElementResponse> {
     const clone = await this.api.request(
       cloneElementResponseSchema,
-      `/api/forms/${encodeURIComponent(formId)}/elements/${encodeURIComponent(elementId)}/clone`,
+      `${elementUrl(formId, elementId)}/clone`,
       { method: 'POST', body: JSON.stringify({ suffix }) },
     );
     removeCache(FORM_CACHE_PREFIX + formId);
@@ -201,11 +214,10 @@ export class FormsRepository {
     elementId: string,
     request: CreateOptionRequest,
   ): Promise<ChoiceOption> {
-    const option = await this.api.request(
-      choiceOptionSchema,
-      `/api/forms/${encodeURIComponent(formId)}/elements/${encodeURIComponent(elementId)}/options`,
-      { method: 'POST', body: JSON.stringify(request) },
-    );
+    const option = await this.api.request(choiceOptionSchema, optionsUrl(formId, elementId), {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
     removeCache(FORM_CACHE_PREFIX + formId);
     return option;
   }
@@ -240,11 +252,10 @@ export class FormsRepository {
     elementId: string,
     request: CreateValidationRuleRequest,
   ): Promise<ValidationRule> {
-    const rule = await this.api.request(
-      validationRuleSchema,
-      `/api/forms/${encodeURIComponent(formId)}/elements/${encodeURIComponent(elementId)}/validations`,
-      { method: 'POST', body: JSON.stringify(request) },
-    );
+    const rule = await this.api.request(validationRuleSchema, validationsUrl(formId, elementId), {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
     removeCache(FORM_CACHE_PREFIX + formId);
     return rule;
   }
@@ -278,11 +289,7 @@ export class FormsRepository {
   }
 
   async deleteElement(formId: string, elementId: string) {
-    await this.api.request(
-      undefined,
-      `/api/forms/${encodeURIComponent(formId)}/elements/${encodeURIComponent(elementId)}`,
-      { method: 'DELETE' },
-    );
+    await this.api.request(undefined, elementUrl(formId, elementId), { method: 'DELETE' });
     removeCache(FORM_CACHE_PREFIX + formId);
   }
 

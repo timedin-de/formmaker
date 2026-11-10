@@ -1,5 +1,5 @@
 import { computed, DestroyRef, inject, Injectable, signal } from '@angular/core';
-import { catchFn } from '@shared/helper';
+import { catchFn, isChoice, isQuestion } from '@shared/helper';
 import {
   addPage,
   insertElement,
@@ -60,7 +60,7 @@ function updateOptions(
   update: (options: ChoiceOption[]) => ChoiceOption[],
 ): FormDefinition {
   const el = getElement(form, elementId);
-  if (!el || !('options' in el)) return form;
+  if (!el || !isChoice(el)) return form;
   return updateElement(form, elementId, { options: update(el.options) });
 }
 
@@ -71,7 +71,7 @@ function updateValidations(
   update: (rules: ValidationRule[]) => ValidationRule[],
 ): FormDefinition {
   const el = getElement(form, elementId);
-  if (!el || !('validations' in el)) return form;
+  if (!el || !isQuestion(el)) return form;
   return updateElement(form, elementId, { validations: update(el.validations ?? []) });
 }
 
