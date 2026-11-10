@@ -481,6 +481,83 @@ describe('FormService.addValidationRule', () => {
   });
 });
 
+describe('FormService validation rule edits', () => {
+  let saveForm: ReturnType<typeof vi.fn>;
+  let service: FormService;
+  const email = { id: 'r1', rule: 'email' as const, message: 'Not an email' };
+  const pattern = { id: 'r2', rule: 'pattern' as const, message: 'x', pattern: 'a' };
+  const owned = () => ({
+    form: formOf([page('p1', [text('q1', { validations: [email, pattern] }), group('g1', [])])]),
+    ownerId: 'owner-1',
+  });
+
+  beforeEach(() => {
+    saveForm = vi.fn();
+    service = new FormService({ saveForm } as unknown as Repository);
+  });
+
+  const savedText = (id: string) =>
+    (saveForm.mock.calls[0][1] as FormDefinition).elements[id] as TextElement;
+
+  it('merges a patch into a rule, keeping id and type, and persists it', async () => {
+    const updated = await service.updateValidationRule(owned(), 'q1', 'r2', {
+      message: 'No match',
+      pattern: 'b+',
+    });
+
+    expect(updated).toEqual({ id: 'r2', rule: 'pattern', message: 'No match', pattern: 'b+' });
+    expect(saveForm).toHaveBeenCalledWith('owner-1', expect.objectContaining({ id: 'form-1' }));
+    expect(savedText('q1').validations).toEqual([email, updated]);
+  });
+
+  it.each([
+    ['an invalid regex', 'r2', { pattern: '(' }],
+    ['a non-numeric bound', 'r3', { value: { a: 1 } }],
+    ['a non-numeric upper bound', 'r4', { valueTo: 'abc' }],
+  ] as const)('rejects %s without saving', async (_case, ruleId, patch) => {
+    const min = { id: 'r3', rule: 'min' as const, message: 'x' };
+    const between = { id: 'r4', rule: 'between' as const, message: 'x', value: 1 };
+    const form = formOf([page('p1', [text('q1', { validations: [pattern, min, between] })])]);
+
+    await expect(
+      service.updateValidationRule({ form, ownerId: 'owner-1' }, 'q1', ruleId, patch),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(saveForm).not.toHaveBeenCalled();
+  });
+
+  it('accepts numeric strings and empty bounds', async () => {
+    const between = { id: 'r4', rule: 'between' as const, message: 'x' };
+    const form = formOf([page('p1', [text('q1', { validations: [between] })])]);
+
+    const updated = await service.updateValidationRule({ form, ownerId: 'owner-1' }, 'q1', 'r4', {
+      value: '2.5',
+      valueTo: '',
+    });
+
+    expect(updated).toMatchObject({ value: '2.5', valueTo: '' });
+  });
+
+  it('removes a rule and persists the rest', async () => {
+    await service.deleteValidationRule(owned(), 'q1', 'r1');
+
+    expect(savedText('q1').validations).toEqual([pattern]);
+  });
+
+  it.each([
+    ['an unknown element', 'gone', 'r1', NotFoundException],
+    ['an unknown rule', 'q1', 'gone', NotFoundException],
+    ['a non-question', 'g1', 'r1', BadRequestException],
+  ] as const)('throws without saving for %s', async (_case, elementId, ruleId, error) => {
+    await expect(
+      service.updateValidationRule(owned(), elementId, ruleId, { message: 'x' }),
+    ).rejects.toBeInstanceOf(error);
+    await expect(service.deleteValidationRule(owned(), elementId, ruleId)).rejects.toBeInstanceOf(
+      error,
+    );
+    expect(saveForm).not.toHaveBeenCalled();
+  });
+});
+
 describe('FormService.addSubmission', () => {
   let form: FormDefinition | null;
   let addSubmission: ReturnType<typeof vi.fn>;

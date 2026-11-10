@@ -251,6 +251,8 @@ const en = {
   'panel.validation': 'Validation',
   'panel.addRule': 'Add a rule',
   'panel.addRuleFailed': 'The rule could not be added.',
+  'panel.removeRuleFailed': 'The rule could not be removed.',
+  'panel.patchRuleFailed': 'The rule change could not be saved.',
   'panel.message': 'Message',
   'panel.value': 'Value',
   'panel.from': 'From',

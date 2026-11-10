@@ -31,8 +31,10 @@ import {
   type CreateValidationRuleRequest,
   parseFormData,
   type UpdateOptionRequest,
+  type UpdateValidationRuleRequest,
 } from '@shared/schemas';
 import { I18nService } from '../i18n/translation.service';
+import { ApiError } from './api-error';
 import { FormsRepository } from './forms.repository';
 
 const STORAGE_KEY = 'formmaker.designer.v1';
@@ -60,6 +62,17 @@ function updateOptions(
   const el = getElement(form, elementId);
   if (!el || !('options' in el)) return form;
   return updateElement(form, elementId, { options: update(el.options) });
+}
+
+/** Replaces the validation rules of the question `elementId`; returns the input without one. */
+function updateValidations(
+  form: FormDefinition,
+  elementId: ElementId,
+  update: (rules: ValidationRule[]) => ValidationRule[],
+): FormDefinition {
+  const el = getElement(form, elementId);
+  if (!el || !('validations' in el)) return form;
+  return updateElement(form, elementId, { validations: update(el.validations ?? []) });
 }
 
 @Injectable()
@@ -254,12 +267,56 @@ export class DesignerStore {
     const rule = await this.createOnServer((form) =>
       this.repository.addValidationRule(form.id, elementId, request),
     );
-    this.applyServerChange((f) => {
-      const el = getElement(f, elementId);
-      if (!el || !('validations' in el)) return f;
-      return updateElement(f, elementId, { validations: [...(el.validations ?? []), rule] });
-    });
+    this.applyServerChange((f) => updateValidations(f, elementId, (rules) => [...rules, rule]));
     return rule;
+  }
+
+  /**
+   * Applies a validation rule edit locally right away and sends it to the server. Rule
+   * inputs commit on `change`, so each edit is one request. If the server rejects the
+   * edit (400), it is reverted locally so no later save carries it. If it fails otherwise
+   * while the form is still loaded, the form is marked dirty so the next save carries it.
+   */
+  async patchValidationRule(
+    elementId: ElementId,
+    ruleId: string,
+    patch: UpdateValidationRuleRequest,
+  ): Promise<void> {
+    const formId = this.form().id;
+    let previous: ValidationRule | undefined;
+    this.applyServerChange((f) =>
+      updateValidations(f, elementId, (rules) =>
+        rules.map((r) => {
+          if (r.id !== ruleId) return r;
+          previous = r;
+          return { ...r, ...patch };
+        }),
+      ),
+    );
+    try {
+      await this.createOnServer((form) =>
+        this.repository.updateValidationRule(form.id, elementId, ruleId, patch),
+      );
+    } catch (error) {
+      if (this._form()?.id === formId) {
+        if (error instanceof ApiError && error.status === 400 && previous) {
+          this.revertRuleEdit(elementId, ruleId, patch, previous);
+        } else {
+          this.dirty.set(true);
+        }
+      }
+      throw error;
+    }
+  }
+
+  /** Deletes a validation rule on the server, then removes it locally. */
+  async removeValidationRule(elementId: ElementId, ruleId: string): Promise<void> {
+    await this.createOnServer((form) =>
+      this.repository.deleteValidationRule(form.id, elementId, ruleId),
+    );
+    this.applyServerChange((f) =>
+      updateValidations(f, elementId, (rules) => rules.filter((r) => r.id !== ruleId)),
+    );
   }
 
   /**
@@ -450,6 +507,31 @@ export class DesignerStore {
       ...pending,
       timer: setTimeout(() => void this.sendOptionPatch(key), OPTION_PATCH_DELAY_MS),
     });
+  }
+
+  /**
+   * Restores the fields of a rejected rule edit to `previous`, but only those that still
+   * hold the rejected value, so edits made since are kept.
+   */
+  private revertRuleEdit(
+    elementId: ElementId,
+    ruleId: string,
+    patch: UpdateValidationRuleRequest,
+    previous: ValidationRule,
+  ): void {
+    const fields = Object.keys(patch) as (keyof UpdateValidationRuleRequest)[];
+    this.applyServerChange((f) =>
+      updateValidations(f, elementId, (rules) =>
+        rules.map((r) => {
+          if (r.id !== ruleId) return r;
+          const reverted: ValidationRule = { ...r };
+          for (const field of fields) {
+            if (r[field] === patch[field]) Object.assign(reverted, { [field]: previous[field] });
+          }
+          return reverted;
+        }),
+      ),
+    );
   }
 
   /** Saves unsaved edits, so the server knows everything a following change refers to. */

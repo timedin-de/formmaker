@@ -20,6 +20,8 @@ import {
   createValidationRuleSchema,
   type UpdateOptionRequest,
   updateOptionSchema,
+  type UpdateValidationRuleRequest,
+  updateValidationRuleSchema,
 } from '@shared/schemas';
 import { AuthGuard } from '../auth/auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
@@ -118,5 +120,30 @@ export class FormElementsController {
   ) {
     const item = await managedForm(this.repository, formId, user);
     return this.formService.addValidationRule(item, elementId, body);
+  }
+
+  @Patch(':elementId/validations/:ruleId')
+  @HttpCode(200)
+  async updateValidationRule(
+    @CurrentUser() user: User,
+    @Param('formId') formId: string,
+    @Param('elementId') elementId: string,
+    @Param('ruleId') ruleId: string,
+    @Body(new ZodValidationPipe(updateValidationRuleSchema)) body: UpdateValidationRuleRequest,
+  ) {
+    const item = await managedForm(this.repository, formId, user);
+    return this.formService.updateValidationRule(item, elementId, ruleId, body);
+  }
+
+  @Delete(':elementId/validations/:ruleId')
+  @HttpCode(204)
+  async deleteValidationRule(
+    @CurrentUser() user: User,
+    @Param('formId') formId: string,
+    @Param('elementId') elementId: string,
+    @Param('ruleId') ruleId: string,
+  ) {
+    const item = await managedForm(this.repository, formId, user);
+    await this.formService.deleteValidationRule(item, elementId, ruleId);
   }
 }

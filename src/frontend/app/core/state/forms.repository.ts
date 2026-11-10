@@ -28,6 +28,7 @@ import {
   submissionSchema,
   submissionsSchema,
   type UpdateOptionRequest,
+  type UpdateValidationRuleRequest,
   validationRuleSchema,
 } from '@shared/schemas';
 import {
@@ -44,6 +45,10 @@ import { ApiClient } from './api-client';
 
 function optionUrl(formId: string, elementId: string, optionId: string): string {
   return `/api/forms/${encodeURIComponent(formId)}/elements/${encodeURIComponent(elementId)}/options/${encodeURIComponent(optionId)}`;
+}
+
+function validationRuleUrl(formId: string, elementId: string, ruleId: string): string {
+  return `/api/forms/${encodeURIComponent(formId)}/elements/${encodeURIComponent(elementId)}/validations/${encodeURIComponent(ruleId)}`;
 }
 
 /** Server-backed persistence with a short-lived local response cache. */
@@ -242,6 +247,29 @@ export class FormsRepository {
     );
     removeCache(FORM_CACHE_PREFIX + formId);
     return rule;
+  }
+
+  /** Patches a validation rule of a question on the server; returns the rule as stored there. */
+  async updateValidationRule(
+    formId: string,
+    elementId: string,
+    ruleId: string,
+    patch: UpdateValidationRuleRequest,
+  ): Promise<ValidationRule> {
+    const rule = await this.api.request(
+      validationRuleSchema,
+      validationRuleUrl(formId, elementId, ruleId),
+      { method: 'PATCH', body: JSON.stringify(patch) },
+    );
+    removeCache(FORM_CACHE_PREFIX + formId);
+    return rule;
+  }
+
+  async deleteValidationRule(formId: string, elementId: string, ruleId: string) {
+    await this.api.request(undefined, validationRuleUrl(formId, elementId, ruleId), {
+      method: 'DELETE',
+    });
+    removeCache(FORM_CACHE_PREFIX + formId);
   }
 
   async deleteOption(formId: string, elementId: string, optionId: string) {

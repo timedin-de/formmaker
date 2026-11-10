@@ -9,12 +9,12 @@ import { MatTooltip } from '@angular/material/tooltip';
 import { isQuestion } from '@shared/helper';
 import {
   type ElementDefinition,
-  type QuestionDefinition,
   REPEATABLE_RULES,
   type ValidationRule,
   type ValidationRuleType,
   ValidationsByQuestionType,
 } from '@shared/model';
+import { type UpdateValidationRuleRequest } from '@shared/schemas';
 import { DesignerStore } from '../core';
 import { I18nService } from '../core/i18n';
 import { Notifier } from '../core/notifier';
@@ -54,10 +54,6 @@ export class ValidationEditor {
     );
   });
 
-  patch(patch: Partial<ElementDefinition>): void {
-    this.store.updateElement(this.element().id, patch);
-  }
-
   /** Creates the picked rule on the server, which assigns its id. */
   async addRule(event: MatSelectChange): Promise<void> {
     const rule = event.value as ValidationRuleType;
@@ -76,16 +72,22 @@ export class ValidationEditor {
     }
   }
 
-  removeRule(id: string): void {
-    const el = this.element() as QuestionDefinition;
-    this.patch({ validations: (el.validations ?? []).filter((r) => r.id !== id) });
+  /** Deletes the rule on the server, then locally. */
+  async removeRule(id: string): Promise<void> {
+    try {
+      await this.store.removeValidationRule(this.element().id, id);
+    } catch (error) {
+      this.notifier.apiError(error, 'panel.removeRuleFailed');
+    }
   }
 
-  patchRule(id: string, patch: Partial<ValidationRule>): void {
-    const el = this.element() as QuestionDefinition;
-    this.patch({
-      validations: (el.validations ?? []).map((r) => (r.id === id ? { ...r, ...patch } : r)),
-    });
+  /** Applies the edit locally and sends it to the server. */
+  async patchRule(id: string, patch: UpdateValidationRuleRequest): Promise<void> {
+    try {
+      await this.store.patchValidationRule(this.element().id, id, patch);
+    } catch (error) {
+      this.notifier.apiError(error, 'panel.patchRuleFailed');
+    }
   }
 
   ruleLabel(rule: ValidationRuleType): string {
