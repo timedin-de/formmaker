@@ -3,6 +3,7 @@ import { AuthModule } from './auth/auth.module.js';
 import { AuthService } from './auth/auth.service.js';
 import { DatabaseModule } from './database.module.js';
 import { FormService } from './forms/form.service.js';
+import { FormElementsController } from './forms/form-elements.controller.js';
 import { FormsController } from './forms/forms.controller.js';
 import { HealthController } from './health/health.controller.js';
 import { UserController } from './user/user.controller.js';
@@ -10,6 +11,6 @@ import { UserController } from './user/user.controller.js';
 @Module({
   imports: [DatabaseModule, AuthModule],
   providers: [AuthService, FormService],
-  controllers: [HealthController, UserController, FormsController],
+  controllers: [HealthController, UserController, FormsController, FormElementsController],
 })
 export class AppModule {}
