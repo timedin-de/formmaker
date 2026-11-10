@@ -174,6 +174,26 @@ export function removeElement<T extends FormDocument>(form: T, id: ElementId): T
 }
 
 /**
+ * Moves the option `optionId` of the choice element `elementId` to `index` (clamped)
+ * of its options, counted after taking it out. Returns null when there is no such
+ * choice element or option.
+ */
+export function moveOptionTo<T extends FormDocument>(
+  form: T,
+  elementId: ElementId,
+  optionId: string,
+  index: number,
+): T | null {
+  const el = getElement(form, elementId);
+  if (!el || !('options' in el)) return null;
+  const option = el.options.find((o) => o.id === optionId);
+  if (!option) return null;
+  const options = el.options.filter((o) => o !== option);
+  options.splice(Math.min(Math.max(index, 0), options.length), 0, option);
+  return updateElement(form, elementId, { options });
+}
+
+/**
  * Moves the element `id` to `index` of the page or group `parentId`. `index` is
  * resolved after the element has been detached from its current parent, so the
  * same value works for reorders and transfers. Returns null when the target does

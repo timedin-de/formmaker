@@ -6,6 +6,7 @@ import {
   insertElement,
   moveElement,
   moveElementTo,
+  moveOptionTo,
   patchElement,
   removeElement,
   removePage,
@@ -62,28 +63,49 @@ interface PendingPatch {
   timer: ReturnType<typeof setTimeout>;
 }
 
-/** A move applied locally whose request hasn't succeeded yet; see `sendMove`. */
-interface UnconfirmedMove {
-  elementId: ElementId;
-  /** The page or group the element was moved out of. */
-  fromId: string;
-  /**
-   * The siblings it followed there, nearest last, so it goes back to the same spot even
-   * when the nearest of them has been removed meanwhile.
-   */
-  before: ElementId[];
+/**
+ * A move of an element or of a choice option, applied locally but its request hasn't
+ * succeeded yet; see `sendMove`. `before` lists the siblings it followed, nearest last,
+ * so it goes back to the same spot even when the nearest of them has been removed meanwhile.
+ */
+type UnconfirmedMove =
+  | {
+      kind: 'element';
+      elementId: ElementId;
+      /** The page or group the element was moved out of. */
+      fromId: string;
+      before: ElementId[];
+    }
+  | {
+      kind: 'option';
+      /** The choice element the option belongs to. */
+      elementId: ElementId;
+      optionId: string;
+      before: string[];
+    };
+
+/** The index right after the last of `before` that is in `siblings`, or 0. */
+function indexAfter(siblings: readonly string[], before: readonly string[]): number {
+  const after = before.findLast((id) => siblings.includes(id));
+  return after === undefined ? 0 : siblings.indexOf(after) + 1;
 }
 
 /**
- * `form` with `moves` (oldest first) taken back, newest first. Each element goes back
- * right after the nearest of its former preceding siblings that is still there, or first.
+ * `form` with `moves` (oldest first) taken back, newest first. Each element or option
+ * goes back right after the nearest of its former preceding siblings still there, or first.
  */
 function undoMoves<T extends FormDocument>(form: T, moves: readonly UnconfirmedMove[]): T {
-  return moves.reduceRight((f, { elementId, fromId, before }) => {
-    const siblings = getParent(f, fromId)?.children.filter((id) => id !== elementId) ?? [];
-    const after = before.findLast((id) => siblings.includes(id));
-    const index = after === undefined ? 0 : siblings.indexOf(after) + 1;
-    return moveElementTo(f, elementId, fromId, index) ?? f;
+  return moves.reduceRight((f, move) => {
+    if (move.kind === 'option') {
+      const el = getElement(f, move.elementId);
+      const siblings =
+        el && isChoice(el) ? el.options.map((o) => o.id).filter((id) => id !== move.optionId) : [];
+      const index = indexAfter(siblings, move.before);
+      return moveOptionTo(f, move.elementId, move.optionId, index) ?? f;
+    }
+    const siblings =
+      getParent(f, move.fromId)?.children.filter((id) => id !== move.elementId) ?? [];
+    return moveElementTo(f, move.elementId, move.fromId, indexAfter(siblings, move.before)) ?? f;
   }, form);
 }
 
@@ -320,16 +342,29 @@ export class DesignerStore {
     );
   }
 
-  /** Reorders the options of a choice element locally and marks the form dirty. */
-  moveOption(elementId: ElementId, index: number, dir: -1 | 1): void {
+  /**
+   * Moves the option at `index` of a choice element one step up (-1) or down (1).
+   * Applies it locally right away and sends it to the server; if that fails, the
+   * option moves back (see `sendMove`).
+   */
+  async moveOption(elementId: ElementId, index: number, dir: -1 | 1): Promise<void> {
     const el = getElement(this.form(), elementId);
     if (!el || !isChoice(el)) return;
+    const option = el.options[index];
     const target = index + dir;
-    if (target < 0 || target >= el.options.length) return;
-    const options = [...el.options];
-    const [item] = options.splice(index, 1);
-    options.splice(target, 0, item);
-    this.patchDocument(updateElement(this.form(), elementId, { options }));
+    if (!option || target < 0 || target >= el.options.length) return;
+    const next = moveOptionTo(this.form(), elementId, option.id, target);
+    if (!next) return;
+    await this.sendMove(
+      {
+        kind: 'option',
+        elementId,
+        optionId: option.id,
+        before: el.options.slice(0, index).map((o) => o.id),
+      },
+      next,
+      (formId) => this.repository.moveOption(formId, elementId, option.id, { index: target }),
+    );
   }
 
   /**
@@ -462,7 +497,7 @@ export class DesignerStore {
   async moveElement(elementId: string, direction: -1 | 1): Promise<void> {
     const before = this.form();
     const next = moveElement(before, elementId, direction);
-    if (next !== before) await this.sendMove(elementId, before, next);
+    if (next !== before) await this.sendElementMove(elementId, before, next);
   }
 
   /**
@@ -477,7 +512,7 @@ export class DesignerStore {
   async moveElementTo(elementId: string, parentId: string, index: number): Promise<void> {
     const before = this.form();
     const next = moveElementTo(before, elementId, parentId, index);
-    if (next) await this.sendMove(elementId, before, next);
+    if (next) await this.sendElementMove(elementId, before, next);
   }
 
   /**
@@ -562,14 +597,8 @@ export class DesignerStore {
     return run;
   }
 
-  /**
-   * Applies the move of `elementId` from `before` to `next` and sends it through the
-   * creation queue. Until the server confirms it, it counts as unconfirmed: saves leave
-   * it out (see `saveIfDirty`). If it fails, it is taken back together with every move
-   * made after it, which built on it and is then dropped unsent, so the local order
-   * matches the server again.
-   */
-  private async sendMove(
+  /** Sends the move of `elementId` from `before` to `next`; see `sendMove`. */
+  private async sendElementMove(
     elementId: ElementId,
     before: FormDefinition,
     next: FormDefinition,
@@ -577,12 +606,31 @@ export class DesignerStore {
     const from = parentOf(before, elementId);
     const to = parentOf(next, elementId);
     if (!from || !to) return;
-    const move: UnconfirmedMove = {
-      elementId,
-      fromId: from.id,
-      before: from.children.slice(0, from.children.indexOf(elementId)),
-    };
     const index = to.children.indexOf(elementId);
+    await this.sendMove(
+      {
+        kind: 'element',
+        elementId,
+        fromId: from.id,
+        before: from.children.slice(0, from.children.indexOf(elementId)),
+      },
+      next,
+      (formId) => this.repository.moveElement(formId, elementId, { parentId: to.id, index }),
+    );
+  }
+
+  /**
+   * Applies `next`, the form after `move`, and sends the move with `send` through the
+   * creation queue. Until the server confirms it, it counts as unconfirmed: saves leave
+   * it out (see `saveIfDirty`). If it fails, it is taken back together with every move
+   * made after it, which may build on it and is then dropped unsent, so the local order
+   * matches the server again.
+   */
+  private async sendMove(
+    move: UnconfirmedMove,
+    next: FormDefinition,
+    send: (formId: string) => Promise<unknown>,
+  ): Promise<void> {
     this.applyServerChange(() => next);
     this.unconfirmedMoves.push(move);
     const isPending = () => this.unconfirmedMoves.includes(move);
@@ -591,7 +639,7 @@ export class DesignerStore {
         // Taken back with an earlier move that failed: sending it would misplace it.
         if (!isPending()) return;
         try {
-          await this.repository.moveElement(form.id, elementId, { parentId: to.id, index });
+          await send(form.id);
         } catch (error) {
           // Still inside the queue, so the moves after it see they were taken back.
           this.takeBackMovesFrom(move);

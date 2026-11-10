@@ -201,6 +201,7 @@ const en = {
   'row.duplicateFailed': 'The element could not be duplicated.',
   'row.moveFailed': 'The element could not be moved.',
   'panel.patchElementFailed': 'The change to the element could not be saved.',
+  'panel.moveOptionFailed': 'The option could not be moved.',
   'row.delete': 'Delete',
   'row.addChild': 'Add child',
 
