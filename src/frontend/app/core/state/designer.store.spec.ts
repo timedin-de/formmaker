@@ -255,6 +255,9 @@ describe('DesignerStore server-side creation', () => {
     deleteOption: vi.fn(async () => {
       calls.push('deleteOption');
     }),
+    moveOption: vi.fn(async () => {
+      calls.push('moveOption');
+    }),
     addValidationRule: vi.fn(
       async (_formId: string, _elementId: string, request: CreateValidationRuleRequest) => {
         calls.push('addValidationRule');
@@ -707,6 +710,43 @@ describe('DesignerStore server-side creation', () => {
       );
       const stored = store.form().elements[choice.id] as ChoiceElement;
       expect(stored.options[0].label).toBe('Retried');
+    });
+  });
+
+  describe('option moves', () => {
+    const optionIds = (id: string) =>
+      (store.form().elements[id] as ChoiceElement).options.map((o) => o.id);
+
+    it('moves an option at once and sends its new index', async () => {
+      const choice = loadedChoice();
+      const [first, second] = choice.options.map((o) => o.id);
+
+      await store.moveOption(choice.id, 0, 1);
+
+      expect(optionIds(choice.id)).toEqual([second, first]);
+      expect(repo.moveOption).toHaveBeenCalledWith(store.form().id, choice.id, first, {
+        index: 1,
+      });
+      expect(store.dirty()).toBe(false);
+    });
+
+    it('sends nothing when the option is already at the edge', async () => {
+      const choice = loadedChoice();
+
+      await store.moveOption(choice.id, 0, -1);
+
+      expect(repo.moveOption).not.toHaveBeenCalled();
+    });
+
+    it('moves the option back when the server rejects the move', async () => {
+      const choice = loadedChoice();
+      const before = optionIds(choice.id);
+      repo.moveOption.mockRejectedValueOnce(new Error('offline'));
+
+      await expect(store.moveOption(choice.id, 0, 1)).rejects.toThrow('offline');
+
+      expect(optionIds(choice.id)).toEqual(before);
+      expect(store.dirty()).toBe(false);
     });
   });
 

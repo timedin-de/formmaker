@@ -21,6 +21,7 @@ import {
   getParent,
   insertElement,
   moveElementTo,
+  moveOptionTo,
   type PageClone,
   patchElement,
   type PageDefinition,
@@ -44,6 +45,7 @@ import {
   type CreateValidationRuleRequest,
   elementDefinitionSchema,
   type MoveElementRequest,
+  type MoveOptionRequest,
   type UpdateElementRequest,
   type UpdateOptionRequest,
   type UpdateValidationRuleRequest,
@@ -309,6 +311,23 @@ export class FormService {
     const options = element.options.map((o) => (o === current ? option : o));
     await this.repository.saveForm(ownerId, updateElement(form, elementId, { options }));
     return option;
+  }
+
+  /**
+   * Moves an option of a choice element to `index` of its options, counted after
+   * taking it out and clamped. Throws 404 for an unknown element or option and 400
+   * for an element without options.
+   */
+  async moveOption(
+    { form, ownerId }: OwnedForm,
+    elementId: string,
+    optionId: string,
+    { index }: MoveOptionRequest,
+  ): Promise<void> {
+    choiceOption(choiceElement(form, elementId), optionId);
+    const next = moveOptionTo(form, elementId, optionId, index);
+    if (!next) throw new NotFoundException({ error: `no option ${optionId} in ${elementId}` });
+    await this.repository.saveForm(ownerId, next);
   }
 
   /** Removes an option from a choice element. */

@@ -20,6 +20,7 @@ import {
   type CreateOptionRequest,
   type CreateValidationRuleRequest,
   type MoveElementRequest,
+  type MoveOptionRequest,
   type NewFormRequest,
   elementDefinitionSchema,
   formDefinitionSchema,
@@ -274,6 +275,20 @@ export class FormsRepository {
     );
     removeCache(FORM_CACHE_PREFIX + formId);
     return option;
+  }
+
+  /** Moves an option of a choice element on the server (see `MoveOptionRequest`). */
+  async moveOption(
+    formId: string,
+    elementId: string,
+    optionId: string,
+    request: MoveOptionRequest,
+  ) {
+    await this.api.request(undefined, `${optionUrl(formId, elementId, optionId)}/move`, {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+    removeCache(FORM_CACHE_PREFIX + formId);
   }
 
   /** Appends a validation rule to a question on the server; returns the rule as generated there. */

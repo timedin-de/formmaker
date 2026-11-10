@@ -232,22 +232,26 @@
                     (ngModelChange)="patchOption(i, { label: $event })"
                   />
                 </mat-form-field>
-                <button
-                  mat-icon-button
-                  [matTooltip]="i18n.t('row.moveUp')"
-                  [attr.aria-label]="i18n.t('row.moveUp')"
-                  (click)="moveOption(i, -1)"
-                >
-                  <mat-icon svgIcon="arrow_upward"></mat-icon>
-                </button>
-                <button
-                  mat-icon-button
-                  [matTooltip]="i18n.t('row.moveDown')"
-                  [attr.aria-label]="i18n.t('row.moveDown')"
-                  (click)="moveOption(i, 1)"
-                >
-                  <mat-icon svgIcon="arrow_downward"></mat-icon>
-                </button>
+                @if (i > 0) {
+                  <button
+                    mat-icon-button
+                    [matTooltip]="i18n.t('row.moveUp')"
+                    [attr.aria-label]="i18n.t('row.moveUp')"
+                    (click)="moveOption(i, -1)"
+                  >
+                    <mat-icon svgIcon="arrow_upward"></mat-icon>
+                  </button>
+                }
+                @if (i < el.options.length - 1) {
+                  <button
+                    mat-icon-button
+                    [matTooltip]="i18n.t('row.moveDown')"
+                    [attr.aria-label]="i18n.t('row.moveDown')"
+                    (click)="moveOption(i, 1)"
+                  >
+                    <mat-icon svgIcon="arrow_downward"></mat-icon>
+                  </button>
+                }
                 <button
                   mat-icon-button
                   [matTooltip]="i18n.t('panel.remove')"

@@ -314,6 +314,68 @@ describe('FormService moveElement', () => {
   });
 });
 
+describe('FormService moveOption', () => {
+  let saveForm: ReturnType<typeof vi.fn>;
+  let service: FormService;
+
+  beforeEach(() => {
+    saveForm = vi.fn();
+    service = new FormService({ saveForm } as unknown as Repository);
+  });
+
+  const savedOptions = (): string[] =>
+    ((saveForm.mock.calls[0][1] as FormDefinition).elements['c1'] as ChoiceElement).options.map(
+      (o) => o.id,
+    );
+  const sample = () =>
+    formOf([
+      page('p1', [
+        choice('c1', {
+          options: [
+            { id: 'a', label: 'A' },
+            { id: 'b', label: 'B' },
+            { id: 'c', label: 'C' },
+          ],
+        }),
+        text('q1'),
+      ]),
+    ]);
+
+  it('moves an option, counting the index after taking it out', async () => {
+    await service.moveOption({ form: sample(), ownerId: 'owner-1' }, 'c1', 'a', { index: 2 });
+
+    expect(saveForm).toHaveBeenCalledWith('owner-1', expect.objectContaining({ id: 'form-1' }));
+    expect(savedOptions()).toEqual(['b', 'c', 'a']);
+  });
+
+  it('clamps an index past the end', async () => {
+    await service.moveOption({ form: sample(), ownerId: 'owner-1' }, 'c1', 'b', { index: 9 });
+
+    expect(savedOptions()).toEqual(['a', 'c', 'b']);
+  });
+
+  it('throws 404 without saving for an unknown element or option', async () => {
+    for (const [elementId, optionId] of [
+      ['gone', 'a'],
+      ['c1', 'gone'],
+    ]) {
+      await expect(
+        service.moveOption({ form: sample(), ownerId: 'owner-1' }, elementId, optionId, {
+          index: 0,
+        }),
+      ).rejects.toBeInstanceOf(NotFoundException);
+    }
+    expect(saveForm).not.toHaveBeenCalled();
+  });
+
+  it('throws 400 without saving for an element without options', async () => {
+    await expect(
+      service.moveOption({ form: sample(), ownerId: 'owner-1' }, 'q1', 'a', { index: 0 }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(saveForm).not.toHaveBeenCalled();
+  });
+});
+
 describe('FormService updateElement', () => {
   let saveForm: ReturnType<typeof vi.fn>;
   let service: FormService;

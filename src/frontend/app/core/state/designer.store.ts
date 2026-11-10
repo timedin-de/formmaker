@@ -6,6 +6,7 @@ import {
   insertElement,
   moveElement,
   moveElementTo,
+  moveOptionTo,
   patchElement,
   removeElement,
   removePage,
@@ -282,16 +283,29 @@ export class DesignerStore {
     );
   }
 
-  /** Reorders the options of a choice element locally and marks the form dirty. */
-  moveOption(elementId: ElementId, index: number, dir: -1 | 1): void {
+  /**
+   * Moves the option at `index` of a choice element one step up (-1) or down (1).
+   * Applies it locally right away and sends it to the server; if that fails, the
+   * option moves back.
+   */
+  async moveOption(elementId: ElementId, index: number, dir: -1 | 1): Promise<void> {
     const el = getElement(this.form(), elementId);
     if (!el || !isChoice(el)) return;
+    const option = el.options[index];
     const target = index + dir;
-    if (target < 0 || target >= el.options.length) return;
-    const options = [...el.options];
-    const [item] = options.splice(index, 1);
-    options.splice(target, 0, item);
-    this.patchDocument(updateElement(this.form(), elementId, { options }));
+    if (!option || target < 0 || target >= el.options.length) return;
+    const formId = this.form().id;
+    this.applyServerChange((f) => moveOptionTo(f, elementId, option.id, target) ?? f);
+    try {
+      await this.createOnServer((form) =>
+        this.repository.moveOption(form.id, elementId, option.id, { index: target }),
+      );
+    } catch (error) {
+      if (this._form()?.id === formId) {
+        this.applyServerChange((f) => moveOptionTo(f, elementId, option.id, index) ?? f);
+      }
+      throw error;
+    }
   }
 
   /**

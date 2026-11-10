@@ -174,6 +174,16 @@ export const updateOptionSchema = z.strictObject({
 
 export type UpdateOptionRequest = z.infer<typeof updateOptionSchema>;
 
+/**
+ * Body of `POST /api/forms/:formId/elements/:elementId/options/:optionId/move`. `index`
+ * is the position among the options once the option has been taken out (clamped).
+ */
+export const moveOptionSchema = z.strictObject({
+  index: z.number().check(z.int(), z.nonnegative()),
+});
+
+export type MoveOptionRequest = z.infer<typeof moveOptionSchema>;
+
 export function stripFormOwnership(value: unknown): unknown {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return value;
   const { ownerId: _ownerId, owner: _owner, ...form } = value as Record<string, unknown>;
