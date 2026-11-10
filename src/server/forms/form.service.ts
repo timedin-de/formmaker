@@ -1,6 +1,7 @@
 import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { FORM_VERSION } from '@shared/consts';
 import { evalConditionGroup, validateElementValue } from '@shared/engine';
+import { compileRegex } from '@shared/engine/regex';
 import { isQuestion, isQuestionOrGroup } from '@shared/helper';
 import {
   addPage,
@@ -21,6 +22,7 @@ import {
   type PageClone,
   type PageDefinition,
   parentOf,
+  type QuestionDefinition,
   removeElement,
   removePage,
   REPEATABLE_RULES,
@@ -28,6 +30,7 @@ import {
   updateElement,
   uuid,
   type ValidationRule,
+  type ValidationRuleType,
   ValidationsByQuestionType,
 } from '@shared/model';
 import {
@@ -36,13 +39,68 @@ import {
   type CreateOptionRequest,
   type CreateValidationRuleRequest,
   type UpdateOptionRequest,
+  type UpdateValidationRuleRequest,
 } from '@shared/schemas';
 import { Repository, type User } from '../repository';
 
 /** A stored form together with its owner, as loaded by `Repository.form`. */
-interface OwnedForm {
+export interface OwnedForm {
   form: FormDefinition;
   ownerId: string;
+}
+
+/** The question `id`, or throws 404 / 400. */
+function questionElement(form: FormDefinition, id: string): QuestionDefinition {
+  const element = getElement(form, id);
+  if (!element) throw new NotFoundException({ error: `no element with id: ${id}` });
+  if (!isQuestion(element))
+    throw new BadRequestException({ error: `element ${id} has no validations` });
+  return element;
+}
+
+/** The validation rule `id` of `element`, or throws 404. */
+function validationRule(element: QuestionDefinition, id: string): ValidationRule {
+  const rule = element.validations?.find((r) => r.id === id);
+  if (!rule) throw new NotFoundException({ error: `no rule ${id} in element ${element.id}` });
+  return rule;
+}
+
+/** Rules whose `value` (and `valueTo` for `between`) is a number bound. */
+const NUMERIC_RULES: readonly ValidationRuleType[] = [
+  'minLength',
+  'maxLength',
+  'minCount',
+  'maxCount',
+  'min',
+  'max',
+  'between',
+  'minFiles',
+  'maxFiles',
+  'fileSizeMaxMb',
+];
+
+/** Unset, empty, or a number (numeric strings included, as the engine reads them). */
+function isNumberBound(value: unknown): boolean {
+  if (value === undefined || value === '') return true;
+  return (typeof value === 'number' || typeof value === 'string') && Number.isFinite(Number(value));
+}
+
+/** Throws 400 when the fields of `rule` don't fit its type, e.g. a bad regex or bound. */
+function assertRuleFields(rule: ValidationRule): void {
+  const fail = (field: string) => {
+    throw new BadRequestException({ error: `invalid ${field} for rule ${rule.rule}` });
+  };
+  if (NUMERIC_RULES.includes(rule.rule)) {
+    if (!isNumberBound(rule.value)) fail('value');
+    if (rule.rule === 'between' && !isNumberBound(rule.valueTo)) fail('valueTo');
+  }
+  if (rule.rule === 'pattern' && rule.pattern) {
+    try {
+      compileRegex(rule.pattern);
+    } catch {
+      fail('pattern');
+    }
+  }
 }
 
 /** The choice, dropdown or multi choice element `id`, or throws 404 / 400. */
@@ -209,10 +267,7 @@ export class FormService {
     elementId: string,
     { rule, message }: CreateValidationRuleRequest,
   ): Promise<ValidationRule> {
-    const element = getElement(form, elementId);
-    if (!element) throw new NotFoundException({ error: `no element with id: ${elementId}` });
-    if (!isQuestion(element))
-      throw new BadRequestException({ error: `element ${elementId} has no validations` });
+    const element = questionElement(form, elementId);
     if (!ValidationsByQuestionType[element.type].includes(rule))
       throw new BadRequestException({ error: `rule ${rule} is not offered for ${element.type}` });
     const validations = element.validations ?? [];
@@ -225,6 +280,39 @@ export class FormService {
       updateElement(form, elementId, { validations: [...validations, created] }),
     );
     return created;
+  }
+
+  /**
+   * Merges `patch` into a validation rule of a question and returns the updated rule.
+   * Throws 404 for an unknown element or rule and 400 for a non-question or a merged
+   * rule whose fields don't fit its type (an invalid regex, a non-numeric bound).
+   */
+  async updateValidationRule(
+    { form, ownerId }: OwnedForm,
+    elementId: string,
+    ruleId: string,
+    patch: UpdateValidationRuleRequest,
+  ): Promise<ValidationRule> {
+    const element = questionElement(form, elementId);
+    const current = validationRule(element, ruleId);
+
+    const rule: ValidationRule = { ...current, ...patch };
+    assertRuleFields(rule);
+    const validations = (element.validations ?? []).map((r) => (r === current ? rule : r));
+    await this.repository.saveForm(ownerId, updateElement(form, elementId, { validations }));
+    return rule;
+  }
+
+  /** Removes a validation rule from a question; 404 / 400 as `updateValidationRule`. */
+  async deleteValidationRule(
+    { form, ownerId }: OwnedForm,
+    elementId: string,
+    ruleId: string,
+  ): Promise<void> {
+    const element = questionElement(form, elementId);
+    const current = validationRule(element, ruleId);
+    const validations = (element.validations ?? []).filter((r) => r !== current);
+    await this.repository.saveForm(ownerId, updateElement(form, elementId, { validations }));
   }
 
   async addSubmission(submission: SubmissionCreate) {

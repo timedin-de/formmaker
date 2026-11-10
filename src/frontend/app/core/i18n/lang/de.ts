@@ -256,6 +256,8 @@ const de: typeof en = {
   'panel.validation': 'Validierung',
   'panel.addRule': 'Regel hinzufügen',
   'panel.addRuleFailed': 'Die Regel konnte nicht hinzugefügt werden.',
+  'panel.removeRuleFailed': 'Die Regel konnte nicht entfernt werden.',
+  'panel.patchRuleFailed': 'Die Änderung der Regel konnte nicht gespeichert werden.',
   'panel.message': 'Meldung',
   'panel.value': 'Wert',
   'panel.from': 'Von',

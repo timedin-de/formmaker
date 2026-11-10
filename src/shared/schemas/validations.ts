@@ -19,10 +19,27 @@ export const validationRuleSchema = z.strictObject({
 /** Max length of a rule message sent to the validation rule endpoint. */
 const RULE_MESSAGE_MAX = 1000;
 
+const ruleMessageSchema = z.string().check(z.maxLength(RULE_MESSAGE_MAX));
+
 /** Body of `POST /forms/:formId/elements/:elementId/validations`; the server assigns the id. */
 export const createValidationRuleSchema = z.strictObject({
   rule: validationRuleTypeSchema,
-  message: z.string().check(z.maxLength(RULE_MESSAGE_MAX)),
+  message: ruleMessageSchema,
 });
 
 export type CreateValidationRuleRequest = z.infer<typeof createValidationRuleSchema>;
+
+/**
+ * Body of `PATCH /forms/:formId/elements/:elementId/validations/:ruleId`. The id and the
+ * rule type are fixed; pick another rule by deleting this one and adding a new one.
+ */
+export const updateValidationRuleSchema = z.strictObject({
+  message: z.optional(ruleMessageSchema),
+  value: z.optional(z.unknown()),
+  valueTo: z.optional(z.unknown()),
+  pattern: z.optional(z.string()),
+  expression: z.optional(z.string()),
+  accept: z.optional(z.string()),
+});
+
+export type UpdateValidationRuleRequest = z.infer<typeof updateValidationRuleSchema>;

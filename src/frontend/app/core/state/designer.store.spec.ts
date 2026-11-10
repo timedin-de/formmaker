@@ -12,10 +12,12 @@ import {
   type CreateOptionRequest,
   type CreateValidationRuleRequest,
   type UpdateOptionRequest,
+  type UpdateValidationRuleRequest,
 } from '@shared/schemas';
 import { addToGroup, getElements, newForm } from '@test/helper';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { I18nService } from '../i18n/translation.service';
+import { ApiError } from './api-error';
 import { DesignerStore, OPTION_PATCH_DELAY_MS } from './designer.store';
 import { FormsRepository } from './forms.repository';
 
@@ -195,6 +197,20 @@ describe('DesignerStore server-side creation', () => {
         return { id: 'rule-new', ...request };
       },
     ),
+    updateValidationRule: vi.fn(
+      async (
+        _formId: string,
+        _elementId: string,
+        ruleId: string,
+        patch: UpdateValidationRuleRequest,
+      ) => {
+        calls.push('updateValidationRule');
+        return { id: ruleId, rule: 'required' as const, message: '', ...patch };
+      },
+    ),
+    deleteValidationRule: vi.fn(async () => {
+      calls.push('deleteValidationRule');
+    }),
   };
 
   beforeEach(() => {
@@ -400,6 +416,112 @@ describe('DesignerStore server-side creation', () => {
     await store.addValidationRule(choice.id, { rule: 'required', message: 'Needed' });
 
     expect(store.form().elements[choice.id]).toBeUndefined();
+  });
+
+  describe('validation rule edits', () => {
+    const rule = { id: 'r1', rule: 'required' as const, message: 'Needed' };
+    const rulesOf = (id: string) => (store.form().elements[id] as ChoiceElement).validations;
+
+    function choiceWithRule(): ChoiceElement {
+      const choice = loadedChoice();
+      store.load({
+        ...store.form(),
+        elements: { ...store.form().elements, [choice.id]: { ...choice, validations: [rule] } },
+      });
+      return choice;
+    }
+
+    it('applies a rule edit locally and sends it to the server', async () => {
+      const choice = choiceWithRule();
+
+      await store.patchValidationRule(choice.id, 'r1', { message: 'Please answer' });
+
+      expect(repo.updateValidationRule).toHaveBeenCalledWith(store.form().id, choice.id, 'r1', {
+        message: 'Please answer',
+      });
+      expect(rulesOf(choice.id)).toEqual([{ ...rule, message: 'Please answer' }]);
+      expect(store.dirty()).toBe(false);
+    });
+
+    it('keeps a failed rule edit locally and marks the form dirty', async () => {
+      const choice = choiceWithRule();
+      repo.updateValidationRule.mockRejectedValueOnce(new Error('offline'));
+
+      await expect(
+        store.patchValidationRule(choice.id, 'r1', { message: 'Please answer' }),
+      ).rejects.toThrow('offline');
+
+      expect(rulesOf(choice.id)).toEqual([{ ...rule, message: 'Please answer' }]);
+      expect(store.dirty()).toBe(true);
+    });
+
+    it('reverts a rule edit the server rejects, without marking the form dirty', async () => {
+      const choice = choiceWithRule();
+      repo.updateValidationRule.mockRejectedValueOnce(new ApiError('invalid', 400));
+
+      await expect(
+        store.patchValidationRule(choice.id, 'r1', { message: 'Please answer' }),
+      ).rejects.toThrow('invalid');
+
+      expect(rulesOf(choice.id)).toEqual([rule]);
+      expect(store.dirty()).toBe(false);
+    });
+
+    it('keeps a newer edit when an earlier one of the same rule is rejected', async () => {
+      const choice = choiceWithRule();
+      let reject!: (error: unknown) => void;
+      repo.updateValidationRule.mockImplementationOnce(
+        () => new Promise((_resolve, rej) => (reject = rej)),
+      );
+
+      const first = store.patchValidationRule(choice.id, 'r1', { message: 'First' });
+      const second = store.patchValidationRule(choice.id, 'r1', { message: 'Second' });
+      await vi.waitFor(() => expect(reject).toBeDefined());
+      reject(new ApiError('invalid', 400));
+
+      await expect(first).rejects.toThrow('invalid');
+      await second;
+      expect(rulesOf(choice.id)).toEqual([{ ...rule, message: 'Second' }]);
+    });
+
+    it('leaves another form clean when a queued rule edit is dropped for it', async () => {
+      const choice = choiceWithRule();
+      const page = store.form().pages[0];
+      const other = newForm('Other');
+      other.pages = [createPage('Other page')];
+      let release!: () => void;
+      repo.addElement.mockImplementationOnce(async (_formId, request) => {
+        await new Promise<void>((resolve) => (release = resolve));
+        return createElement(request.type, request.label);
+      });
+      const pending = store.addElement(page.id, 'text');
+      const edit = store.patchValidationRule(choice.id, 'r1', { message: 'Please answer' });
+      await vi.waitFor(() => expect(release).toBeDefined());
+      store.load(other);
+      release();
+
+      await expect(pending).rejects.toThrow('form changed');
+      await expect(edit).rejects.toThrow('form changed');
+      expect(store.dirty()).toBe(false);
+    });
+
+    it('removes a rule locally only after the server deleted it', async () => {
+      const choice = choiceWithRule();
+
+      await store.removeValidationRule(choice.id, 'r1');
+
+      expect(calls).toEqual(['deleteValidationRule']);
+      expect(rulesOf(choice.id)).toEqual([]);
+    });
+
+    it('keeps the rule when the server deletion fails', async () => {
+      const choice = choiceWithRule();
+      repo.deleteValidationRule.mockRejectedValueOnce(new Error('offline'));
+
+      await expect(store.removeValidationRule(choice.id, 'r1')).rejects.toThrow('offline');
+
+      expect(rulesOf(choice.id)).toEqual([rule]);
+    });
   });
 
   describe('option edits', () => {
