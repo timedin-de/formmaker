@@ -18,7 +18,9 @@ import {
   FORM_SCHEMA_VERSION,
   type FormDefinition,
   getElement,
+  getParent,
   insertElement,
+  moveElementTo,
   type PageClone,
   type PageDefinition,
   parentOf,
@@ -27,6 +29,7 @@ import {
   removePage,
   REPEATABLE_RULES,
   type SubmissionCreate,
+  subtreeIds,
   updateElement,
   uuid,
   type ValidationRule,
@@ -38,6 +41,7 @@ import {
   type CreateElementRequest,
   type CreateOptionRequest,
   type CreateValidationRuleRequest,
+  type MoveElementRequest,
   type UpdateOptionRequest,
   type UpdateValidationRuleRequest,
 } from '@shared/schemas';
@@ -217,6 +221,27 @@ export class FormService {
     if (!next) throw new NotFoundException({ error: `element ${id} is not on any page` });
     await this.repository.saveForm(ownerId, next);
     return clone;
+  }
+
+  /**
+   * Moves an element with everything below it to `index` of the page or group
+   * `parentId`; `index` counts after detaching it and is clamped. Throws 404 for an
+   * unknown element or parent and 400 when the parent lies inside the moved element.
+   */
+  async moveElement(
+    { form, ownerId }: OwnedForm,
+    id: string,
+    { parentId, index }: MoveElementRequest,
+  ): Promise<void> {
+    if (!getElement(form, id)) throw new NotFoundException({ error: `no element with id: ${id}` });
+    if (!getParent(form, parentId))
+      throw new NotFoundException({ error: `no page or group with id: ${parentId}` });
+    if (subtreeIds(form, id).includes(parentId))
+      throw new BadRequestException({ error: `cannot move element ${id} into itself` });
+
+    const next = moveElementTo(form, id, parentId, index);
+    if (!next) throw new NotFoundException({ error: `element ${id} is not on any page` });
+    await this.repository.saveForm(ownerId, next);
   }
 
   /** Removes an element and everything below it from the stored form. */

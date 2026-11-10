@@ -27,10 +27,17 @@ function text(label: string): TextElement {
 
 describe('DesignerStore moveElementTo', () => {
   let store: DesignerStore;
+  const repo = {
+    saveForm: vi.fn(async () => undefined),
+    moveElement: vi.fn(async () => undefined),
+  };
 
   beforeEach(() => {
     localStorage.clear();
-    TestBed.configureTestingModule({ providers: [DesignerStore] });
+    vi.clearAllMocks();
+    TestBed.configureTestingModule({
+      providers: [DesignerStore, { provide: FormsRepository, useValue: repo }],
+    });
     store = TestBed.inject(DesignerStore);
   });
 
@@ -59,86 +66,142 @@ describe('DesignerStore moveElementTo', () => {
   };
   const ids = (els: ElementDefinition[]) => els.map((e) => e.label);
 
-  it('moves a top-level element into a group', () => {
+  it('moves a top-level element into a group', async () => {
     const { group, c } = scenario();
 
-    store.moveElementTo(c.id, group.id, 1);
+    await store.moveElementTo(c.id, group.id, 1);
 
     expect(ids(root())).toEqual(['Group', 'D']);
     expect(ids(childrenOf(group.id))).toEqual(['A', 'C', 'B']);
   });
 
-  it('moves a group child back out to the page root', () => {
+  it('moves a group child back out to the page root', async () => {
     const { page, group, a } = scenario();
 
-    store.moveElementTo(a.id, page.id, 0);
+    await store.moveElementTo(a.id, page.id, 0);
 
     expect(ids(root())).toEqual(['A', 'C', 'Group', 'D']);
     expect(ids(childrenOf(group.id))).toEqual(['B']);
   });
 
-  it('moves an element between two groups', () => {
+  it('moves an element between two groups', async () => {
     const { d } = scenario();
     const other = createElement('group', 'Other') as GroupElement;
     addToGroup(text('E'), other, store.form());
     const page = store.form().pages[0];
     addToGroup(other, page, store.form());
 
-    store.moveElementTo(d.id, other.id, 0);
+    await store.moveElementTo(d.id, other.id, 0);
 
     expect(ids(root())).toEqual(['C', 'Group', 'Other']);
     expect(ids(childrenOf(other.id))).toEqual(['D', 'E']);
   });
 
-  it('reorders within the same container', () => {
+  it('reorders within the same container', async () => {
     const { group, a } = scenario();
 
-    store.moveElementTo(a.id, group.id, 1);
+    await store.moveElementTo(a.id, group.id, 1);
 
     expect(ids(childrenOf(group.id))).toEqual(['B', 'A']);
   });
 
-  it('clamps an out-of-range index instead of dropping the element', () => {
+  it('clamps an out-of-range index and sends the resulting position', async () => {
     const { group, a } = scenario();
 
-    store.moveElementTo(a.id, group.id, 99);
+    await store.moveElementTo(a.id, group.id, 99);
 
     expect(ids(childrenOf(group.id))).toEqual(['B', 'A']);
+    expect(repo.moveElement).toHaveBeenCalledWith(store.form().id, a.id, {
+      parentId: group.id,
+      index: 1,
+    });
   });
 
-  it('refuses to move a group into its own descendant', () => {
+  it('refuses to move a group into its own descendant without sending it', async () => {
     const { group } = scenario();
     const inner = createElement('group', 'Inner') as GroupElement;
     addToGroup(text('F'), inner, store.form());
     addToGroup(inner, group, store.form());
     const innerId = childrenOf(group.id).at(-1)?.id as string;
 
-    store.moveElementTo(group.id, innerId, 0);
+    await store.moveElementTo(group.id, innerId, 0);
 
     expect(ids(root())).toEqual(['C', 'Group', 'D']);
     expect(ids(childrenOf(group.id))).toEqual(['A', 'B', 'Inner']);
     expect(ids(childrenOf(innerId))).toEqual(['F']);
+    expect(repo.moveElement).not.toHaveBeenCalled();
   });
 
-  it('persists the move and marks the form dirty', () => {
+  it('sends the move to the server without marking the form dirty', async () => {
     const { group, c } = scenario();
+
+    await store.moveElementTo(c.id, group.id, 0);
+
+    expect(repo.moveElement).toHaveBeenCalledWith(store.form().id, c.id, {
+      parentId: group.id,
+      index: 0,
+    });
+    expect(repo.saveForm).not.toHaveBeenCalled();
     expect(store.dirty()).toBe(false);
-
-    store.moveElementTo(c.id, group.id, 0);
-
-    expect(store.dirty()).toBe(true);
-    expect(store.form().updatedAt).not.toBe('');
     expect(ids(childrenOf(group.id))).toEqual(['C', 'A', 'B']);
   });
 
-  it('keeps the element in place when the target group does not exist', () => {
+  it('applies the move before the server answers', async () => {
+    const { group, c } = scenario();
+    let release!: () => void;
+    repo.moveElement.mockImplementationOnce(
+      () => new Promise<undefined>((resolve) => (release = () => resolve(undefined))),
+    );
+
+    const move = store.moveElementTo(c.id, group.id, 0);
+
+    expect(ids(childrenOf(group.id))).toEqual(['C', 'A', 'B']);
+    await vi.waitFor(() => expect(release).toBeDefined());
+    release();
+    await move;
+  });
+
+  it('moves the element back when the server rejects the move', async () => {
+    const { group, c } = scenario();
+    repo.moveElement.mockRejectedValueOnce(new Error('offline'));
+
+    await expect(store.moveElementTo(c.id, group.id, 0)).rejects.toThrow('offline');
+
+    expect(ids(root())).toEqual(['C', 'Group', 'D']);
+    expect(ids(childrenOf(group.id))).toEqual(['A', 'B']);
+    expect(store.dirty()).toBe(false);
+  });
+
+  it('sends an up/down move as the position it ends up at', async () => {
+    const { group, d } = scenario();
+
+    await store.moveElement(d.id, -1);
+
+    expect(ids(childrenOf(group.id))).toEqual(['A', 'B', 'D']);
+    expect(repo.moveElement).toHaveBeenCalledWith(store.form().id, d.id, {
+      parentId: group.id,
+      index: 2,
+    });
+  });
+
+  it('sends nothing when an up/down move has nowhere to go', async () => {
+    const { c } = scenario();
+
+    await store.moveElement(c.id, -1);
+
+    expect(repo.moveElement).not.toHaveBeenCalled();
+    expect(ids(root())).toEqual(['C', 'Group', 'D']);
+  });
+
+  it('keeps the element in place when the target group does not exist', async () => {
     const { c } = scenario();
     const before = store.form().pages;
 
-    store.moveElementTo(c.id, 'missing-group', 0);
+    await store.moveElementTo(c.id, 'missing-group', 0);
 
     expect(store.form().pages).toBe(before);
     expect(store.dirty()).toBe(false);
+    expect(repo.moveElement).not.toHaveBeenCalled();
     expect(ids(root())).toEqual(['C', 'Group', 'D']);
   });
 });

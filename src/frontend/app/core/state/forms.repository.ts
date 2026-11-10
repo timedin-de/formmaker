@@ -19,6 +19,7 @@ import {
   type CreateElementRequest,
   type CreateOptionRequest,
   type CreateValidationRuleRequest,
+  type MoveElementRequest,
   type NewFormRequest,
   elementDefinitionSchema,
   formDefinitionSchema,
@@ -206,6 +207,15 @@ export class FormsRepository {
     );
     removeCache(FORM_CACHE_PREFIX + formId);
     return clone;
+  }
+
+  /** Moves an element with everything below it on the server (see `MoveElementRequest`). */
+  async moveElement(formId: string, elementId: string, request: MoveElementRequest) {
+    await this.api.request(undefined, `${elementUrl(formId, elementId)}/move`, {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+    removeCache(FORM_CACHE_PREFIX + formId);
   }
 
   /** Appends a new option to a choice element on the server; returns the option as generated there. */

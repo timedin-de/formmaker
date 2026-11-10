@@ -372,21 +372,26 @@ export class DesignerStore {
     if (this.selectedId() === elementId) this.selectedId.set(null);
   }
 
-  moveElement(elementId: string, direction: -1 | 1): void {
-    this.patchDocument(moveElement(this.form(), elementId, direction));
+  /** Moves an element one step up or down (see `moveElement`); as `moveElementTo`. */
+  async moveElement(elementId: string, direction: -1 | 1): Promise<void> {
+    const before = this.form();
+    const next = moveElement(before, elementId, direction);
+    if (next !== before) await this.sendMove(elementId, before, next);
   }
 
   /**
    * Move an element to an arbitrary position of an arbitrary container (a page or
-   * a group), wherever it currently lives.
+   * a group), wherever it currently lives. Applies the move locally right away and
+   * sends it to the server; if that fails, the element moves back.
    *
    * `index` follows CDK drop semantics: it is resolved against the destination
    * array *after* the element has been detached from its source, so the same
    * value works for both reorders and transfers.
    */
-  moveElementTo(elementId: string, parentId: string, index: number): void {
-    const next = moveElementTo(this.form(), elementId, parentId, index);
-    if (next) this.patchDocument(next);
+  async moveElementTo(elementId: string, parentId: string, index: number): Promise<void> {
+    const before = this.form();
+    const next = moveElementTo(before, elementId, parentId, index);
+    if (next) await this.sendMove(elementId, before, next);
   }
 
   /**
@@ -457,6 +462,34 @@ export class DesignerStore {
     });
     this.creations = run.catch(() => undefined);
     return run;
+  }
+
+  /**
+   * Applies the move of `elementId` from `before` to `next` and sends it through the
+   * creation queue. On failure it moves the element back if this form is still loaded.
+   */
+  private async sendMove(
+    elementId: ElementId,
+    before: FormDefinition,
+    next: FormDefinition,
+  ): Promise<void> {
+    const from = parentOf(before, elementId);
+    const to = parentOf(next, elementId);
+    if (!from || !to) return;
+    const fromIndex = from.children.indexOf(elementId);
+    const index = to.children.indexOf(elementId);
+    const formId = before.id;
+    this.applyServerChange(() => next);
+    try {
+      await this.createOnServer((form) =>
+        this.repository.moveElement(form.id, elementId, { parentId: to.id, index }),
+      );
+    } catch (error) {
+      if (this._form()?.id === formId) {
+        this.applyServerChange((f) => moveElementTo(f, elementId, from.id, fromIndex) ?? f);
+      }
+      throw error;
+    }
   }
 
   /**

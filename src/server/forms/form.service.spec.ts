@@ -223,6 +223,97 @@ describe('FormService element creation', () => {
   });
 });
 
+describe('FormService moveElement', () => {
+  let saveForm: ReturnType<typeof vi.fn>;
+  let service: FormService;
+
+  beforeEach(() => {
+    saveForm = vi.fn();
+    service = new FormService({ saveForm } as unknown as Repository);
+  });
+
+  const saved = (): FormDefinition => saveForm.mock.calls[0][1] as FormDefinition;
+  const savedChildren = (parentId: string): string[] => {
+    const parent = getParent(saved(), parentId);
+    return parent ? childrenOf(saved(), parent).map((e) => e.id) : [];
+  };
+
+  /** p1 → [q1, g1 → [q2, q3], q4], p2 → [q5] */
+  const sample = () =>
+    formOf([
+      page('p1', [text('q1'), group('g1', [text('q2'), text('q3')]), text('q4')]),
+      page('p2', [text('q5')]),
+    ]);
+
+  it('reorders within the same parent, counting the index after detaching', async () => {
+    await service.moveElement({ form: sample(), ownerId: 'owner-1' }, 'q1', {
+      parentId: 'p1',
+      index: 2,
+    });
+
+    expect(saveForm).toHaveBeenCalledWith('owner-1', expect.objectContaining({ id: 'form-1' }));
+    expect(savedChildren('p1')).toEqual(['g1', 'q4', 'q1']);
+  });
+
+  it('moves an element into a group on another page', async () => {
+    const form = sample();
+    await service.moveElement({ form, ownerId: 'owner-1' }, 'q5', { parentId: 'g1', index: 1 });
+
+    expect(savedChildren('p2')).toEqual([]);
+    expect(savedChildren('g1')).toEqual(['q2', 'q5', 'q3']);
+  });
+
+  it('moves a group together with its children', async () => {
+    await service.moveElement({ form: sample(), ownerId: 'owner-1' }, 'g1', {
+      parentId: 'p2',
+      index: 0,
+    });
+
+    expect(savedChildren('p1')).toEqual(['q1', 'q4']);
+    expect(savedChildren('p2')).toEqual(['g1', 'q5']);
+    expect(savedChildren('g1')).toEqual(['q2', 'q3']);
+  });
+
+  it('clamps an index past the end', async () => {
+    await service.moveElement({ form: sample(), ownerId: 'owner-1' }, 'q2', {
+      parentId: 'g1',
+      index: 99,
+    });
+
+    expect(savedChildren('g1')).toEqual(['q3', 'q2']);
+  });
+
+  it('throws 404 without saving for an unknown element', async () => {
+    await expect(
+      service.moveElement({ form: sample(), ownerId: 'owner-1' }, 'gone', {
+        parentId: 'p1',
+        index: 0,
+      }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    expect(saveForm).not.toHaveBeenCalled();
+  });
+
+  it('throws 404 without saving when the parent is not a page or group', async () => {
+    await expect(
+      service.moveElement({ form: sample(), ownerId: 'owner-1' }, 'q1', {
+        parentId: 'q4',
+        index: 0,
+      }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    expect(saveForm).not.toHaveBeenCalled();
+  });
+
+  it('throws 400 without saving when moving a group into itself', async () => {
+    const form = formOf([page('p1', [group('outer', [group('inner', [text('q1')])])])]);
+    for (const parentId of ['outer', 'inner']) {
+      await expect(
+        service.moveElement({ form, ownerId: 'owner-1' }, 'outer', { parentId, index: 0 }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+    }
+    expect(saveForm).not.toHaveBeenCalled();
+  });
+});
+
 describe('FormService cloning', () => {
   let saveForm: ReturnType<typeof vi.fn>;
   let service: FormService;

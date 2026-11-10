@@ -204,6 +204,7 @@ const de: typeof en = {
   'row.moveDown': 'Nach unten',
   'row.duplicate': 'Duplizieren',
   'row.duplicateFailed': 'Das Element konnte nicht dupliziert werden.',
+  'row.moveFailed': 'Das Element konnte nicht verschoben werden.',
   'row.delete': 'Löschen',
   'row.addChild': 'Kind hinzufügen',
 

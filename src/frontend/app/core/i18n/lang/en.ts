@@ -199,6 +199,7 @@ const en = {
   'row.moveDown': 'Move down',
   'row.duplicate': 'Duplicate',
   'row.duplicateFailed': 'The element could not be duplicated.',
+  'row.moveFailed': 'The element could not be moved.',
   'row.delete': 'Delete',
   'row.addChild': 'Add child',
 
