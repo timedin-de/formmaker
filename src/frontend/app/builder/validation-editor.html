@@ -19,6 +19,7 @@
           <span class="rule-name">{{ ruleLabel(rule.rule) }}</span>
           <button
             mat-icon-button
+            [disabled]="isPending()"
             [matTooltip]="i18n.t('panel.remove')"
             [attr.aria-label]="i18n.t('panel.remove')"
             (click)="removeRule(rule.id)"

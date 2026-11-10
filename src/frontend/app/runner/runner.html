@@ -78,7 +78,7 @@
             {{ i18n.t('runner.next') }} <mat-icon svgIcon="arrow_forward"></mat-icon>
           </button>
         } @else {
-          <button mat-flat-button color="primary" [disabled]="submitting()" (click)="submit()">
+          <button mat-flat-button color="primary" [disabled]="isPending()" (click)="submit()">
             <mat-icon svgIcon="send"></mat-icon> {{ submitLabel() }}
           </button>
         }

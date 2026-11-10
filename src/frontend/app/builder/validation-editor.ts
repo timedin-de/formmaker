@@ -1,4 +1,4 @@
-import { Component, computed, inject, input, signal } from '@angular/core';
+import { Component, computed, inject, input } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatOption } from '@angular/material/core';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
@@ -18,6 +18,7 @@ import { type UpdateValidationRuleRequest } from '@shared/schemas';
 import { DesignerStore } from '../core';
 import { I18nService } from '../core/i18n';
 import { Notifier } from '../core/notifier';
+import { PendingActions } from '../core/pending-actions';
 
 @Component({
   templateUrl: './validation-editor.html',
@@ -34,15 +35,13 @@ import { Notifier } from '../core/notifier';
     MatButtonModule,
   ],
 })
-export class ValidationEditor {
+export class ValidationEditor extends PendingActions {
   protected readonly i18n = inject(I18nService);
   private readonly store = inject(DesignerStore);
   private readonly notifier = inject(Notifier);
 
   readonly validations = input.required<ValidationRule[]>();
   readonly element = input.required<ElementDefinition>();
-
-  readonly isPending = signal(false);
 
   /** Rules offered for this question type, minus non-repeatable rules it already has. */
   protected readonly validationRuleTypes = computed(() => {
@@ -58,27 +57,22 @@ export class ValidationEditor {
   async addRule(event: MatSelectChange): Promise<void> {
     const rule = event.value as ValidationRuleType;
     event.source.value = undefined;
-    if (this.isPending()) return;
-    this.isPending.set(true);
-    try {
-      await this.store.addValidationRule(this.element().id, {
-        rule,
-        message: this.i18n.t(`errors.${rule}`),
-      });
-    } catch (error) {
-      this.notifier.apiError(error, 'panel.addRuleFailed');
-    } finally {
-      this.isPending.set(false);
-    }
+    await this.whilePending(
+      () =>
+        this.store.addValidationRule(this.element().id, {
+          rule,
+          message: this.i18n.t(`errors.${rule}`),
+        }),
+      'panel.addRuleFailed',
+    );
   }
 
   /** Deletes the rule on the server, then locally. */
   async removeRule(id: string): Promise<void> {
-    try {
-      await this.store.removeValidationRule(this.element().id, id);
-    } catch (error) {
-      this.notifier.apiError(error, 'panel.removeRuleFailed');
-    }
+    await this.whilePending(
+      () => this.store.removeValidationRule(this.element().id, id),
+      'panel.removeRuleFailed',
+    );
   }
 
   /** Applies the edit locally and sends it to the server. */
