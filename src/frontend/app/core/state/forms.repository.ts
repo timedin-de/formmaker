@@ -89,6 +89,11 @@ export class FormsRepository {
     return portable;
   }
 
+  /** Drops the cached copy of a form, so the next load fetches it from the server. */
+  forgetForm(id: string): void {
+    removeCache(FORM_CACHE_PREFIX + id);
+  }
+
   /** Creates an empty form on the server whose first page is titled `pageTitle`. */
   async newForm(pageTitle: string): Promise<FormDefinition> {
     await this.init();

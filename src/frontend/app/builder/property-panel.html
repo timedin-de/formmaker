@@ -207,6 +207,24 @@
             </mat-checkbox>
           }
         </div>
+        @if (has(el, 'validations')) {
+          @switch (encryptionMode()) {
+            @case ('fields') {
+              <mat-checkbox
+                [checked]="el.encrypted ?? false"
+                (change)="patch({ encrypted: $event.checked || undefined })"
+              >
+                {{ i18n.t('panel.encrypted') }}
+              </mat-checkbox>
+              @if (el.encrypted) {
+                <p class="enc-hint">{{ i18n.t('panel.encryptedHint') }}</p>
+              }
+            }
+            @case ('form') {
+              <p class="enc-hint">{{ i18n.t('panel.encryptedForm') }}</p>
+            }
+          }
+        }
         <div class="opt-row label-row">
           <span class="sec-label">{{ i18n.t('panel.width') }}</span>
           <mat-select [value]="el.width ?? 1" (valueChange)="setWidth($event)">

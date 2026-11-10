@@ -60,6 +60,7 @@ const questionAttributesSchema = z.extend(defaultValueableSchema, {
   required: z._default(z.boolean(), false),
   validations: z._default(z.array(validationRuleSchema), []),
   readonly: z._default(z.boolean(), false),
+  encrypted: z.optional(z.boolean()),
 });
 
 const questionBaseSchema = z.extend(

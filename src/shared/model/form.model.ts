@@ -1,5 +1,6 @@
 import { type TranslationKey } from '../../frontend/app/core/i18n';
 import type { ConditionGroup } from './conditions.model';
+import type { FormEncryption } from './encryption.model';
 import type { ElementId, FormId, PageId } from './ids';
 import type { PublicUser } from './user.model';
 import type { ValidationRule } from './validation.model';
@@ -61,6 +62,11 @@ interface QuestionAttributes extends DefaultValueable {
   required: boolean;
   validations: ValidationRule[];
   readonly: boolean;
+  /**
+   * Answer is end-to-end encrypted when the form encrypts selected fields
+   * (`settings.encryption.mode === 'fields'`). The server cannot validate it.
+   */
+  encrypted?: boolean;
 }
 
 interface Placeholderable {
@@ -221,6 +227,8 @@ export interface FormSettings {
   /** linear = pages strictly follow order, free = jump via progress, auto = skip gated pages. */
   navigation: 'linear' | 'free' | 'auto';
   enableAutoSave?: boolean;
+  /** End-to-end encryption of submissions; absent means answers are stored in plain text. */
+  encryption?: FormEncryption;
 }
 
 export interface SaveFormDefinition {

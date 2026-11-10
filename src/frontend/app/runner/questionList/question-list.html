@@ -45,6 +45,7 @@
               @if (has(el, 'required') && el.required) {
                 <span class="req">*</span>
               }
+              <ng-container *ngTemplateOutlet="lock"></ng-container>
             </h4>
           } @else {
             <h3 [attr.aria-level]="levels().get(vr.id)">
@@ -52,9 +53,22 @@
               @if (has(el, 'required') && el.required) {
                 <span class="req">*</span>
               }
+              <ng-container *ngTemplateOutlet="lock"></ng-container>
             </h3>
           }
         </label>
+      </ng-template>
+      <ng-template #lock>
+        @if (lockedIds().has(vr.id)) {
+          <mat-icon
+            class="lock"
+            svgIcon="lock"
+            role="img"
+            aria-hidden="false"
+            [attr.aria-label]="i18n.t('runner.encryptedQuestion')"
+            [matTooltip]="i18n.t('runner.encryptedQuestion')"
+          ></mat-icon>
+        }
       </ng-template>
       <ng-template #description>
         @if (vr.description) {

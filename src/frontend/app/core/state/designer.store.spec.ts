@@ -3,6 +3,7 @@ import { createElement, createPage } from '@shared/model/form-factory';
 import type {
   ChoiceElement,
   ElementDefinition,
+  FormDefinition,
   GroupElement,
   PageDefinition,
   TextElement,
@@ -153,7 +154,11 @@ describe('DesignerStore server-side creation', () => {
     }),
   };
   const repo = {
-    saveForm: vi.fn(async () => calls.push('save')),
+    // Echoes the form back, as the server returns the saved form.
+    saveForm: vi.fn(async (form: FormDefinition) => {
+      calls.push('save');
+      return form;
+    }),
     addPage: vi.fn(async (_formId: string, title: string) => {
       calls.push('addPage');
       return createPage(title);

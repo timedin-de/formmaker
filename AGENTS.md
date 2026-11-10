@@ -50,6 +50,12 @@ scripts/            copy-icons.mjs (icon bundling), build-server.mjs (ncc bundle
   live, and the server re-validates submissions with the same code and builds the full submission
   object itself. Changes to form semantics therefore usually belong in `src/shared`, with specs
   beside them.
+- **Encrypted submissions.** `src/shared/crypto` (WebCrypto only, runs in browser and Node) holds
+  key wrapping and the submission envelope. `sealSubmission` moves encrypted answers into
+  `submission.encrypted`. The server validates plain answers with `submissionIssue(form, values,
+encryptedIds)` (`shared/engine/submission-validator.ts`) and never decrypts. Owner keys live in
+  `encryption_keys`. `Repository.saveForm` stamps the owner's public key into
+  `settings.encryption`, so never trust a client-sent key.
 - **Frontend state** (`core/state`): signal stores. `DesignerStore` owns the `FormDefinition` being
   edited (pages, element insert/move/duplicate/remove, selection). `RunnerStore` builds per-page
   view refs, evaluates conditions, handles drafts (`runner-draft.ts`) and submit. `api-client.ts`

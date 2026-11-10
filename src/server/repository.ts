@@ -1,5 +1,6 @@
 import type { DataSource } from 'typeorm';
 
+import { withEncryptionKey, type UserEncryptionKey } from '../shared/model/encryption.model.js';
 import {
   toPortableForm,
   type FormDefinition,
@@ -8,10 +9,13 @@ import {
 import type { Submission } from '../shared/model/submission.model.js';
 import type { PublicUser, UserRole } from '../shared/model/user.model.js';
 import {
+  encryptionPublicKeySchema,
   formDefinitionSchema,
   stripFormOwnership,
   submissionSchema,
+  wrappedPrivateKeySchema,
 } from '../shared/schemas/index.js';
+import { EncryptionKeyEntity } from './entities/encryption-key.js';
 import { FormEntity, SubmissionEntity, type FormEntityModel } from './entities/form.js';
 import { SessionEntity, UserEntity, type UserEntityModel } from './entities/user.js';
 
@@ -77,6 +81,7 @@ export class Repository {
       await this.source.getRepository(SubmissionEntity).delete({ formId: form.id });
     }
     await this.source.transaction(async (em) => {
+      await em.getRepository(EncryptionKeyEntity).delete({ userId: id });
       await em.getRepository(FormEntity).delete({ ownerId: id });
       await em.getRepository(SessionEntity).delete({ userId: id });
       await em.getRepository(UserEntity).delete({ id });
@@ -160,12 +165,49 @@ export class Repository {
     return toFormWithOwner(row);
   }
 
+  /** The user's submission encryption key, or null if they have none. */
+  async encryptionKey(userId: string): Promise<UserEncryptionKey | null> {
+    const row = await this.source.getRepository(EncryptionKeyEntity).findOneBy({ userId });
+    if (!row) return null;
+    return {
+      keyId: row.keyId,
+      publicKey: encryptionPublicKeySchema.parse(JSON.parse(row.publicKey)),
+      wrappedPrivateKey: wrappedPrivateKeySchema.parse(JSON.parse(row.wrappedPrivateKey)),
+    };
+  }
+
+  /**
+   * Stores the user's key and stamps its public key into every form of theirs
+   * that encrypts submissions.
+   */
+  async saveEncryptionKey(userId: string, key: UserEncryptionKey): Promise<void> {
+    const now = new Date().toISOString();
+    const existing = await this.source.getRepository(EncryptionKeyEntity).findOneBy({ userId });
+    await this.source.getRepository(EncryptionKeyEntity).save({
+      userId,
+      keyId: key.keyId,
+      publicKey: JSON.stringify(key.publicKey),
+      wrappedPrivateKey: JSON.stringify(key.wrappedPrivateKey),
+      createdAt: existing?.keyId === key.keyId ? existing.createdAt : now,
+      updatedAt: now,
+    });
+    if (existing?.keyId === key.keyId) return;
+    for (const form of await this.forms(userId)) {
+      if (form.settings.encryption) await this.saveForm(userId, form);
+    }
+  }
+
+  /**
+   * Saves a form for `ownerId`. A form that encrypts submissions always gets the
+   * owner's current public key, whatever key the client sent along.
+   */
   async saveForm(ownerId: string, form: FormDefinition): Promise<FormWithOwner> {
     const existing = await this.form(form.id);
     const now = new Date().toISOString();
+    const key = form.settings.encryption ? await this.encryptionKey(ownerId) : null;
     const saved: FormDefinition = {
       ...existing?.form,
-      ...toPortableForm(form),
+      ...toPortableForm(withEncryptionKey(form, key)),
       ownerId,
       createdAt: existing?.form.createdAt || form.createdAt || now,
       updatedAt: now,

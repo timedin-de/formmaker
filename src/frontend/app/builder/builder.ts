@@ -19,6 +19,7 @@ import { Notifier } from '../core/notifier';
 import { DesignerStore } from '../core/state/designer.store';
 import { FormsRepository } from '../core/state/forms.repository';
 import { BuilderCanvas } from './canvas';
+import { EncryptionSettings } from './encryption-settings';
 import { BuilderPalette } from './palette';
 import { PropertiesModal } from './properties-modal';
 import { PropertyPanel } from './property-panel';
@@ -36,6 +37,7 @@ import { PropertyPanel } from './property-panel';
     MatTooltipModule,
     BuilderCanvas,
     BuilderPalette,
+    EncryptionSettings,
     PropertyPanel,
   ],
   providers: [DesignerStore, PropertiesModal],
@@ -53,14 +55,20 @@ export class BuilderComponent {
   protected readonly modal = inject(PropertiesModal);
 
   private readonly propertiesDialog = viewChild<ElementRef<HTMLDialogElement>>('properties');
+  private readonly encryptionDialog = viewChild<ElementRef<HTMLDialogElement>>('encryption');
 
   readonly saved = signal(false);
+  protected readonly encryptionOpen = signal(false);
 
   readonly formName = formName;
 
   constructor() {
     effect(() => {
       const el = this.propertiesDialog()?.nativeElement;
+      if (el && !el.open && typeof el.showModal === 'function') el.showModal();
+    });
+    effect(() => {
+      const el = this.encryptionDialog()?.nativeElement;
       if (el && !el.open && typeof el.showModal === 'function') el.showModal();
     });
     // Load the working form: ?id= opens an existing form, ?new=1 a blank one.
@@ -109,7 +117,8 @@ export class BuilderComponent {
   }
 
   async save(): Promise<void> {
-    await this.repo.saveForm(this.store.form());
+    const saved = await this.repo.saveForm(this.store.form());
+    this.store.takeSavedKey(saved);
     this.saved.set(true);
     this.notifier.ok('builder.saveMsg');
   }
@@ -123,6 +132,16 @@ export class BuilderComponent {
     const form = this.store.form();
     const name = formName(form, this.i18n);
     downloadJSON(toPortableForm(form), toSlug(name) + '.json');
+  }
+
+  protected onEncryptionDialogClick(event: MouseEvent): void {
+    if (event.target === this.encryptionDialog()?.nativeElement) this.closeEncryptionDialog();
+  }
+
+  protected closeEncryptionDialog(): void {
+    const el = this.encryptionDialog()?.nativeElement;
+    if (el?.open) el.close();
+    this.encryptionOpen.set(false);
   }
 
   protected closePropertiesDialog(): void {

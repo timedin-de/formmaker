@@ -15,9 +15,13 @@ import {
   MatExpansionPanel,
   MatExpansionPanelHeader,
 } from '@angular/material/expansion';
+import { MatIcon } from '@angular/material/icon';
+import { MatTooltip } from '@angular/material/tooltip';
 import { has } from '@shared/helper';
+import { encryptedElementIds } from '@shared/model/encryption.model';
 import { QuestionInput } from '../../builder/question-input';
 import { type RunnerStore } from '../../core';
+import { I18nService } from '../../core/i18n';
 import type { ElementViewRef } from '../../core/state/runner.model';
 import { MarkdownPipe } from '../../core/markdown';
 
@@ -30,6 +34,8 @@ import { MarkdownPipe } from '../../core/markdown';
     MatExpansionPanel,
     NgTemplateOutlet,
     MatExpansionPanelHeader,
+    MatIcon,
+    MatTooltip,
   ],
   selector: 'fm-question-list',
   templateUrl: './question-list.html',
@@ -44,6 +50,15 @@ export class QuestionList {
   /** Heading level for sections and for questions that no section precedes. */
   readonly level = input(2);
   readonly has = has;
+  protected readonly i18n = inject(I18nService);
+
+  /** Questions marked with a lock: only needed when not every answer is encrypted. */
+  protected readonly lockedIds = computed(() => {
+    const form = this.store().form();
+    return form?.settings.encryption?.mode === 'fields'
+      ? encryptedElementIds(form)
+      : new Set<string>();
+  });
 
   /** Heading level per element id: questions after a visible section nest one level below it. */
   readonly levels = computed(() => {

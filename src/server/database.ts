@@ -1,6 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { DataSource, type DataSourceOptions } from 'typeorm';
+import { EncryptionKeyEntity } from './entities/encryption-key.js';
 import { FormEntity, SubmissionEntity } from './entities/form.js';
 import { UserEntity, SessionEntity } from './entities/user.js';
 import { migrations } from './migrations/index.js';
@@ -13,7 +14,7 @@ import { migrations } from './migrations/index.js';
 export function databaseOptions(): DataSourceOptions {
   const provider = (process.env.DATABASE_PROVIDER ?? 'sqlite').toLowerCase();
   const common = {
-    entities: [UserEntity, SessionEntity, FormEntity, SubmissionEntity],
+    entities: [UserEntity, SessionEntity, FormEntity, SubmissionEntity, EncryptionKeyEntity],
     migrations,
     migrationsRun: process.env.TYPEORM_MIGRATIONS_RUN !== 'false',
     synchronize: false,

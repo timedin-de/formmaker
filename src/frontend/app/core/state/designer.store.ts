@@ -1,5 +1,6 @@
 import { computed, DestroyRef, inject, Injectable, signal } from '@angular/core';
 import { catchFn } from '@shared/helper';
+import { withEncryptionKey } from '@shared/model/encryption.model';
 import {
   addPage,
   insertElement,
@@ -432,9 +433,21 @@ export class DesignerStore {
   private async saveIfDirty(): Promise<void> {
     if (!this.dirty()) return;
     const snapshot = this.form();
-    await this.repository.saveForm(snapshot);
+    const saved = await this.repository.saveForm(snapshot);
     // Edits made while the save was in flight are still unsaved.
     if (this.form() === snapshot) this.dirty.set(false);
+    this.takeSavedKey(saved);
+  }
+
+  /**
+   * Takes over the encryption key the server stamped into a saved form (the
+   * owner's current key, or none), keeping the locally chosen mode.
+   */
+  takeSavedKey(saved: FormDefinition): void {
+    const { keyId, publicKey } = saved.settings.encryption ?? {};
+    const key = keyId && publicKey ? { keyId, publicKey } : null;
+    if (this.form().settings.encryption?.keyId === key?.keyId) return;
+    this.applyServerChange((f) => withEncryptionKey(f, key));
   }
 
   /** Applies a change the server already persisted, without marking the form dirty. */

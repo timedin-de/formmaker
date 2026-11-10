@@ -4,6 +4,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { has } from '@shared/helper';
+import { isEncryptedElement } from '@shared/model/encryption.model';
 import type { ElementDefinition, Elements, ElementType } from '@shared/model/form.model';
 import { I18nService } from '../core/i18n';
 import { fieldMeta } from '../core/model/field-registry';
@@ -40,6 +41,7 @@ export class ElementRow {
 
   protected meta = computed(() => fieldMeta(this.el().type));
   protected selected = computed(() => this.store().selectedId() === this.el().id);
+  protected encrypted = computed(() => isEncryptedElement(this.store().form(), this.el()));
   protected elEnabledWhen = computed(
     () => !!this.el().enabledWhen?.conditions?.length || !!this.el().enabledWhen?.groups?.length,
   );

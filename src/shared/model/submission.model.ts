@@ -1,10 +1,14 @@
+import type { EncryptedValues } from './encryption.model';
 import { elementId, type ElementId, type FormId } from './ids';
 import type { FieldValue } from './values.model';
 
 export interface SubmissionCreate {
   formId: FormId;
   durationMs: number;
+  /** Answers in plain text; encrypted answers are only in `encrypted`. */
   values: Record<ElementId, FieldValue>;
+  /** Present when the form encrypts submissions. */
+  encrypted?: EncryptedValues;
 }
 
 export interface Submission {
@@ -14,6 +18,8 @@ export interface Submission {
   submittedAt: string;
   durationMs: number;
   values: Record<ElementId, FieldValue>;
+  /** Encrypted answers, until they are decrypted in the browser of the form owner. */
+  encrypted?: EncryptedValues;
 }
 
 export function createSubmission(

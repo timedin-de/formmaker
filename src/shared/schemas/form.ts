@@ -13,6 +13,7 @@ import {
 } from '../model';
 import { conditionGroupSchema } from './conditions';
 import { elementDefinitionSchema, formElementsSchema } from './elements';
+import { formEncryptionSchema } from './encryption';
 
 /** Max length of a localized default text the client sends along with a create/clone request. */
 const DEFAULT_TEXT_MAX = 50;
@@ -39,6 +40,7 @@ export const formSettingsSchema = z.strictObject({
   allowBack: z.optional(z.boolean()),
   navigation: z.union([z.literal('linear'), z.literal('free'), z.literal('auto')]),
   enableAutoSave: z.optional(z.boolean()),
+  encryption: z.optional(formEncryptionSchema),
 }) satisfies z.ZodMiniType<FormSettings>;
 
 const formOwnerSchema = z.strictObject({

@@ -2,15 +2,20 @@ import AxeBuilder from '@axe-core/playwright';
 import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from './fixtures';
 import {
+  addSealedSubmission,
   createForm,
   deleteForm,
   login,
   loginApi,
+  loginAs,
   makeForm,
+  registerUser,
   seedField,
+  setEncryptionKey,
   uniqueName,
   uuid,
   type ApiSession,
+  type UserSession,
 } from './helpers';
 
 const WCAG_TAGS = [
@@ -302,6 +307,100 @@ test.describe('accessibility', () => {
       await page.goto(`/results/${formId}`);
       await expect(page.locator('.submission-card')).toHaveCount(2);
       await expectNoViolations(page);
+    });
+  });
+
+  // Keys are per user: these cases use a fresh account instead of the shared admin.
+  test.describe('encryption', () => {
+    const PASSPHRASE = 'a very long passphrase';
+    let user: UserSession;
+    let encryptedFormId: string;
+
+    /** The example form with `mode` encryption; in `fields` mode only the name is encrypted. */
+    async function createEncryptedForm(mode: 'form' | 'fields'): Promise<string> {
+      const form = mockForm(uniqueName('a11y-encrypted'));
+      const settings = form.settings as Record<string, unknown>;
+      const elements = form.elements as Record<string, Record<string, unknown>>;
+      return createForm(user, {
+        ...form,
+        settings: { ...settings, encryption: { mode } },
+        elements: { ...elements, q_name: { ...elements.q_name, encrypted: true } },
+      });
+    }
+
+    test.beforeEach(async ({ request }) => {
+      user = await registerUser(request);
+    });
+
+    test('builder encryption dialog without a key', async ({ page }) => {
+      encryptedFormId = await createEncryptedForm('fields');
+      await loginAs(page, user);
+      await page.goto(`/builder?id=${encryptedFormId}`);
+      await page.getByRole('button', { name: 'Encryption' }).click();
+      await expect(page.getByRole('alert')).toContainText('no encryption key');
+      await expectNoViolations(page);
+    });
+
+    test.describe('with a key', () => {
+      test.beforeEach(async () => {
+        await setEncryptionKey(user, PASSPHRASE);
+      });
+
+      test('account page with a key', async ({ page }) => {
+        await loginAs(page, user);
+        await page.goto('/account');
+        await expect(page.getByTestId('key-fingerprint')).toBeVisible();
+        await expectNoViolations(page);
+      });
+
+      test('passphrase change form', async ({ page }) => {
+        await loginAs(page, user);
+        await page.goto('/account');
+        await page.getByRole('button', { name: 'Change passphrase' }).click();
+        await expect(page.getByLabel('New key passphrase')).toBeVisible();
+        await expectNoViolations(page);
+      });
+
+      test('builder encryption dialog', async ({ page }) => {
+        encryptedFormId = await createEncryptedForm('fields');
+        await loginAs(page, user);
+        await page.goto(`/builder?id=${encryptedFormId}`);
+        await page.getByRole('button', { name: 'Encryption' }).click();
+        await expect(page.getByText('1 question(s) encrypted.')).toBeVisible();
+        await expectNoViolations(page);
+      });
+
+      test('runner with encrypted questions', async ({ page }) => {
+        encryptedFormId = await createEncryptedForm('fields');
+        await page.goto(`/runner/${encryptedFormId}`);
+        await expect(page.getByRole('img', { name: 'Encrypted answer' })).toBeVisible();
+        await expectNoViolations(page);
+      });
+
+      test('results with locked submissions', async ({ page }) => {
+        encryptedFormId = await createEncryptedForm('form');
+        await addSealedSubmission(user, encryptedFormId, exampleValues('Jane Doe'));
+        await loginAs(page, user);
+        await page.goto(`/results/${encryptedFormId}`);
+        await expect(page.getByRole('button', { name: 'Unlock' })).toBeVisible();
+        await expectNoViolations(page);
+      });
+
+      test('results with a wrong passphrase and after unlocking', async ({ page }) => {
+        encryptedFormId = await createEncryptedForm('form');
+        await addSealedSubmission(user, encryptedFormId, exampleValues('Jane Doe'));
+        await loginAs(page, user);
+        await page.goto(`/results/${encryptedFormId}`);
+        await page.getByLabel('Key passphrase').fill('not it');
+        await page.getByRole('button', { name: 'Unlock' }).click();
+        await expect(page.getByText('Wrong passphrase')).toBeVisible();
+        await expectNoViolations(page);
+
+        await page.getByLabel('Key passphrase').fill(PASSPHRASE);
+        await page.getByRole('button', { name: 'Unlock' }).click();
+        await expect(page.getByRole('button', { name: 'Lock' })).toBeVisible();
+        await expectNoViolations(page);
+      });
     });
   });
 });

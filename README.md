@@ -27,6 +27,7 @@ Built with Angular 22 + Angular Material 22 on the frontend and a TypeScript Exp
 - **Uploads & signatures** — file fields enforce `accept`/multiple/size/file-type rules; signatures are captured on a device-pixel-correct signature pad.
 - **Markdown titles & descriptions** — question labels, page titles/subtitles and descriptions are rendered as Markdown (**bold**, _italic_, `code`, lists, links) with `markdown-it`; block formatting (paragraphs, lists, headings) works in descriptions.
 - **Draft autosave** — a respondent's answers are restored if they reload, cleared on submit or reset.
+- **End-to-end encrypted submissions** — encrypt every answer of a form, or only selected questions. See [Encrypted submissions](#encrypted-submissions).
 - **Import / export** — save forms to JSON and re-import them (with schema validation) to continue editing.
 - **i18n** — the whole UI ships in English and German (auto-detected, or toggled manually).
 - **Persistence** — forms, submissions, users, and durable sessions are stored server-side through TypeORM. SQLite is the default; MySQL is supported through configuration. The browser keeps short-lived cached API responses and local respondent drafts to reduce repeated requests; it never treats that cache as an offline write store.
@@ -39,11 +40,29 @@ The Express API (`src/server/`) exposes:
 - `GET/POST /api/users`, `PATCH /api/users/:id` — administrator-only user provisioning; the patch updates email, role and/or password (a new password ends that user's sessions). Forms are isolated by owner; admins retain access to all forms.
 - `GET /api/forms`, `GET/PUT/DELETE /api/forms/:id` — form CRUD. `POST /api/forms` creates an empty form (`{ pageTitle? }`), `POST /api/forms/import` imports a full form definition as a new form.
 - `GET/POST/DELETE /api/forms/:id/submissions[ /:submissionId]` — submissions per form.
+- `GET/PUT /api/users/me/encryption-key` — the caller's submission encryption key (public key plus passphrase-wrapped private key). Replacing an existing key with a different one needs `replace: true`.
 - `GET /api/health` — liveness probe.
 
 The first start creates an admin account `admin@formmaker.local` (override with `FORMMAKER_ADMIN_EMAIL`). Its password comes from `FORMMAKER_PASSWORD`; if that is unset or shorter than 8 characters, a random password is generated and printed to the server log.
 
 SQLite is used by default at `src/server/data/formmaker.sqlite`. To use MySQL instead, set `DATABASE_PROVIDER=mysql` and `DATABASE_URL=mysql://user:password@host:3306/formmaker`. The schema is managed by TypeORM migrations in `src/server/migrations` (`synchronize` is never used). Pending migrations run automatically on startup; set `TYPEORM_MIGRATIONS_RUN=false` to apply them yourself with `npm run migration:run` (also `migration:revert` and `migration:generate -- src/server/migrations/<Name>`). Databases created before migrations existed are picked up automatically by the baseline migration.
+
+## Encrypted submissions
+
+Form owners can have answers end-to-end encrypted, so the server (and anyone with database access) only stores ciphertext.
+
+1. **Create a key** under _Account → Submission encryption_. The browser generates an ECDH P-256 key pair. The private key is wrapped with a passphrase (PBKDF2-SHA256, 600 000 iterations, AES-256-GCM) before it is uploaded. The server never sees the passphrase or the unwrapped private key. The passphrase cannot be recovered: losing it means losing the encrypted answers.
+2. **Turn it on per form** in the builder (_Encryption_): **Whole form** encrypts every answer; **Selected questions** encrypts only the questions marked _Encrypt answer_ in their properties. The server stamps the owner's public key into the form.
+3. **Respondents** encrypt their encrypted answers in the browser before sending them (ECIES: ephemeral ECDH P-256 + HKDF-SHA256 + AES-256-GCM, bound to the form id). The PDF receipt is built locally from the plain answers.
+4. **Read results** by entering the key passphrase on the results page. Decryption happens only in that browser tab's memory; exports are available once every answer is decrypted.
+
+Trade-offs:
+
+- **Server validation.** The server cannot check encrypted answers. With _Whole form_, required fields, rules and conditions are only enforced in the respondent's browser. With _Selected questions_, the server still validates every plain answer. Answers whose visibility depends on an encrypted answer are validated only when they are present. Custom rules that read an encrypted answer are skipped.
+- **Trust.** The server serves the app's JavaScript, so this protects stored data (database leaks, backups, other admins), not users against a malicious server operator.
+- **Key replacement.** Replacing the key switches all of the owner's forms to the new key. Answers encrypted with the old key become unreadable. Respondents still holding the old key get a "reload" message.
+- **HTTPS required.** Browsers only offer WebCrypto in secure contexts (HTTPS or `localhost`).
+- Local runner drafts (autosave) stay unencrypted in the respondent's own browser.
 
 ## Tech stack
 

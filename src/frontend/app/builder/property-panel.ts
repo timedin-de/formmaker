@@ -94,6 +94,7 @@ export class PropertyPanel {
     groups: [],
   }));
   protected readonly form = computed(() => this.store().form());
+  protected readonly encryptionMode = computed(() => this.form().settings.encryption?.mode);
 
   private sel(): ElementDefinition {
     const el = this.el();
