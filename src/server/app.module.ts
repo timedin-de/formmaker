@@ -4,6 +4,7 @@ import { AuthService } from './auth/auth.service.js';
 import { DatabaseModule } from './database.module.js';
 import { FormService } from './forms/form.service.js';
 import { FormElementsController } from './forms/form-elements.controller.js';
+import { FormPagesController } from './forms/form-pages.controller.js';
 import { FormsController } from './forms/forms.controller.js';
 import { HealthController } from './health/health.controller.js';
 import { UserController } from './user/user.controller.js';
@@ -11,6 +12,12 @@ import { UserController } from './user/user.controller.js';
 @Module({
   imports: [DatabaseModule, AuthModule],
   providers: [AuthService, FormService],
-  controllers: [HealthController, UserController, FormsController, FormElementsController],
+  controllers: [
+    HealthController,
+    UserController,
+    FormsController,
+    FormPagesController,
+    FormElementsController,
+  ],
 })
 export class AppModule {}

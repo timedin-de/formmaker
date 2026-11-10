@@ -7,7 +7,9 @@ import {
   moveElement,
   moveElementTo,
   moveOptionTo,
+  type PagePatch,
   patchElement,
+  patchPage,
   removeElement,
   removePage,
   updateElement,
@@ -30,7 +32,7 @@ import type {
   PageDefinition,
   SaveFormDefinition,
 } from '@shared/model/form.model';
-import type { ElementId } from '@shared/model/ids';
+import type { ElementId, PageId } from '@shared/model/ids';
 import type { ValidationRule } from '@shared/model/validation.model';
 import {
   type CreateValidationRuleRequest,
@@ -44,17 +46,18 @@ import { FormsRepository } from './forms.repository';
 
 const STORAGE_KEY = 'formmaker.designer.v1';
 /**
- * How long an edit waits for further edits of the same element before it is sent, so
- * e.g. changing the label and description and ticking "required" is one request.
- * Each edit restarts the wait; leaving the element sends at once (see `select`).
+ * How long an edit waits for further edits of the same element or page before it is
+ * sent, so e.g. changing the label and description and ticking "required" is one
+ * request. Each edit restarts the wait; leaving the element or page sends at once
+ * (see `select`, `selectPage`).
  */
 export const PATCH_DELAY_MS = 3000;
 
 /** An edit that is applied locally but not sent yet; see `queuePatch`. */
 interface PendingPatch {
   formId: string;
-  /** The element the edit belongs to, so removing the element drops it. */
-  elementId: ElementId;
+  /** The element or page the edit belongs to, so removing it drops the edit. */
+  targetId: ElementId | PageId;
   /** Every edit of the same thing since the last send, merged. */
   patch: object;
   send: (keepalive: boolean) => Promise<unknown>;
@@ -123,11 +126,18 @@ function elementKey(elementId: ElementId): string {
   return `element:${elementId}`;
 }
 
-/** `patch` with every undefined field set to null, which removes it (see `ElementPatch`). */
-function toElementPatch(patch: ElementPatch): ElementPatch {
+function pageKey(pageId: string): string {
+  return `page:${pageId}`;
+}
+
+/**
+ * `patch` with every undefined field set to null, which removes it (JSON has no
+ * undefined; see `ElementPatch`, `PagePatch`).
+ */
+function withNulls<P extends ElementPatch | PagePatch>(patch: P): P {
   return Object.fromEntries(
     Object.entries(patch).map(([key, value]) => [key, value === undefined ? null : value]),
-  );
+  ) as P;
 }
 
 /** Replaces the options of the choice element `elementId`; returns the input without one. */
@@ -273,9 +283,12 @@ export class DesignerStore {
 
   async removePage(pageId: string) {
     await this.withoutPatchesOf(
-      (form) =>
-        form.pages.find((p) => p.id === pageId)?.children.flatMap((id) => subtreeIds(form, id)) ??
-        [],
+      (form) => [
+        pageId,
+        ...(form.pages
+          .find((p) => p.id === pageId)
+          ?.children.flatMap((id) => subtreeIds(form, id)) ?? []),
+      ],
       (form) => this.repository.deletePage(form.id, pageId),
     );
     this.applyServerChange((f) => removePage(f, pageId));
@@ -283,10 +296,21 @@ export class DesignerStore {
     if (this.activePageId() === pageId) this.activePageId.set(pages[0]?.id ?? null);
   }
 
-  updatePage(pageId: string, patch: Partial<PageDefinition>): void {
-    this.patchForm({
-      pages: this.form().pages.map((p) => (p.id === pageId ? { ...p, ...patch } : p)),
-    });
+  /**
+   * Applies a page edit locally right away (an undefined field is removed) and sends
+   * it to the server shortly after, merged with further edits of the same page.
+   */
+  updatePage(pageId: string, patch: PagePatch): void {
+    const request = withNulls(patch);
+    this.applyServerChange((f) => patchPage(f, pageId, request));
+    this.queuePatch(
+      pageKey(pageId),
+      pageId,
+      request,
+      'canvas.patchPageFailed',
+      (formId, merged, keepalive) =>
+        this.repository.updatePage(formId, pageId, merged, { keepalive }),
+    );
   }
 
   /**
@@ -330,7 +354,7 @@ export class DesignerStore {
    * the same element, so typing a label sends one request rather than one per key.
    */
   updateElement(elementId: ElementId, patch: ElementPatch): void {
-    const request = toElementPatch(patch);
+    const request = withNulls(patch);
     this.applyServerChange((f) => patchElement(f, elementId, request));
     this.queuePatch(
       elementKey(elementId),
@@ -545,15 +569,19 @@ export class DesignerStore {
     this.selectedId.set(id);
   }
 
-  /** Sends the unsent edits of the element `elementId` and its options right away. */
-  sendEditsOf(elementId: ElementId): void {
+  /** Sends the unsent edits of the element or page `id` (and its options) right away. */
+  sendEditsOf(id: ElementId | PageId): void {
     for (const [key, pending] of [...this.patches]) {
-      if (pending.elementId === elementId) void this.sendPatch(key);
+      if (pending.targetId === id) void this.sendPatch(key);
     }
   }
 
+  /** Activates a page; unsent edits of the page active before are sent right away. */
   selectPage(id: string): void {
-    if (this.form().pages.find((page) => page.id === id)) this.activePageId.set(id);
+    if (!this.form().pages.find((page) => page.id === id)) return;
+    const previous = this.activePageId();
+    if (previous && previous !== id) this.sendEditsOf(previous);
+    this.activePageId.set(id);
   }
 
   // ---- internals -------------------------------------------------------------
@@ -667,14 +695,14 @@ export class DesignerStore {
   }
 
   /**
-   * Queues the edit `patch` of the element `elementId` (or one of its options) under
+   * Queues the edit `patch` of the element or page `targetId` (or one of its options)
    * `key`, merged with an unsent earlier edit of the same key (also one held during a
    * removal, so it can't be replayed after this one), and sends it with `send` once no
    * further edit arrives for `PATCH_DELAY_MS`.
    */
   private queuePatch<P extends object>(
     key: string,
-    elementId: ElementId,
+    targetId: ElementId | PageId,
     patch: P,
     failed: TranslationKey,
     send: (formId: string, patch: P, keepalive: boolean) => Promise<unknown>,
@@ -687,7 +715,7 @@ export class DesignerStore {
     const merged: P = { ...(pending?.patch as P | undefined), ...patch };
     this.schedulePatch(key, {
       formId,
-      elementId,
+      targetId,
       patch: merged,
       failed,
       send: (keepalive) => send(formId, merged, keepalive),
@@ -780,25 +808,26 @@ export class DesignerStore {
 
   /**
    * Sends the removal `remove` through the creation queue (see `createOnServer`) with
-   * the unsent edits of the elements `targets` picks (and their options) held back, as
-   * `withoutPatches`. `targets` runs again once the removal is sent: an earlier move that
-   * failed meanwhile may have taken an element out, and its edits are then sent after all.
+   * the unsent edits of the elements or pages `targets` picks (and their options) held
+   * back, as `withoutPatches`. `targets` runs again once the removal is sent: an earlier
+   * move that failed meanwhile may have taken an element out, and its edits are then
+   * sent after all.
    */
   private withoutPatchesOf(
-    targets: (form: FormDocument) => ElementId[],
+    targets: (form: FormDocument) => (ElementId | PageId)[],
     remove: (form: FormDefinition) => Promise<void>,
   ): Promise<void> {
     const held = new Set(targets(this.form()));
     let removed = held;
     return this.withoutPatches(
-      (_key, pending) => held.has(pending.elementId),
+      (_key, pending) => held.has(pending.targetId),
       () =>
         this.createOnServer((form) => {
           // As on the server: earlier moves have settled, later ones are not sent yet.
           removed = new Set(targets(undoMoves(form, this.unconfirmedMoves)));
           return remove(form);
         }),
-      (pending) => removed.has(pending.elementId),
+      (pending) => removed.has(pending.targetId),
     );
   }
 
