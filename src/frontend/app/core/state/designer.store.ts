@@ -8,7 +8,9 @@ import {
   moveElementTo,
   moveOptionTo,
   patchElement,
+  type FormPatch,
   type PagePatch,
+  patchForm,
   patchPage,
   removeElement,
   removePage,
@@ -17,7 +19,6 @@ import {
 import {
   childrenOf,
   type ElementParent,
-  type FormDocument,
   getElement,
   parentOf,
   subtreeIds,
@@ -29,7 +30,6 @@ import type {
   FormDefinition,
   FormSettings,
   PageDefinition,
-  SaveFormDefinition,
 } from '@shared/model/form.model';
 import type { ElementId } from '@shared/model/ids';
 import type { ValidationRule } from '@shared/model/validation.model';
@@ -77,6 +77,10 @@ function optionKey(elementId: ElementId, optionId: string): string {
 
 function elementKey(elementId: ElementId): string {
   return `element:${elementId}`;
+}
+
+function formKey(formId: string): string {
+  return `form:${formId}`;
 }
 
 function pageKey(pageId: string): string {
@@ -196,11 +200,30 @@ export class DesignerStore {
   }
 
   rename(name: string): void {
-    this.patchForm({ name });
+    this.updateForm({ name });
   }
 
-  updateSettings(patch: Partial<FormSettings>): void {
-    this.patchForm({ settings: { ...this.form().settings, ...patch } });
+  updateSettings(settings: Partial<FormSettings>): void {
+    this.updateForm({ settings });
+  }
+
+  /**
+   * Applies an edit of the form's own fields locally right away and sends it to the
+   * server shortly after, merged with further edits of them (settings field by field).
+   */
+  private updateForm(patch: FormPatch): void {
+    const formId = this.form().id;
+    const key = formKey(formId);
+    this.applyServerChange((f) => patchForm(f, patch));
+    // `queuePatch` merges top-level fields only; settings are merged one level deeper.
+    const pending = this.patches.get(key)?.patch as FormPatch | undefined;
+    const merged: FormPatch =
+      pending?.settings && patch.settings
+        ? { ...patch, settings: { ...pending.settings, ...patch.settings } }
+        : patch;
+    this.queuePatch(key, formId, merged, 'builder.patchFormFailed', (id, p, keepalive) =>
+      this.repository.updateForm(id, p, { keepalive }),
+    );
   }
 
   /** Creates a page on the server (which persists it) and appends it locally. */
@@ -519,22 +542,6 @@ export class DesignerStore {
   }
 
   // ---- internals -------------------------------------------------------------
-
-  private patchDocument({ pages, elements }: FormDocument): void {
-    this.patchForm({ pages, elements });
-  }
-
-  private patchForm(patch: Partial<SaveFormDefinition>): void {
-    this._form.update((f) => {
-      if (!f) throw new Error('Form not set in store before update');
-      return {
-        ...f,
-        ...patch,
-      };
-    });
-    this.dirty.set(true);
-    this.persist();
-  }
 
   /**
    * Queues a server-side creation or removal for the form that is loaded now, after

@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { createElement, createPage } from '@shared/model/form-factory';
-import type { ElementPatch, PagePatch } from '@shared/model/form-ops';
+import type { ElementPatch, FormPatch, PagePatch } from '@shared/model/form-ops';
 import type {
   ChoiceElement,
   ElementDefinition,
@@ -292,6 +292,9 @@ describe('DesignerStore server-side creation', () => {
     deletePage: vi.fn(async () => {
       calls.push('deletePage');
     }),
+    updateForm: vi.fn(async (_formId: string, _patch: FormPatch) => {
+      calls.push('updateForm');
+    }),
   };
 
   beforeEach(() => {
@@ -419,7 +422,7 @@ describe('DesignerStore server-side creation', () => {
 
   it('saves unsaved edits before cloning', async () => {
     const { group } = loaded();
-    store.rename('Renamed');
+    store.dirty.set(true);
 
     await store.duplicateElement(group.id);
 
@@ -438,7 +441,7 @@ describe('DesignerStore server-side creation', () => {
 
   it('saves unsaved edits, then appends a server-generated option', async () => {
     const choice = loadedChoice();
-    store.rename('Renamed');
+    store.dirty.set(true);
 
     const option = await store.addOption(choice.id, 'Option 3');
 
@@ -468,7 +471,7 @@ describe('DesignerStore server-side creation', () => {
 
   it('saves unsaved edits, then appends a server-generated validation rule', async () => {
     const choice = loadedChoice();
-    store.rename('Renamed');
+    store.dirty.set(true);
 
     const rule = await store.addValidationRule(choice.id, { rule: 'required', message: 'Needed' });
 
@@ -638,7 +641,7 @@ describe('DesignerStore server-side creation', () => {
     it('saves unsaved edits before sending a pending option edit', async () => {
       const choice = loadedChoice();
       const option = choice.options[0];
-      store.rename('Renamed');
+      store.dirty.set(true);
 
       store.patchOption(choice.id, option.id, { label: 'Renamed option' });
       await vi.advanceTimersByTimeAsync(PATCH_DELAY_MS);
@@ -1013,9 +1016,66 @@ describe('DesignerStore server-side creation', () => {
     });
   });
 
+  describe('form edits', () => {
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => vi.useRealTimers());
+
+    it('renames at once and sends the name after the delay, without marking dirty', async () => {
+      loaded();
+
+      store.rename('Sign');
+      store.rename('Sign-up');
+
+      expect(store.form().name).toBe('Sign-up');
+      expect(store.dirty()).toBe(false);
+      await vi.advanceTimersByTimeAsync(PATCH_DELAY_MS);
+
+      expect(repo.updateForm).toHaveBeenCalledTimes(1);
+      expect(repo.updateForm).toHaveBeenCalledWith(
+        store.form().id,
+        { name: 'Sign-up' },
+        { keepalive: false },
+      );
+    });
+
+    it('merges settings edits field by field', async () => {
+      loaded();
+
+      store.updateSettings({ showProgress: false });
+      store.updateSettings({ navigation: 'linear' });
+
+      expect(store.form().settings).toMatchObject({ showProgress: false, navigation: 'linear' });
+      await vi.advanceTimersByTimeAsync(PATCH_DELAY_MS);
+      expect(repo.updateForm).toHaveBeenCalledWith(
+        store.form().id,
+        { settings: { showProgress: false, navigation: 'linear' } },
+        { keepalive: false },
+      );
+    });
+
+    it('sends a rename to the form it was made in after another form is loaded', async () => {
+      loaded();
+      const first = store.form().id;
+      store.rename('First');
+      const other = newForm('Other');
+      other.pages = [createPage('Other page')];
+      store.load(other);
+      store.rename('Second');
+
+      await vi.advanceTimersByTimeAsync(PATCH_DELAY_MS);
+
+      expect(repo.updateForm).toHaveBeenCalledWith(first, { name: 'First' }, { keepalive: false });
+      expect(repo.updateForm).toHaveBeenCalledWith(
+        other.id,
+        { name: 'Second' },
+        { keepalive: false },
+      );
+    });
+  });
+
   it('saves unsaved edits before creating, and runs creations one at a time', async () => {
     const { page } = loaded();
-    store.rename('Renamed');
+    store.dirty.set(true);
     await Promise.all([store.addElement(page.id, 'text'), store.addElement(page.id, 'text')]);
     expect(calls).toEqual(['save', 'addElement', 'addElement']);
     expect(getElements(store.form().pages[0], store.form())).toHaveLength(5);

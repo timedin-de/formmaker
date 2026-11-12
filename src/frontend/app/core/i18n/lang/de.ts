@@ -208,6 +208,7 @@ const de: typeof en = {
   'panel.patchElementFailed': 'Die Änderung am Element konnte nicht gespeichert werden.',
   'panel.moveOptionFailed': 'Die Option konnte nicht verschoben werden.',
   'canvas.patchPageFailed': 'Die Änderung an der Seite konnte nicht gespeichert werden.',
+  'builder.patchFormFailed': 'Die Änderung am Formular konnte nicht gespeichert werden.',
   'row.delete': 'Löschen',
   'row.addChild': 'Kind hinzufügen',
 

@@ -6,6 +6,7 @@ import {
   FORM_SCHEMA_VERSION,
   type FormDefinition,
   type FormDocument,
+  type FormPatch,
   type FormSettings,
   type FormWithOwner,
   type PageDefinition,
@@ -95,6 +96,20 @@ export const formsWithOwnerSchema = z.array(formWithOwnerSchema);
 export const createPageSchema = z.strictObject({
   title: z.string(),
 });
+
+/** Max length of a form name sent to the form PATCH endpoint. */
+const FORM_NAME_MAX = 1000;
+/** Max length of a form description sent to the form PATCH endpoint. */
+const FORM_DESCRIPTION_MAX = 10_000;
+
+/** Body of `PATCH /api/forms/:formId`; `settings` is merged field by field. */
+export const updateFormSchema = z.strictObject({
+  name: z.optional(z.string().check(z.maxLength(FORM_NAME_MAX))),
+  description: z.optional(z.string().check(z.maxLength(FORM_DESCRIPTION_MAX))),
+  settings: z.optional(z.partial(formSettingsSchema)),
+}) satisfies z.ZodMiniType<FormPatch>;
+
+export type UpdateFormRequest = z.infer<typeof updateFormSchema>;
 
 /** Max length of a page title sent to the page PATCH endpoint. */
 const PAGE_TITLE_MAX = 1000;

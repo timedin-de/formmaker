@@ -376,6 +376,27 @@ describe('FormService moveOption', () => {
   });
 });
 
+describe('FormService updateForm', () => {
+  it('patches name and description, merges settings and keeps the document', async () => {
+    const saveForm = vi.fn();
+    const service = new FormService({ saveForm } as unknown as Repository);
+    const form = formOf([page('p1', [text('q1')])]);
+    form.settings = { navigation: 'auto', showProgress: true };
+
+    await service.updateForm(
+      { form, ownerId: 'owner-1' },
+      { name: 'Sign-up', description: 'For the event', settings: { navigation: 'linear' } },
+    );
+
+    expect(saveForm).toHaveBeenCalledWith('owner-1', expect.anything());
+    const saved = saveForm.mock.calls[0][1] as FormDefinition;
+    expect(saved).toMatchObject({ name: 'Sign-up', description: 'For the event' });
+    expect(saved.settings).toEqual({ navigation: 'linear', showProgress: true });
+    expect(saved.pages).toBe(form.pages);
+    expect(saved.elements).toBe(form.elements);
+  });
+});
+
 describe('FormService updatePage', () => {
   let saveForm: ReturnType<typeof vi.fn>;
   let service: FormService;

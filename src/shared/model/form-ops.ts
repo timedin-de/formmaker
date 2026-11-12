@@ -8,7 +8,13 @@ import {
   parentOf,
   subtreeIds,
 } from './form-tree';
-import type { ElementDefinition, FormElements, PageDefinition } from './form.model';
+import type {
+  ElementDefinition,
+  FormDefinition,
+  FormElements,
+  FormSettings,
+  PageDefinition,
+} from './form.model';
 import { type ElementId, elementId, type PageId, uuid } from './ids';
 
 /*
@@ -162,6 +168,25 @@ export function patchElement<T extends FormDocument>(
   const next = { ...form, elements: { ...form.elements, [id]: element } };
   const def = patch.defaultValue;
   return def?.kind === 'fromField' ? pairGroupDefaults(next, id, def.fieldId) : next;
+}
+
+/**
+ * A change to the form's own fields, as sent to the form PATCH endpoint. `settings` is
+ * merged into the current settings field by field.
+ */
+export interface FormPatch {
+  name?: string;
+  description?: string;
+  settings?: Partial<FormSettings>;
+}
+
+/** Applies `patch` to the form's own fields; the pages and elements stay as they are. */
+export function patchForm<T extends FormDefinition>(form: T, patch: FormPatch): T {
+  const next: T = { ...form };
+  if (patch.name !== undefined) next.name = patch.name;
+  if (patch.description !== undefined) next.description = patch.description;
+  if (patch.settings) next.settings = { ...form.settings, ...patch.settings };
+  return next;
 }
 
 /** A change to the fields of a page, as sent to the page PATCH endpoint; null removes. */

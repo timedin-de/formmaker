@@ -31,6 +31,7 @@ import {
   submissionSchema,
   submissionsSchema,
   type UpdateElementRequest,
+  type UpdateFormRequest,
   type UpdateOptionRequest,
   type UpdateValidationRuleRequest,
   validationRuleSchema,
@@ -153,6 +154,27 @@ export class FormsRepository {
     this.upsert([saved]);
     writeCache(FORM_CACHE_PREFIX + saved.id, toPortableForm(saved));
     writeCache(FORMS_CACHE_KEY, this.forms());
+    return saved;
+  }
+
+  /**
+   * Patches the form's own fields on the server; returns the form as stored there.
+   * `keepalive` lets the request outlive the page, e.g. when sent while it is being closed.
+   */
+  async updateForm(
+    formId: string,
+    patch: UpdateFormRequest,
+    { keepalive = false }: { keepalive?: boolean } = {},
+  ): Promise<FormWithOwner> {
+    const saved = await this.api.request(
+      formWithOwnerSchema,
+      `/api/forms/${encodeURIComponent(formId)}`,
+      { method: 'PATCH', body: JSON.stringify(patch), keepalive },
+    );
+    // The list shows the name; the form itself may have newer unsent edits.
+    this.upsert([saved]);
+    writeCache(FORMS_CACHE_KEY, this.forms());
+    removeCache(FORM_CACHE_PREFIX + formId);
     return saved;
   }
 

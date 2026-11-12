@@ -8,6 +8,7 @@ import {
   Inject,
   NotFoundException,
   Param,
+  Patch,
   Post,
   Put,
   UnprocessableEntityException,
@@ -26,6 +27,8 @@ import {
   saveFormDefinitionSchema,
   stripFormOwnership,
   submissionCreateSchema,
+  type UpdateFormRequest,
+  updateFormSchema,
 } from '@shared/schemas';
 import { AuthGuard } from '../auth/auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
@@ -113,6 +116,19 @@ export class FormsController {
     if (!canManage(existing.ownerId, user))
       throw new ForbiddenException({ error: 'not form owner of form' });
     return this.repository.saveForm(existing?.ownerId ?? user.id, { ...existing.form, ...form });
+  }
+
+  /** Patches the form's own fields: name, description and settings. */
+  @Patch(':id')
+  @HttpCode(200)
+  @UseGuards(AuthGuard)
+  async updateForm(
+    @CurrentUser() user: User,
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(updateFormSchema)) body: UpdateFormRequest,
+  ) {
+    const item = await managedForm(this.repository, id, user);
+    return this.formService.updateForm(item, body);
   }
 
   @Delete(':id')
