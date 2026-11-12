@@ -31,6 +31,7 @@ import {
   submissionSchema,
   submissionsSchema,
   type UpdateElementRequest,
+  type UpdateFormRequest,
   type UpdateOptionRequest,
   type UpdateValidationRuleRequest,
   validationRuleSchema,
@@ -78,7 +79,11 @@ export class FormsRepository {
   private hydratePromise: Promise<void> | null = null;
 
   init(): Promise<void> {
-    this.hydratePromise ??= this.hydrate();
+    this.hydratePromise ??= this.hydrate().catch((error: unknown) => {
+      // Let the next call try again instead of failing for the rest of the session.
+      this.hydratePromise = null;
+      throw error;
+    });
     return this.hydratePromise;
   }
 
@@ -153,6 +158,38 @@ export class FormsRepository {
     this.upsert([saved]);
     writeCache(FORM_CACHE_PREFIX + saved.id, toPortableForm(saved));
     writeCache(FORMS_CACHE_KEY, this.forms());
+    return saved;
+  }
+
+  /**
+   * Patches the form's own fields on the server; returns the form as stored there.
+   * `keepalive` lets the request outlive the page, e.g. when sent while it is being closed.
+   */
+  async updateForm(
+    formId: string,
+    patch: UpdateFormRequest,
+    { keepalive = false }: { keepalive?: boolean } = {},
+  ): Promise<FormWithOwner> {
+    const saved = await this.api.request(
+      formWithOwnerSchema,
+      `/api/forms/${encodeURIComponent(formId)}`,
+      { method: 'PATCH', body: JSON.stringify(patch), keepalive },
+    );
+    // The form itself may have newer unsent edits, so it is refetched rather than cached.
+    removeCache(FORM_CACHE_PREFIX + formId);
+    try {
+      // Without the loaded list the cache would hold this form alone.
+      await this.init();
+    } catch {
+      // The update is stored; only the list failed to load, so leave it untouched.
+      return saved;
+    }
+    // A list loaded after the PATCH may already hold a later save of the form.
+    const listed = this.forms().find((form) => form.id === formId);
+    if (!listed || listed.updatedAt <= saved.updatedAt) {
+      this.upsert([saved]);
+      writeCache(FORMS_CACHE_KEY, this.forms());
+    }
     return saved;
   }
 
