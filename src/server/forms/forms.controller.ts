@@ -7,6 +7,7 @@ import {
   Inject,
   NotFoundException,
   Param,
+  Patch,
   Post,
   Put,
   UnprocessableEntityException,
@@ -25,6 +26,8 @@ import {
   saveFormDefinitionSchema,
   stripFormOwnership,
   submissionCreateSchema,
+  type UpdateFormRequest,
+  updateFormSchema,
 } from '@shared/schemas';
 import { AuthGuard } from '../auth/auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
@@ -110,6 +113,19 @@ export class FormsController {
     return changeManagedForm(this.repository, id, user, (existing) =>
       this.repository.saveForm(existing.ownerId, { ...existing.form, ...form }, existing.revision),
     );
+  }
+
+  /** Patches the form's own fields: name, description and settings. */
+  @Patch(':id')
+  @HttpCode(200)
+  @UseGuards(AuthGuard)
+  async updateForm(
+    @CurrentUser() user: User,
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(updateFormSchema)) body: UpdateFormRequest,
+  ) {
+    const item = await managedForm(this.repository, id, user);
+    return this.formService.updateForm(item, body);
   }
 
   @Delete(':id')

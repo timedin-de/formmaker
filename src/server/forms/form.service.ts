@@ -24,6 +24,7 @@ import {
   moveOptionTo,
   type PageClone,
   patchElement,
+  patchForm,
   patchPage,
   type PageDefinition,
   parentOf,
@@ -48,6 +49,7 @@ import {
   type MoveElementRequest,
   type MoveOptionRequest,
   type UpdateElementRequest,
+  type UpdateFormRequest,
   type UpdateOptionRequest,
   type UpdatePageRequest,
   type UpdateValidationRuleRequest,
@@ -169,6 +171,11 @@ export class FormService {
       elements: {},
     };
     return await this.repository.saveForm(user.id, form);
+  }
+
+  /** Applies `patch` to the form's own fields (see `patchForm`) and returns the stored form. */
+  async updateForm({ form, ownerId, revision }: OwnedForm, patch: UpdateFormRequest) {
+    return await this.repository.saveForm(ownerId, patchForm(form, patch), revision);
   }
 
   /** Appends a new page to the stored form and returns it. */
