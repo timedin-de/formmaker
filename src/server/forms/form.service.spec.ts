@@ -128,11 +128,18 @@ describe('FormService element creation', () => {
 
   it('appends a generated page and persists it for the owner', async () => {
     const form = formOf([page('p1', [])]);
-    const created = await service.addPage({ form, ownerId: 'owner-1' }, 'Page 2');
+    const created = await service.addPage(
+      { form, ownerId: 'owner-1', revision: 'rev-1' },
+      'Page 2',
+    );
 
     expect(created).toMatchObject({ title: 'Page 2', children: [] });
     expect(created.id).toBeTruthy();
-    expect(saveForm).toHaveBeenCalledWith('owner-1', expect.objectContaining({ id: 'form-1' }));
+    expect(saveForm).toHaveBeenCalledWith(
+      'owner-1',
+      expect.objectContaining({ id: 'form-1' }),
+      'rev-1',
+    );
     expect(saved().pages.map((p) => p.id)).toEqual(['p1', created.id]);
   });
 
@@ -223,6 +230,193 @@ describe('FormService element creation', () => {
   });
 });
 
+describe('FormService moveElement', () => {
+  let saveForm: ReturnType<typeof vi.fn>;
+  let service: FormService;
+
+  beforeEach(() => {
+    saveForm = vi.fn();
+    service = new FormService({ saveForm } as unknown as Repository);
+  });
+
+  const saved = (): FormDefinition => saveForm.mock.calls[0][1] as FormDefinition;
+  const savedChildren = (parentId: string): string[] => {
+    const parent = getParent(saved(), parentId);
+    return parent ? childrenOf(saved(), parent).map((e) => e.id) : [];
+  };
+
+  /** p1 → [q1, g1 → [q2, q3], q4], p2 → [q5] */
+  const sample = () =>
+    formOf([
+      page('p1', [text('q1'), group('g1', [text('q2'), text('q3')]), text('q4')]),
+      page('p2', [text('q5')]),
+    ]);
+
+  it('reorders within the same parent, counting the index after detaching', async () => {
+    await service.moveElement({ form: sample(), ownerId: 'owner-1', revision: 'rev-1' }, 'q1', {
+      parentId: 'p1',
+      index: 2,
+    });
+
+    expect(saveForm).toHaveBeenCalledWith(
+      'owner-1',
+      expect.objectContaining({ id: 'form-1' }),
+      'rev-1',
+    );
+    expect(savedChildren('p1')).toEqual(['g1', 'q4', 'q1']);
+  });
+
+  it('moves an element into a group on another page', async () => {
+    const form = sample();
+    await service.moveElement({ form, ownerId: 'owner-1' }, 'q5', { parentId: 'g1', index: 1 });
+
+    expect(savedChildren('p2')).toEqual([]);
+    expect(savedChildren('g1')).toEqual(['q2', 'q5', 'q3']);
+  });
+
+  it('moves a group together with its children', async () => {
+    await service.moveElement({ form: sample(), ownerId: 'owner-1' }, 'g1', {
+      parentId: 'p2',
+      index: 0,
+    });
+
+    expect(savedChildren('p1')).toEqual(['q1', 'q4']);
+    expect(savedChildren('p2')).toEqual(['g1', 'q5']);
+    expect(savedChildren('g1')).toEqual(['q2', 'q3']);
+  });
+
+  it('clamps an index past the end', async () => {
+    await service.moveElement({ form: sample(), ownerId: 'owner-1' }, 'q2', {
+      parentId: 'g1',
+      index: 99,
+    });
+
+    expect(savedChildren('g1')).toEqual(['q3', 'q2']);
+  });
+
+  it('throws 404 without saving for an unknown element', async () => {
+    await expect(
+      service.moveElement({ form: sample(), ownerId: 'owner-1' }, 'gone', {
+        parentId: 'p1',
+        index: 0,
+      }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    expect(saveForm).not.toHaveBeenCalled();
+  });
+
+  it('throws 404 without saving when the parent is not a page or group', async () => {
+    await expect(
+      service.moveElement({ form: sample(), ownerId: 'owner-1' }, 'q1', {
+        parentId: 'q4',
+        index: 0,
+      }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    expect(saveForm).not.toHaveBeenCalled();
+  });
+
+  it('throws 400 without saving when moving a group into itself', async () => {
+    const form = formOf([page('p1', [group('outer', [group('inner', [text('q1')])])])]);
+    for (const parentId of ['outer', 'inner']) {
+      await expect(
+        service.moveElement({ form, ownerId: 'owner-1' }, 'outer', { parentId, index: 0 }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+    }
+    expect(saveForm).not.toHaveBeenCalled();
+  });
+});
+
+describe('FormService updateElement', () => {
+  let saveForm: ReturnType<typeof vi.fn>;
+  let service: FormService;
+
+  beforeEach(() => {
+    saveForm = vi.fn();
+    service = new FormService({ saveForm } as unknown as Repository);
+  });
+
+  const saved = (): FormDefinition => saveForm.mock.calls[0][1] as FormDefinition;
+  const sample = () =>
+    formOf([page('p1', [text('q1', { enabledWhen: isNotEmpty('q2') }), text('q2')])]);
+
+  it('merges the patch, stores it for the owner and returns the stored element', async () => {
+    const owned = { form: sample(), ownerId: 'owner-1', revision: 'rev-1' };
+    const updated = await service.updateElement(owned, 'q1', {
+      label: 'Name',
+      description: 'As in your passport',
+      required: true,
+    });
+
+    expect(saveForm).toHaveBeenCalledWith(
+      'owner-1',
+      expect.objectContaining({ id: 'form-1' }),
+      'rev-1',
+    );
+    expect(updated).toMatchObject({ label: 'Name', description: 'As in your passport' });
+    expect(saved().elements['q1']).toEqual(updated);
+    expect(saved().elements['q1']).toMatchObject({ required: true, placeholder: '' });
+  });
+
+  it('removes a field sent as null', async () => {
+    await service.updateElement({ form: sample(), ownerId: 'owner-1' }, 'q1', {
+      enabledWhen: null,
+    });
+
+    expect(saved().elements['q1']).not.toHaveProperty('enabledWhen');
+  });
+
+  it('pairs the children of a group copying its default from another group', async () => {
+    const form = formOf([page('p1', [group('g1', [text('a')]), group('g2', [text('b')])])]);
+
+    await service.updateElement({ form, ownerId: 'owner-1' }, 'g2', {
+      defaultValue: { kind: 'fromField', fieldId: 'g1' },
+    });
+
+    expect(saved().elements['b']).toMatchObject({
+      defaultValue: { kind: 'fromField', fieldId: 'a' },
+    });
+  });
+
+  it('throws 404 without saving for an unknown element', async () => {
+    await expect(
+      service.updateElement({ form: sample(), ownerId: 'owner-1' }, 'gone', { label: 'x' }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    expect(saveForm).not.toHaveBeenCalled();
+  });
+
+  it('throws 400 without saving for a field the element type lacks', async () => {
+    await expect(
+      service.updateElement({ form: sample(), ownerId: 'owner-1' }, 'q1', { rows: 4 }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(saveForm).not.toHaveBeenCalled();
+  });
+
+  it('throws 400 without saving when removing a field the type requires', async () => {
+    const form = formOf([
+      page('p1', [
+        {
+          id: 's1',
+          type: 'scale',
+          label: 's1',
+          description: undefined,
+          width: 12,
+          required: false,
+          validations: [],
+          readonly: false,
+          defaultValue: null,
+          min: 1,
+          max: 5,
+          step: 1,
+        },
+      ]),
+    ]);
+
+    await expect(
+      service.updateElement({ form, ownerId: 'owner-1' }, 's1', { step: null }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(saveForm).not.toHaveBeenCalled();
+  });
+});
+
 describe('FormService cloning', () => {
   let saveForm: ReturnType<typeof vi.fn>;
   let service: FormService;
@@ -265,13 +459,21 @@ describe('FormService cloning', () => {
       ]),
     ]);
 
-    const clone = await service.cloneElement({ form, ownerId: 'owner-1' }, 'g1', {
-      suffix: '(Kopie)',
-    });
+    const clone = await service.cloneElement(
+      { form, ownerId: 'owner-1', revision: 'rev-1' },
+      'g1',
+      {
+        suffix: '(Kopie)',
+      },
+    );
 
     expect(clone.element.id).not.toBe('g1');
     expect(clone.element.label).toBe('g1 (Kopie)');
-    expect(saveForm).toHaveBeenCalledWith('owner-1', expect.objectContaining({ id: 'form-1' }));
+    expect(saveForm).toHaveBeenCalledWith(
+      'owner-1',
+      expect.objectContaining({ id: 'form-1' }),
+      'rev-1',
+    );
     expect(savedChildren('p1')).toEqual(['q1', 'g1', clone.element.id]);
     expect((saved().elements[clone.element.id] as GroupElement).children).toEqual(
       clone.subtree.map((el) => el.id),
@@ -346,13 +548,17 @@ describe('FormService.addOption', () => {
 
   it('appends an option and persists it for the owner', async () => {
     const form = formOf([page('p1', [choice('q1')])]);
-    const created = await service.addOption({ form, ownerId: 'owner-1' }, 'q1', {
+    const created = await service.addOption({ form, ownerId: 'owner-1', revision: 'rev-1' }, 'q1', {
       label: 'Maybe',
     });
 
     expect(created).toMatchObject({ label: 'Maybe' });
     expect(created.id).toBeTruthy();
-    expect(saveForm).toHaveBeenCalledWith('owner-1', expect.objectContaining({ id: 'form-1' }));
+    expect(saveForm).toHaveBeenCalledWith(
+      'owner-1',
+      expect.objectContaining({ id: 'form-1' }),
+      'rev-1',
+    );
   });
 
   it('throws 404 without saving for an unknown element', async () => {
@@ -429,13 +635,18 @@ describe('FormService.addValidationRule', () => {
 
   it('appends a rule with a server-generated id and persists it for the owner', async () => {
     const form = formOf([page('p1', [text('q1')])]);
-    const created = await service.addValidationRule({ form, ownerId: 'owner-1' }, 'q1', {
+    const owned = { form, ownerId: 'owner-1', revision: 'rev-1' };
+    const created = await service.addValidationRule(owned, 'q1', {
       rule: 'email',
       message: 'Not an email',
     });
 
     expect(created).toEqual({ id: expect.any(String), rule: 'email', message: 'Not an email' });
-    expect(saveForm).toHaveBeenCalledWith('owner-1', expect.objectContaining({ id: 'form-1' }));
+    expect(saveForm).toHaveBeenCalledWith(
+      'owner-1',
+      expect.objectContaining({ id: 'form-1' }),
+      'rev-1',
+    );
     expect(savedText('q1').validations).toEqual([created]);
   });
 
@@ -489,6 +700,7 @@ describe('FormService validation rule edits', () => {
   const owned = () => ({
     form: formOf([page('p1', [text('q1', { validations: [email, pattern] }), group('g1', [])])]),
     ownerId: 'owner-1',
+    revision: 'rev-1',
   });
 
   beforeEach(() => {
@@ -506,7 +718,11 @@ describe('FormService validation rule edits', () => {
     });
 
     expect(updated).toEqual({ id: 'r2', rule: 'pattern', message: 'No match', pattern: 'b+' });
-    expect(saveForm).toHaveBeenCalledWith('owner-1', expect.objectContaining({ id: 'form-1' }));
+    expect(saveForm).toHaveBeenCalledWith(
+      'owner-1',
+      expect.objectContaining({ id: 'form-1' }),
+      'rev-1',
+    );
     expect(savedText('q1').validations).toEqual([email, updated]);
   });
 

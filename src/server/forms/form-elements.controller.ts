@@ -18,6 +18,10 @@ import {
   createOptionSchema,
   type CreateValidationRuleRequest,
   createValidationRuleSchema,
+  type MoveElementRequest,
+  moveElementSchema,
+  type UpdateElementRequest,
+  updateElementSchema,
   type UpdateOptionRequest,
   updateOptionSchema,
   type UpdateValidationRuleRequest,
@@ -28,7 +32,7 @@ import { CurrentUser } from '../auth/current-user.decorator';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import { Repository, type User } from '../repository';
 import { FormService } from './form.service';
-import { managedForm } from './managed-form';
+import { changeManagedForm } from './managed-form';
 
 /** Elements of a form and their sub-resources: choice options and validation rules. */
 @Controller('forms/:formId/elements')
@@ -41,25 +45,53 @@ export class FormElementsController {
 
   @Post()
   @HttpCode(201)
-  async addElement(
+  addElement(
     @CurrentUser() user: User,
     @Param('formId') formId: string,
     @Body(new ZodValidationPipe(createElementSchema)) body: CreateElementRequest,
   ) {
-    const item = await managedForm(this.repository, formId, user);
-    return this.formService.addElement(item, body);
+    return changeManagedForm(this.repository, formId, user, (item) =>
+      this.formService.addElement(item, body),
+    );
   }
 
   @Post(':elementId/clone')
   @HttpCode(201)
-  async cloneElement(
+  cloneElement(
     @CurrentUser() user: User,
     @Param('formId') formId: string,
     @Param('elementId') elementId: string,
     @Body(new ZodValidationPipe(cloneRequestSchema)) body: CloneRequest,
   ) {
-    const item = await managedForm(this.repository, formId, user);
-    return this.formService.cloneElement(item, elementId, body);
+    return changeManagedForm(this.repository, formId, user, (item) =>
+      this.formService.cloneElement(item, elementId, body),
+    );
+  }
+
+  @Post(':elementId/move')
+  @HttpCode(204)
+  async moveElement(
+    @CurrentUser() user: User,
+    @Param('formId') formId: string,
+    @Param('elementId') elementId: string,
+    @Body(new ZodValidationPipe(moveElementSchema)) body: MoveElementRequest,
+  ) {
+    await changeManagedForm(this.repository, formId, user, (item) =>
+      this.formService.moveElement(item, elementId, body),
+    );
+  }
+
+  @Patch(':elementId')
+  @HttpCode(200)
+  updateElement(
+    @CurrentUser() user: User,
+    @Param('formId') formId: string,
+    @Param('elementId') elementId: string,
+    @Body(new ZodValidationPipe(updateElementSchema)) body: UpdateElementRequest,
+  ) {
+    return changeManagedForm(this.repository, formId, user, (item) =>
+      this.formService.updateElement(item, elementId, body),
+    );
   }
 
   @Delete(':elementId')
@@ -69,33 +101,36 @@ export class FormElementsController {
     @Param('formId') formId: string,
     @Param('elementId') elementId: string,
   ) {
-    const item = await managedForm(this.repository, formId, user);
-    await this.formService.deleteElement(item, elementId);
+    await changeManagedForm(this.repository, formId, user, (item) =>
+      this.formService.deleteElement(item, elementId),
+    );
   }
 
   @Post(':elementId/options')
   @HttpCode(201)
-  async addOption(
+  addOption(
     @CurrentUser() user: User,
     @Param('formId') formId: string,
     @Param('elementId') elementId: string,
     @Body(new ZodValidationPipe(createOptionSchema)) body: CreateOptionRequest,
   ) {
-    const item = await managedForm(this.repository, formId, user);
-    return this.formService.addOption(item, elementId, body);
+    return changeManagedForm(this.repository, formId, user, (item) =>
+      this.formService.addOption(item, elementId, body),
+    );
   }
 
   @Patch(':elementId/options/:optionId')
   @HttpCode(200)
-  async updateOption(
+  updateOption(
     @CurrentUser() user: User,
     @Param('formId') formId: string,
     @Param('elementId') elementId: string,
     @Param('optionId') optionId: string,
     @Body(new ZodValidationPipe(updateOptionSchema)) body: UpdateOptionRequest,
   ) {
-    const item = await managedForm(this.repository, formId, user);
-    return this.formService.updateOption(item, elementId, optionId, body);
+    return changeManagedForm(this.repository, formId, user, (item) =>
+      this.formService.updateOption(item, elementId, optionId, body),
+    );
   }
 
   @Delete(':elementId/options/:optionId')
@@ -106,33 +141,36 @@ export class FormElementsController {
     @Param('elementId') elementId: string,
     @Param('optionId') optionId: string,
   ) {
-    const item = await managedForm(this.repository, formId, user);
-    await this.formService.deleteOption(item, elementId, optionId);
+    await changeManagedForm(this.repository, formId, user, (item) =>
+      this.formService.deleteOption(item, elementId, optionId),
+    );
   }
 
   @Post(':elementId/validations')
   @HttpCode(201)
-  async addValidationRule(
+  addValidationRule(
     @CurrentUser() user: User,
     @Param('formId') formId: string,
     @Param('elementId') elementId: string,
     @Body(new ZodValidationPipe(createValidationRuleSchema)) body: CreateValidationRuleRequest,
   ) {
-    const item = await managedForm(this.repository, formId, user);
-    return this.formService.addValidationRule(item, elementId, body);
+    return changeManagedForm(this.repository, formId, user, (item) =>
+      this.formService.addValidationRule(item, elementId, body),
+    );
   }
 
   @Patch(':elementId/validations/:ruleId')
   @HttpCode(200)
-  async updateValidationRule(
+  updateValidationRule(
     @CurrentUser() user: User,
     @Param('formId') formId: string,
     @Param('elementId') elementId: string,
     @Param('ruleId') ruleId: string,
     @Body(new ZodValidationPipe(updateValidationRuleSchema)) body: UpdateValidationRuleRequest,
   ) {
-    const item = await managedForm(this.repository, formId, user);
-    return this.formService.updateValidationRule(item, elementId, ruleId, body);
+    return changeManagedForm(this.repository, formId, user, (item) =>
+      this.formService.updateValidationRule(item, elementId, ruleId, body),
+    );
   }
 
   @Delete(':elementId/validations/:ruleId')
@@ -143,7 +181,8 @@ export class FormElementsController {
     @Param('elementId') elementId: string,
     @Param('ruleId') ruleId: string,
   ) {
-    const item = await managedForm(this.repository, formId, user);
-    await this.formService.deleteValidationRule(item, elementId, ruleId);
+    await changeManagedForm(this.repository, formId, user, (item) =>
+      this.formService.deleteValidationRule(item, elementId, ruleId),
+    );
   }
 }

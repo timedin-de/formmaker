@@ -95,6 +95,75 @@ export function updateElement<T extends FormDocument>(
   };
 }
 
+type KeysOf<T> = T extends unknown ? keyof T : never;
+type FieldOf<T, K extends PropertyKey> = T extends unknown
+  ? K extends keyof T
+    ? T[K]
+    : never
+  : never;
+
+/** Element fields that have endpoints of their own or never change, so a patch can't touch them. */
+export type FixedElementField = 'id' | 'type' | 'children' | 'options' | 'validations';
+
+/** A field that may be absent can be set to null, which removes it. */
+type PatchValue<V> = undefined extends V ? Exclude<V, undefined> | null : V;
+
+/**
+ * A change to the fields of an element, as sent to the element PATCH endpoint.
+ * A field set to null is removed (JSON has no undefined).
+ */
+export type ElementPatch = {
+  [K in Exclude<KeysOf<ElementDefinition>, FixedElementField>]?: PatchValue<
+    FieldOf<ElementDefinition, K>
+  >;
+};
+
+/**
+ * Sets the default of every child of the group `targetId` to the child of the group
+ * `sourceId` at the same position, recursively; a group copies from another group.
+ */
+function pairGroupDefaults<T extends FormDocument>(form: T, targetId: string, sourceId: string): T {
+  const target = getElement(form, targetId);
+  const source = getElement(form, sourceId);
+  if (target?.type !== 'group' || source?.type !== 'group') return form;
+  let next = form;
+  target.children.forEach((childId, i) => {
+    const srcId = source.children[i];
+    const child = getElement(next, childId);
+    if (!srcId || !child) return;
+    if ('defaultValue' in child) {
+      next = updateElement(next, childId, { defaultValue: { kind: 'fromField', fieldId: srcId } });
+    }
+    next = pairGroupDefaults(next, childId, srcId);
+  });
+  return next;
+}
+
+/**
+ * Applies `patch` to the element `id`: null removes a field, other values replace it.
+ * A group that takes its default from another group pairs up its children as well
+ * (see `pairGroupDefaults`). Returns the input when there is no such element. The
+ * result is not validated, so the server parses the patched element afterwards.
+ */
+export function patchElement<T extends FormDocument>(
+  form: T,
+  id: ElementId,
+  patch: ElementPatch,
+): T {
+  const el = getElement(form, id);
+  if (!el) return form;
+  const patched: Record<string, unknown> = { ...el };
+  for (const [key, value] of Object.entries(patch)) {
+    if (value === null && key !== 'defaultValue') delete patched[key];
+    else if (value !== undefined) patched[key] = value;
+  }
+  // Unchecked: the patch may hold fields this type lacks (see above).
+  const element = patched as unknown as ElementDefinition;
+  const next = { ...form, elements: { ...form.elements, [id]: element } };
+  const def = patch.defaultValue;
+  return def?.kind === 'fromField' ? pairGroupDefaults(next, id, def.fieldId) : next;
+}
+
 /** Removes the element `id` together with everything below it. */
 export function removeElement<T extends FormDocument>(form: T, id: ElementId): T {
   const parent = parentOf(form, id);

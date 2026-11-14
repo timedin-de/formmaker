@@ -8,6 +8,7 @@ import {
   ELEMENT_TYPES,
   type ElementBase,
   type ElementDefinition,
+  type ElementPatch,
   type FileElement,
   type FormElements,
   type GroupElement,
@@ -26,7 +27,7 @@ import {
   type TimeInterval,
 } from '../model';
 import { conditionGroupSchema } from './conditions';
-import { defaultValueableSchema } from './defaultValue';
+import { defaultValueableSchema, defaultValueDefSchema } from './defaultValue';
 import { validationRuleSchema } from './validations';
 
 const elementBaseSchema = z.strictObject({
@@ -119,18 +120,18 @@ const timeElementSchema = z.extend(questionBaseSchema, {
   timeInterval: z._default(timeIntervalSchema, { ...DEFAULT_TIME_INTERVAL }),
 }) satisfies z.ZodMiniType<TimeElement>;
 
+const inputTypeSchema = z.union([
+  z.literal('text'),
+  z.literal('email'),
+  z.literal('url'),
+  z.literal('phone'),
+  z.literal('number'),
+]);
+
 const textElementSchema = z.extend(questionBaseSchema, {
   ...placeholderableSchema.shape,
   type: z.literal('text'),
-  inputType: z.optional(
-    z.union([
-      z.literal('text'),
-      z.literal('email'),
-      z.literal('url'),
-      z.literal('phone'),
-      z.literal('number'),
-    ]),
-  ),
+  inputType: z.optional(inputTypeSchema),
 }) satisfies z.ZodMiniType<TextElement>;
 
 const longTextElementSchema = z.extend(questionBaseSchema, {
@@ -165,6 +166,47 @@ export const elementDefinitionSchema = z.discriminatedUnion('type', [
   sectionElementSchema,
   textDisplayElementSchema,
 ]) satisfies z.ZodMiniType<ElementDefinition>;
+
+/** Max length of an element label sent to the element PATCH endpoint. */
+const ELEMENT_LABEL_MAX = 1000;
+/** Max length of an element description sent to the element PATCH endpoint. */
+const ELEMENT_DESCRIPTION_MAX = 10_000;
+
+/** Optional field that null removes (see `ElementPatch`). */
+function removable<T extends z.ZodMiniType>(schema: T) {
+  return z.optional(z.nullable(schema));
+}
+
+/**
+ * Body of `PATCH /api/forms/:formId/elements/:elementId`. The union of the editable
+ * fields of every element type; the server rejects a field the element's type lacks
+ * by parsing the patched element with `elementDefinitionSchema`.
+ */
+export const updateElementSchema = z.strictObject({
+  label: z.optional(z.string().check(z.maxLength(ELEMENT_LABEL_MAX))),
+  description: removable(z.string().check(z.maxLength(ELEMENT_DESCRIPTION_MAX))),
+  width: z.optional(z.number()),
+  enabledWhen: removable(conditionGroupSchema),
+  required: z.optional(z.boolean()),
+  readonly: z.optional(z.boolean()),
+  defaultValue: z.optional(z.nullable(defaultValueDefSchema)),
+  placeholder: z.optional(z.string()),
+  step: removable(z.number()),
+  unit: removable(z.string()),
+  decimals: removable(z.number()),
+  min: z.optional(z.number()),
+  max: z.optional(z.number()),
+  minLabel: removable(z.string()),
+  maxLabel: removable(z.string()),
+  accept: removable(z.string()),
+  multiple: removable(z.boolean()),
+  timeInterval: z.optional(timeIntervalSchema),
+  inputType: removable(inputTypeSchema),
+  rows: removable(z.number()),
+  collapsible: z.optional(z.boolean()),
+}) satisfies z.ZodMiniType<ElementPatch>;
+
+export type UpdateElementRequest = z.infer<typeof updateElementSchema>;
 
 export const formElementsSchema = z.record(
   z.string(),

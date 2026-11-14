@@ -1,3 +1,4 @@
+import { ConflictException } from '@nestjs/common';
 import type { DataSource } from 'typeorm';
 
 import {
@@ -141,14 +142,20 @@ export class Repository {
     return this.source.getRepository(FormEntity).count();
   }
 
-  async form(id: string): Promise<{ form: FormDefinition; ownerId: string } | null> {
+  /**
+   * The stored form with its owner and `revision`, the row's `updated_at`; pass the
+   * revision back to `saveForm` to reject the write if the form changed meanwhile.
+   */
+  async form(
+    id: string,
+  ): Promise<{ form: FormDefinition; ownerId: string; revision: string } | null> {
     const row = await this.source.getRepository(FormEntity).findOneBy({ id });
     if (!row?.document) return null;
     const form = toPortableForm(
       formDefinitionSchema.parse(stripFormOwnership(JSON.parse(row.document))),
     );
 
-    return { form, ownerId: row.ownerId };
+    return { form, ownerId: row.ownerId, revision: row.updatedAt };
   }
 
   async ownedForm(id: string): Promise<FormWithOwner | null> {
@@ -160,9 +167,18 @@ export class Repository {
     return toFormWithOwner(row);
   }
 
-  async saveForm(ownerId: string, form: FormDefinition): Promise<FormWithOwner> {
+  /**
+   * Inserts or replaces a form. With `revision` (from `form()`) the write is a single
+   * conditional UPDATE that only applies while the row still has that revision, and
+   * throws 409 otherwise, so concurrent read-modify-write requests can't overwrite
+   * each other.
+   */
+  async saveForm(ownerId: string, form: FormDefinition, revision?: string): Promise<FormWithOwner> {
     const existing = await this.form(form.id);
-    const now = new Date().toISOString();
+    let now = new Date().toISOString();
+    // A new revision must differ from the one it replaces, even within the same millisecond.
+    if (revision !== undefined && now <= revision)
+      now = new Date(Date.parse(revision) + 1).toISOString();
     const saved: FormDefinition = {
       ...existing?.form,
       ...toPortableForm(form),
@@ -170,13 +186,17 @@ export class Repository {
       createdAt: existing?.form.createdAt || form.createdAt || now,
       updatedAt: now,
     };
-    await this.source.getRepository(FormEntity).save({
-      id: form.id,
-      ownerId,
-      document: JSON.stringify(saved),
-      createdAt: saved.createdAt ?? now,
-      updatedAt: now,
-    });
+    const forms = this.source.getRepository(FormEntity);
+    const row = { ownerId, document: JSON.stringify(saved), updatedAt: now };
+    if (revision === undefined) {
+      await forms.save({ id: form.id, createdAt: saved.createdAt ?? now, ...row });
+    } else {
+      const { affected } = await forms.update({ id: form.id, updatedAt: revision }, row);
+      if (affected !== 1)
+        throw new ConflictException({
+          error: `form ${form.id} was changed by another request, reload it`,
+        });
+    }
     const owned = await this.ownedForm(form.id);
     if (!owned) throw new Error('form was not saved');
     return owned;

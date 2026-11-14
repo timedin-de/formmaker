@@ -2,9 +2,11 @@ import { computed, DestroyRef, inject, Injectable, signal } from '@angular/core'
 import { catchFn, isChoice, isQuestion } from '@shared/helper';
 import {
   addPage,
+  type ElementPatch,
   insertElement,
   moveElement,
   moveElementTo,
+  patchElement,
   removeElement,
   removePage,
   updateElement,
@@ -14,7 +16,9 @@ import {
   type ElementParent,
   type FormDocument,
   getElement,
+  getParent,
   parentOf,
+  subtreeIds,
 } from '@shared/model/form-tree';
 import type {
   ChoiceOption,
@@ -33,24 +37,71 @@ import {
   type UpdateOptionRequest,
   type UpdateValidationRuleRequest,
 } from '@shared/schemas';
-import { I18nService } from '../i18n/translation.service';
+import { I18nService, type TranslationKey } from '../i18n/translation.service';
 import { ApiError } from './api-error';
 import { FormsRepository } from './forms.repository';
 
 const STORAGE_KEY = 'formmaker.designer.v1';
-/** How long an option edit waits for further edits before it is sent. */
-export const OPTION_PATCH_DELAY_MS = 400;
+/**
+ * How long an edit waits for further edits of the same element before it is sent, so
+ * e.g. changing the label and description and ticking "required" is one request.
+ * Each edit restarts the wait; leaving the element sends at once (see `select`).
+ */
+export const PATCH_DELAY_MS = 3000;
 
-interface PendingOptionPatch {
+/** An edit that is applied locally but not sent yet; see `queuePatch`. */
+interface PendingPatch {
   formId: string;
+  /** The element the edit belongs to, so removing the element drops it. */
   elementId: ElementId;
-  optionId: string;
-  patch: UpdateOptionRequest;
+  /** Every edit of the same thing since the last send, merged. */
+  patch: object;
+  send: (keepalive: boolean) => Promise<unknown>;
+  /** Shown when sending fails. */
+  failed: TranslationKey;
   timer: ReturnType<typeof setTimeout>;
 }
 
+/** A move applied locally whose request hasn't succeeded yet; see `sendMove`. */
+interface UnconfirmedMove {
+  elementId: ElementId;
+  /** The page or group the element was moved out of. */
+  fromId: string;
+  /** The sibling it followed there (null: it was first), so it goes back to the same spot. */
+  afterId: ElementId | null;
+}
+
+/**
+ * `form` with `moves` (oldest first) taken back, newest first. Each element goes back
+ * right after its former sibling, or first when that sibling is gone or it was first.
+ */
+function undoMoves<T extends FormDocument>(form: T, moves: readonly UnconfirmedMove[]): T {
+  return moves.reduceRight((f, { elementId, fromId, afterId }) => {
+    const siblings = getParent(f, fromId)?.children.filter((id) => id !== elementId) ?? [];
+    const index = afterId === null ? 0 : siblings.indexOf(afterId) + 1;
+    return moveElementTo(f, elementId, fromId, index) ?? f;
+  }, form);
+}
+
+/** A failed edit, read and cleared by the property panel to show a message. */
+export interface PatchError {
+  error: unknown;
+  message: TranslationKey;
+}
+
 function optionKey(elementId: ElementId, optionId: string): string {
-  return `${elementId}/${optionId}`;
+  return `option:${elementId}/${optionId}`;
+}
+
+function elementKey(elementId: ElementId): string {
+  return `element:${elementId}`;
+}
+
+/** `patch` with every undefined field set to null, which removes it (see `ElementPatch`). */
+function toElementPatch(patch: ElementPatch): ElementPatch {
+  return Object.fromEntries(
+    Object.entries(patch).map(([key, value]) => [key, value === undefined ? null : value]),
+  );
 }
 
 /** Replaces the options of the choice element `elementId`; returns the input without one. */
@@ -89,8 +140,8 @@ export class DesignerStore {
   readonly activePageId = signal<string | null>(null);
   /** Optional reference form (imported) read-only compare. */
   readonly dirty = signal(false);
-  /** Last failed option edit, read and cleared by the property panel to show a message. */
-  readonly optionPatchError = signal<unknown>(null);
+  /** Last failed element or option edit, read and cleared by the property panel. */
+  readonly patchError = signal<PatchError | null>(null);
 
   readonly selectedElement = computed(() => {
     const id = this.selectedId();
@@ -106,13 +157,20 @@ export class DesignerStore {
   private persistTimer: ReturnType<typeof setTimeout> | null = null;
   /** Tail of the server-side creation queue; see `createOnServer`. */
   private creations: Promise<unknown> = Promise.resolve();
-  /** Option edits not yet sent, by `optionKey`; see `patchOption`. */
-  private readonly optionPatches = new Map<string, PendingOptionPatch>();
+  /** Edits not yet sent, by `elementKey` / `optionKey`; see `queuePatch`. */
+  private readonly patches = new Map<string, PendingPatch>();
+  /** Edits taken out of `patches` while their target is being removed; see `withoutPatches`. */
+  private readonly held = new Map<string, PendingPatch>();
+  /**
+   * Moves applied locally but not confirmed by the server, oldest first. They are sent
+   * one after another through the creation queue, so the first is the one in flight.
+   */
+  private unconfirmedMoves: UnconfirmedMove[] = [];
 
   constructor() {
     void this.hydrate();
-    // Option edits wait a moment before they are sent; don't lose them when the tab closes.
-    const flush = () => this.flushOptionPatches();
+    // Edits wait a moment before they are sent; don't lose them when the tab closes.
+    const flush = () => this.flushPatches();
     window.addEventListener('pagehide', flush);
     inject(DestroyRef).onDestroy(() => window.removeEventListener('pagehide', flush));
   }
@@ -142,7 +200,8 @@ export class DesignerStore {
     this._form.set(form);
     this.selectedId.set(null);
     this.dirty.set(false);
-    this.optionPatchError.set(null);
+    this.patchError.set(null);
+    this.unconfirmedMoves = [];
     this.persist();
   }
 
@@ -151,7 +210,8 @@ export class DesignerStore {
     this.selectedId.set(null);
     this.activePageId.set(def.pages[0]?.id ?? null);
     this.dirty.set(false);
-    this.optionPatchError.set(null);
+    this.patchError.set(null);
+    this.unconfirmedMoves = [];
     this.persist();
   }
 
@@ -186,7 +246,11 @@ export class DesignerStore {
   }
 
   async removePage(pageId: string) {
-    await this.repository.deletePage(this.form().id, pageId);
+    const page = this.form().pages.find((p) => p.id === pageId);
+    const ids = page?.children.flatMap((id) => subtreeIds(this.form(), id)) ?? [];
+    await this.withoutPatchesOf(ids, () =>
+      this.createOnServer((form) => this.repository.deletePage(form.id, pageId)),
+    );
     this.applyServerChange((f) => removePage(f, pageId));
     const pages = this.form().pages;
     if (this.activePageId() === pageId) this.activePageId.set(pages[0]?.id ?? null);
@@ -233,15 +297,34 @@ export class DesignerStore {
     return el;
   }
 
-  updateElement(elementId: string, patch: Partial<ElementDefinition>): void {
-    this.updateElements([[elementId, patch]]);
+  /**
+   * Applies an element edit locally right away (see `patchElement`; an undefined field
+   * is removed) and sends it to the server shortly after, merged with further edits of
+   * the same element, so typing a label sends one request rather than one per key.
+   */
+  updateElement(elementId: ElementId, patch: ElementPatch): void {
+    const request = toElementPatch(patch);
+    this.applyServerChange((f) => patchElement(f, elementId, request));
+    this.queuePatch(
+      elementKey(elementId),
+      elementId,
+      request,
+      'panel.patchElementFailed',
+      (formId, merged, keepalive) =>
+        this.repository.updateElement(formId, elementId, merged, { keepalive }),
+    );
   }
 
-  /** Applies several element patches as one change. */
-  updateElements(patches: [ElementId, Partial<ElementDefinition>][]): void {
-    let next: FormDocument = this.form();
-    for (const [id, patch] of patches) next = updateElement(next, id, patch);
-    this.patchDocument(next);
+  /** Reorders the options of a choice element locally and marks the form dirty. */
+  moveOption(elementId: ElementId, index: number, dir: -1 | 1): void {
+    const el = getElement(this.form(), elementId);
+    if (!el || !isChoice(el)) return;
+    const target = index + dir;
+    if (target < 0 || target >= el.options.length) return;
+    const options = [...el.options];
+    const [item] = options.splice(index, 1);
+    options.splice(target, 0, item);
+    this.patchDocument(updateElement(this.form(), elementId, { options }));
   }
 
   /**
@@ -330,15 +413,14 @@ export class DesignerStore {
         options.map((o) => (o.id === optionId ? { ...o, ...patch } : o)),
       ),
     );
-    const key = optionKey(elementId, optionId);
-    const pending = this.optionPatches.get(key);
-    if (pending) clearTimeout(pending.timer);
-    this.scheduleOptionPatch(key, {
-      formId: this.form().id,
+    this.queuePatch(
+      optionKey(elementId, optionId),
       elementId,
-      optionId,
-      patch: { ...pending?.patch, ...patch },
-    });
+      patch,
+      'panel.patchOptionFailed',
+      (formId, merged, keepalive) =>
+        this.repository.updateOption(formId, elementId, optionId, merged, { keepalive }),
+    );
   }
 
   /**
@@ -347,46 +429,49 @@ export class DesignerStore {
    */
   async removeOption(elementId: ElementId, optionId: string): Promise<void> {
     const key = optionKey(elementId, optionId);
-    const pending = this.optionPatches.get(key);
-    if (pending) clearTimeout(pending.timer);
-    this.optionPatches.delete(key);
-    try {
-      await this.createOnServer((form) =>
-        this.repository.deleteOption(form.id, elementId, optionId),
-      );
-    } catch (error) {
-      if (pending && !this.optionPatches.has(key)) {
-        this.scheduleOptionPatch(key, pending);
-        void this.sendOptionPatch(key);
-      }
-      throw error;
-    }
+    await this.withoutPatches(
+      (k) => k === key,
+      () =>
+        this.createOnServer((form) => this.repository.deleteOption(form.id, elementId, optionId)),
+    );
     this.applyServerChange((f) =>
       updateOptions(f, elementId, (options) => options.filter((o) => o.id !== optionId)),
     );
   }
 
+  /**
+   * Deletes an element on the server, dropping the unsent edits of it and everything
+   * below it, then removes it locally. The deletion waits in the creation queue, so
+   * edits already sent before reach the element while it still exists.
+   */
   async removeElement(elementId: string) {
-    await this.repository.deleteElement(this.form().id, elementId);
+    await this.withoutPatchesOf(subtreeIds(this.form(), elementId), () =>
+      this.createOnServer((form) => this.repository.deleteElement(form.id, elementId)),
+    );
     this.applyServerChange((f) => removeElement(f, elementId));
     if (this.selectedId() === elementId) this.selectedId.set(null);
   }
 
-  moveElement(elementId: string, direction: -1 | 1): void {
-    this.patchDocument(moveElement(this.form(), elementId, direction));
+  /** Moves an element one step up or down (see `moveElement`); as `moveElementTo`. */
+  async moveElement(elementId: string, direction: -1 | 1): Promise<void> {
+    const before = this.form();
+    const next = moveElement(before, elementId, direction);
+    if (next !== before) await this.sendMove(elementId, before, next);
   }
 
   /**
    * Move an element to an arbitrary position of an arbitrary container (a page or
-   * a group), wherever it currently lives.
+   * a group), wherever it currently lives. Applies the move locally right away and
+   * sends it to the server; if that fails, the element moves back.
    *
    * `index` follows CDK drop semantics: it is resolved against the destination
    * array *after* the element has been detached from its source, so the same
    * value works for both reorders and transfers.
    */
-  moveElementTo(elementId: string, parentId: string, index: number): void {
-    const next = moveElementTo(this.form(), elementId, parentId, index);
-    if (next) this.patchDocument(next);
+  async moveElementTo(elementId: string, parentId: string, index: number): Promise<void> {
+    const before = this.form();
+    const next = moveElementTo(before, elementId, parentId, index);
+    if (next) await this.sendMove(elementId, before, next);
   }
 
   /**
@@ -412,8 +497,18 @@ export class DesignerStore {
     return copy;
   }
 
+  /** Selects an element; unsent edits of the one selected before are sent right away. */
   select(id: string | null): void {
+    const previous = this.selectedId();
+    if (previous && previous !== id) this.sendEditsOf(previous);
     this.selectedId.set(id);
+  }
+
+  /** Sends the unsent edits of the element `elementId` and its options right away. */
+  sendEditsOf(elementId: ElementId): void {
+    for (const [key, pending] of [...this.patches]) {
+      if (pending.elementId === elementId) void this.sendPatch(key);
+    }
   }
 
   selectPage(id: string): void {
@@ -439,10 +534,12 @@ export class DesignerStore {
   }
 
   /**
-   * Queues a server-side creation or removal for the form that is loaded now. Rejects
+   * Queues a server-side creation or removal for the form that is loaded now, after
+   * every unsent edit, so e.g. a copy carries a label typed just before. Rejects
    * instead of sending or applying it once another form has been loaded in the meantime.
    */
   private createOnServer<T>(create: (form: FormDefinition) => Promise<T>): Promise<T> {
+    for (const key of [...this.patches.keys()]) void this.sendPatch(key);
     const formId = this.form().id;
     const assertSameForm = () => {
       if (this._form()?.id !== formId) throw new Error('designer: form changed during creation');
@@ -460,53 +557,176 @@ export class DesignerStore {
   }
 
   /**
+   * Applies the move of `elementId` from `before` to `next` and sends it through the
+   * creation queue. Until the server confirms it, it counts as unconfirmed: saves leave
+   * it out (see `saveIfDirty`). If it fails, it is taken back together with every move
+   * made after it, which built on it and is then dropped unsent, so the local order
+   * matches the server again.
+   */
+  private async sendMove(
+    elementId: ElementId,
+    before: FormDefinition,
+    next: FormDefinition,
+  ): Promise<void> {
+    const from = parentOf(before, elementId);
+    const to = parentOf(next, elementId);
+    if (!from || !to) return;
+    const fromIndex = from.children.indexOf(elementId);
+    const move: UnconfirmedMove = {
+      elementId,
+      fromId: from.id,
+      afterId: from.children[fromIndex - 1] ?? null,
+    };
+    const index = to.children.indexOf(elementId);
+    this.applyServerChange(() => next);
+    this.unconfirmedMoves.push(move);
+    const isPending = () => this.unconfirmedMoves.includes(move);
+    try {
+      await this.createOnServer(async (form) => {
+        // Taken back with an earlier move that failed: sending it would misplace it.
+        if (!isPending()) return;
+        try {
+          await this.repository.moveElement(form.id, elementId, { parentId: to.id, index });
+        } catch (error) {
+          // Still inside the queue, so the moves after it see they were taken back.
+          this.takeBackMovesFrom(move);
+          throw error;
+        }
+        this.unconfirmedMoves = this.unconfirmedMoves.filter((m) => m !== move);
+      });
+    } catch (error) {
+      // Failed before it was sent, e.g. the save ahead of it.
+      this.takeBackMovesFrom(move);
+      throw error;
+    }
+  }
+
+  /**
+   * Takes back the unconfirmed move `move` and every move made after it, newest first.
+   * Does nothing once `move` is no longer pending (taken back already, or another form
+   * was loaded).
+   */
+  private takeBackMovesFrom(move: UnconfirmedMove): void {
+    const start = this.unconfirmedMoves.indexOf(move);
+    if (start < 0) return;
+    const undone = this.unconfirmedMoves.splice(start);
+    this.applyServerChange((f) => undoMoves(f, undone));
+  }
+
+  /**
+   * Queues the edit `patch` of the element `elementId` (or one of its options) under
+   * `key`, merged with an unsent earlier edit of the same key (also one held during a
+   * removal, so it can't be replayed after this one), and sends it with `send` once no
+   * further edit arrives for `PATCH_DELAY_MS`.
+   */
+  private queuePatch<P extends object>(
+    key: string,
+    elementId: ElementId,
+    patch: P,
+    failed: TranslationKey,
+    send: (formId: string, patch: P, keepalive: boolean) => Promise<unknown>,
+  ): void {
+    const pending = this.patches.get(key) ?? this.held.get(key);
+    this.held.delete(key);
+    if (pending) clearTimeout(pending.timer);
+    const formId = pending?.formId ?? this.form().id;
+    // A key always stands for the same kind of edit, so the earlier patch is a `P` too.
+    const merged: P = { ...(pending?.patch as P | undefined), ...patch };
+    this.schedulePatch(key, {
+      formId,
+      elementId,
+      patch: merged,
+      failed,
+      send: (keepalive) => send(formId, merged, keepalive),
+    });
+  }
+
+  private schedulePatch(key: string, pending: Omit<PendingPatch, 'timer'>): void {
+    this.patches.set(key, {
+      ...pending,
+      timer: setTimeout(() => void this.sendPatch(key), PATCH_DELAY_MS),
+    });
+  }
+
+  /**
    * Sends the pending edit `key` through the creation queue. Unlike creations it is
    * still sent after another form has been loaded, since it is already applied there.
+   * If it fails while its form is loaded, the form is marked dirty so the next save
+   * carries it.
    */
-  private sendOptionPatch(key: string): Promise<void> {
-    const pending = this.optionPatches.get(key);
+  private sendPatch(key: string): Promise<void> {
+    const pending = this.patches.get(key);
     if (!pending) return Promise.resolve();
     clearTimeout(pending.timer);
-    const { formId, elementId, optionId, patch } = pending;
-    const isLoaded = () => this._form()?.id === formId;
+    this.patches.delete(key);
+    return this.enqueuePatch(pending);
+  }
+
+  /** Sends `pending` through the creation queue; see `sendPatch`. */
+  private enqueuePatch(pending: PendingPatch): Promise<void> {
+    const isLoaded = () => this._form()?.id === pending.formId;
     const run = this.creations
       .then(async () => {
         if (isLoaded()) await this.saveIfDirty();
-        await this.repository.updateOption(formId, elementId, optionId, patch);
+        await pending.send(false);
       })
       .catch((error: unknown) => {
         if (!isLoaded()) return;
         this.dirty.set(true);
-        this.optionPatchError.set(error);
-      })
-      .finally(() => {
-        if (this.optionPatches.get(key) === pending) {
-          this.optionPatches.delete(key);
-        }
+        this.patchError.set({ error, message: pending.failed });
       });
     this.creations = run;
     return run;
   }
 
   /**
-   * Sends every unsent option edit right away, past the creation queue and with
-   * `keepalive`, so it still reaches the server while the page is being closed.
+   * Sends every unsent edit right away, past the creation queue and with `keepalive`,
+   * so it still reaches the server while the page is being closed.
    */
-  private flushOptionPatches(): void {
-    for (const [key, { formId, elementId, optionId, patch, timer }] of this.optionPatches) {
-      clearTimeout(timer);
-      this.optionPatches.delete(key);
-      void this.repository
-        .updateOption(formId, elementId, optionId, patch, { keepalive: true })
-        .catch(() => undefined);
+  private flushPatches(): void {
+    for (const [key, pending] of this.patches) {
+      clearTimeout(pending.timer);
+      this.patches.delete(key);
+      void pending.send(true).catch(() => undefined);
     }
   }
 
-  private scheduleOptionPatch(key: string, pending: Omit<PendingOptionPatch, 'timer'>): void {
-    this.optionPatches.set(key, {
-      ...pending,
-      timer: setTimeout(() => void this.sendOptionPatch(key), OPTION_PATCH_DELAY_MS),
-    });
+  /**
+   * Runs `remove` with the unsent edits whose key passes `drop` taken out of the queue,
+   * since they would fail once their target is gone. If `remove` fails, they are sent
+   * after all. Meanwhile they are held, so a newer edit of the same key merges them in
+   * (see `queuePatch`) rather than being overwritten by them later.
+   */
+  private async withoutPatches(
+    drop: (key: string, pending: PendingPatch) => boolean,
+    remove: () => Promise<void>,
+  ): Promise<void> {
+    const taken = [...this.patches].filter(([key, pending]) => drop(key, pending));
+    for (const [key, pending] of taken) {
+      clearTimeout(pending.timer);
+      this.patches.delete(key);
+      this.held.set(key, pending);
+    }
+    // The taken edits no newer edit has merged in yet, no longer held.
+    const release = () =>
+      taken.filter(([key, pending]) => {
+        if (this.held.get(key) !== pending) return false;
+        this.held.delete(key);
+        return true;
+      });
+    try {
+      await remove();
+    } catch (error) {
+      for (const [, pending] of release()) void this.enqueuePatch(pending);
+      throw error;
+    }
+    release();
+  }
+
+  /** `withoutPatches` for every unsent edit of the elements `elementIds` and their options. */
+  private withoutPatchesOf(elementIds: ElementId[], remove: () => Promise<void>): Promise<void> {
+    const ids = new Set(elementIds);
+    return this.withoutPatches((_key, pending) => ids.has(pending.elementId), remove);
   }
 
   /**
@@ -538,7 +758,9 @@ export class DesignerStore {
   private async saveIfDirty(): Promise<void> {
     if (!this.dirty()) return;
     const snapshot = this.form();
-    await this.repository.saveForm(snapshot);
+    // Unconfirmed moves reach the server through their own requests, which may still
+    // fail and take them back, so the save must not store them ahead of that.
+    await this.repository.saveForm(undoMoves(snapshot, this.unconfirmedMoves));
     // Edits made while the save was in flight are still unsaved.
     if (this.form() === snapshot) this.dirty.set(false);
   }
