@@ -16,6 +16,7 @@ import {
   type ElementParent,
   type FormDocument,
   getElement,
+  getParent,
   parentOf,
   subtreeIds,
 } from '@shared/model/form-tree';
@@ -59,6 +60,27 @@ interface PendingPatch {
   /** Shown when sending fails. */
   failed: TranslationKey;
   timer: ReturnType<typeof setTimeout>;
+}
+
+/** A move applied locally whose request hasn't succeeded yet; see `sendMove`. */
+interface UnconfirmedMove {
+  elementId: ElementId;
+  /** The page or group the element was moved out of. */
+  fromId: string;
+  /** The sibling it followed there (null: it was first), so it goes back to the same spot. */
+  afterId: ElementId | null;
+}
+
+/**
+ * `form` with `moves` (oldest first) taken back, newest first. Each element goes back
+ * right after its former sibling, or first when that sibling is gone or it was first.
+ */
+function undoMoves<T extends FormDocument>(form: T, moves: readonly UnconfirmedMove[]): T {
+  return moves.reduceRight((f, { elementId, fromId, afterId }) => {
+    const siblings = getParent(f, fromId)?.children.filter((id) => id !== elementId) ?? [];
+    const index = afterId === null ? 0 : siblings.indexOf(afterId) + 1;
+    return moveElementTo(f, elementId, fromId, index) ?? f;
+  }, form);
 }
 
 /** A failed edit, read and cleared by the property panel to show a message. */
@@ -137,6 +159,13 @@ export class DesignerStore {
   private creations: Promise<unknown> = Promise.resolve();
   /** Edits not yet sent, by `elementKey` / `optionKey`; see `queuePatch`. */
   private readonly patches = new Map<string, PendingPatch>();
+  /** Edits taken out of `patches` while their target is being removed; see `withoutPatches`. */
+  private readonly held = new Map<string, PendingPatch>();
+  /**
+   * Moves applied locally but not confirmed by the server, oldest first. They are sent
+   * one after another through the creation queue, so the first is the one in flight.
+   */
+  private unconfirmedMoves: UnconfirmedMove[] = [];
 
   constructor() {
     void this.hydrate();
@@ -172,6 +201,7 @@ export class DesignerStore {
     this.selectedId.set(null);
     this.dirty.set(false);
     this.patchError.set(null);
+    this.unconfirmedMoves = [];
     this.persist();
   }
 
@@ -181,6 +211,7 @@ export class DesignerStore {
     this.activePageId.set(def.pages[0]?.id ?? null);
     this.dirty.set(false);
     this.patchError.set(null);
+    this.unconfirmedMoves = [];
     this.persist();
   }
 
@@ -217,7 +248,9 @@ export class DesignerStore {
   async removePage(pageId: string) {
     const page = this.form().pages.find((p) => p.id === pageId);
     const ids = page?.children.flatMap((id) => subtreeIds(this.form(), id)) ?? [];
-    await this.withoutPatchesOf(ids, () => this.repository.deletePage(this.form().id, pageId));
+    await this.withoutPatchesOf(ids, () =>
+      this.createOnServer((form) => this.repository.deletePage(form.id, pageId)),
+    );
     this.applyServerChange((f) => removePage(f, pageId));
     const pages = this.form().pages;
     if (this.activePageId() === pageId) this.activePageId.set(pages[0]?.id ?? null);
@@ -406,9 +439,14 @@ export class DesignerStore {
     );
   }
 
+  /**
+   * Deletes an element on the server, dropping the unsent edits of it and everything
+   * below it, then removes it locally. The deletion waits in the creation queue, so
+   * edits already sent before reach the element while it still exists.
+   */
   async removeElement(elementId: string) {
     await this.withoutPatchesOf(subtreeIds(this.form(), elementId), () =>
-      this.repository.deleteElement(this.form().id, elementId),
+      this.createOnServer((form) => this.repository.deleteElement(form.id, elementId)),
     );
     this.applyServerChange((f) => removeElement(f, elementId));
     if (this.selectedId() === elementId) this.selectedId.set(null);
@@ -520,7 +558,10 @@ export class DesignerStore {
 
   /**
    * Applies the move of `elementId` from `before` to `next` and sends it through the
-   * creation queue. On failure it moves the element back if this form is still loaded.
+   * creation queue. Until the server confirms it, it counts as unconfirmed: saves leave
+   * it out (see `saveIfDirty`). If it fails, it is taken back together with every move
+   * made after it, which built on it and is then dropped unsent, so the local order
+   * matches the server again.
    */
   private async sendMove(
     elementId: ElementId,
@@ -531,25 +572,52 @@ export class DesignerStore {
     const to = parentOf(next, elementId);
     if (!from || !to) return;
     const fromIndex = from.children.indexOf(elementId);
+    const move: UnconfirmedMove = {
+      elementId,
+      fromId: from.id,
+      afterId: from.children[fromIndex - 1] ?? null,
+    };
     const index = to.children.indexOf(elementId);
-    const formId = before.id;
     this.applyServerChange(() => next);
+    this.unconfirmedMoves.push(move);
+    const isPending = () => this.unconfirmedMoves.includes(move);
     try {
-      await this.createOnServer((form) =>
-        this.repository.moveElement(form.id, elementId, { parentId: to.id, index }),
-      );
+      await this.createOnServer(async (form) => {
+        // Taken back with an earlier move that failed: sending it would misplace it.
+        if (!isPending()) return;
+        try {
+          await this.repository.moveElement(form.id, elementId, { parentId: to.id, index });
+        } catch (error) {
+          // Still inside the queue, so the moves after it see they were taken back.
+          this.takeBackMovesFrom(move);
+          throw error;
+        }
+        this.unconfirmedMoves = this.unconfirmedMoves.filter((m) => m !== move);
+      });
     } catch (error) {
-      if (this._form()?.id === formId) {
-        this.applyServerChange((f) => moveElementTo(f, elementId, from.id, fromIndex) ?? f);
-      }
+      // Failed before it was sent, e.g. the save ahead of it.
+      this.takeBackMovesFrom(move);
       throw error;
     }
   }
 
   /**
+   * Takes back the unconfirmed move `move` and every move made after it, newest first.
+   * Does nothing once `move` is no longer pending (taken back already, or another form
+   * was loaded).
+   */
+  private takeBackMovesFrom(move: UnconfirmedMove): void {
+    const start = this.unconfirmedMoves.indexOf(move);
+    if (start < 0) return;
+    const undone = this.unconfirmedMoves.splice(start);
+    this.applyServerChange((f) => undoMoves(f, undone));
+  }
+
+  /**
    * Queues the edit `patch` of the element `elementId` (or one of its options) under
-   * `key`, merged with an unsent earlier edit of the same key, and sends it with `send`
-   * once no further edit arrives for `PATCH_DELAY_MS`.
+   * `key`, merged with an unsent earlier edit of the same key (also one held during a
+   * removal, so it can't be replayed after this one), and sends it with `send` once no
+   * further edit arrives for `PATCH_DELAY_MS`.
    */
   private queuePatch<P extends object>(
     key: string,
@@ -558,7 +626,8 @@ export class DesignerStore {
     failed: TranslationKey,
     send: (formId: string, patch: P, keepalive: boolean) => Promise<unknown>,
   ): void {
-    const pending = this.patches.get(key);
+    const pending = this.patches.get(key) ?? this.held.get(key);
+    this.held.delete(key);
     if (pending) clearTimeout(pending.timer);
     const formId = pending?.formId ?? this.form().id;
     // A key always stands for the same kind of edit, so the earlier patch is a `P` too.
@@ -625,7 +694,8 @@ export class DesignerStore {
   /**
    * Runs `remove` with the unsent edits whose key passes `drop` taken out of the queue,
    * since they would fail once their target is gone. If `remove` fails, they are sent
-   * after all.
+   * after all. Meanwhile they are held, so a newer edit of the same key merges them in
+   * (see `queuePatch`) rather than being overwritten by them later.
    */
   private async withoutPatches(
     drop: (key: string, pending: PendingPatch) => boolean,
@@ -635,14 +705,22 @@ export class DesignerStore {
     for (const [key, pending] of taken) {
       clearTimeout(pending.timer);
       this.patches.delete(key);
+      this.held.set(key, pending);
     }
+    // The taken edits no newer edit has merged in yet, no longer held.
+    const release = () =>
+      taken.filter(([key, pending]) => {
+        if (this.held.get(key) !== pending) return false;
+        this.held.delete(key);
+        return true;
+      });
     try {
       await remove();
     } catch (error) {
-      // Ahead of any newer edit of the same key, which is still waiting for its timer.
-      for (const [, pending] of taken) void this.enqueuePatch(pending);
+      for (const [, pending] of release()) void this.enqueuePatch(pending);
       throw error;
     }
+    release();
   }
 
   /** `withoutPatches` for every unsent edit of the elements `elementIds` and their options. */
@@ -680,7 +758,9 @@ export class DesignerStore {
   private async saveIfDirty(): Promise<void> {
     if (!this.dirty()) return;
     const snapshot = this.form();
-    await this.repository.saveForm(snapshot);
+    // Unconfirmed moves reach the server through their own requests, which may still
+    // fail and take them back, so the save must not store them ahead of that.
+    await this.repository.saveForm(undoMoves(snapshot, this.unconfirmedMoves));
     // Edits made while the save was in flight are still unsaved.
     if (this.form() === snapshot) this.dirty.set(false);
   }

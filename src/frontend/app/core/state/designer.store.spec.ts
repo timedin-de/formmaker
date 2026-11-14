@@ -173,6 +173,43 @@ describe('DesignerStore moveElementTo', () => {
     expect(store.dirty()).toBe(false);
   });
 
+  it('takes back a later move unsent when an earlier one fails', async () => {
+    const { page, group, c, d } = scenario();
+    let fail!: (error: Error) => void;
+    repo.moveElement.mockImplementationOnce(
+      () => new Promise<undefined>((_, reject) => (fail = reject)),
+    );
+
+    const first = store.moveElementTo(c.id, group.id, 0);
+    const second = store.moveElementTo(d.id, page.id, 0);
+    expect(ids(root())).toEqual(['D', 'Group']);
+    await vi.waitFor(() => expect(fail).toBeDefined());
+    fail(new Error('offline'));
+
+    await expect(first).rejects.toThrow('offline');
+    await second;
+    expect(repo.moveElement).toHaveBeenCalledTimes(1);
+    expect(ids(root())).toEqual(['C', 'Group', 'D']);
+    expect(ids(childrenOf(group.id))).toEqual(['A', 'B']);
+  });
+
+  it('leaves a move out of the save of earlier edits sent ahead of it', async () => {
+    const { group, c, d } = scenario();
+    store.rename('Renamed');
+
+    await store.moveElementTo(c.id, group.id, 0);
+
+    expect(repo.saveForm).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'Renamed',
+        pages: [expect.objectContaining({ children: [c.id, group.id, d.id] })],
+      }),
+    );
+    expect(repo.moveElement).toHaveBeenCalledTimes(1);
+    expect(ids(root())).toEqual(['Group', 'D']);
+    expect(store.dirty()).toBe(false);
+  });
+
   it('sends an up/down move as the position it ends up at', async () => {
     const { group, d } = scenario();
 
@@ -864,6 +901,51 @@ describe('DesignerStore server-side creation', () => {
         { label: 'Kept' },
         { keepalive: false },
       );
+    });
+
+    it('keeps a newer edit sent while a failing removal was in flight', async () => {
+      const { group } = loaded();
+      let fail!: (error: Error) => void;
+      repo.deleteElement.mockReturnValueOnce(new Promise<void>((_, reject) => (fail = reject)));
+
+      store.updateElement(group.id, { label: 'Old', description: 'Kept' });
+      const removal = store.removeElement(group.id);
+      store.updateElement(group.id, { label: 'Newer' });
+      await vi.advanceTimersByTimeAsync(PATCH_DELAY_MS);
+      fail(new Error('delete failed'));
+      await expect(removal).rejects.toThrow('delete failed');
+      await vi.advanceTimersByTimeAsync(PATCH_DELAY_MS);
+
+      expect(repo.updateElement).toHaveBeenCalledTimes(1);
+      expect(repo.updateElement).toHaveBeenCalledWith(
+        store.form().id,
+        group.id,
+        { label: 'Newer', description: 'Kept' },
+        { keepalive: false },
+      );
+      expect(element(group.id)).toMatchObject({ label: 'Newer', description: 'Kept' });
+    });
+
+    it('deletes an element only after an edit already sent to it has arrived', async () => {
+      const { group } = loaded();
+      let arrive!: () => void;
+      repo.updateElement.mockImplementationOnce(() => {
+        calls.push('updateElement');
+        return new Promise<TextElement>((resolve) => (arrive = () => resolve(text('Sent'))));
+      });
+
+      store.updateElement(group.id, { label: 'Sent' });
+      store.sendEditsOf(group.id);
+      const removal = store.removeElement(group.id);
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(repo.deleteElement).not.toHaveBeenCalled();
+      arrive();
+      await removal;
+
+      expect(calls).toEqual(['updateElement', 'deleteElement']);
+      expect(store.patchError()).toBeNull();
+      expect(element(group.id)).toBeUndefined();
     });
 
     it('reports a failed send with the element message and marks the form dirty', async () => {
