@@ -67,18 +67,22 @@ interface UnconfirmedMove {
   elementId: ElementId;
   /** The page or group the element was moved out of. */
   fromId: string;
-  /** The sibling it followed there (null: it was first), so it goes back to the same spot. */
-  afterId: ElementId | null;
+  /**
+   * The siblings it followed there, nearest last, so it goes back to the same spot even
+   * when the nearest of them has been removed meanwhile.
+   */
+  before: ElementId[];
 }
 
 /**
  * `form` with `moves` (oldest first) taken back, newest first. Each element goes back
- * right after its former sibling, or first when that sibling is gone or it was first.
+ * right after the nearest of its former preceding siblings that is still there, or first.
  */
 function undoMoves<T extends FormDocument>(form: T, moves: readonly UnconfirmedMove[]): T {
-  return moves.reduceRight((f, { elementId, fromId, afterId }) => {
+  return moves.reduceRight((f, { elementId, fromId, before }) => {
     const siblings = getParent(f, fromId)?.children.filter((id) => id !== elementId) ?? [];
-    const index = afterId === null ? 0 : siblings.indexOf(afterId) + 1;
+    const after = before.findLast((id) => siblings.includes(id));
+    const index = after === undefined ? 0 : siblings.indexOf(after) + 1;
     return moveElementTo(f, elementId, fromId, index) ?? f;
   }, form);
 }
@@ -246,10 +250,11 @@ export class DesignerStore {
   }
 
   async removePage(pageId: string) {
-    const page = this.form().pages.find((p) => p.id === pageId);
-    const ids = page?.children.flatMap((id) => subtreeIds(this.form(), id)) ?? [];
-    await this.withoutPatchesOf(ids, () =>
-      this.createOnServer((form) => this.repository.deletePage(form.id, pageId)),
+    await this.withoutPatchesOf(
+      (form) =>
+        form.pages.find((p) => p.id === pageId)?.children.flatMap((id) => subtreeIds(form, id)) ??
+        [],
+      (form) => this.repository.deletePage(form.id, pageId),
     );
     this.applyServerChange((f) => removePage(f, pageId));
     const pages = this.form().pages;
@@ -445,8 +450,9 @@ export class DesignerStore {
    * edits already sent before reach the element while it still exists.
    */
   async removeElement(elementId: string) {
-    await this.withoutPatchesOf(subtreeIds(this.form(), elementId), () =>
-      this.createOnServer((form) => this.repository.deleteElement(form.id, elementId)),
+    await this.withoutPatchesOf(
+      (form) => subtreeIds(form, elementId),
+      (form) => this.repository.deleteElement(form.id, elementId),
     );
     this.applyServerChange((f) => removeElement(f, elementId));
     if (this.selectedId() === elementId) this.selectedId.set(null);
@@ -571,11 +577,10 @@ export class DesignerStore {
     const from = parentOf(before, elementId);
     const to = parentOf(next, elementId);
     if (!from || !to) return;
-    const fromIndex = from.children.indexOf(elementId);
     const move: UnconfirmedMove = {
       elementId,
       fromId: from.id,
-      afterId: from.children[fromIndex - 1] ?? null,
+      before: from.children.slice(0, from.children.indexOf(elementId)),
     };
     const index = to.children.indexOf(elementId);
     this.applyServerChange(() => next);
@@ -694,12 +699,14 @@ export class DesignerStore {
   /**
    * Runs `remove` with the unsent edits whose key passes `drop` taken out of the queue,
    * since they would fail once their target is gone. If `remove` fails, they are sent
-   * after all. Meanwhile they are held, so a newer edit of the same key merges them in
-   * (see `queuePatch`) rather than being overwritten by them later.
+   * after all, and so are those whose target turns out to survive it (`gone` is false).
+   * Meanwhile they are held, so a newer edit of the same key merges them in (see
+   * `queuePatch`) rather than being overwritten by them later.
    */
   private async withoutPatches(
     drop: (key: string, pending: PendingPatch) => boolean,
     remove: () => Promise<void>,
+    gone: (pending: PendingPatch) => boolean = () => true,
   ): Promise<void> {
     const taken = [...this.patches].filter(([key, pending]) => drop(key, pending));
     for (const [key, pending] of taken) {
@@ -720,13 +727,31 @@ export class DesignerStore {
       for (const [, pending] of release()) void this.enqueuePatch(pending);
       throw error;
     }
-    release();
+    for (const [, pending] of release()) if (!gone(pending)) void this.enqueuePatch(pending);
   }
 
-  /** `withoutPatches` for every unsent edit of the elements `elementIds` and their options. */
-  private withoutPatchesOf(elementIds: ElementId[], remove: () => Promise<void>): Promise<void> {
-    const ids = new Set(elementIds);
-    return this.withoutPatches((_key, pending) => ids.has(pending.elementId), remove);
+  /**
+   * Sends the removal `remove` through the creation queue (see `createOnServer`) with
+   * the unsent edits of the elements `targets` picks (and their options) held back, as
+   * `withoutPatches`. `targets` runs again once the removal is sent: an earlier move that
+   * failed meanwhile may have taken an element out, and its edits are then sent after all.
+   */
+  private withoutPatchesOf(
+    targets: (form: FormDocument) => ElementId[],
+    remove: (form: FormDefinition) => Promise<void>,
+  ): Promise<void> {
+    const held = new Set(targets(this.form()));
+    let removed = held;
+    return this.withoutPatches(
+      (_key, pending) => held.has(pending.elementId),
+      () =>
+        this.createOnServer((form) => {
+          // As on the server: earlier moves have settled, later ones are not sent yet.
+          removed = new Set(targets(undoMoves(form, this.unconfirmedMoves)));
+          return remove(form);
+        }),
+      (pending) => removed.has(pending.elementId),
+    );
   }
 
   /**

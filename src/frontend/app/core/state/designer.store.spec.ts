@@ -31,6 +31,8 @@ describe('DesignerStore moveElementTo', () => {
   const repo = {
     saveForm: vi.fn(async () => undefined),
     moveElement: vi.fn(async () => undefined),
+    deleteElement: vi.fn(async () => undefined),
+    updateElement: vi.fn(async () => undefined),
   };
 
   beforeEach(() => {
@@ -191,6 +193,40 @@ describe('DesignerStore moveElementTo', () => {
     expect(repo.moveElement).toHaveBeenCalledTimes(1);
     expect(ids(root())).toEqual(['C', 'Group', 'D']);
     expect(ids(childrenOf(group.id))).toEqual(['A', 'B']);
+  });
+
+  it('takes a failed move back behind the nearest former sibling still there', async () => {
+    const { page, group, d } = scenario();
+    repo.moveElement.mockRejectedValueOnce(new Error('offline'));
+
+    // D followed the group, which is gone by the time the move fails.
+    const removal = store.removeElement(group.id);
+    const move = store.moveElementTo(d.id, page.id, 0);
+    await removal;
+    await expect(move).rejects.toThrow('offline');
+
+    expect(ids(root())).toEqual(['C', 'D']);
+  });
+
+  it('sends a held edit of an element that a failed move took out of a removed group', async () => {
+    const { group, c } = scenario();
+    repo.moveElement.mockRejectedValueOnce(new Error('offline'));
+
+    const move = store.moveElementTo(c.id, group.id, 0);
+    store.updateElement(c.id, { label: 'Kept' });
+    const removal = store.removeElement(group.id);
+    await expect(move).rejects.toThrow('offline');
+    await removal;
+
+    expect(ids(root())).toEqual(['Kept', 'D']);
+    await vi.waitFor(() =>
+      expect(repo.updateElement).toHaveBeenCalledWith(
+        store.form().id,
+        c.id,
+        { label: 'Kept' },
+        { keepalive: false },
+      ),
+    );
   });
 
   it('leaves a move out of the save of earlier edits sent ahead of it', async () => {
