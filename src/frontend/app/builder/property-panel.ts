@@ -23,6 +23,7 @@ import type {
 } from '@shared/model/form.model';
 import { DEFAULT_TIME_INTERVAL, TIME_INTERVAL_UNITS } from '@shared/model/form.model';
 import { VALIDATION_RULE_TYPES } from '@shared/model/validation.model';
+import { ExpressionEditor } from '../core/components/expression-editor/expression-editor';
 import { I18nService } from '../core/i18n';
 import { fieldMeta } from '../core/model/field-registry';
 import { Notifier } from '../core/notifier';
@@ -56,6 +57,7 @@ const INPUT_TYPES = ['text', 'email', 'url', 'phone', 'number'] as const;
     OptionPicker,
     QuestionSelector,
     ValidationEditor,
+    ExpressionEditor,
   ],
   selector: 'fm-property-panel',
   templateUrl: './property-panel.html',

@@ -103,6 +103,9 @@ const DEFAULT_FUNCTIONS: FunctionLibrary = {
   required: (x) => !isEmptyValue(x),
 };
 
+/** Names of the built-in expression functions, e.g. for editor suggestions. */
+export const FUNCTION_NAMES: readonly string[] = Object.keys(DEFAULT_FUNCTIONS);
+
 function flatten(values: ExprValue[]): ExprValue[] {
   const out: ExprValue[] = [];
   for (const v of values) {
