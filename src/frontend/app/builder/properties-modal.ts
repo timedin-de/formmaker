@@ -31,7 +31,10 @@ export class PropertiesModal {
     this.requested.set(true);
   }
 
+  /** Closes the modal; closing it means the edits of the element are done, so they are sent. */
   close(): void {
     this.requested.set(false);
+    const id = this.store.selectedId();
+    if (id) this.store.sendEditsOf(id);
   }
 }

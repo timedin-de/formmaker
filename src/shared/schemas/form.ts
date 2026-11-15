@@ -125,6 +125,17 @@ export const createElementSchema = z.strictObject({
 
 export type CreateElementRequest = z.infer<typeof createElementSchema>;
 
+/**
+ * Body of `POST /api/forms/:formId/elements/:elementId/move`. `index` is the position
+ * in the children of `parentId` once the element has been detached (see `moveElementTo`).
+ */
+export const moveElementSchema = z.strictObject({
+  parentId: z.string().check(z.minLength(1)),
+  index: z.number().check(z.int(), z.nonnegative()),
+});
+
+export type MoveElementRequest = z.infer<typeof moveElementSchema>;
+
 export const cloneRequestSchema = z.strictObject({
   /** Localized suffix appended to the copied labels/titles, e.g. "(copy)". */
   suffix: defaultTextSchema,

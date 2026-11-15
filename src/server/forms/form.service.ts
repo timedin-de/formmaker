@@ -18,8 +18,11 @@ import {
   FORM_SCHEMA_VERSION,
   type FormDefinition,
   getElement,
+  getParent,
   insertElement,
+  moveElementTo,
   type PageClone,
+  patchElement,
   type PageDefinition,
   parentOf,
   type QuestionDefinition,
@@ -27,6 +30,7 @@ import {
   removePage,
   REPEATABLE_RULES,
   type SubmissionCreate,
+  subtreeIds,
   updateElement,
   uuid,
   type ValidationRule,
@@ -38,6 +42,9 @@ import {
   type CreateElementRequest,
   type CreateOptionRequest,
   type CreateValidationRuleRequest,
+  elementDefinitionSchema,
+  type MoveElementRequest,
+  type UpdateElementRequest,
   type UpdateOptionRequest,
   type UpdateValidationRuleRequest,
 } from '@shared/schemas';
@@ -47,6 +54,8 @@ import { Repository, type User } from '../repository';
 export interface OwnedForm {
   form: FormDefinition;
   ownerId: string;
+  /** The stored revision the form was loaded at; saves against a newer one fail with 409. */
+  revision?: string;
 }
 
 /**
@@ -159,32 +168,32 @@ export class FormService {
   }
 
   /** Appends a new page to the stored form and returns it. */
-  async addPage({ form, ownerId }: OwnedForm, title: string): Promise<PageDefinition> {
+  async addPage({ form, ownerId, revision }: OwnedForm, title: string): Promise<PageDefinition> {
     const page = createPage(title);
-    await this.repository.saveForm(ownerId, addPage(form, page));
+    await this.repository.saveForm(ownerId, addPage(form, page), revision);
     return page;
   }
 
   /** Clones a page with all of its elements and appends it to the stored form. */
   async clonePage(
-    { form, ownerId }: OwnedForm,
+    { form, ownerId, revision }: OwnedForm,
     pageId: string,
     { suffix }: CloneRequest,
   ): Promise<PageClone> {
     const clone = clonePageTree(form, pageId, suffix);
     if (!clone) throw new NotFoundException({ error: `no page with id: ${pageId}` });
-    await this.repository.saveForm(ownerId, addPage(form, clone.page, clone.elements));
+    await this.repository.saveForm(ownerId, addPage(form, clone.page, clone.elements), revision);
     return clone;
   }
 
   /** Removes a page and all of its elements from the stored form. */
-  async deletePage({ form, ownerId }: OwnedForm, pageId: string): Promise<void> {
-    await this.repository.saveForm(ownerId, removePage(form, pageId));
+  async deletePage({ form, ownerId, revision }: OwnedForm, pageId: string): Promise<void> {
+    await this.repository.saveForm(ownerId, removePage(form, pageId), revision);
   }
 
   /** Inserts a new element into a page or group of the stored form and returns it. */
   async addElement(
-    { form, ownerId }: OwnedForm,
+    { form, ownerId, revision }: OwnedForm,
     { type, label, parentId, afterId = null, defaults }: CreateElementRequest,
   ): Promise<ElementDefinition> {
     const element = createElement(type, label, defaults);
@@ -196,7 +205,7 @@ export class FormService {
           : `no page or group with id: ${parentId}`,
       });
     }
-    await this.repository.saveForm(ownerId, next);
+    await this.repository.saveForm(ownerId, next, revision);
     return element;
   }
 
@@ -205,7 +214,7 @@ export class FormService {
    * stored form, and returns the copy.
    */
   async cloneElement(
-    { form, ownerId }: OwnedForm,
+    { form, ownerId, revision }: OwnedForm,
     id: string,
     { suffix }: CloneRequest,
   ): Promise<ElementClone> {
@@ -215,20 +224,68 @@ export class FormService {
 
     const next = insertElement(form, parent.id, id, clone.element, clone.subtree);
     if (!next) throw new NotFoundException({ error: `element ${id} is not on any page` });
-    await this.repository.saveForm(ownerId, next);
+    await this.repository.saveForm(ownerId, next, revision);
     return clone;
   }
 
+  /**
+   * Moves an element with everything below it to `index` of the page or group
+   * `parentId`; `index` counts after detaching it and is clamped. Throws 404 for an
+   * unknown element or parent and 400 when the parent lies inside the moved element.
+   */
+  async moveElement(
+    { form, ownerId, revision }: OwnedForm,
+    id: string,
+    { parentId, index }: MoveElementRequest,
+  ): Promise<void> {
+    if (!getElement(form, id)) throw new NotFoundException({ error: `no element with id: ${id}` });
+    if (!getParent(form, parentId))
+      throw new NotFoundException({ error: `no page or group with id: ${parentId}` });
+    if (subtreeIds(form, id).includes(parentId))
+      throw new BadRequestException({ error: `cannot move element ${id} into itself` });
+
+    const next = moveElementTo(form, id, parentId, index);
+    if (!next) throw new NotFoundException({ error: `element ${id} is not on any page` });
+    await this.repository.saveForm(ownerId, next, revision);
+  }
+
+  /**
+   * Applies `patch` to an element (see `patchElement`) and returns the element as
+   * stored. Throws 404 for an unknown element and 400 when the patched element is
+   * invalid, e.g. a field its type lacks or a scale without `min`.
+   */
+  async updateElement(
+    { form, ownerId, revision }: OwnedForm,
+    id: string,
+    patch: UpdateElementRequest,
+  ): Promise<ElementDefinition> {
+    if (!getElement(form, id)) throw new NotFoundException({ error: `no element with id: ${id}` });
+    const next = patchElement(form, id, patch);
+    const parsed = elementDefinitionSchema.safeParse(next.elements[id]);
+    if (!parsed.success) {
+      throw new BadRequestException({
+        error: `invalid patch for element ${id}`,
+        details: parsed.error.issues,
+      });
+    }
+    await this.repository.saveForm(
+      ownerId,
+      { ...next, elements: { ...next.elements, [id]: parsed.data } },
+      revision,
+    );
+    return parsed.data;
+  }
+
   /** Removes an element and everything below it from the stored form. */
-  async deleteElement({ form, ownerId }: OwnedForm, elementId: string): Promise<void> {
-    await this.repository.saveForm(ownerId, removeElement(form, elementId));
+  async deleteElement({ form, ownerId, revision }: OwnedForm, elementId: string): Promise<void> {
+    await this.repository.saveForm(ownerId, removeElement(form, elementId), revision);
   }
 
   /**
    * Appends an option to a choice, dropdown or multi choice element and returns it.
    */
   async addOption(
-    { form, ownerId }: OwnedForm,
+    { form, ownerId, revision }: OwnedForm,
     elementId: string,
     { label }: CreateOptionRequest,
   ): Promise<ChoiceOption> {
@@ -237,13 +294,14 @@ export class FormService {
     await this.repository.saveForm(
       ownerId,
       updateElement(form, elementId, { options: [...element.options, option] }),
+      revision,
     );
     return option;
   }
 
   /** Merges `patch` into an option of a choice element and returns the updated option. */
   async updateOption(
-    { form, ownerId }: OwnedForm,
+    { form, ownerId, revision }: OwnedForm,
     elementId: string,
     optionId: string,
     patch: UpdateOptionRequest,
@@ -253,16 +311,16 @@ export class FormService {
 
     const option: ChoiceOption = { ...current, ...patch };
     const options = element.options.map((o) => (o === current ? option : o));
-    await this.repository.saveForm(ownerId, updateElement(form, elementId, { options }));
+    await this.repository.saveForm(ownerId, updateElement(form, elementId, { options }), revision);
     return option;
   }
 
   /** Removes an option from a choice element. */
-  async deleteOption({ form, ownerId }: OwnedForm, elementId: string, optionId: string) {
+  async deleteOption({ form, ownerId, revision }: OwnedForm, elementId: string, optionId: string) {
     const element = choiceElement(form, elementId);
     const current = choiceOption(element, optionId);
     const options = element.options.filter((o) => o !== current);
-    await this.repository.saveForm(ownerId, updateElement(form, elementId, { options }));
+    await this.repository.saveForm(ownerId, updateElement(form, elementId, { options }), revision);
   }
 
   /**
@@ -271,7 +329,7 @@ export class FormService {
    * of a rule that can't repeat.
    */
   async addValidationRule(
-    { form, ownerId }: OwnedForm,
+    { form, ownerId, revision }: OwnedForm,
     elementId: string,
     { rule, message }: CreateValidationRuleRequest,
   ): Promise<ValidationRule> {
@@ -286,6 +344,7 @@ export class FormService {
     await this.repository.saveForm(
       ownerId,
       updateElement(form, elementId, { validations: [...validations, created] }),
+      revision,
     );
     return created;
   }
@@ -296,7 +355,7 @@ export class FormService {
    * rule whose fields don't fit its type (an invalid regex, a non-numeric bound).
    */
   async updateValidationRule(
-    { form, ownerId }: OwnedForm,
+    { form, ownerId, revision }: OwnedForm,
     elementId: string,
     ruleId: string,
     patch: UpdateValidationRuleRequest,
@@ -307,20 +366,28 @@ export class FormService {
     const rule: ValidationRule = { ...current, ...patch };
     assertRuleFields(rule);
     const validations = (element.validations ?? []).map((r) => (r === current ? rule : r));
-    await this.repository.saveForm(ownerId, updateElement(form, elementId, { validations }));
+    await this.repository.saveForm(
+      ownerId,
+      updateElement(form, elementId, { validations }),
+      revision,
+    );
     return rule;
   }
 
   /** Removes a validation rule from a question; 404 / 400 as `updateValidationRule`. */
   async deleteValidationRule(
-    { form, ownerId }: OwnedForm,
+    { form, ownerId, revision }: OwnedForm,
     elementId: string,
     ruleId: string,
   ): Promise<void> {
     const element = questionElement(form, elementId);
     const current = validationRule(element, ruleId);
     const validations = (element.validations ?? []).filter((r) => r !== current);
-    await this.repository.saveForm(ownerId, updateElement(form, elementId, { validations }));
+    await this.repository.saveForm(
+      ownerId,
+      updateElement(form, elementId, { validations }),
+      revision,
+    );
   }
 
   async addSubmission(submission: SubmissionCreate) {

@@ -2,7 +2,6 @@ import {
   Body,
   Controller,
   Delete,
-  ForbiddenException,
   Get,
   HttpCode,
   Inject,
@@ -37,7 +36,7 @@ import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import { Repository, type User } from '../repository';
 import { FormService } from './form.service';
 import { type FormDefinition } from './forms.model';
-import { canManage, managedForm } from './managed-form';
+import { changeManagedForm, managedForm } from './managed-form';
 
 class SaveFormBodyPipe extends ZodValidationPipe<SaveFormDefinition> {
   constructor() {
@@ -112,11 +111,9 @@ export class FormsController {
   ) {
     if (form.id !== id)
       throw new UnprocessableEntityException({ error: 'form id must match the path id' });
-    const existing = await this.repository.form(id);
-    if (!existing) throw new NotFoundException({ error: `form with id: ${id} doesnt not exist` });
-    if (!canManage(existing.ownerId, user))
-      throw new ForbiddenException({ error: 'not form owner of form' });
-    return this.repository.saveForm(existing?.ownerId ?? user.id, { ...existing.form, ...form });
+    return changeManagedForm(this.repository, id, user, (existing) =>
+      this.repository.saveForm(existing.ownerId, { ...existing.form, ...form }, existing.revision),
+    );
   }
 
   @Post(':id/pages')
@@ -127,8 +124,9 @@ export class FormsController {
     @Param('id') id: string,
     @Body(new ZodValidationPipe(createPageSchema)) body: z.infer<typeof createPageSchema>,
   ) {
-    const item = await managedForm(this.repository, id, user);
-    return this.formService.addPage(item, body.title);
+    return changeManagedForm(this.repository, id, user, (item) =>
+      this.formService.addPage(item, body.title),
+    );
   }
 
   @Post(':formId/pages/:pageId/clone')
@@ -140,8 +138,9 @@ export class FormsController {
     @Param('pageId') pageId: string,
     @Body(new ZodValidationPipe(cloneRequestSchema)) body: CloneRequest,
   ) {
-    const item = await managedForm(this.repository, formId, user);
-    return this.formService.clonePage(item, pageId, body);
+    return changeManagedForm(this.repository, formId, user, (item) =>
+      this.formService.clonePage(item, pageId, body),
+    );
   }
 
   @Delete(':formId/pages/:pageId')
@@ -152,8 +151,9 @@ export class FormsController {
     @Param('formId') formId: string,
     @Param('pageId') pageId: string,
   ) {
-    const item = await managedForm(this.repository, formId, user);
-    return this.formService.deletePage(item, pageId);
+    return changeManagedForm(this.repository, formId, user, (item) =>
+      this.formService.deletePage(item, pageId),
+    );
   }
 
   @Delete(':id')

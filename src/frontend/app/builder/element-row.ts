@@ -49,9 +49,13 @@ export class ElementRow {
     this.modal.show();
   }
 
-  move(dir: -1 | 1, event?: Event): void {
+  async move(dir: -1 | 1, event?: Event): Promise<void> {
     event?.stopImmediatePropagation();
-    this.store().moveElement(this.el().id, dir);
+    try {
+      await this.store().moveElement(this.el().id, dir);
+    } catch (error) {
+      this.notifier.apiError(error, 'row.moveFailed');
+    }
   }
 
   async duplicate(): Promise<void> {

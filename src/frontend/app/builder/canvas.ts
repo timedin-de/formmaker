@@ -111,12 +111,16 @@ export class BuilderCanvas {
     });
   }
 
-  drop(event: CdkDragDrop<Elements, Elements, string>): void {
+  async drop(event: CdkDragDrop<Elements, Elements, string>): Promise<void> {
     const listId = event.container.id;
     const parentId =
       listId === MAIN_DROP_LIST ? this.page()?.id : listId.slice(DROP_LIST_PREFIX.length);
     if (!parentId) return;
-    this.store().moveElementTo(event.item.data, parentId, event.currentIndex);
+    try {
+      await this.store().moveElementTo(event.item.data, parentId, event.currentIndex);
+    } catch (error) {
+      this.notifier.apiError(error, 'row.moveFailed');
+    }
   }
   readonly emptyGroup: () => ConditionGroup = () => ({ logic: 'all', conditions: [], groups: [] });
 

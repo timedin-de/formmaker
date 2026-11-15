@@ -137,8 +137,7 @@ test('drags a question into an empty group and persists the move', async ({ page
   await expect(rootLabels(page)).toHaveText(['Group']);
   await expect(groupLabels(page, groupId)).toHaveText(['First']);
 
-  // The drop went through the store, so saving persists the reordered tree.
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  // The drop is sent to the server by itself, without saving the form.
   await expect
     .poll(async () => outline(await getForm(session, formId)))
     .toEqual([['Group', ['First']]]);
@@ -186,6 +185,14 @@ test('drags a question out of a group back onto the page', async ({ page, reques
 
   await expect(rootLabels(page)).toHaveText(['Inner', 'First', 'Group', 'Last']);
   await expect(groupLabels(page, groupId)).toHaveText([]);
+  await expect
+    .poll(async () => outline(await getForm(session, formId)))
+    .toEqual([
+      ['Inner', []],
+      ['First', []],
+      ['Group', []],
+      ['Last', []],
+    ]);
 
   await deleteForm(session, formId);
 });

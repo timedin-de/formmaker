@@ -11,13 +11,12 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { has, isChoice } from '@shared/helper';
-import { childrenOf } from '@shared/model/form-tree';
+import type { ElementPatch } from '@shared/model/form-ops';
 import type {
   ChoiceElement,
   ChoiceOption,
   DefaultValueDef,
   ElementDefinition,
-  GroupElement,
   PageDefinition,
   QuestionDefinition,
   TimeElement,
@@ -69,11 +68,11 @@ export class PropertyPanel {
 
   constructor() {
     effect(() => {
-      const error = this.store().optionPatchError();
-      if (!error) return;
-      this.store().optionPatchError.set(null);
+      const failed = this.store().patchError();
+      if (!failed) return;
+      this.store().patchError.set(null);
 
-      this.notifier.apiError(error, 'panel.patchOptionFailed');
+      this.notifier.apiError(failed.error, failed.message);
     });
   }
 
@@ -101,7 +100,7 @@ export class PropertyPanel {
     return el;
   }
 
-  patch(patch: Partial<ElementDefinition>): void {
+  patch(patch: ElementPatch): void {
     this.store().updateElement(this.sel().id, patch);
   }
 
@@ -160,13 +159,7 @@ export class PropertyPanel {
   }
 
   moveOption(index: number, dir: -1 | 1): void {
-    const choice = this.choice();
-    const next = [...choice.options];
-    const target = index + dir;
-    if (target < 0 || target >= next.length) return;
-    const [item] = next.splice(index, 1);
-    next.splice(target, 0, item);
-    this.patch({ options: next });
+    this.store().moveOption(this.choice().id, index, dir);
   }
 
   // ---- default value ----------------------------------------------------------
@@ -224,27 +217,9 @@ export class PropertyPanel {
     return q.defaultValue?.kind === 'fromField' ? q.defaultValue.fieldId : '';
   }
 
+  /** A group copying from another group pairs up their children too (see `patchElement`). */
   setFromField(field: ElementDefinition): void {
-    const selected = this.sel();
-    const patches: [string, Partial<ElementDefinition>][] = [
-      [selected.id, { defaultValue: { kind: 'fromField', fieldId: field.id } }],
-    ];
-    // A group copies from another group: each child takes its default from the
-    // source child at the same position, recursively.
-    const pair = (target: GroupElement, source: GroupElement): void => {
-      const form = this.form();
-      const sources = childrenOf(form, source);
-      childrenOf(form, target).forEach((child, i) => {
-        const src = sources[i];
-        if (!src) return;
-        if (child.type === 'group' && src.type === 'group') pair(child, src);
-        if (has(child, 'defaultValue')) {
-          patches.push([child.id, { defaultValue: { kind: 'fromField', fieldId: src.id } }]);
-        }
-      });
-    };
-    if (selected.type === 'group' && field.type === 'group') pair(selected, field);
-    this.store().updateElements(patches);
+    this.patch({ defaultValue: { kind: 'fromField', fieldId: field.id } });
   }
 
   // ---- visibility -------------------------------------------------------------
