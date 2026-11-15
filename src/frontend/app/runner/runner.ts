@@ -25,6 +25,7 @@ import { FormsRepository } from '../core/state/forms.repository';
 import type { RunnerPage } from '../core/state/runner.model';
 import { RunnerStore } from '../core/state/runner.store';
 import { QuestionList } from './questionList/question-list';
+import { declareRunnerWebMcpTools } from './runner-webmcp';
 
 @Component({
   imports: [
@@ -69,6 +70,16 @@ export class Runner extends PendingActions {
 
   constructor() {
     super();
+    declareRunnerWebMcpTools({
+      store: this.store,
+      isSubmitted: () => this.submitted(),
+      showPage: (index) => {
+        this.store.goTo(index);
+        this.syncPageParam();
+      },
+      submit: () => this.submit(),
+    });
+
     this.route.queryParams.pipe(first()).subscribe((q) => {
       if (q['page']) {
         this.store.goTo(q['page']);
