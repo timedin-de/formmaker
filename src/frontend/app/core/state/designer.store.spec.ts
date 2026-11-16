@@ -259,6 +259,22 @@ describe('DesignerStore moveElementTo', () => {
     });
   });
 
+  it('counts the position only once an earlier queued removal is applied', async () => {
+    const { page, c, d } = scenario();
+
+    const removal = store.removeElement(c.id);
+    const move = store.moveElementTo(d.id, page.id, 1);
+    expect(ids(root())).toEqual(['C', 'D', 'Group']);
+    await removal;
+    await move;
+
+    expect(repo.moveElement).toHaveBeenCalledWith(store.form().id, d.id, {
+      parentId: page.id,
+      index: 0,
+    });
+    expect(ids(root())).toEqual(['D', 'Group']);
+  });
+
   it('sends nothing when an up/down move has nowhere to go', async () => {
     const { c } = scenario();
 
@@ -851,6 +867,23 @@ describe('DesignerStore server-side creation', () => {
       );
       expect(optionIds(choice.id)).toEqual(before);
       expect(store.dirty()).toBe(false);
+    });
+
+    it('counts the index only once an earlier queued deletion is applied', async () => {
+      const choice = loadedChoice([
+        { id: 'a', label: 'A' },
+        { id: 'b', label: 'B' },
+        { id: 'c', label: 'C' },
+      ]);
+
+      const removal = store.removeOption(choice.id, 'a');
+      const move = store.moveOption(choice.id, 2, -1);
+      expect(optionIds(choice.id)).toEqual(['a', 'c', 'b']);
+      await removal;
+      await move;
+
+      expect(repo.moveOption).toHaveBeenCalledWith(store.form().id, choice.id, 'c', { index: 0 });
+      expect(optionIds(choice.id)).toEqual(['c', 'b']);
     });
 
     it('takes back a later move unsent when an earlier one fails', async () => {

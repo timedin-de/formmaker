@@ -261,10 +261,14 @@ export class DesignerStore {
 
   /** Creates a page on the server (which persists it) and appends it locally. */
   async addPage(): Promise<PageDefinition> {
-    const page = await this.createOnServer((form) =>
-      this.repository.addPage(form.id, this.i18n.t('builder.pageN', { n: form.pages.length + 1 })),
+    const page = await this.createOnServer(
+      (form) =>
+        this.repository.addPage(
+          form.id,
+          this.i18n.t('builder.pageN', { n: form.pages.length + 1 }),
+        ),
+      (created) => this.applyServerChange((f) => addPage(f, created)),
     );
-    this.applyServerChange((f) => addPage(f, page));
     this.activePageId.set(page.id);
     return page;
   }
@@ -272,10 +276,10 @@ export class DesignerStore {
   /** Clones a page on the server (which persists it) and appends it locally. */
   async clonePage(pageId: string): Promise<PageDefinition | undefined> {
     const suffix = this.i18n.t('builder.copySuffix');
-    const clone = await this.createOnServer((form) =>
-      this.repository.clonePage(form.id, pageId, suffix),
+    const clone = await this.createOnServer(
+      (form) => this.repository.clonePage(form.id, pageId, suffix),
+      ({ page, elements }) => this.applyServerChange((f) => addPage(f, page, elements)),
     );
-    this.applyServerChange((f) => addPage(f, clone.page, clone.elements));
     this.activePageId.set(clone.page.id);
     this.selectedId.set(null);
     return clone.page;
@@ -290,8 +294,8 @@ export class DesignerStore {
           ?.children.flatMap((id) => subtreeIds(form, id)) ?? []),
       ],
       (form) => this.repository.deletePage(form.id, pageId),
+      () => this.applyServerChange((f) => removePage(f, pageId)),
     );
-    this.applyServerChange((f) => removePage(f, pageId));
     const pages = this.form().pages;
     if (this.activePageId() === pageId) this.activePageId.set(pages[0]?.id ?? null);
   }
@@ -323,27 +327,31 @@ export class DesignerStore {
     label?: string,
     afterId: string | null = null,
   ): Promise<ElementDefinition> {
-    const el = await this.createOnServer((form) =>
-      this.repository.addElement(form.id, {
-        type,
-        label: label ?? this.i18n.t(`q.${type}`),
-        parentId,
-        afterId,
-        defaults: {
-          option: this.i18n.t('panel.option'),
-          scaleMin: this.i18n.t('builder.scaleMin'),
-          scaleMax: this.i18n.t('builder.scaleMax'),
-        },
-      }),
-    );
-    // The tree may have changed during the request: if `afterId` is gone, append instead.
-    // If the parent itself is gone, its removal was sent to the server too, so skip it.
     let inserted = false;
-    this.applyServerChange((f) => {
-      const next = insertElement(f, parentId, afterId, el) ?? insertElement(f, parentId, null, el);
-      inserted = next !== null;
-      return next ?? f;
-    });
+    const el = await this.createOnServer(
+      (form) =>
+        this.repository.addElement(form.id, {
+          type,
+          label: label ?? this.i18n.t(`q.${type}`),
+          parentId,
+          afterId,
+          defaults: {
+            option: this.i18n.t('panel.option'),
+            scaleMin: this.i18n.t('builder.scaleMin'),
+            scaleMax: this.i18n.t('builder.scaleMax'),
+          },
+        }),
+      // The tree may have changed during the request: if `afterId` is gone, append
+      // instead. If the parent itself is gone, its removal was sent too, so skip it.
+      (created) =>
+        this.applyServerChange((f) => {
+          const next =
+            insertElement(f, parentId, afterId, created) ??
+            insertElement(f, parentId, null, created);
+          inserted = next !== null;
+          return next ?? f;
+        }),
+    );
     if (inserted) this.selectedId.set(el.id);
     return el;
   }
@@ -387,7 +395,13 @@ export class DesignerStore {
         before: el.options.slice(0, index).map((o) => o.id),
       },
       next,
-      (formId) => this.repository.moveOption(formId, elementId, option.id, { index: target }),
+      (settled) => {
+        const current = getElement(settled, elementId);
+        const at =
+          current && isChoice(current) ? current.options.findIndex((o) => o.id === option.id) : -1;
+        if (at < 0) return null;
+        return this.repository.moveOption(settled.id, elementId, option.id, { index: at });
+      },
     );
   }
 
@@ -396,11 +410,13 @@ export class DesignerStore {
    * `elementId` and appends it locally. Skipped locally if the element is gone by then.
    */
   async addOption(elementId: string, label: string): Promise<ChoiceOption> {
-    const option = await this.createOnServer((form) =>
-      this.repository.addOption(form.id, elementId, { label }),
+    return await this.createOnServer(
+      (form) => this.repository.addOption(form.id, elementId, { label }),
+      (option) =>
+        this.applyServerChange((f) =>
+          updateOptions(f, elementId, (options) => [...options, option]),
+        ),
     );
-    this.applyServerChange((f) => updateOptions(f, elementId, (options) => [...options, option]));
-    return option;
   }
 
   /**
@@ -411,11 +427,11 @@ export class DesignerStore {
     elementId: ElementId,
     request: CreateValidationRuleRequest,
   ): Promise<ValidationRule> {
-    const rule = await this.createOnServer((form) =>
-      this.repository.addValidationRule(form.id, elementId, request),
+    return await this.createOnServer(
+      (form) => this.repository.addValidationRule(form.id, elementId, request),
+      (rule) =>
+        this.applyServerChange((f) => updateValidations(f, elementId, (rules) => [...rules, rule])),
     );
-    this.applyServerChange((f) => updateValidations(f, elementId, (rules) => [...rules, rule]));
-    return rule;
   }
 
   /**
@@ -458,11 +474,12 @@ export class DesignerStore {
 
   /** Deletes a validation rule on the server, then removes it locally. */
   async removeValidationRule(elementId: ElementId, ruleId: string): Promise<void> {
-    await this.createOnServer((form) =>
-      this.repository.deleteValidationRule(form.id, elementId, ruleId),
-    );
-    this.applyServerChange((f) =>
-      updateValidations(f, elementId, (rules) => rules.filter((r) => r.id !== ruleId)),
+    await this.createOnServer(
+      (form) => this.repository.deleteValidationRule(form.id, elementId, ruleId),
+      () =>
+        this.applyServerChange((f) =>
+          updateValidations(f, elementId, (rules) => rules.filter((r) => r.id !== ruleId)),
+        ),
     );
   }
 
@@ -496,10 +513,13 @@ export class DesignerStore {
     await this.withoutPatches(
       (k) => k === key,
       () =>
-        this.createOnServer((form) => this.repository.deleteOption(form.id, elementId, optionId)),
-    );
-    this.applyServerChange((f) =>
-      updateOptions(f, elementId, (options) => options.filter((o) => o.id !== optionId)),
+        this.createOnServer(
+          (form) => this.repository.deleteOption(form.id, elementId, optionId),
+          () =>
+            this.applyServerChange((f) =>
+              updateOptions(f, elementId, (options) => options.filter((o) => o.id !== optionId)),
+            ),
+        ),
     );
   }
 
@@ -512,8 +532,8 @@ export class DesignerStore {
     await this.withoutPatchesOf(
       (form) => subtreeIds(form, elementId),
       (form) => this.repository.deleteElement(form.id, elementId),
+      () => this.applyServerChange((f) => removeElement(f, elementId)),
     );
-    this.applyServerChange((f) => removeElement(f, elementId));
     if (this.selectedId() === elementId) this.selectedId.set(null);
   }
 
@@ -545,19 +565,20 @@ export class DesignerStore {
    */
   async duplicateElement(elementId: string): Promise<ElementDefinition | undefined> {
     const suffix = this.i18n.t('builder.copySuffix');
-    const clone = await this.createOnServer((form) =>
-      this.repository.cloneElement(form.id, elementId, suffix),
-    );
     let copy: ElementDefinition | undefined;
-    this.applyServerChange((f) => {
-      // The tree may have changed during the request. If the source is gone,
-      // skip the copy locally (as with other server-side creations).
-      const parent = parentOf(f, elementId);
-      if (!parent) return f;
-      const next = insertElement(f, parent.id, elementId, clone.element, clone.subtree);
-      if (next) copy = clone.element;
-      return next ?? f;
-    });
+    await this.createOnServer(
+      (form) => this.repository.cloneElement(form.id, elementId, suffix),
+      ({ element, subtree }) =>
+        this.applyServerChange((f) => {
+          // The tree may have changed during the request. If the source is gone,
+          // skip the copy locally (as with other server-side creations).
+          const parent = parentOf(f, elementId);
+          if (!parent) return f;
+          const next = insertElement(f, parent.id, elementId, element, subtree);
+          if (next) copy = element;
+          return next ?? f;
+        }),
+    );
     if (copy) this.selectedId.set(copy.id);
     return copy;
   }
@@ -604,10 +625,15 @@ export class DesignerStore {
 
   /**
    * Queues a server-side creation or removal for the form that is loaded now, after
-   * every unsent edit, so e.g. a copy carries a label typed just before. Rejects
-   * instead of sending or applying it once another form has been loaded in the meantime.
+   * every unsent edit, so e.g. a copy carries a label typed just before. Once it
+   * succeeded, `apply` applies its result locally, still inside the queue, so whatever is
+   * queued after it (e.g. a move counting positions) sees the form as the server has it.
+   * Rejects instead of sending or applying it once another form has been loaded meanwhile.
    */
-  private createOnServer<T>(create: (form: FormDefinition) => Promise<T>): Promise<T> {
+  private createOnServer<T>(
+    create: (form: FormDefinition) => Promise<T>,
+    apply?: (result: T) => void,
+  ): Promise<T> {
     for (const key of [...this.patches.keys()]) void this.sendPatch(key);
     const formId = this.form().id;
     const assertSameForm = () => {
@@ -619,6 +645,7 @@ export class DesignerStore {
       assertSameForm();
       const result = await create(this.form());
       assertSameForm();
+      apply?.(result);
       return result;
     });
     this.creations = run.catch(() => undefined);
@@ -632,9 +659,7 @@ export class DesignerStore {
     next: FormDefinition,
   ): Promise<void> {
     const from = parentOf(before, elementId);
-    const to = parentOf(next, elementId);
-    if (!from || !to) return;
-    const index = to.children.indexOf(elementId);
+    if (!from || !parentOf(next, elementId)) return;
     await this.sendMove(
       {
         kind: 'element',
@@ -643,21 +668,30 @@ export class DesignerStore {
         before: from.children.slice(0, from.children.indexOf(elementId)),
       },
       next,
-      (formId) => this.repository.moveElement(formId, elementId, { parentId: to.id, index }),
+      (settled) => {
+        const to = parentOf(settled, elementId);
+        if (!to) return null;
+        const index = to.children.indexOf(elementId);
+        return this.repository.moveElement(settled.id, elementId, { parentId: to.id, index });
+      },
     );
   }
 
   /**
    * Applies `next`, the form after `move`, and sends the move with `send` through the
-   * creation queue. Until the server confirms it, it counts as unconfirmed: saves leave
-   * it out (see `saveIfDirty`). If it fails, it is taken back together with every move
-   * made after it, which may build on it and is then dropped unsent, so the local order
-   * matches the server again.
+   * creation queue. `send` gets the form as the server will have it after the move, so it
+   * counts positions only once everything queued before has been applied, and returns
+   * null when there is nothing to send any more (the element or option is gone).
+   *
+   * Until the server confirms it, the move counts as unconfirmed: saves leave it out (see
+   * `saveIfDirty`). If it fails, it is taken back together with every move made after
+   * it, which may build on it and is then dropped unsent, so the local order matches the
+   * server again.
    */
   private async sendMove(
     move: UnconfirmedMove,
     next: FormDefinition,
-    send: (formId: string) => Promise<unknown>,
+    send: (settled: FormDefinition) => Promise<unknown> | null,
   ): Promise<void> {
     this.applyServerChange(() => next);
     this.unconfirmedMoves.push(move);
@@ -666,8 +700,10 @@ export class DesignerStore {
       await this.createOnServer(async (form) => {
         // Taken back with an earlier move that failed: sending it would misplace it.
         if (!isPending()) return;
+        // Earlier moves have settled by now; the later ones are not sent yet.
+        const later = this.unconfirmedMoves.slice(this.unconfirmedMoves.indexOf(move) + 1);
         try {
-          await send(form.id);
+          await send(undoMoves(form, later));
         } catch (error) {
           // Still inside the queue, so the moves after it see they were taken back.
           this.takeBackMovesFrom(move);
@@ -816,6 +852,7 @@ export class DesignerStore {
   private withoutPatchesOf(
     targets: (form: FormDocument) => (ElementId | PageId)[],
     remove: (form: FormDefinition) => Promise<void>,
+    apply: () => void,
   ): Promise<void> {
     const held = new Set(targets(this.form()));
     let removed = held;
@@ -826,7 +863,7 @@ export class DesignerStore {
           // As on the server: earlier moves have settled, later ones are not sent yet.
           removed = new Set(targets(undoMoves(form, this.unconfirmedMoves)));
           return remove(form);
-        }),
+        }, apply),
       (pending) => removed.has(pending.targetId),
     );
   }
