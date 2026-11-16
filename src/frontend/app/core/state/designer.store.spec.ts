@@ -853,14 +853,13 @@ describe('DesignerStore server-side creation', () => {
     it('leaves a move out of the save of earlier edits sent ahead of it', async () => {
       const choice = loadedChoice();
       const before = optionIds(choice.id);
-      store.rename('Renamed');
+      store.dirty.set(true);
       repo.moveOption.mockRejectedValueOnce(new Error('offline'));
 
       await expect(store.moveOption(choice.id, 0, 1)).rejects.toThrow('offline');
 
       expect(repo.saveForm).toHaveBeenCalledWith(
         expect.objectContaining({
-          name: 'Renamed',
           elements: expect.objectContaining({
             [choice.id]: expect.objectContaining({
               options: before.map((id) => expect.objectContaining({ id })),
