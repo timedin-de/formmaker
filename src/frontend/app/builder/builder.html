@@ -1,41 +1,43 @@
-<div class="main">
-  <h1 class="visually-hidden">{{ i18n.t('builder.title') }}</h1>
-  <mat-toolbar color="surface" class="sub">
-    <div class="title-group">
-      <mat-form-field appearance="outline" class="title-field" subscriptSizing="dynamic">
-        <input
-          matInput
-          [ngModel]="formName(store.form(), i18n)"
-          (ngModelChange)="store.rename($event)"
-          [placeholder]="i18n.t('builder.formName')"
-          [attr.aria-label]="i18n.t('builder.formName')"
-        />
-      </mat-form-field>
-      <span class="muted">{{ i18n.t('builder.pages', { n: store.form().pages.length }) }}</span>
+@if (store._form(); as form) {
+  <div class="main">
+    <h1 class="visually-hidden">{{ i18n.t('builder.title') }}</h1>
+    <mat-toolbar color="surface" class="sub">
+      <div class="title-group">
+        <mat-form-field appearance="outline" class="title-field" subscriptSizing="dynamic">
+          <input
+            matInput
+            [ngModel]="formName(form, i18n)"
+            (ngModelChange)="store.rename($event)"
+            [placeholder]="i18n.t('builder.formName')"
+            [attr.aria-label]="i18n.t('builder.formName')"
+          />
+        </mat-form-field>
+        <span class="muted">{{ i18n.t('builder.pages', { n: form.pages.length }) }}</span>
+      </div>
+      <div class="actions">
+        <button mat-button (click)="export()">
+          <mat-icon svgIcon="download"></mat-icon>
+          <span class="btn-label">{{ i18n.t('builder.export') }}</span>
+        </button>
+        <button mat-button (click)="save()" [disabled]="saved()">
+          <mat-icon [svgIcon]="saved() ? 'check' : 'save'"></mat-icon>
+          <span class="btn-label">{{
+            saved() ? i18n.t('builder.saved') : i18n.t('builder.save')
+          }}</span>
+        </button>
+        <button mat-flat-button color="primary" (click)="preview()">
+          <mat-icon svgIcon="play_arrow"></mat-icon>
+          <span class="btn-label">{{ i18n.t('builder.preview') }}</span>
+        </button>
+      </div>
+    </mat-toolbar>
+    <div class="layout">
+      <fm-builder-palette class="palette" [store]="store" />
+      <fm-builder-canvas class="canvas" [store]="store" />
+      <fm-property-panel class="panel" [store]="store" />
     </div>
-    <div class="actions">
-      <button mat-button (click)="export()">
-        <mat-icon svgIcon="download"></mat-icon>
-        <span class="btn-label">{{ i18n.t('builder.export') }}</span>
-      </button>
-      <button mat-button (click)="save()" [disabled]="saved()">
-        <mat-icon [svgIcon]="saved() ? 'check' : 'save'"></mat-icon>
-        <span class="btn-label">{{
-          saved() ? i18n.t('builder.saved') : i18n.t('builder.save')
-        }}</span>
-      </button>
-      <button mat-flat-button color="primary" (click)="preview()">
-        <mat-icon svgIcon="play_arrow"></mat-icon>
-        <span class="btn-label">{{ i18n.t('builder.preview') }}</span>
-      </button>
-    </div>
-  </mat-toolbar>
-  <div class="layout">
-    <fm-builder-palette class="palette" [store]="store" />
-    <fm-builder-canvas class="canvas" [store]="store" />
-    <fm-property-panel class="panel" [store]="store" />
   </div>
-</div>
+}
 @if (modal.open()) {
   <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -- backdrop click is a mouse shortcut; Esc and the close button cover keyboards -->
   <dialog

@@ -90,6 +90,26 @@ async function duplicateElement(page: Page, label: string): Promise<void> {
     .click();
 }
 
+test('opens a form in the builder without errors while it loads', async ({ page, request }) => {
+  const session = await loginApi(request);
+  const name = seedField('text', uuid(), 'Name');
+  const formId = await createForm(
+    session,
+    makeForm(uniqueName('builder-load'), [{ title: 'Details', children: [name.id] }], [name]),
+  );
+  const errors: string[] = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+
+  await login(page);
+  // No form stored locally, so the builder renders before the server answers.
+  await page.evaluate(() => localStorage.removeItem('formmaker.designer.v1'));
+  await page.goto(`/builder?id=${formId}`);
+  await expect(page.getByText('Name', { exact: true }).first()).toBeVisible();
+
+  expect(errors).toEqual([]);
+  await deleteForm(session, formId);
+});
+
 test('duplicates a group and only marks the copied group itself', async ({ page, request }) => {
   const session = await loginApi(request);
   const groupId = uuid();
