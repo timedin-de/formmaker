@@ -1,4 +1,5 @@
 import { type Routes } from '@angular/router';
+import type { BuilderComponent } from './builder/builder';
 import { authGuard } from './core/auth/auth.guard';
 
 export const routes: Routes = [
@@ -12,6 +13,13 @@ export const routes: Routes = [
   {
     path: 'builder',
     canActivate: [authGuard],
+    // Don't lose edits that failed or are still being sent.
+    canDeactivate: [(builder: BuilderComponent) => builder.canLeave()],
+    // Also when only `?id=` changes to open another form in the same builder (Angular's
+    // default skips query parameter changes), but not for `?page=` or the `?new=1` →
+    // `?id=` step after creating a form.
+    runGuardsAndResolvers: (from, to) =>
+      from.queryParams['id'] !== undefined && from.queryParams['id'] !== to.queryParams['id'],
     loadComponent: () => import('./builder/builder').then((m) => m.BuilderComponent),
   },
   {
