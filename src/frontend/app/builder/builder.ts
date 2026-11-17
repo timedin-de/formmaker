@@ -107,10 +107,10 @@ export class BuilderComponent {
     }
   }
 
-  /** Opens the runner once every edit has been sent; see `DesignerStore.flush`. */
+  /** Opens the runner once every edit has reached the server; see `DesignerStore.flush`. */
   async preview(): Promise<void> {
     const formId = this.store.form().id;
-    await this.store.flush();
+    if (!(await this.store.flush())) return;
     this.router.navigate(['/runner', formId]);
   }
 

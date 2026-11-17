@@ -272,6 +272,20 @@ test.describe('accessibility', () => {
       await expectNoViolations(page);
     });
 
+    test('changes that could not be saved', async ({ page }) => {
+      await login(page);
+      await page.goto(`/builder?id=${formId}`);
+      await page.route(`**/api/forms/${formId}`, (route) =>
+        route.request().method() === 'PATCH'
+          ? route.fulfill({ status: 400, json: { error: 'rejected' } })
+          : route.fallback(),
+      );
+      await page.getByLabel('Form name').fill('Renamed');
+      await page.getByRole('button', { name: 'Preview' }).click();
+      await expect(page.getByRole('button', { name: 'Download backup' })).toBeVisible();
+      await expectNoViolations(page);
+    });
+
     test('add-question dialog', async ({ page }) => {
       await login(page);
       await page.goto(`/builder?id=${formId}`);

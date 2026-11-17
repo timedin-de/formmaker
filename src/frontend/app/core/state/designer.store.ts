@@ -41,7 +41,9 @@ import {
   type UpdateOptionRequest,
   type UpdateValidationRuleRequest,
 } from '@shared/schemas';
+import * as z from 'zod/mini';
 import { I18nService, type TranslationKey } from '../i18n/translation.service';
+import { ApiError } from './api-error';
 import { FormsRepository } from './forms.repository';
 
 const STORAGE_KEY = 'formmaker.designer.v1';
@@ -53,17 +55,63 @@ const STORAGE_KEY = 'formmaker.designer.v1';
  */
 export const PATCH_DELAY_MS = 3000;
 
+/**
+ * How long to wait before each further attempt of an edit that failed for a passing
+ * reason (see `isTransient`). Once they are used up, the edit counts as failed.
+ */
+export const RETRY_DELAYS_MS = [1000, 5000, 15000];
+
+/**
+ * Whether a request may succeed when sent again: no answer, or the server was busy or
+ * failing. Not if its answer came complete but didn't match the expected schema, which
+ * a further one would do just the same.
+ */
+function isTransient(error: unknown): boolean {
+  if (error instanceof z.core.$ZodError) return false;
+  if (!(error instanceof ApiError)) return true;
+  return error.status >= 500 || error.status === 408 || error.status === 429;
+}
+
+/**
+ * Runs `send`, and again after each of `RETRY_DELAYS_MS` while it fails for a transient
+ * reason. Only for requests that may arrive twice, such as an edit setting fields.
+ */
+async function withRetries<T>(send: () => Promise<T>): Promise<T> {
+  for (const delay of RETRY_DELAYS_MS) {
+    try {
+      return await send();
+    } catch (error) {
+      if (!isTransient(error)) throw error;
+    }
+    await new Promise((resolve) => setTimeout(resolve, delay));
+  }
+  return await send();
+}
+
 /** An edit that is applied locally but not sent yet; see `queuePatch`. */
 interface PendingPatch {
+  key: string;
   formId: string;
   /** The element or page the edit belongs to, so removing it drops the edit. */
   targetId: ElementId | PageId;
   /** Every edit of the same thing since the last send, merged. */
   patch: object;
-  send: (keepalive: boolean) => Promise<unknown>;
+  /** Merges a later edit of the same thing into an earlier one. */
+  merge: (earlier: object, later: object) => object;
+  send: (patch: object, keepalive: boolean) => Promise<unknown>;
   /** Shown when sending fails. */
   failed: TranslationKey;
-  timer: ReturnType<typeof setTimeout>;
+  /** Sends it once no further edit arrives; unset once it left `patches`. */
+  timer?: ReturnType<typeof setTimeout>;
+}
+
+/** `later` merged into `earlier`; settings are merged one level deeper, field by field. */
+function mergeFormPatches(earlier: FormPatch, later: FormPatch): FormPatch {
+  const merged = { ...earlier, ...later };
+  if (earlier.settings && later.settings) {
+    merged.settings = { ...earlier.settings, ...later.settings };
+  }
+  return merged;
 }
 
 /**
@@ -180,6 +228,11 @@ export class DesignerStore {
   readonly activePageId = signal<string | null>(null);
   /** Last failed element or option edit, read and cleared by the property panel. */
   readonly patchError = signal<PatchError | null>(null);
+  /**
+   * Whether edits of the loaded form failed to reach the server even after retrying,
+   * so it differs from the stored form; see `retryFailed`.
+   */
+  readonly unsaved = signal(false);
 
   readonly selectedElement = computed(() => {
     const id = this.selectedId();
@@ -199,6 +252,10 @@ export class DesignerStore {
   private readonly patches = new Map<string, PendingPatch>();
   /** Edits taken out of `patches` while their target is being removed; see `withoutPatches`. */
   private readonly held = new Map<string, PendingPatch>();
+  /** Edits sent to the creation queue, by key, until it gets to them; see `enqueuePatch`. */
+  private readonly enqueued = new Map<string, PendingPatch>();
+  /** Edits of the loaded form that could not be sent, by key; see `keepFailed`. */
+  private readonly failed = new Map<string, PendingPatch>();
   /**
    * Moves applied locally but not confirmed by the server, oldest first. They are sent
    * one after another through the creation queue, so the first is the one in flight.
@@ -237,16 +294,21 @@ export class DesignerStore {
     const form = await this.repository.newForm(this.i18n.t('builder.pageN', { n: 1 }));
     this._form.set(form);
     this.selectedId.set(null);
-    this.patchError.set(null);
-    this.unconfirmedMoves = [];
-    this.persist();
+    this.reset();
   }
 
   load(def: FormDefinition): void {
     this._form.set(def);
     this.selectedId.set(null);
     this.activePageId.set(def.pages[0]?.id ?? null);
+    this.reset();
+  }
+
+  /** Forgets the state of the form loaded before. */
+  private reset(): void {
     this.patchError.set(null);
+    this.failed.clear();
+    this.updateUnsaved();
     this.unconfirmedMoves = [];
     this.persist();
   }
@@ -265,16 +327,14 @@ export class DesignerStore {
    */
   private updateForm(patch: FormPatch): void {
     const formId = this.form().id;
-    const key = formKey(formId);
     this.applyServerChange((f) => patchForm(f, patch));
-    // `queuePatch` merges top-level fields only; settings are merged one level deeper.
-    const pending = this.patches.get(key)?.patch as FormPatch | undefined;
-    const merged: FormPatch =
-      pending?.settings && patch.settings
-        ? { ...patch, settings: { ...pending.settings, ...patch.settings } }
-        : patch;
-    this.queuePatch(key, formId, merged, 'builder.patchFormFailed', (id, p, keepalive) =>
-      this.repository.updateForm(id, p, { keepalive }),
+    this.queuePatch(
+      formKey(formId),
+      formId,
+      patch,
+      'builder.patchFormFailed',
+      (id, p, keepalive) => this.repository.updateForm(id, p, { keepalive }),
+      mergeFormPatches,
     );
   }
 
@@ -454,9 +514,10 @@ export class DesignerStore {
   }
 
   /**
-   * Applies a validation rule edit locally right away and sends it to the server. Rule
-   * inputs commit on `change`, so each edit is one request. If it fails while the form is
-   * still loaded, it is reverted locally, so the form shows what the server has.
+   * Applies a validation rule edit locally right away and sends it to the server, again
+   * while it fails for a passing reason (see `withRetries`). Rule inputs commit on
+   * `change`, so each edit is one request. If the server rejects it, or it still fails
+   * after retrying, it is reverted locally, so the form shows what the server has.
    */
   async patchValidationRule(
     elementId: ElementId,
@@ -476,7 +537,7 @@ export class DesignerStore {
     );
     try {
       await this.createOnServer((form) =>
-        this.repository.updateValidationRule(form.id, elementId, ruleId, patch),
+        withRetries(() => this.repository.updateValidationRule(form.id, elementId, ruleId, patch)),
       );
     } catch (error) {
       if (this._form()?.id === formId && previous) {
@@ -619,14 +680,26 @@ export class DesignerStore {
     this.activePageId.set(id);
   }
 
-  /** Sends every unsent edit right away and waits until everything queued has settled. */
-  async flush(): Promise<void> {
+  /**
+   * Sends every unsent edit right away and waits until everything queued has reached the
+   * server or failed. Returns whether the server now has the loaded form as shown.
+   */
+  async flush(): Promise<boolean> {
     for (const key of [...this.patches.keys()]) void this.sendPatch(key);
     let tail: Promise<unknown>;
     do {
       tail = this.creations;
       await tail;
     } while (tail !== this.creations);
+    return !this.unsaved();
+  }
+
+  /** Sends the edits that failed (see `unsaved`) again. */
+  async retryFailed(): Promise<void> {
+    const failed = [...this.failed.values()];
+    this.failed.clear();
+    this.updateUnsaved();
+    await Promise.all(failed.map((pending) => this.enqueuePatch(pending)));
   }
 
   // ---- internals -------------------------------------------------------------
@@ -737,9 +810,10 @@ export class DesignerStore {
 
   /**
    * Queues the edit `patch` of the element or page `targetId` (or one of its options)
-   * `key`, merged with an unsent earlier edit of the same key (also one held during a
-   * removal, so it can't be replayed after this one), and sends it with `send` once no
-   * further edit arrives for `PATCH_DELAY_MS`.
+   * `key`, merged with `merge` into an unsent earlier edit of the same key (also one held
+   * during a removal, so it can't be replayed after this one, or one that failed, so it
+   * is sent again), and sends it with `send` once no further edit arrives for
+   * `PATCH_DELAY_MS`.
    */
   private queuePatch<P extends object>(
     key: string,
@@ -747,25 +821,23 @@ export class DesignerStore {
     patch: P,
     failed: TranslationKey,
     send: (formId: string, patch: P, keepalive: boolean) => Promise<unknown>,
+    merge: (earlier: P, later: P) => P = (earlier, later) => ({ ...earlier, ...later }),
   ): void {
-    const pending = this.patches.get(key) ?? this.held.get(key);
+    const pending = this.patches.get(key) ?? this.held.get(key) ?? this.failed.get(key);
     this.held.delete(key);
-    if (pending) clearTimeout(pending.timer);
+    if (this.failed.delete(key)) this.updateUnsaved();
+    clearTimeout(pending?.timer);
     const formId = pending?.formId ?? this.form().id;
     // A key always stands for the same kind of edit, so the earlier patch is a `P` too.
-    const merged: P = { ...(pending?.patch as P | undefined), ...patch };
-    this.schedulePatch(key, {
+    const merged = pending ? merge(pending.patch as P, patch) : patch;
+    this.patches.set(key, {
+      key,
       formId,
       targetId,
       patch: merged,
+      merge: (earlier, later) => merge(earlier as P, later as P),
       failed,
-      send: (keepalive) => send(formId, merged, keepalive),
-    });
-  }
-
-  private schedulePatch(key: string, pending: Omit<PendingPatch, 'timer'>): void {
-    this.patches.set(key, {
-      ...pending,
+      send: (p, keepalive) => send(formId, p as P, keepalive),
       timer: setTimeout(() => void this.sendPatch(key), PATCH_DELAY_MS),
     });
   }
@@ -773,7 +845,6 @@ export class DesignerStore {
   /**
    * Sends the pending edit `key` through the creation queue. Unlike creations it is
    * still sent after another form has been loaded, since it is already applied there.
-   * If it fails while its form is loaded, it is reported (see `patchError`).
    */
   private sendPatch(key: string): Promise<void> {
     const pending = this.patches.get(key);
@@ -783,19 +854,44 @@ export class DesignerStore {
     return this.enqueuePatch(pending);
   }
 
-  /** Sends `pending` through the creation queue; see `sendPatch`. */
+  /**
+   * Sends `pending` through the creation queue, again while it fails for a passing
+   * reason (see `withRetries`); see `sendPatch`. If it still fails, see `keepFailed`.
+   */
   private enqueuePatch(pending: PendingPatch): Promise<void> {
-    const isLoaded = () => this._form()?.id === pending.formId;
+    pending.timer = undefined;
+    this.enqueued.set(pending.key, pending);
     const run = this.creations
-      .then(() => pending.send(false))
-      .then(
-        () => undefined,
-        (error: unknown) => {
-          if (isLoaded()) this.patchError.set({ error, message: pending.failed });
-        },
-      );
+      .then(async () => {
+        if (this.enqueued.get(pending.key) === pending) this.enqueued.delete(pending.key);
+        // Read when sent: a failed earlier edit of the same key may have been merged in.
+        await withRetries(() => pending.send(pending.patch, false));
+      })
+      .catch((error: unknown) => this.keepFailed(pending, error));
     this.creations = run;
     return run;
+  }
+
+  /**
+   * Keeps the edit `pending` that could not be sent, so it is not lost: merged into a
+   * later edit of the same key waiting to be sent, or else, while its form is loaded, as
+   * failed (see `unsaved`) until it is retried or a later edit of the key takes it along.
+   */
+  private keepFailed(pending: PendingPatch, error: unknown): void {
+    const later =
+      this.patches.get(pending.key) ?? this.held.get(pending.key) ?? this.enqueued.get(pending.key);
+    const isLoaded = this._form()?.id === pending.formId;
+    if (later) {
+      later.patch = later.merge(pending.patch, later.patch);
+    } else if (isLoaded) {
+      this.failed.set(pending.key, pending);
+      this.updateUnsaved();
+    }
+    if (isLoaded) this.patchError.set({ error, message: pending.failed });
+  }
+
+  private updateUnsaved(): void {
+    this.unsaved.set(this.failed.size > 0);
   }
 
   /**
@@ -806,12 +902,12 @@ export class DesignerStore {
     for (const [key, pending] of this.patches) {
       clearTimeout(pending.timer);
       this.patches.delete(key);
-      void pending.send(true).catch(() => undefined);
+      void pending.send(pending.patch, true).catch(() => undefined);
     }
   }
 
   /**
-   * Runs `remove` with the unsent edits whose key passes `drop` taken out of the queue,
+   * Runs `remove` with the unsent and failed edits whose key passes `drop` taken out,
    * since they would fail once their target is gone. If `remove` fails, they are sent
    * after all, and so are those whose target turns out to survive it (`gone` is false).
    * Meanwhile they are held, so a newer edit of the same key merges them in (see
@@ -822,12 +918,14 @@ export class DesignerStore {
     remove: () => Promise<void>,
     gone: (pending: PendingPatch) => boolean = () => true,
   ): Promise<void> {
-    const taken = [...this.patches].filter(([key, pending]) => drop(key, pending));
+    const taken = [...this.patches, ...this.failed].filter(([key, pending]) => drop(key, pending));
     for (const [key, pending] of taken) {
       clearTimeout(pending.timer);
       this.patches.delete(key);
+      this.failed.delete(key);
       this.held.set(key, pending);
     }
+    this.updateUnsaved();
     // The taken edits no newer edit has merged in yet, no longer held.
     const release = () =>
       taken.filter(([key, pending]) => {
