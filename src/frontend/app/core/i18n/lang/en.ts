@@ -153,6 +153,10 @@ const en = {
   'builder.export': 'Export',
   'builder.preview': 'Preview',
   'builder.editing': 'Editing "{name}"',
+  'builder.unsaved':
+    'Some changes are not saved. Try again, or download a backup you can import later.',
+  'builder.retry': 'Try again',
+  'builder.downloadBackup': 'Download backup',
   'builder.untitled': 'Untitled form ({date})',
   'builder.properties': 'Properties',
   'builder.copySuffix': '(copy)',

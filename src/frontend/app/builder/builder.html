@@ -24,6 +24,21 @@
       </button>
     </div>
   </mat-toolbar>
+  @if (store.unsaved()) {
+    <div class="unsaved" role="alert">
+      <span class="unsaved-text">{{ i18n.t('builder.unsaved') }}</span>
+      <div class="unsaved-actions">
+        <button mat-button (click)="store.retryFailed()">
+          <mat-icon svgIcon="refresh"></mat-icon>
+          {{ i18n.t('builder.retry') }}
+        </button>
+        <button mat-button (click)="export()">
+          <mat-icon svgIcon="download"></mat-icon>
+          {{ i18n.t('builder.downloadBackup') }}
+        </button>
+      </div>
+    </div>
+  }
   <div class="layout">
     <fm-builder-palette class="palette" [store]="store" />
     <fm-builder-canvas class="canvas" [store]="store" />

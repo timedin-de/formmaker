@@ -158,6 +158,10 @@ const de: typeof en = {
   'builder.export': 'Exportieren',
   'builder.preview': 'Vorschau',
   'builder.editing': 'Bearbeite "{name}"',
+  'builder.unsaved':
+    'Einige Änderungen sind nicht gespeichert. Versuche es erneut oder lade eine Sicherung herunter, die du später importieren kannst.',
+  'builder.retry': 'Erneut versuchen',
+  'builder.downloadBackup': 'Sicherung herunterladen',
   'builder.untitled': 'Unbenanntes Formular ({date})',
   'builder.properties': 'Eigenschaften bearbeiten',
   'builder.copySuffix': '(Kopie)',

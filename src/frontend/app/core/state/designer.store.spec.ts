@@ -18,13 +18,27 @@ import {
 } from '@shared/schemas';
 import { addToGroup, getElements, newForm } from '@test/helper';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import * as z from 'zod/mini';
 import { I18nService } from '../i18n/translation.service';
 import { ApiError } from './api-error';
-import { DesignerStore, PATCH_DELAY_MS } from './designer.store';
+import { DesignerStore, PATCH_DELAY_MS, RETRY_DELAYS_MS } from './designer.store';
 import { FormsRepository } from './forms.repository';
 
 function text(label: string): TextElement {
   return createElement('text', label) as TextElement;
+}
+
+/** How often a failing edit is sent in all, and how long that takes after the first. */
+const ATTEMPTS = RETRY_DELAYS_MS.length + 1;
+const RETRIES_MS = RETRY_DELAYS_MS.reduce((sum, ms) => sum + ms, 0);
+
+/** Makes `mock` reject with `error` the next `times` calls. */
+function failTimes(
+  mock: { mockRejectedValueOnce(error: unknown): unknown },
+  times: number,
+  error: unknown,
+): void {
+  for (let i = 0; i < times; i++) mock.mockRejectedValueOnce(error);
 }
 
 describe('DesignerStore moveElementTo', () => {
@@ -578,15 +592,35 @@ describe('DesignerStore server-side creation', () => {
       expect(rulesOf(choice.id)).toEqual([{ ...rule, message: 'Please answer' }]);
     });
 
-    it('reverts a rule edit that fails to reach the server', async () => {
-      const choice = choiceWithRule();
-      repo.updateValidationRule.mockRejectedValueOnce(new Error('offline'));
+    describe('when sending fails for a passing reason', () => {
+      beforeEach(() => vi.useFakeTimers());
+      afterEach(() => vi.useRealTimers());
 
-      await expect(
-        store.patchValidationRule(choice.id, 'r1', { message: 'Please answer' }),
-      ).rejects.toThrow('offline');
+      it('sends the rule edit again', async () => {
+        const choice = choiceWithRule();
+        repo.updateValidationRule.mockRejectedValueOnce(new Error('offline'));
 
-      expect(rulesOf(choice.id)).toEqual([rule]);
+        const edit = store.patchValidationRule(choice.id, 'r1', { message: 'Please answer' });
+        await vi.advanceTimersByTimeAsync(RETRY_DELAYS_MS[0]);
+        await edit;
+
+        expect(repo.updateValidationRule).toHaveBeenCalledTimes(2);
+        expect(rulesOf(choice.id)).toEqual([{ ...rule, message: 'Please answer' }]);
+      });
+
+      it('reverts a rule edit that still fails after retrying', async () => {
+        const choice = choiceWithRule();
+        failTimes(repo.updateValidationRule, ATTEMPTS, new ApiError('busy', 503));
+
+        const edit = store.patchValidationRule(choice.id, 'r1', { message: 'Please answer' });
+        const failed = expect(edit).rejects.toThrow('busy');
+        await vi.advanceTimersByTimeAsync(RETRIES_MS);
+        await failed;
+
+        expect(repo.updateValidationRule).toHaveBeenCalledTimes(ATTEMPTS);
+        expect(rulesOf(choice.id)).toEqual([rule]);
+        expect(store.unsaved()).toBe(false);
+      });
     });
 
     it('reverts a rule edit the server rejects', async () => {
@@ -703,14 +737,16 @@ describe('DesignerStore server-side creation', () => {
       expect(repo.updateOption).toHaveBeenCalledTimes(1);
     });
 
-    it('keeps the edit locally and reports it when the send fails', async () => {
+    it('keeps the edit as unsaved when the send fails', async () => {
       const choice = loadedChoice();
       const option = choice.options[0];
-      repo.updateOption.mockRejectedValueOnce(new Error('offline'));
+      failTimes(repo.updateOption, ATTEMPTS, new Error('offline'));
 
       store.patchOption(choice.id, option.id, { label: 'Kept' });
-      await vi.advanceTimersByTimeAsync(PATCH_DELAY_MS);
+      await vi.advanceTimersByTimeAsync(PATCH_DELAY_MS + RETRIES_MS);
 
+      expect(repo.updateOption).toHaveBeenCalledTimes(ATTEMPTS);
+      expect(store.unsaved()).toBe(true);
       expect(store.patchError()).toEqual({
         error: new Error('offline'),
         message: 'panel.patchOptionFailed',
@@ -1030,27 +1066,152 @@ describe('DesignerStore server-side creation', () => {
       expect(element(group.id)).toBeUndefined();
     });
 
-    it('sends pending edits at once when flushed', async () => {
-      const choice = loadedChoice();
-      store.updateElement(choice.id, { label: 'Sent' });
+    const sentLabels = () =>
+      repo.updateElement.mock.calls.map(([, , patch]) => (patch as ElementPatch).label);
 
-      await store.flush();
-
-      expect(repo.updateElement).toHaveBeenCalledTimes(1);
-    });
-
-    it('reports a failed send with the element message', async () => {
+    it('sends an edit again while it fails for a passing reason', async () => {
       const choice = loadedChoice();
       repo.updateElement.mockRejectedValueOnce(new Error('offline'));
+      repo.updateElement.mockRejectedValueOnce(new ApiError('busy', 503));
 
       store.updateElement(choice.id, { label: 'Kept' });
-      await vi.advanceTimersByTimeAsync(PATCH_DELAY_MS);
+      await vi.advanceTimersByTimeAsync(PATCH_DELAY_MS + RETRY_DELAYS_MS[0]);
+      expect(repo.updateElement).toHaveBeenCalledTimes(2);
+      await vi.advanceTimersByTimeAsync(RETRY_DELAYS_MS[1]);
 
+      expect(sentLabels()).toEqual(['Kept', 'Kept', 'Kept']);
+      expect(store.unsaved()).toBe(false);
+      expect(store.patchError()).toBeNull();
+    });
+
+    it('reports an edit that still fails after retrying and keeps it as unsaved', async () => {
+      const choice = loadedChoice();
+      failTimes(repo.updateElement, ATTEMPTS, new Error('offline'));
+
+      store.updateElement(choice.id, { label: 'Kept' });
+      await vi.advanceTimersByTimeAsync(PATCH_DELAY_MS + RETRIES_MS);
+
+      expect(repo.updateElement).toHaveBeenCalledTimes(ATTEMPTS);
+      expect(store.unsaved()).toBe(true);
       expect(store.patchError()).toEqual({
         error: new Error('offline'),
         message: 'panel.patchElementFailed',
       });
       expect(element(choice.id).label).toBe('Kept');
+    });
+
+    it('does not send an edit again that the server rejects', async () => {
+      const choice = loadedChoice();
+      repo.updateElement.mockRejectedValueOnce(new ApiError('invalid', 400));
+
+      store.updateElement(choice.id, { label: 'Kept' });
+      await vi.advanceTimersByTimeAsync(PATCH_DELAY_MS + RETRIES_MS);
+
+      expect(repo.updateElement).toHaveBeenCalledTimes(1);
+      expect(store.unsaved()).toBe(true);
+    });
+
+    it('does not send an edit again whose answer does not match the expected schema', async () => {
+      const choice = loadedChoice();
+      const invalid = z.object({ id: z.string() }).safeParse({}).error;
+      repo.updateElement.mockRejectedValueOnce(invalid);
+
+      store.updateElement(choice.id, { label: 'Kept' });
+      await vi.advanceTimersByTimeAsync(PATCH_DELAY_MS + RETRIES_MS);
+
+      expect(repo.updateElement).toHaveBeenCalledTimes(1);
+      expect(store.unsaved()).toBe(true);
+    });
+
+    it('sends the failed edits again on request', async () => {
+      const choice = loadedChoice();
+      repo.updateElement.mockRejectedValueOnce(new ApiError('invalid', 400));
+      store.updateElement(choice.id, { label: 'Kept' });
+      await vi.advanceTimersByTimeAsync(PATCH_DELAY_MS);
+
+      await store.retryFailed();
+
+      expect(sentLabels()).toEqual(['Kept', 'Kept']);
+      expect(store.unsaved()).toBe(false);
+    });
+
+    it('takes a failed edit along with a later edit of the same element', async () => {
+      const choice = loadedChoice();
+      repo.updateElement.mockRejectedValueOnce(new ApiError('invalid', 400));
+      store.updateElement(choice.id, { label: 'Kept' });
+      await vi.advanceTimersByTimeAsync(PATCH_DELAY_MS);
+
+      store.updateElement(choice.id, { required: true });
+      expect(store.unsaved()).toBe(false);
+      await vi.advanceTimersByTimeAsync(PATCH_DELAY_MS);
+
+      expect(repo.updateElement).toHaveBeenLastCalledWith(
+        store.form().id,
+        choice.id,
+        { label: 'Kept', required: true },
+        { keepalive: false },
+      );
+      expect(store.unsaved()).toBe(false);
+    });
+
+    it('takes a failed edit along with a later one already waiting in the queue', async () => {
+      const choice = loadedChoice();
+      let reject!: (error: unknown) => void;
+      repo.updateElement.mockImplementationOnce(
+        () => new Promise<TextElement>((_resolve, rej) => (reject = rej)),
+      );
+      store.updateElement(choice.id, { label: 'First', description: 'Kept' });
+      store.sendEditsOf(choice.id);
+      await vi.advanceTimersByTimeAsync(0);
+      store.updateElement(choice.id, { label: 'Second' });
+      store.sendEditsOf(choice.id);
+
+      reject(new ApiError('invalid', 400));
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(repo.updateElement).toHaveBeenLastCalledWith(
+        store.form().id,
+        choice.id,
+        { label: 'Second', description: 'Kept' },
+        { keepalive: false },
+      );
+      expect(store.unsaved()).toBe(false);
+    });
+
+    it('drops a failed edit of an element that is removed', async () => {
+      const { group } = loaded();
+      repo.updateElement.mockRejectedValueOnce(new ApiError('invalid', 400));
+      store.updateElement(group.id, { label: 'Kept' });
+      await vi.advanceTimersByTimeAsync(PATCH_DELAY_MS);
+
+      await store.removeElement(group.id);
+
+      expect(store.unsaved()).toBe(false);
+      expect(repo.updateElement).toHaveBeenCalledTimes(1);
+    });
+
+    it('forgets failed edits once another form is loaded', async () => {
+      const choice = loadedChoice();
+      repo.updateElement.mockRejectedValueOnce(new ApiError('invalid', 400));
+      store.updateElement(choice.id, { label: 'Kept' });
+      await vi.advanceTimersByTimeAsync(PATCH_DELAY_MS);
+
+      loaded();
+
+      expect(store.unsaved()).toBe(false);
+    });
+
+    it('flushes pending edits and tells whether everything reached the server', async () => {
+      const choice = loadedChoice();
+      store.updateElement(choice.id, { label: 'Sent' });
+
+      await expect(store.flush()).resolves.toBe(true);
+      expect(repo.updateElement).toHaveBeenCalledTimes(1);
+
+      repo.updateElement.mockRejectedValueOnce(new ApiError('invalid', 400));
+      store.updateElement(choice.id, { label: 'Failed' });
+
+      await expect(store.flush()).resolves.toBe(false);
     });
   });
 
@@ -1125,10 +1286,10 @@ describe('DesignerStore server-side creation', () => {
 
     it('reports a failed send with the page message', async () => {
       const { page } = loaded();
-      repo.updatePage.mockRejectedValueOnce(new Error('offline'));
+      failTimes(repo.updatePage, ATTEMPTS, new Error('offline'));
 
       store.updatePage(page.id, { title: 'Contact' });
-      await vi.advanceTimersByTimeAsync(PATCH_DELAY_MS);
+      await vi.advanceTimersByTimeAsync(PATCH_DELAY_MS + RETRIES_MS);
 
       expect(store.patchError()).toEqual({
         error: new Error('offline'),
@@ -1167,6 +1328,22 @@ describe('DesignerStore server-side creation', () => {
       expect(store.form().settings).toMatchObject({ showProgress: false, navigation: 'linear' });
       await vi.advanceTimersByTimeAsync(PATCH_DELAY_MS);
       expect(repo.updateForm).toHaveBeenCalledWith(
+        store.form().id,
+        { settings: { showProgress: false, navigation: 'linear' } },
+        { keepalive: false },
+      );
+    });
+
+    it('merges the settings of a failed edit field by field into a later one', async () => {
+      loaded();
+      repo.updateForm.mockRejectedValueOnce(new ApiError('invalid', 400));
+      store.updateSettings({ showProgress: false });
+      await vi.advanceTimersByTimeAsync(PATCH_DELAY_MS);
+
+      store.updateSettings({ navigation: 'linear' });
+      await vi.advanceTimersByTimeAsync(PATCH_DELAY_MS);
+
+      expect(repo.updateForm).toHaveBeenLastCalledWith(
         store.form().id,
         { settings: { showProgress: false, navigation: 'linear' } },
         { keepalive: false },
