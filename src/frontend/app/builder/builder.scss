@@ -131,6 +131,17 @@
   }
 }
 
+.leave-text {
+  max-width: 440px;
+  margin: 0 0 16px;
+}
+.leave-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
 .panel-modal {
   display: flex;
   flex-direction: column;

@@ -68,3 +68,26 @@
     <fm-property-panel class="panel-modal" [store]="store" />
   </dialog>
 }
+@if (leaving()) {
+  <dialog
+    #leave
+    (cancel)="$event.preventDefault(); answerLeave(false)"
+    aria-labelledby="leave-dialog-header"
+    aria-describedby="leave-dialog-text"
+  >
+    <div class="modal-head">
+      <h2 id="leave-dialog-header">{{ i18n.t('builder.leaveTitle') }}</h2>
+    </div>
+    <p id="leave-dialog-text" class="leave-text">{{ i18n.t('builder.unsaved') }}</p>
+    <div class="leave-actions">
+      <button mat-button (click)="export()">
+        <mat-icon svgIcon="download"></mat-icon>
+        {{ i18n.t('builder.downloadBackup') }}
+      </button>
+      <button mat-button (click)="answerLeave(true)">{{ i18n.t('builder.leaveAnyway') }}</button>
+      <button mat-flat-button color="primary" (click)="answerLeave(false)">
+        {{ i18n.t('builder.stay') }}
+      </button>
+    </div>
+  </dialog>
+}

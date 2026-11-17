@@ -284,6 +284,10 @@ test.describe('accessibility', () => {
       await page.getByRole('button', { name: 'Preview' }).click();
       await expect(page.getByRole('button', { name: 'Download backup' })).toBeVisible();
       await expectNoViolations(page);
+
+      await page.getByRole('link', { name: 'Forms' }).click();
+      await expect(page.getByRole('dialog', { name: 'Leave the form?' })).toBeVisible();
+      await expectNoViolations(page);
     });
 
     test('add-question dialog', async ({ page }) => {

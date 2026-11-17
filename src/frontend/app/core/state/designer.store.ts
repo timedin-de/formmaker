@@ -103,6 +103,17 @@ interface PendingPatch {
   failed: TranslationKey;
   /** Sends it once no further edit arrives; unset once it left `patches`. */
   timer?: ReturnType<typeof setTimeout>;
+  /** Set once the server has it; see `createCopyOnServer`. */
+  delivered?: boolean;
+}
+
+/**
+ * The unsettled edits of one validation rule, oldest first, and the rule as the server
+ * has it without them; see `patchValidationRule`.
+ */
+interface RuleEdits {
+  confirmed: ValidationRule;
+  edits: UpdateValidationRuleRequest[];
 }
 
 /** `later` merged into `earlier`; settings are merged one level deeper, field by field. */
@@ -182,6 +193,10 @@ function pageKey(pageId: string): string {
   return `page:${pageId}`;
 }
 
+function ruleKey(elementId: ElementId, ruleId: string): string {
+  return `rule:${elementId}/${ruleId}`;
+}
+
 /**
  * `patch` with every undefined field set to null, which removes it (JSON has no
  * undefined; see `ElementPatch`, `PagePatch`).
@@ -228,11 +243,23 @@ export class DesignerStore {
   readonly activePageId = signal<string | null>(null);
   /** Last failed element or option edit, read and cleared by the property panel. */
   readonly patchError = signal<PatchError | null>(null);
+  /** How many edits of the loaded form failed; see `failed`. */
+  private readonly failedCount = signal(0);
   /**
-   * Whether edits of the loaded form failed to reach the server even after retrying,
-   * so it differs from the stored form; see `retryFailed`.
+   * How many edits (element, option, page, form and validation rule edits) are in the
+   * creation queue, waiting, being sent or retried; see `whileSending`.
    */
-  readonly unsaved = signal(false);
+  private readonly sendingCount = signal(0);
+  /** Leaving was interrupted while edits were still being sent; see `interruptLeave`. */
+  private readonly closeInterrupted = signal(false);
+  /**
+   * Whether edits of the loaded form failed to reach the server even after retrying, so
+   * it differs from the stored form (see `retryFailed`), or haven't reached it yet while
+   * the builder is being left (see `interruptLeave`).
+   */
+  readonly unsaved = computed(
+    () => this.failedCount() > 0 || (this.closeInterrupted() && this.sendingCount() > 0),
+  );
 
   readonly selectedElement = computed(() => {
     const id = this.selectedId();
@@ -252,10 +279,15 @@ export class DesignerStore {
   private readonly patches = new Map<string, PendingPatch>();
   /** Edits taken out of `patches` while their target is being removed; see `withoutPatches`. */
   private readonly held = new Map<string, PendingPatch>();
-  /** Edits sent to the creation queue, by key, until it gets to them; see `enqueuePatch`. */
-  private readonly enqueued = new Map<string, PendingPatch>();
+  /**
+   * Edits sent to the creation queue, by key and oldest first, until it gets to them;
+   * see `enqueuePatch`.
+   */
+  private readonly enqueued = new Map<string, PendingPatch[]>();
   /** Edits of the loaded form that could not be sent, by key; see `keepFailed`. */
   private readonly failed = new Map<string, PendingPatch>();
+  /** Validation rule edits not settled yet, by `ruleKey`; see `patchValidationRule`. */
+  private readonly ruleEdits = new Map<string, RuleEdits>();
   /**
    * Moves applied locally but not confirmed by the server, oldest first. They are sent
    * one after another through the creation queue, so the first is the one in flight.
@@ -266,8 +298,36 @@ export class DesignerStore {
     void this.hydrate();
     // Edits wait a moment before they are sent; don't lose them when the tab closes.
     const flush = () => this.flushPatches();
+    const warn = (event: BeforeUnloadEvent) => this.warnOnClose(event);
     window.addEventListener('pagehide', flush);
-    inject(DestroyRef).onDestroy(() => window.removeEventListener('pagehide', flush));
+    window.addEventListener('beforeunload', warn);
+    inject(DestroyRef).onDestroy(() => {
+      window.removeEventListener('pagehide', flush);
+      window.removeEventListener('beforeunload', warn);
+    });
+  }
+
+  /**
+   * Whether leaving the builder now would lose edits, because they failed or are still
+   * being sent; if so, shows them as `unsaved` right away. Edits still waiting for
+   * `PATCH_DELAY_MS` are not counted: closing the page sends them (see `flushPatches`),
+   * and leaving the route should `sendPending` first, so they count as being sent.
+   */
+  interruptLeave(): boolean {
+    if (this.failedCount() === 0 && this.sendingCount() === 0) return false;
+    // Failed edits are unsaved anyway; the flag is reset only once sending finishes.
+    if (this.sendingCount() > 0) this.closeInterrupted.set(true);
+    return true;
+  }
+
+  /**
+   * Asks the browser to confirm closing the page (see `interruptLeave`), also while edits
+   * wait and the browser is offline: sending them on `pagehide` can't arrive then, and
+   * nothing keeps them for the next visit.
+   */
+  private warnOnClose(event: BeforeUnloadEvent): void {
+    const waiting = [...this.patches.values()].some((patch) => patch.timer);
+    if (this.interruptLeave() || (waiting && !navigator.onLine)) event.preventDefault();
   }
 
   async hydrate(): Promise<void> {
@@ -309,6 +369,7 @@ export class DesignerStore {
     this.patchError.set(null);
     this.failed.clear();
     this.updateUnsaved();
+    this.ruleEdits.clear();
     this.unconfirmedMoves = [];
     this.persist();
   }
@@ -352,10 +413,19 @@ export class DesignerStore {
     return page;
   }
 
-  /** Clones a page on the server (which persists it) and appends it locally. */
+  /**
+   * Clones a page on the server (which persists it) and appends it locally; refused
+   * while edits of the page or its elements are unsaved (see `createCopyOnServer`).
+   */
   async clonePage(pageId: string): Promise<PageDefinition | undefined> {
     const suffix = this.i18n.t('builder.copySuffix');
-    const clone = await this.createOnServer(
+    const clone = await this.createCopyOnServer(
+      (form) => [
+        pageId,
+        ...(form.pages
+          .find((p) => p.id === pageId)
+          ?.children.flatMap((id) => subtreeIds(form, id)) ?? []),
+      ],
       (form) => this.repository.clonePage(form.id, pageId, suffix),
       ({ page, elements }) => this.applyServerChange((f) => addPage(f, page, elements)),
     );
@@ -517,34 +587,41 @@ export class DesignerStore {
    * Applies a validation rule edit locally right away and sends it to the server, again
    * while it fails for a passing reason (see `withRetries`). Rule inputs commit on
    * `change`, so each edit is one request. If the server rejects it, or it still fails
-   * after retrying, it is reverted locally, so the form shows what the server has.
+   * after retrying, it is reverted locally, so the form shows what the server has (see
+   * `settleRuleEdit`).
    */
   async patchValidationRule(
     elementId: ElementId,
     ruleId: string,
     patch: UpdateValidationRuleRequest,
   ): Promise<void> {
-    const formId = this.form().id;
-    let previous: ValidationRule | undefined;
+    const key = ruleKey(elementId, ruleId);
+    // A copy, so the same values sent twice are still told apart.
+    const edit = { ...patch };
     this.applyServerChange((f) =>
       updateValidations(f, elementId, (rules) =>
         rules.map((r) => {
           if (r.id !== ruleId) return r;
-          previous = r;
-          return { ...r, ...patch };
+          // Without unsettled edits, the rule as shown is the one the server has.
+          const tracked = this.ruleEdits.get(key) ?? { confirmed: r, edits: [] };
+          tracked.edits.push(edit);
+          this.ruleEdits.set(key, tracked);
+          return { ...r, ...edit };
         }),
       ),
     );
-    try {
-      await this.createOnServer((form) =>
-        withRetries(() => this.repository.updateValidationRule(form.id, elementId, ruleId, patch)),
-      );
-    } catch (error) {
-      if (this._form()?.id === formId && previous) {
-        this.revertRuleEdit(elementId, ruleId, patch, previous);
+    // Counted until it arrived or was reverted, so leaving waits for it (see `interruptLeave`).
+    await this.whileSending(async () => {
+      try {
+        await this.createOnServer((form) =>
+          withRetries(() => this.repository.updateValidationRule(form.id, elementId, ruleId, edit)),
+        );
+      } catch (error) {
+        this.settleRuleEdit(elementId, ruleId, edit, false);
+        throw error;
       }
-      throw error;
-    }
+      this.settleRuleEdit(elementId, ruleId, edit, true);
+    });
   }
 
   /** Deletes a validation rule on the server, then removes it locally. */
@@ -636,12 +713,14 @@ export class DesignerStore {
 
   /**
    * Duplicates an element on the server (which persists it) right after the
-   * original and inserts the returned copy at the same spot locally.
+   * original and inserts the returned copy at the same spot locally; refused while
+   * edits of it or below it are unsaved (see `createCopyOnServer`).
    */
   async duplicateElement(elementId: string): Promise<ElementDefinition | undefined> {
     const suffix = this.i18n.t('builder.copySuffix');
     let copy: ElementDefinition | undefined;
-    await this.createOnServer(
+    await this.createCopyOnServer(
+      (form) => subtreeIds(form, elementId),
       (form) => this.repository.cloneElement(form.id, elementId, suffix),
       ({ element, subtree }) =>
         this.applyServerChange((f) => {
@@ -685,13 +764,18 @@ export class DesignerStore {
    * server or failed. Returns whether the server now has the loaded form as shown.
    */
   async flush(): Promise<boolean> {
-    for (const key of [...this.patches.keys()]) void this.sendPatch(key);
+    this.sendPending();
     let tail: Promise<unknown>;
     do {
       tail = this.creations;
       await tail;
     } while (tail !== this.creations);
     return !this.unsaved();
+  }
+
+  /** Sends every unsent edit through the creation queue right away, without waiting. */
+  sendPending(): void {
+    for (const key of [...this.patches.keys()]) void this.sendPatch(key);
   }
 
   /** Sends the edits that failed (see `unsaved`) again. */
@@ -705,6 +789,32 @@ export class DesignerStore {
   // ---- internals -------------------------------------------------------------
 
   /**
+   * Queues the copy `create` of the elements or pages `sources` picks, as
+   * `createOnServer`, but rejects it instead of sending it unless every edit of them has
+   * reached the server by then, since the copy would otherwise carry their former state.
+   */
+  private createCopyOnServer<T>(
+    sources: (form: FormDocument) => (ElementId | PageId)[],
+    create: (form: FormDefinition) => Promise<T>,
+    apply: (result: T) => void,
+  ): Promise<T> {
+    this.sendPending();
+    const ids = new Set(sources(this.form()));
+    // The latest edit of each key queued ahead; a failed earlier one is merged into it.
+    const ahead = [...this.enqueued.values()].flatMap((list) => {
+      const latest = list.at(-1);
+      return latest && ids.has(latest.targetId) ? [latest] : [];
+    });
+    return this.createOnServer((form) => {
+      const unsaved =
+        ahead.some((pending) => !pending.delivered) ||
+        [...this.failed.values(), ...this.held.values()].some((p) => ids.has(p.targetId));
+      if (unsaved) throw new Error('designer: copy source has unsaved edits');
+      return create(form);
+    }, apply);
+  }
+
+  /**
    * Queues a server-side creation or removal for the form that is loaded now, after
    * every unsent edit, so e.g. a copy carries a label typed just before. Once it
    * succeeded, `apply` applies its result locally, still inside the queue, so whatever is
@@ -715,7 +825,7 @@ export class DesignerStore {
     create: (form: FormDefinition) => Promise<T>,
     apply?: (result: T) => void,
   ): Promise<T> {
-    for (const key of [...this.patches.keys()]) void this.sendPatch(key);
+    this.sendPending();
     const formId = this.form().id;
     const assertSameForm = () => {
       if (this._form()?.id !== formId) throw new Error('designer: form changed during creation');
@@ -860,26 +970,48 @@ export class DesignerStore {
    */
   private enqueuePatch(pending: PendingPatch): Promise<void> {
     pending.timer = undefined;
-    this.enqueued.set(pending.key, pending);
-    const run = this.creations
-      .then(async () => {
-        if (this.enqueued.get(pending.key) === pending) this.enqueued.delete(pending.key);
-        // Read when sent: a failed earlier edit of the same key may have been merged in.
-        await withRetries(() => pending.send(pending.patch, false));
-      })
-      .catch((error: unknown) => this.keepFailed(pending, error));
+    pending.delivered = false;
+    this.enqueued.set(pending.key, [...(this.enqueued.get(pending.key) ?? []), pending]);
+    const run = this.whileSending(() =>
+      this.creations
+        .then(async () => {
+          const rest = this.enqueued.get(pending.key)?.filter((p) => p !== pending) ?? [];
+          if (rest.length > 0) this.enqueued.set(pending.key, rest);
+          else this.enqueued.delete(pending.key);
+          // Read when sent: a failed earlier edit of the same key may have been merged in.
+          await withRetries(() => pending.send(pending.patch, false));
+          pending.delivered = true;
+        })
+        .catch((error: unknown) => this.keepFailed(pending, error)),
+    );
     this.creations = run;
     return run;
   }
 
+  /** Runs the edit `send`, counted in `sendingCount` (from now on) until it settles. */
+  private async whileSending<T>(send: () => Promise<T>): Promise<T> {
+    this.sendingCount.update((n) => n + 1);
+    try {
+      return await send();
+    } finally {
+      this.sendingCount.update((n) => n - 1);
+      // Everything sent arrived or failed: a later send needs no warning until closing again.
+      if (this.sendingCount() === 0) this.closeInterrupted.set(false);
+    }
+  }
+
   /**
-   * Keeps the edit `pending` that could not be sent, so it is not lost: merged into a
-   * later edit of the same key waiting to be sent, or else, while its form is loaded, as
-   * failed (see `unsaved`) until it is retried or a later edit of the key takes it along.
+   * Keeps the edit `pending` that could not be sent, so it is not lost: merged into the
+   * next later edit of the same key waiting to be sent (so every edit in between still
+   * overrides it), or else, while its form is loaded, as failed (see `unsaved`) until it
+   * is retried or a later edit of the key takes it along.
    */
   private keepFailed(pending: PendingPatch, error: unknown): void {
+    // Queued edits are older than held or waiting ones, which come from `patches` later.
     const later =
-      this.patches.get(pending.key) ?? this.held.get(pending.key) ?? this.enqueued.get(pending.key);
+      this.enqueued.get(pending.key)?.[0] ??
+      this.held.get(pending.key) ??
+      this.patches.get(pending.key);
     const isLoaded = this._form()?.id === pending.formId;
     if (later) {
       later.patch = later.merge(pending.patch, later.patch);
@@ -891,7 +1023,7 @@ export class DesignerStore {
   }
 
   private updateUnsaved(): void {
-    this.unsaved.set(this.failed.size > 0);
+    this.failedCount.set(this.failed.size);
   }
 
   /**
@@ -911,7 +1043,8 @@ export class DesignerStore {
    * since they would fail once their target is gone. If `remove` fails, they are sent
    * after all, and so are those whose target turns out to survive it (`gone` is false).
    * Meanwhile they are held, so a newer edit of the same key merges them in (see
-   * `queuePatch`) rather than being overwritten by them later.
+   * `queuePatch`) rather than being overwritten by them later, and counted as being sent
+   * (see `whileSending`), so leaving waits until they are gone or sent again.
    */
   private async withoutPatches(
     drop: (key: string, pending: PendingPatch) => boolean,
@@ -933,13 +1066,17 @@ export class DesignerStore {
         this.held.delete(key);
         return true;
       });
-    try {
-      await remove();
-    } catch (error) {
-      for (const [, pending] of release()) void this.enqueuePatch(pending);
-      throw error;
-    }
-    for (const [, pending] of release()) if (!gone(pending)) void this.enqueuePatch(pending);
+    const settle = async () => {
+      try {
+        await remove();
+      } catch (error) {
+        for (const [, pending] of release()) void this.enqueuePatch(pending);
+        throw error;
+      }
+      for (const [, pending] of release()) if (!gone(pending)) void this.enqueuePatch(pending);
+    };
+    // Sent again from within, so they stay counted (`enqueuePatch` counts them at once).
+    await (taken.length > 0 ? this.whileSending(settle) : settle());
   }
 
   /**
@@ -969,24 +1106,39 @@ export class DesignerStore {
   }
 
   /**
-   * Restores the fields of a rejected rule edit to `previous`, but only those that still
-   * hold the rejected value, so edits made since are kept.
+   * Settles the rule edit `edit`. Rule edits settle in the order they were made (they
+   * go through the creation queue), so every unsettled one left is later. Arrived, it
+   * becomes part of the confirmed rule. Failed, its fields go back to the confirmed rule,
+   * except those a later edit set, which shows them until it settles itself. Does nothing
+   * once another form has been loaded (see `reset`).
    */
-  private revertRuleEdit(
+  private settleRuleEdit(
     elementId: ElementId,
     ruleId: string,
-    patch: UpdateValidationRuleRequest,
-    previous: ValidationRule,
+    edit: UpdateValidationRuleRequest,
+    arrived: boolean,
   ): void {
-    const fields = Object.keys(patch) as (keyof UpdateValidationRuleRequest)[];
+    const key = ruleKey(elementId, ruleId);
+    const tracked = this.ruleEdits.get(key);
+    const index = tracked?.edits.indexOf(edit) ?? -1;
+    if (!tracked || index < 0) return;
+    tracked.edits.splice(index, 1);
+    if (tracked.edits.length === 0) this.ruleEdits.delete(key);
+    if (arrived) {
+      tracked.confirmed = { ...tracked.confirmed, ...edit };
+      return;
+    }
+    const fields = (Object.keys(edit) as (keyof UpdateValidationRuleRequest)[]).filter(
+      (field) => !tracked.edits.some((later) => field in later),
+    );
+    if (fields.length === 0) return;
+    const { confirmed } = tracked;
     this.applyServerChange((f) =>
       updateValidations(f, elementId, (rules) =>
         rules.map((r) => {
           if (r.id !== ruleId) return r;
           const reverted: ValidationRule = { ...r };
-          for (const field of fields) {
-            if (r[field] === patch[field]) Object.assign(reverted, { [field]: previous[field] });
-          }
+          for (const field of fields) Object.assign(reverted, { [field]: confirmed[field] });
           return reverted;
         }),
       ),
