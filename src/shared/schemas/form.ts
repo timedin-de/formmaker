@@ -11,7 +11,6 @@ import {
   type FormWithOwner,
   type PageDefinition,
   type PagePatch,
-  type SaveFormDefinition,
 } from '../model';
 import { conditionGroupSchema } from './conditions';
 import { elementDefinitionSchema, formElementsSchema } from './elements';
@@ -49,19 +48,6 @@ const formOwnerSchema = z.strictObject({
   role: z.enum(['admin', 'editor']),
   createdAt: z.string(),
 });
-
-export const saveFormDefinitionSchema = z
-  .strictObject({
-    id: z.string(),
-    name: z.optional(z.string()),
-    ownerId: z.optional(z.string().check(z.minLength(1), z.maxLength(128))),
-    owner: z.optional(z.nullable(formOwnerSchema)),
-    description: z.optional(z.string()),
-    settings: formSettingsSchema,
-    pages: z.array(pageDefinitionSchema),
-    elements: formElementsSchema,
-  })
-  .check(z.superRefine(checkDocument)) satisfies z.ZodMiniType<SaveFormDefinition>;
 
 const formDefinitionObject = z.strictObject({
   id: z.string(),

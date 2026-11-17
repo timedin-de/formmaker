@@ -69,7 +69,7 @@ test('creates, edits and removes validation rules on the server', async ({ page,
     .poll(async () => (await storedRules(session, formId, nameId))[0]?.pattern)
     .toBe('^[A-Z]+$');
 
-  // An invalid regex is rejected and reverted, and no later save carries it.
+  // An invalid regex is rejected and reverted, and no later change carries it.
   await regex.fill('(');
   await regex.press('Tab');
   await expect(page.getByText('The rule change could not be saved.')).toBeVisible();

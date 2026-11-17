@@ -18,12 +18,6 @@
         <mat-icon svgIcon="download"></mat-icon>
         <span class="btn-label">{{ i18n.t('builder.export') }}</span>
       </button>
-      <button mat-button (click)="save()" [disabled]="saved()">
-        <mat-icon [svgIcon]="saved() ? 'check' : 'save'"></mat-icon>
-        <span class="btn-label">{{
-          saved() ? i18n.t('builder.saved') : i18n.t('builder.save')
-        }}</span>
-      </button>
       <button mat-flat-button color="primary" (click)="preview()">
         <mat-icon svgIcon="play_arrow"></mat-icon>
         <span class="btn-label">{{ i18n.t('builder.preview') }}</span>

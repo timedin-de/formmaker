@@ -9,21 +9,14 @@ import {
   Param,
   Patch,
   Post,
-  Put,
   UnprocessableEntityException,
   UseGuards,
 } from '@nestjs/common';
-import {
-  type SaveFormDefinition,
-  type SubmissionCreate,
-  toPortableForm,
-  uuid,
-} from '@shared/model';
+import { type SubmissionCreate, toPortableForm, uuid } from '@shared/model';
 import {
   formDefinitionSchema,
   type NewFormRequest,
   newFormSchema,
-  saveFormDefinitionSchema,
   stripFormOwnership,
   submissionCreateSchema,
   type UpdateFormRequest,
@@ -35,17 +28,8 @@ import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import { Repository, type User } from '../repository';
 import { FormService } from './form.service';
 import { type FormDefinition } from './forms.model';
-import { changeManagedForm, managedForm } from './managed-form';
+import { managedForm } from './managed-form';
 
-class SaveFormBodyPipe extends ZodValidationPipe<SaveFormDefinition> {
-  constructor() {
-    super(saveFormDefinitionSchema);
-  }
-
-  override transform(value: unknown): SaveFormDefinition {
-    return super.transform(stripFormOwnership(value));
-  }
-}
 class ImportFormBodyPipe extends ZodValidationPipe<FormDefinition> {
   constructor() {
     super(formDefinitionSchema);
@@ -98,21 +82,6 @@ export class FormsController {
     const item = await this.repository.form(id);
     if (!item) throw new NotFoundException({ error: 'not found' });
     return toPortableForm(item.form);
-  }
-
-  @Put(':id')
-  @HttpCode(200)
-  @UseGuards(AuthGuard)
-  async saveForm(
-    @CurrentUser() user: User,
-    @Body(new SaveFormBodyPipe()) form: SaveFormDefinition,
-    @Param('id') id: string,
-  ) {
-    if (form.id !== id)
-      throw new UnprocessableEntityException({ error: 'form id must match the path id' });
-    return changeManagedForm(this.repository, id, user, (existing) =>
-      this.repository.saveForm(existing.ownerId, { ...existing.form, ...form }, existing.revision),
-    );
   }
 
   /** Patches the form's own fields: name, description and settings. */

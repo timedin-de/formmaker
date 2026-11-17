@@ -30,7 +30,6 @@ function text(label: string): TextElement {
 describe('DesignerStore moveElementTo', () => {
   let store: DesignerStore;
   const repo = {
-    saveForm: vi.fn(async () => undefined),
     moveElement: vi.fn(async () => undefined),
     deleteElement: vi.fn(async () => undefined),
     updateElement: vi.fn(async () => undefined),
@@ -136,7 +135,7 @@ describe('DesignerStore moveElementTo', () => {
     expect(repo.moveElement).not.toHaveBeenCalled();
   });
 
-  it('sends the move to the server without marking the form dirty', async () => {
+  it('sends the move to the server', async () => {
     const { group, c } = scenario();
 
     await store.moveElementTo(c.id, group.id, 0);
@@ -145,8 +144,6 @@ describe('DesignerStore moveElementTo', () => {
       parentId: group.id,
       index: 0,
     });
-    expect(repo.saveForm).not.toHaveBeenCalled();
-    expect(store.dirty()).toBe(false);
     expect(ids(childrenOf(group.id))).toEqual(['C', 'A', 'B']);
   });
 
@@ -173,7 +170,6 @@ describe('DesignerStore moveElementTo', () => {
 
     expect(ids(root())).toEqual(['C', 'Group', 'D']);
     expect(ids(childrenOf(group.id))).toEqual(['A', 'B']);
-    expect(store.dirty()).toBe(false);
   });
 
   it('takes back a later move unsent when an earlier one fails', async () => {
@@ -230,23 +226,6 @@ describe('DesignerStore moveElementTo', () => {
     );
   });
 
-  it('leaves a move out of the save of earlier edits sent ahead of it', async () => {
-    const { group, c, d } = scenario();
-    store.rename('Renamed');
-
-    await store.moveElementTo(c.id, group.id, 0);
-
-    expect(repo.saveForm).toHaveBeenCalledWith(
-      expect.objectContaining({
-        name: 'Renamed',
-        pages: [expect.objectContaining({ children: [c.id, group.id, d.id] })],
-      }),
-    );
-    expect(repo.moveElement).toHaveBeenCalledTimes(1);
-    expect(ids(root())).toEqual(['Group', 'D']);
-    expect(store.dirty()).toBe(false);
-  });
-
   it('sends an up/down move as the position it ends up at', async () => {
     const { group, d } = scenario();
 
@@ -291,7 +270,6 @@ describe('DesignerStore moveElementTo', () => {
     await store.moveElementTo(c.id, 'missing-group', 0);
 
     expect(store.form().pages).toBe(before);
-    expect(store.dirty()).toBe(false);
     expect(repo.moveElement).not.toHaveBeenCalled();
     expect(ids(root())).toEqual(['C', 'Group', 'D']);
   });
@@ -310,7 +288,6 @@ describe('DesignerStore server-side creation', () => {
     }),
   };
   const repo = {
-    saveForm: vi.fn(async () => calls.push('save')),
     addPage: vi.fn(async (_formId: string, title: string) => {
       calls.push('addPage');
       return createPage(title);
@@ -434,7 +411,6 @@ describe('DesignerStore server-side creation', () => {
     });
     expect(getElements(store.form().pages[0], store.form())[1]).toEqual(el);
     expect(store.selectedId()).toBe(el.id);
-    expect(store.dirty()).toBe(false);
   });
 
   it('appends a server-generated child to a group', async () => {
@@ -469,7 +445,6 @@ describe('DesignerStore server-side creation', () => {
       before[2].id,
     ]);
     expect(store.selectedId()).toBe(clonedElement.id);
-    expect(store.dirty()).toBe(false);
   });
 
   it('appends the server-cloned page and activates it', async () => {
@@ -483,7 +458,6 @@ describe('DesignerStore server-side creation', () => {
     expect(store.form().pages.at(-1)).toBe(clonedPage);
     expect(store.activePageId()).toBe(clonedPage.id);
     expect(store.selectedId()).toBeNull();
-    expect(store.dirty()).toBe(false);
   });
 
   it('drops the duplicate locally when its source was removed during the request', async () => {
@@ -510,15 +484,6 @@ describe('DesignerStore server-side creation', () => {
     expect(getElements(store.form().pages[0], store.form())).toHaveLength(2);
   });
 
-  it('saves unsaved edits before cloning', async () => {
-    const { group } = loaded();
-    store.dirty.set(true);
-
-    await store.duplicateElement(group.id);
-
-    expect(calls).toEqual(['save', 'cloneElement']);
-  });
-
   function loadedChoice(options?: ChoiceOption[]): ChoiceElement {
     const form = newForm('Demo');
     const page = createPage('Page 1');
@@ -530,18 +495,16 @@ describe('DesignerStore server-side creation', () => {
     return choice;
   }
 
-  it('saves unsaved edits, then appends a server-generated option', async () => {
+  it('appends a server-generated option', async () => {
     const choice = loadedChoice();
-    store.dirty.set(true);
 
     const option = await store.addOption(choice.id, 'Option 3');
 
-    expect(calls).toEqual(['save', 'addOption']);
+    expect(calls).toEqual(['addOption']);
     expect(repo.addOption).toHaveBeenCalledWith(store.form().id, choice.id, { label: 'Option 3' });
     const stored = store.form().elements[choice.id] as ChoiceElement;
     expect(stored.options.at(-1)).toEqual(option);
     expect(stored.options).toHaveLength(3);
-    expect(store.dirty()).toBe(false);
   });
 
   it('drops the option locally when its element was removed during the request', async () => {
@@ -560,13 +523,12 @@ describe('DesignerStore server-side creation', () => {
     expect(store.form().elements[choice.id]).toBeUndefined();
   });
 
-  it('saves unsaved edits, then appends a server-generated validation rule', async () => {
+  it('appends a server-generated validation rule', async () => {
     const choice = loadedChoice();
-    store.dirty.set(true);
 
     const rule = await store.addValidationRule(choice.id, { rule: 'required', message: 'Needed' });
 
-    expect(calls).toEqual(['save', 'addValidationRule']);
+    expect(calls).toEqual(['addValidationRule']);
     expect(repo.addValidationRule).toHaveBeenCalledWith(store.form().id, choice.id, {
       rule: 'required',
       message: 'Needed',
@@ -574,7 +536,6 @@ describe('DesignerStore server-side creation', () => {
     expect(rule).toEqual({ id: 'rule-new', rule: 'required', message: 'Needed' });
     const stored = store.form().elements[choice.id] as ChoiceElement;
     expect(stored.validations).toEqual([rule]);
-    expect(store.dirty()).toBe(false);
   });
 
   it('drops the validation rule locally when its element was removed during the request', async () => {
@@ -615,10 +576,9 @@ describe('DesignerStore server-side creation', () => {
         message: 'Please answer',
       });
       expect(rulesOf(choice.id)).toEqual([{ ...rule, message: 'Please answer' }]);
-      expect(store.dirty()).toBe(false);
     });
 
-    it('keeps a failed rule edit locally and marks the form dirty', async () => {
+    it('reverts a rule edit that fails to reach the server', async () => {
       const choice = choiceWithRule();
       repo.updateValidationRule.mockRejectedValueOnce(new Error('offline'));
 
@@ -626,11 +586,10 @@ describe('DesignerStore server-side creation', () => {
         store.patchValidationRule(choice.id, 'r1', { message: 'Please answer' }),
       ).rejects.toThrow('offline');
 
-      expect(rulesOf(choice.id)).toEqual([{ ...rule, message: 'Please answer' }]);
-      expect(store.dirty()).toBe(true);
+      expect(rulesOf(choice.id)).toEqual([rule]);
     });
 
-    it('reverts a rule edit the server rejects, without marking the form dirty', async () => {
+    it('reverts a rule edit the server rejects', async () => {
       const choice = choiceWithRule();
       repo.updateValidationRule.mockRejectedValueOnce(new ApiError('invalid', 400));
 
@@ -639,7 +598,6 @@ describe('DesignerStore server-side creation', () => {
       ).rejects.toThrow('invalid');
 
       expect(rulesOf(choice.id)).toEqual([rule]);
-      expect(store.dirty()).toBe(false);
     });
 
     it('keeps a newer edit when an earlier one of the same rule is rejected', async () => {
@@ -659,7 +617,7 @@ describe('DesignerStore server-side creation', () => {
       expect(rulesOf(choice.id)).toEqual([{ ...rule, message: 'Second' }]);
     });
 
-    it('leaves another form clean when a queued rule edit is dropped for it', async () => {
+    it('leaves another form alone when a queued rule edit is dropped for it', async () => {
       const choice = choiceWithRule();
       const page = store.form().pages[0];
       const other = newForm('Other');
@@ -677,7 +635,6 @@ describe('DesignerStore server-side creation', () => {
 
       await expect(pending).rejects.toThrow('form changed');
       await expect(edit).rejects.toThrow('form changed');
-      expect(store.dirty()).toBe(false);
     });
 
     it('removes a rule locally only after the server deleted it', async () => {
@@ -712,7 +669,6 @@ describe('DesignerStore server-side creation', () => {
 
       const stored = store.form().elements[choice.id] as ChoiceElement;
       expect(stored.options[0].label).toBe('Last');
-      expect(store.dirty()).toBe(false);
       expect(repo.updateOption).not.toHaveBeenCalled();
 
       await vi.advanceTimersByTimeAsync(PATCH_DELAY_MS);
@@ -727,18 +683,6 @@ describe('DesignerStore server-side creation', () => {
       );
       expect(calls).toEqual(['updateOption']);
       expect(store.patchError()).toBeNull();
-    });
-
-    it('saves unsaved edits before sending a pending option edit', async () => {
-      const choice = loadedChoice();
-      const option = choice.options[0];
-      store.dirty.set(true);
-
-      store.patchOption(choice.id, option.id, { label: 'Renamed option' });
-      await vi.advanceTimersByTimeAsync(PATCH_DELAY_MS);
-
-      expect(calls).toEqual(['save', 'updateOption']);
-      expect(store.dirty()).toBe(false);
     });
 
     it('sends a pending edit at once with keepalive when the page is closed', async () => {
@@ -759,7 +703,7 @@ describe('DesignerStore server-side creation', () => {
       expect(repo.updateOption).toHaveBeenCalledTimes(1);
     });
 
-    it('keeps the edit and marks the form dirty when the send fails', async () => {
+    it('keeps the edit locally and reports it when the send fails', async () => {
       const choice = loadedChoice();
       const option = choice.options[0];
       repo.updateOption.mockRejectedValueOnce(new Error('offline'));
@@ -767,7 +711,6 @@ describe('DesignerStore server-side creation', () => {
       store.patchOption(choice.id, option.id, { label: 'Kept' });
       await vi.advanceTimersByTimeAsync(PATCH_DELAY_MS);
 
-      expect(store.dirty()).toBe(true);
       expect(store.patchError()).toEqual({
         error: new Error('offline'),
         message: 'panel.patchOptionFailed',
@@ -789,7 +732,6 @@ describe('DesignerStore server-side creation', () => {
       expect(calls).toEqual(['deleteOption']);
       const stored = store.form().elements[choice.id] as ChoiceElement;
       expect(stored.options.map((o) => o.id)).not.toContain(option.id);
-      expect(store.dirty()).toBe(false);
     });
 
     it('sends the dropped edit after all when deleting the option fails', async () => {
@@ -828,7 +770,6 @@ describe('DesignerStore server-side creation', () => {
       expect(repo.moveOption).toHaveBeenCalledWith(store.form().id, choice.id, first, {
         index: 1,
       });
-      expect(store.dirty()).toBe(false);
     });
 
     it('sends nothing when the option is already at the edge', async () => {
@@ -847,28 +788,6 @@ describe('DesignerStore server-side creation', () => {
       await expect(store.moveOption(choice.id, 0, 1)).rejects.toThrow('offline');
 
       expect(optionIds(choice.id)).toEqual(before);
-      expect(store.dirty()).toBe(false);
-    });
-
-    it('leaves a move out of the save of earlier edits sent ahead of it', async () => {
-      const choice = loadedChoice();
-      const before = optionIds(choice.id);
-      store.dirty.set(true);
-      repo.moveOption.mockRejectedValueOnce(new Error('offline'));
-
-      await expect(store.moveOption(choice.id, 0, 1)).rejects.toThrow('offline');
-
-      expect(repo.saveForm).toHaveBeenCalledWith(
-        expect.objectContaining({
-          elements: expect.objectContaining({
-            [choice.id]: expect.objectContaining({
-              options: before.map((id) => expect.objectContaining({ id })),
-            }),
-          }),
-        }),
-      );
-      expect(optionIds(choice.id)).toEqual(before);
-      expect(store.dirty()).toBe(false);
     });
 
     it('counts the index only once an earlier queued deletion is applied', async () => {
@@ -925,7 +844,6 @@ describe('DesignerStore server-side creation', () => {
       store.updateElement(choice.id, { label: 'First', required: true });
 
       expect(element(choice.id)).toMatchObject({ label: 'First', required: true });
-      expect(store.dirty()).toBe(false);
       expect(repo.updateElement).not.toHaveBeenCalled();
 
       await vi.advanceTimersByTimeAsync(PATCH_DELAY_MS);
@@ -937,7 +855,6 @@ describe('DesignerStore server-side creation', () => {
         { label: 'First', required: true },
         { keepalive: false },
       );
-      expect(store.dirty()).toBe(false);
     });
 
     it('sends label, description and required edited one after another as one request', async () => {
@@ -1113,14 +1030,22 @@ describe('DesignerStore server-side creation', () => {
       expect(element(group.id)).toBeUndefined();
     });
 
-    it('reports a failed send with the element message and marks the form dirty', async () => {
+    it('sends pending edits at once when flushed', async () => {
+      const choice = loadedChoice();
+      store.updateElement(choice.id, { label: 'Sent' });
+
+      await store.flush();
+
+      expect(repo.updateElement).toHaveBeenCalledTimes(1);
+    });
+
+    it('reports a failed send with the element message', async () => {
       const choice = loadedChoice();
       repo.updateElement.mockRejectedValueOnce(new Error('offline'));
 
       store.updateElement(choice.id, { label: 'Kept' });
       await vi.advanceTimersByTimeAsync(PATCH_DELAY_MS);
 
-      expect(store.dirty()).toBe(true);
       expect(store.patchError()).toEqual({
         error: new Error('offline'),
         message: 'panel.patchElementFailed',
@@ -1143,7 +1068,6 @@ describe('DesignerStore server-side creation', () => {
       store.updatePage(page.id, { subtitle: 'How to reach you' });
 
       expect(pageOf(page.id)).toMatchObject({ title: 'Contact', subtitle: 'How to reach you' });
-      expect(store.dirty()).toBe(false);
       await vi.advanceTimersByTimeAsync(PATCH_DELAY_MS);
 
       expect(repo.updatePage).toHaveBeenCalledTimes(1);
@@ -1217,14 +1141,13 @@ describe('DesignerStore server-side creation', () => {
     beforeEach(() => vi.useFakeTimers());
     afterEach(() => vi.useRealTimers());
 
-    it('renames at once and sends the name after the delay, without marking dirty', async () => {
+    it('renames at once and sends the name after the delay', async () => {
       loaded();
 
       store.rename('Sign');
       store.rename('Sign-up');
 
       expect(store.form().name).toBe('Sign-up');
-      expect(store.dirty()).toBe(false);
       await vi.advanceTimersByTimeAsync(PATCH_DELAY_MS);
 
       expect(repo.updateForm).toHaveBeenCalledTimes(1);
@@ -1270,11 +1193,10 @@ describe('DesignerStore server-side creation', () => {
     });
   });
 
-  it('saves unsaved edits before creating, and runs creations one at a time', async () => {
+  it('runs creations one at a time', async () => {
     const { page } = loaded();
-    store.dirty.set(true);
     await Promise.all([store.addElement(page.id, 'text'), store.addElement(page.id, 'text')]);
-    expect(calls).toEqual(['save', 'addElement', 'addElement']);
+    expect(calls).toEqual(['addElement', 'addElement']);
     expect(getElements(store.form().pages[0], store.form())).toHaveLength(5);
   });
 
