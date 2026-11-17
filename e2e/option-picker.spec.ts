@@ -62,7 +62,8 @@ test('picks choice options by label for conditions and static defaults', async (
   await page.getByRole('combobox', { name: 'Static value' }).click();
   await page.getByRole('option', { name: 'Green' }).click();
 
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  // Leaving the element sends its edits at once.
+  await selectRow(page, 'Details');
   await expect
     .poll(async () => {
       const { elements } = await getForm(session, formId);

@@ -1,5 +1,4 @@
 import { inject, Injectable, signal } from '@angular/core';
-import { toSaveableForm } from '@shared/helper';
 import {
   toPortableForm,
   type ChoiceOption,
@@ -139,22 +138,6 @@ export class FormsRepository {
       method: 'POST',
       body: JSON.stringify(form),
     });
-    this.upsert([saved]);
-    writeCache(FORM_CACHE_PREFIX + saved.id, toPortableForm(saved));
-    writeCache(FORMS_CACHE_KEY, this.forms());
-    return saved;
-  }
-
-  async saveForm(form: FormDefinition): Promise<FormWithOwner> {
-    await this.init();
-    const saved = await this.api.request(
-      formWithOwnerSchema,
-      `/api/forms/${encodeURIComponent(form.id)}`,
-      {
-        method: 'PUT',
-        body: JSON.stringify(toSaveableForm(form)),
-      },
-    );
     this.upsert([saved]);
     writeCache(FORM_CACHE_PREFIX + saved.id, toPortableForm(saved));
     writeCache(FORMS_CACHE_KEY, this.forms());

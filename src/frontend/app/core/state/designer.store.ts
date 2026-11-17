@@ -42,7 +42,6 @@ import {
   type UpdateValidationRuleRequest,
 } from '@shared/schemas';
 import { I18nService, type TranslationKey } from '../i18n/translation.service';
-import { ApiError } from './api-error';
 import { FormsRepository } from './forms.repository';
 
 const STORAGE_KEY = 'formmaker.designer.v1';
@@ -179,8 +178,6 @@ export class DesignerStore {
   });
   readonly selectedId = signal<string | null>(null);
   readonly activePageId = signal<string | null>(null);
-  /** Optional reference form (imported) read-only compare. */
-  readonly dirty = signal(false);
   /** Last failed element or option edit, read and cleared by the property panel. */
   readonly patchError = signal<PatchError | null>(null);
 
@@ -240,7 +237,6 @@ export class DesignerStore {
     const form = await this.repository.newForm(this.i18n.t('builder.pageN', { n: 1 }));
     this._form.set(form);
     this.selectedId.set(null);
-    this.dirty.set(false);
     this.patchError.set(null);
     this.unconfirmedMoves = [];
     this.persist();
@@ -250,7 +246,6 @@ export class DesignerStore {
     this._form.set(def);
     this.selectedId.set(null);
     this.activePageId.set(def.pages[0]?.id ?? null);
-    this.dirty.set(false);
     this.patchError.set(null);
     this.unconfirmedMoves = [];
     this.persist();
@@ -460,9 +455,8 @@ export class DesignerStore {
 
   /**
    * Applies a validation rule edit locally right away and sends it to the server. Rule
-   * inputs commit on `change`, so each edit is one request. If the server rejects the
-   * edit (400), it is reverted locally so no later save carries it. If it fails otherwise
-   * while the form is still loaded, the form is marked dirty so the next save carries it.
+   * inputs commit on `change`, so each edit is one request. If it fails while the form is
+   * still loaded, it is reverted locally, so the form shows what the server has.
    */
   async patchValidationRule(
     elementId: ElementId,
@@ -485,12 +479,8 @@ export class DesignerStore {
         this.repository.updateValidationRule(form.id, elementId, ruleId, patch),
       );
     } catch (error) {
-      if (this._form()?.id === formId) {
-        if (error instanceof ApiError && error.status === 400 && previous) {
-          this.revertRuleEdit(elementId, ruleId, patch, previous);
-        } else {
-          this.dirty.set(true);
-        }
+      if (this._form()?.id === formId && previous) {
+        this.revertRuleEdit(elementId, ruleId, patch, previous);
       }
       throw error;
     }
@@ -629,6 +619,16 @@ export class DesignerStore {
     this.activePageId.set(id);
   }
 
+  /** Sends every unsent edit right away and waits until everything queued has settled. */
+  async flush(): Promise<void> {
+    for (const key of [...this.patches.keys()]) void this.sendPatch(key);
+    let tail: Promise<unknown>;
+    do {
+      tail = this.creations;
+      await tail;
+    } while (tail !== this.creations);
+  }
+
   // ---- internals -------------------------------------------------------------
 
   /**
@@ -648,8 +648,6 @@ export class DesignerStore {
       if (this._form()?.id !== formId) throw new Error('designer: form changed during creation');
     };
     const run = this.creations.then(async () => {
-      assertSameForm();
-      await this.saveIfDirty();
       assertSameForm();
       const result = await create(this.form());
       assertSameForm();
@@ -691,10 +689,9 @@ export class DesignerStore {
    * counts positions only once everything queued before has been applied, and returns
    * null when there is nothing to send any more (the element or option is gone).
    *
-   * Until the server confirms it, the move counts as unconfirmed: saves leave it out (see
-   * `saveIfDirty`). If it fails, it is taken back together with every move made after
-   * it, which may build on it and is then dropped unsent, so the local order matches the
-   * server again.
+   * Until the server confirms it, the move counts as unconfirmed. If it fails, it is taken
+   * back together with every move made after it, which may build on it and is then
+   * dropped unsent, so the local order matches the server again.
    */
   private async sendMove(
     move: UnconfirmedMove,
@@ -776,8 +773,7 @@ export class DesignerStore {
   /**
    * Sends the pending edit `key` through the creation queue. Unlike creations it is
    * still sent after another form has been loaded, since it is already applied there.
-   * If it fails while its form is loaded, the form is marked dirty so the next save
-   * carries it.
+   * If it fails while its form is loaded, it is reported (see `patchError`).
    */
   private sendPatch(key: string): Promise<void> {
     const pending = this.patches.get(key);
@@ -791,15 +787,13 @@ export class DesignerStore {
   private enqueuePatch(pending: PendingPatch): Promise<void> {
     const isLoaded = () => this._form()?.id === pending.formId;
     const run = this.creations
-      .then(async () => {
-        if (isLoaded()) await this.saveIfDirty();
-        await pending.send(false);
-      })
-      .catch((error: unknown) => {
-        if (!isLoaded()) return;
-        this.dirty.set(true);
-        this.patchError.set({ error, message: pending.failed });
-      });
+      .then(() => pending.send(false))
+      .then(
+        () => undefined,
+        (error: unknown) => {
+          if (isLoaded()) this.patchError.set({ error, message: pending.failed });
+        },
+      );
     this.creations = run;
     return run;
   }
@@ -901,18 +895,7 @@ export class DesignerStore {
     );
   }
 
-  /** Saves unsaved edits, so the server knows everything a following change refers to. */
-  private async saveIfDirty(): Promise<void> {
-    if (!this.dirty()) return;
-    const snapshot = this.form();
-    // Unconfirmed moves reach the server through their own requests, which may still
-    // fail and take them back, so the save must not store them ahead of that.
-    await this.repository.saveForm(undoMoves(snapshot, this.unconfirmedMoves));
-    // Edits made while the save was in flight are still unsaved.
-    if (this.form() === snapshot) this.dirty.set(false);
-  }
-
-  /** Applies a change the server already persisted, without marking the form dirty. */
+  /** Applies a change that is or will be sent to the server on its own. */
   private applyServerChange(change: (form: FormDefinition) => FormDefinition): void {
     this._form.update((f) => {
       if (!f) throw new Error('Form not set in store before update');

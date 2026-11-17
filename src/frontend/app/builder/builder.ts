@@ -1,4 +1,4 @@
-import { Component, effect, type ElementRef, inject, signal, viewChild } from '@angular/core';
+import { Component, effect, type ElementRef, inject, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -54,8 +54,6 @@ export class BuilderComponent {
 
   private readonly propertiesDialog = viewChild<ElementRef<HTMLDialogElement>>('properties');
 
-  readonly saved = signal(false);
-
   readonly formName = formName;
 
   constructor() {
@@ -101,13 +99,6 @@ export class BuilderComponent {
       this.store.patchError.set(null);
       this.notifier.apiError(failed.error, failed.message);
     });
-
-    effect(() => {
-      // Auto-mark unsaved whenever the form struct changes after initial load.
-      if (this.store._form()) return;
-      this.store.dirty();
-      this.saved.set(false);
-    });
   }
 
   protected onDialogClick(event: MouseEvent): void {
@@ -116,15 +107,11 @@ export class BuilderComponent {
     }
   }
 
-  async save(): Promise<void> {
-    await this.repo.saveForm(this.store.form());
-    this.saved.set(true);
-    this.notifier.ok('builder.saveMsg');
-  }
-
+  /** Opens the runner once every edit has been sent; see `DesignerStore.flush`. */
   async preview(): Promise<void> {
-    await this.save();
-    this.router.navigate(['/runner', this.store.form().id]);
+    const formId = this.store.form().id;
+    await this.store.flush();
+    this.router.navigate(['/runner', formId]);
   }
 
   export(): void {
