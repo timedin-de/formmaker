@@ -148,6 +148,41 @@ describe('RunnerStore dynamic defaults', () => {
     expect(store.answers.get(copy.id)?.value).toBe(copy.options[1].id);
   });
 
+  it('propagates a change through chained defaults', () => {
+    const form = newForm('Chained');
+    const page = createPage('Details');
+    const source = createElement('choice', 'Source') as ChoiceElement;
+    const middle = createElement('dropdown', 'Middle') as ChoiceElement;
+    middle.defaultValue = { kind: 'fromField', fieldId: source.id };
+    const last = createElement('text', 'Last');
+    last.defaultValue = { kind: 'fromField', fieldId: middle.id };
+    const dependent = createElement('text', `Picked {{${last.id}}}`);
+    dependent.enabledWhen = {
+      logic: 'all',
+      conditions: [
+        { fieldId: last.id, operator: 'eq', operand: { kind: 'literal', value: 'Option 2' } },
+      ],
+      groups: [],
+    };
+    addToGroup([source, middle, last, dependent], page, form);
+    form.pages = [page];
+    const store = new RunnerStore();
+    store.init(form);
+    const dependentRef = () => store.currentPage()?.elements.find((r) => r.id === dependent.id);
+
+    store.setAnswer(source.id, source.options[1].id);
+    expect(store.answers.get(middle.id)?.value).toBe(middle.options[1].id);
+    expect(store.answers.get(last.id)?.value).toBe('Option 2');
+    expect(dependentRef()?.label).toBe('Picked Option 2');
+    expect(dependentRef()?.visible).toBe(true);
+
+    store.setAnswer(source.id, source.options[0].id);
+    expect(store.answers.get(last.id)?.value).toBe('Option 1');
+    expect(dependentRef()?.label).toBe('Picked Option 1');
+    expect(dependentRef()?.visible).toBe(false);
+    expect(store.submit()?.submission.values[last.id]).toBe('Option 1');
+  });
+
   it('keeps restored choice answers as option ids', () => {
     const { form, color, echo, copy } = choiceSourceForm();
     const store = new RunnerStore();

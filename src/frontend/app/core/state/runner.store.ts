@@ -228,29 +228,57 @@ export class RunnerStore {
     values: ValuesMap,
     diff: string[] | 'all' = 'all',
   ): void {
-    const evalResult = this.evaluator.compute(values, diff === 'all' ? [] : diff);
+    const changed = this.defaultsInitDone ? this.applyDynamicDefaults(form, values, diff) : [];
+    const settled = changed.length > 0 ? this.rawValues() : values;
+    const evalResult = this.evaluator.compute(
+      settled,
+      diff === 'all' ? [] : [...new Set([...diff, ...changed])],
+    );
 
-    const displayValues = templateValues(values, form.elements);
-
-    // Apply dynamic defaults
-    if (this.defaultsInitDone) {
-      walkElements(form, (el) => {
-        if (!('defaultValue' in el)) return;
-        const dv = el.defaultValue;
-        if (!dv || dv.kind === 'static') return;
-        const control = this.answers.get(el.id);
-        if (!control || control.touched) return;
-        const deps = collectElementRefs(el);
-        if (diff !== 'all' && !deps.some((d) => diff.includes(d))) return;
-        const value = this.evalDefault(el, displayValues);
-        if (!equal(control.getRawValue(), value)) {
-          control.setValue(value, { emitEvent: false });
-        }
-      });
-    }
-
-    this.previousValues = values;
+    this.previousValues = settled;
     this.evaluation.set(evalResult);
+  }
+
+  /**
+   * Re-evaluate untouched dynamic defaults that depend on `diff`. A default
+   * written here can feed other defaults, so passes repeat with the ids that
+   * just changed until nothing changes (bounded, in case of a reference
+   * cycle). Returns the ids of all controls that were updated.
+   */
+  private applyDynamicDefaults(
+    form: FormDefinition,
+    values: ValuesMap,
+    diff: string[] | 'all',
+  ): string[] {
+    const candidates: ElementDefinition[] = [];
+    walkElements(form, (el) => {
+      const dv = 'defaultValue' in el && el.defaultValue;
+      if (dv && dv.kind !== 'static') candidates.push(el);
+    });
+
+    const working = Object.assign(dict<FieldValue>(), values);
+    const changed = new Set<string>();
+    let dirty: string[] | 'all' = diff;
+    for (let pass = 0; pass <= candidates.length && (dirty === 'all' || dirty.length > 0); pass++) {
+      const displayValues = templateValues(working, form.elements);
+      const next: string[] = [];
+      for (const el of candidates) {
+        const control = this.answers.get(el.id);
+        if (!control || control.touched) continue;
+        const dirtyIds = dirty;
+        if (dirtyIds !== 'all' && !collectElementRefs(el).some((d) => dirtyIds.includes(d))) {
+          continue;
+        }
+        const value = this.evalDefault(el, displayValues);
+        if (equal(control.getRawValue(), value)) continue;
+        control.setValue(value, { emitEvent: false });
+        working[el.id] = value;
+        changed.add(el.id);
+        next.push(el.id);
+      }
+      dirty = next;
+    }
+    return [...changed];
   }
 
   // ---- navigation ------------------------------------------------------------
