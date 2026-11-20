@@ -19,12 +19,14 @@ interface ValidationResult {
 /**
  * Validates a field value against the element's rules.
  * `allValues` carries the current form answers so custom expressions and
- * piped messages can reference other questions.
+ * piped messages can reference other questions. With a `locale`, date
+ * limits in messages are shown in that locale's format instead of ISO.
  */
 export function validateElementValue(
   element: QuestionDefinition,
   value: FieldValue,
   allValues: Readonly<Record<string, FieldValue>>,
+  locale?: string,
 ): ValidationResult {
   const failures: ValidationFailure[] = [];
   const rules: ValidationRule[] = [...(element.validations ?? [])];
@@ -49,7 +51,7 @@ export function validateElementValue(
   }
 
   for (const rule of rules) {
-    const failure = checkRule(element, rule, value, allValues);
+    const failure = checkRule(element, rule, value, allValues, locale);
     if (failure !== null) failures.push({ ruleId: rule.id, type: rule.rule, message: failure });
   }
 
@@ -61,6 +63,7 @@ function checkRule(
   rule: ValidationRule,
   value: FieldValue,
   allValues: Readonly<Record<string, FieldValue>>,
+  locale: string | undefined,
 ): string | null {
   // Not required and empty
   if (rule.rule !== 'required' && isEmpty(value)) return null;
@@ -127,12 +130,12 @@ function checkRule(
     case 'dateMin': {
       const day = dayOf(value);
       const limit = dayOf(rule.value);
-      return day && limit && day < limit ? errorMessage(rule, limit) : null;
+      return day && limit && day < limit ? errorMessage(rule, formatDay(limit, locale)) : null;
     }
     case 'dateMax': {
       const day = dayOf(value);
       const limit = dayOf(rule.value);
-      return day && limit && day > limit ? errorMessage(rule, limit) : null;
+      return day && limit && day > limit ? errorMessage(rule, formatDay(limit, locale)) : null;
     }
     case 'minFiles': {
       const files = fileList(value);
@@ -212,6 +215,20 @@ function dayOf(value: unknown): string | null {
   if (typeof value !== 'string') return null;
   const day = /^\d{4}-\d{2}-\d{2}/.exec(value.trim())?.[0];
   return day && !Number.isNaN(Date.parse(day)) ? day : null;
+}
+
+/**
+ * A `YYYY-MM-DD` day in `locale`'s date format. Parsed and shown in UTC, so a day
+ * whose local midnight does not exist (time-zone jumps) is not shifted. Falls back
+ * to ISO for an invalid locale, so a message never fails to build.
+ */
+function formatDay(day: string, locale: string | undefined): string {
+  if (!locale) return day;
+  try {
+    return new Date(day).toLocaleDateString(locale, { timeZone: 'UTC' });
+  } catch {
+    return day;
+  }
 }
 
 function fileList(value: FieldValue): Extract<FieldValue, object[]> | null {
