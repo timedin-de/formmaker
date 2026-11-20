@@ -810,7 +810,7 @@ export class DesignerStore {
     return !this.unsaved();
   }
 
-  /** Sends every unsent edit through the creation queue right away, without waiting. */
+  /** Sends every waiting edit through the creation queue right away, without waiting. */
   sendPending(): void {
     this.sendWaiting();
   }
@@ -818,8 +818,7 @@ export class DesignerStore {
   /** Sends the edits that failed (see `unsaved`) again. */
   async retryFailed(): Promise<void> {
     const failed = [...this.edits.values()].filter((edit) => edit.failed);
-    for (const edit of failed) edit.failed = false;
-    this.updateUnsaved();
+    for (const edit of failed) this.setFailed(edit, false);
     await Promise.all(failed.map((edit) => this.sendEdit(edit.key)));
   }
 
@@ -1004,10 +1003,7 @@ export class DesignerStore {
       this.edits.set(key, edit);
     }
     for (const field of fields) edit.fields.add(field);
-    if (edit.failed) {
-      edit.failed = false;
-      this.updateUnsaved();
-    }
+    this.setFailed(edit, false);
     clearTimeout(edit.timer);
     edit.timer = setTimeout(() => void this.sendEdit(key), PATCH_DELAY_MS);
   }
@@ -1052,10 +1048,7 @@ export class DesignerStore {
     const fields = [...edit.fields];
     const request = this.requestOf(edit, fields);
     edit.fields.clear();
-    if (edit.failed) {
-      edit.failed = false;
-      this.updateUnsaved();
-    }
+    this.setFailed(edit, false);
     if (request) {
       try {
         // Read again for each attempt, so a retry doesn't overwrite a newer value sent
@@ -1072,8 +1065,7 @@ export class DesignerStore {
         if (isLoaded) this.patchError.set({ error, message: edit.message });
         if (edit.timer || edit.queued > 0) return false;
         if (isLoaded) {
-          edit.failed = true;
-          this.updateUnsaved();
+          this.setFailed(edit, true);
         } else {
           this.edits.delete(edit.key);
         }
@@ -1125,6 +1117,13 @@ export class DesignerStore {
       // Everything sent arrived or failed: a later send needs no warning until closing again.
       if (this.sendingCount() === 0) this.closeInterrupted.set(false);
     }
+  }
+
+  /** Marks `edit` as failed or not; see `unsaved`. */
+  private setFailed(edit: FieldEdits, failed: boolean): void {
+    if (edit.failed === failed) return;
+    edit.failed = failed;
+    this.updateUnsaved();
   }
 
   private updateUnsaved(): void {
