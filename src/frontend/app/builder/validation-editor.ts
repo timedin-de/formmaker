@@ -17,7 +17,6 @@ import {
 import { type UpdateValidationRuleRequest } from '@shared/schemas';
 import { DesignerStore } from '../core';
 import { I18nService } from '../core/i18n';
-import { Notifier } from '../core/notifier';
 import { PendingActions } from '../core/pending-actions';
 
 @Component({
@@ -38,7 +37,6 @@ import { PendingActions } from '../core/pending-actions';
 export class ValidationEditor extends PendingActions {
   protected readonly i18n = inject(I18nService);
   private readonly store = inject(DesignerStore);
-  private readonly notifier = inject(Notifier);
 
   readonly validations = input.required<ValidationRule[]>();
   readonly element = input.required<ElementDefinition>();
@@ -75,13 +73,9 @@ export class ValidationEditor extends PendingActions {
     );
   }
 
-  /** Applies the edit locally and sends it to the server. */
-  async patchRule(id: string, patch: UpdateValidationRuleRequest): Promise<void> {
-    try {
-      await this.store.patchValidationRule(this.element().id, id, patch);
-    } catch (error) {
-      this.notifier.apiError(error, 'panel.patchRuleFailed');
-    }
+  /** Applies the edit locally and sends it to the server; the builder reports a failure. */
+  patchRule(id: string, patch: UpdateValidationRuleRequest): void {
+    this.store.patchValidationRule(this.element().id, id, patch);
   }
 
   ruleLabel(rule: ValidationRuleType): string {

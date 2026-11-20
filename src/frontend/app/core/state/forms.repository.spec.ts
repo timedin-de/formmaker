@@ -3,6 +3,7 @@ import type { FormWithOwner } from '@shared/model/form.model';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FORM_CACHE_PREFIX, FORMS_CACHE_KEY, writeCache } from './api-cache';
 import { ApiClient } from './api-client';
+import { ApiError } from './api-error';
 import { FormsRepository } from './forms.repository';
 
 function form(id: string, name: string, updatedAt: string): FormWithOwner {
@@ -88,5 +89,34 @@ describe('FormsRepository updateForm', () => {
 
     expect(localStorage.getItem(key)).toBeNull();
     expect(localStorage.getItem(FORMS_CACHE_KEY)).toBeNull();
+  });
+});
+
+describe('FormsRepository deletes in a form', () => {
+  const request = vi.fn();
+  const key = FORM_CACHE_PREFIX + 'f1';
+  let repo: FormsRepository;
+
+  beforeEach(() => {
+    localStorage.clear();
+    request.mockReset();
+    TestBed.configureTestingModule({ providers: [{ provide: ApiClient, useValue: { request } }] });
+    repo = TestBed.inject(FormsRepository);
+  });
+
+  it.each([
+    ['page', () => repo.deletePage('f1', 'p1')],
+    ['element', () => repo.deleteElement('f1', 'e1')],
+    ['option', () => repo.deleteOption('f1', 'e1', 'o1')],
+    ['validation rule', () => repo.deleteValidationRule('f1', 'e1', 'r1')],
+  ])('drops the cached form also when deleting a %s fails', async (_, remove) => {
+    // E.g. deleted before while the answer got lost.
+    const notFound = new ApiError('not found', 404);
+    request.mockRejectedValue(notFound);
+    writeCache(key, { id: 'f1' });
+
+    await expect(remove()).rejects.toBe(notFound);
+
+    expect(localStorage.getItem(key)).toBeNull();
   });
 });
