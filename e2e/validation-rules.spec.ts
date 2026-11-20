@@ -106,14 +106,11 @@ test('creates, edits and removes validation rules on the server', async ({ page,
     .toEqual(['minLength']);
   await expect(banner).toBeHidden();
 
-  // Reloading renders the builder only once the form is loaded: without a stored form
-  // or a cached answer, and while the server holds the form back. Removed as the page
-  // starts, since a pending store write could put the form back before.
+  // Reloading renders the builder only once the form is loaded: without a cached answer,
+  // and while the server holds the form back.
   await page.addInitScript(() => {
     for (const key of Object.keys(localStorage)) {
-      if (key === 'formmaker.designer.v1' || key.startsWith('formmaker.cache.form.')) {
-        localStorage.removeItem(key);
-      }
+      if (key.startsWith('formmaker.cache.form.')) localStorage.removeItem(key);
     }
   });
   let release!: () => void;
