@@ -40,7 +40,7 @@ import {
   type UpdateOptionRequest,
   type UpdateValidationRuleRequest,
 } from '@shared/schemas';
-import * as z from 'zod/mini';
+import { $ZodError } from 'zod/v4/core';
 import { I18nService, type TranslationKey } from '../i18n/translation.service';
 import { ApiError } from './api-error';
 import { FormsRepository } from './forms.repository';
@@ -65,7 +65,7 @@ export const RETRY_DELAYS_MS = [1000, 5000, 15000];
  * a further one would do just the same.
  */
 function isTransient(error: unknown): boolean {
-  if (error instanceof z.core.$ZodError) return false;
+  if (error instanceof $ZodError) return false;
   if (!(error instanceof ApiError)) return true;
   return error.status >= 500 || error.status === 408 || error.status === 429;
 }
