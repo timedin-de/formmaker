@@ -47,6 +47,9 @@ import {
 } from './api-cache';
 import { ApiClient } from './api-client';
 
+/** How long importing a form may take; see `importForm`. */
+const IMPORT_TIMEOUT_MS = 5 * 60_000;
+
 /** `/api/forms/:formId/elements`, or the element `elementId` below it. */
 function elementUrl(formId: string, elementId?: string): string {
   const base = `/api/forms/${encodeURIComponent(formId)}/elements`;
@@ -137,6 +140,8 @@ export class FormsRepository {
     const saved = await this.api.request(formWithOwnerSchema, '/api/forms/import', {
       method: 'POST',
       body: JSON.stringify(form),
+      // A form with large images may take longer to upload than `REQUEST_TIMEOUT_MS`.
+      signal: AbortSignal.timeout(IMPORT_TIMEOUT_MS),
     });
     this.upsert([saved]);
     writeCache(FORM_CACHE_PREFIX + saved.id, toPortableForm(saved));
