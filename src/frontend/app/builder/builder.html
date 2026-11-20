@@ -1,7 +1,7 @@
 <div class="main">
   <h1 class="visually-hidden">{{ i18n.t('builder.title') }}</h1>
   <!-- Nothing to show until the form from ?id= (or a new one) is loaded. -->
-  @if (store._form()) {
+  @if (store._form() && !loading()) {
     <mat-toolbar color="surface" class="sub">
       <div class="title-group">
         <mat-form-field appearance="outline" class="title-field" subscriptSizing="dynamic">
