@@ -85,3 +85,18 @@ test('builds a form in the designer, fills it out in the runner and exports resu
 
   await deleteForm(await loginApi(request), formId);
 });
+
+test('goes back from a new form to the list without creating another one', async ({
+  page,
+  request,
+}) => {
+  await login(page);
+  await page.getByRole('button', { name: 'New form' }).first().click();
+  await page.waitForURL(/\/builder\?id=[^&]+&page=/);
+  const formId = new URL(page.url()).searchParams.get('id') ?? '';
+
+  await page.goBack();
+
+  await page.waitForURL((url) => url.pathname === '/');
+  await deleteForm(await loginApi(request), formId);
+});
