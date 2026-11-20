@@ -1,5 +1,5 @@
 import { computed, DestroyRef, inject, Injectable, signal } from '@angular/core';
-import { catchFn, isChoice, isQuestion } from '@shared/helper';
+import { isChoice, isQuestion } from '@shared/helper';
 import {
   addPage,
   type ElementPatch,
@@ -37,7 +37,6 @@ import type { ElementId, PageId } from '@shared/model/ids';
 import type { ValidationRule } from '@shared/model/validation.model';
 import {
   type CreateValidationRuleRequest,
-  parseFormData,
   type UpdateOptionRequest,
   type UpdateValidationRuleRequest,
 } from '@shared/schemas';
@@ -46,7 +45,6 @@ import { I18nService, type TranslationKey } from '../i18n/translation.service';
 import { ApiError } from './api-error';
 import { FormsRepository } from './forms.repository';
 
-const STORAGE_KEY = 'formmaker.designer.v1';
 /**
  * How long an edit waits for further edits of the same element or page before it is
  * sent, so e.g. changing the label and description and ticking "required" is one
@@ -295,7 +293,6 @@ export class DesignerStore {
     return this.form().pages.find((p) => p.id === pg) ?? this.form().pages[0] ?? null;
   });
 
-  private persistTimer: ReturnType<typeof setTimeout> | null = null;
   /** Tail of the server-side creation queue; see `createOnServer`. */
   private creations: Promise<unknown> = Promise.resolve();
   /** Changed fields the server doesn't have yet, by `elementKey`, `optionKey`, …; see `queueEdit`. */
@@ -307,7 +304,6 @@ export class DesignerStore {
   private unconfirmedMoves: UnconfirmedMove[] = [];
 
   constructor() {
-    this.hydrate();
     // Edits wait a moment before they are sent; don't lose them when the tab closes.
     const flush = () => this.flushPatches();
     const warn = (event: BeforeUnloadEvent) => this.warnOnClose(event);
@@ -334,21 +330,17 @@ export class DesignerStore {
 
   /**
    * Asks the browser to confirm closing the page (see `interruptLeave`), also while edits
-   * wait and the browser is offline: sending them on `pagehide` can't arrive then, and
-   * nothing keeps them for the next visit.
+   * wait: they are sent on `pagehide`, but whether that arrives is never known, and
+   * nothing keeps them for the next visit (`navigator.onLine` doesn't tell whether the
+   * server is reachable).
    */
   private warnOnClose(event: BeforeUnloadEvent): void {
     const waiting = [...this.edits.values()].some((edit) => edit.timer);
-    if (this.interruptLeave() || (waiting && !navigator.onLine)) event.preventDefault();
-  }
-
-  /** Restores the form stored by `persist`; warns only if one is stored but invalid. */
-  private hydrate(): void {
-    const { data: raw } = catchFn(() => localStorage.getItem(STORAGE_KEY));
-    if (!raw) return;
-    const { data: parsed, error } = parseFormData(raw);
-    if (parsed) this._form.set(parsed);
-    else console.warn('designer: stored form failed validation', error);
+    if (this.interruptLeave() || waiting) {
+      event.preventDefault();
+      // Safari and older browsers ask only once a return value is set.
+      event.returnValue = true;
+    }
   }
 
   /** The direct children of a page or group of the current form. */
@@ -396,7 +388,6 @@ export class DesignerStore {
     this.patchError.set(null);
     this.updateUnsaved();
     this.unconfirmedMoves = [];
-    this.persist();
   }
 
   rename(name: string): void {
@@ -1237,13 +1228,5 @@ export class DesignerStore {
       if (!f) throw new Error('Form not set in store before update');
       return change(f);
     });
-    this.persist();
-  }
-
-  private persist(): void {
-    if (this.persistTimer) clearTimeout(this.persistTimer);
-    this.persistTimer = setTimeout(() => {
-      catchFn(() => localStorage.setItem(STORAGE_KEY, JSON.stringify(this.form())));
-    }, 150);
   }
 }

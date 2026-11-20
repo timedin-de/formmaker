@@ -41,39 +41,13 @@ function failTimes(
   for (let i = 0; i < times; i++) mock.mockRejectedValueOnce(error);
 }
 
-describe('DesignerStore stored form', () => {
-  const create = () => {
+describe('DesignerStore without a loaded form', () => {
+  it('has no form until one is loaded', () => {
     TestBed.configureTestingModule({
       providers: [DesignerStore, { provide: FormsRepository, useValue: {} }],
     });
-    return TestBed.inject(DesignerStore);
-  };
 
-  beforeEach(() => localStorage.clear());
-  afterEach(() => vi.restoreAllMocks());
-
-  it('restores the stored form without warning', () => {
-    const form = newForm('Stored');
-    localStorage.setItem('formmaker.designer.v1', JSON.stringify(form));
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-
-    expect(create().form().name).toBe('Stored');
-    expect(warn).not.toHaveBeenCalled();
-  });
-
-  it('does not warn when no form is stored', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-
-    expect(create()._form()).toBeUndefined();
-    expect(warn).not.toHaveBeenCalled();
-  });
-
-  it('warns with the reason when the stored form is invalid', () => {
-    localStorage.setItem('formmaker.designer.v1', '{"pages": "none"}');
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-
-    expect(create()._form()).toBeUndefined();
-    expect(warn).toHaveBeenCalledWith('designer: stored form failed validation', expect.any(Error));
+    expect(TestBed.inject(DesignerStore)._form()).toBeUndefined();
   });
 });
 
@@ -86,7 +60,6 @@ describe('DesignerStore moveElementTo', () => {
   };
 
   beforeEach(() => {
-    localStorage.clear();
     vi.clearAllMocks();
     TestBed.configureTestingModule({
       providers: [DesignerStore, { provide: FormsRepository, useValue: repo }],
@@ -418,7 +391,6 @@ describe('DesignerStore server-side creation', () => {
   };
 
   beforeEach(() => {
-    localStorage.clear();
     calls.length = 0;
     vi.clearAllMocks();
     TestBed.configureTestingModule({
@@ -1809,27 +1781,20 @@ describe('DesignerStore server-side creation', () => {
     /** Dispatches `beforeunload`; returns whether closing was interrupted. */
     const close = () => !window.dispatchEvent(new Event('beforeunload', { cancelable: true }));
 
-    it('lets the page close while no edit is being sent or failed', async () => {
-      const choice = loadedChoice();
-      expect(close()).toBe(false);
-
-      // Waiting edits are sent on close (see `pagehide`).
-      store.updateElement(choice.id, { label: 'Waiting' });
+    it('lets the page close while no edit waits, is being sent or failed', () => {
+      loadedChoice();
       expect(close()).toBe(false);
       expect(store.unsaved()).toBe(false);
     });
 
-    it('interrupts closing while edits wait and the browser is offline', () => {
+    it('interrupts closing while edits wait, as sending them on close may not arrive', async () => {
       const choice = loadedChoice();
-      const online = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
-      try {
-        expect(close()).toBe(false);
+      store.updateElement(choice.id, { label: 'Waiting' });
+      expect(close()).toBe(true);
+      expect(store.unsaved()).toBe(false);
 
-        store.updateElement(choice.id, { label: 'Waiting' });
-        expect(close()).toBe(true);
-      } finally {
-        online.mockRestore();
-      }
+      await vi.advanceTimersByTimeAsync(PATCH_DELAY_MS);
+      expect(close()).toBe(false);
     });
 
     it('interrupts closing while an edit failed', async () => {
