@@ -136,9 +136,12 @@ export class BuilderComponent {
           this.store.load(form);
           this.loading.set(false);
           if (!q.id) {
+            // Replaced, so going back doesn't open the URL without `?id=` again, which would
+            // create another form.
             this.router.navigate([], {
               relativeTo: this.route,
               queryParams: { id: form.id, page: this.store.activePageId() },
+              replaceUrl: true,
             });
             return;
           }
@@ -156,6 +159,8 @@ export class BuilderComponent {
             relativeTo: this.route,
             queryParams: { page: this.store.activePageId() },
             queryParamsHandling: 'merge',
+            // Only completes the URL: going back past it would just complete it again.
+            replaceUrl: true,
           });
         }
       });
