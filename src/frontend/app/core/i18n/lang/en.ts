@@ -153,6 +153,7 @@ const en = {
   'builder.export': 'Export',
   'builder.preview': 'Preview',
   'builder.editing': 'Editing "{name}"',
+  'builder.loadFailed': 'The form could not be opened.',
   'builder.unsaved':
     'Some changes are not saved. Try again, or download a backup you can import later.',
   'builder.retry': 'Try again',

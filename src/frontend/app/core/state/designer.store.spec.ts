@@ -1745,6 +1745,26 @@ describe('DesignerStore server-side creation', () => {
       expect(sentLabels()).toEqual(['Closing', 'Newer']);
     });
 
+    it('waits until the edits of a form being sent have arrived', async () => {
+      const choice = loadedChoice();
+      let arrive!: () => void;
+      repo.updateElement.mockImplementationOnce(
+        () => new Promise<TextElement>((resolve) => (arrive = () => resolve(text('Sent')))),
+      );
+      store.updateElement(choice.id, { label: 'Sent' });
+      store.sendEditsOf(choice.id);
+      let done = false;
+      void store.sent(store.form().id).then(() => (done = true));
+
+      await vi.advanceTimersByTimeAsync(0);
+      expect(done).toBe(false);
+      await expect(store.sent('other-form')).resolves.toBeUndefined();
+
+      arrive();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(done).toBe(true);
+    });
+
     it('forgets failed edits once another form is loaded', async () => {
       const choice = loadedChoice();
       repo.updateElement.mockRejectedValueOnce(new ApiError('invalid', 400));

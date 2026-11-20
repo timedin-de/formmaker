@@ -158,6 +158,7 @@ const de: typeof en = {
   'builder.export': 'Exportieren',
   'builder.preview': 'Vorschau',
   'builder.editing': 'Bearbeite "{name}"',
+  'builder.loadFailed': 'Das Formular konnte nicht geöffnet werden.',
   'builder.unsaved':
     'Einige Änderungen sind nicht gespeichert. Versuche es erneut oder lade eine Sicherung herunter, die du später importieren kannst.',
   'builder.retry': 'Erneut versuchen',

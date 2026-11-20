@@ -350,10 +350,6 @@ export class DesignerStore {
 
   // ---- actions ---------------------------------------------------------------
 
-  async createEmpty(): Promise<void> {
-    this.replaceForm(await this.repository.newForm(this.i18n.t('builder.pageN', { n: 1 })));
-  }
-
   load(def: FormDefinition): void {
     this.replaceForm(def);
     this.activePageId.set(def.pages[0]?.id ?? null);
@@ -813,6 +809,19 @@ export class DesignerStore {
   /** Sends every waiting edit through the creation queue right away, without waiting. */
   sendPending(): void {
     this.sendWaiting();
+  }
+
+  /**
+   * Waits until no edit of the form `formId` is queued or in flight any more, so the
+   * server has them before the form is fetched again: once one arrived, `replaceForm`
+   * no longer applies it to a fresh copy, which may have been read before it arrived.
+   */
+  async sent(formId: string): Promise<void> {
+    const busy = () =>
+      [...this.edits.values()].some(
+        (edit) => edit.formId === formId && (edit.queued > 0 || edit.sending.size > 0),
+      );
+    while (busy()) await this.creations;
   }
 
   /** Sends the edits that failed (see `unsaved`) again. */

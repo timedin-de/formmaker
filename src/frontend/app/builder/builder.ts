@@ -21,7 +21,7 @@ import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { ActivatedRoute, NavigationCancel, NavigationError, Router } from '@angular/router';
 import { formName } from '@shared/helper';
-import { toPortableForm } from '@shared/model/form.model';
+import { type FormDefinition, toPortableForm } from '@shared/model/form.model';
 import { pairwise, startWith } from 'rxjs';
 import { downloadJSON } from '../core/export/file';
 import { I18nService } from '../core/i18n';
@@ -71,8 +71,13 @@ export class BuilderComponent {
   } | null>(null);
   protected readonly leaving = computed(() => this.leaveAnswer() !== null);
   private destroyed = false;
-  /** Counts the forms asked to load from `?id=`; Preview opens only the latest. */
+  /** Counts the forms asked for by `?id=` or `?new=1`; only the latest is loaded or previewed. */
   private loadRequests = 0;
+  /**
+   * Another form than the loaded one was asked for and is still loading. The loaded one
+   * is hidden meanwhile, so it isn't edited or previewed under the other one's URL.
+   */
+  protected readonly loading = signal(false);
 
   readonly formName = formName;
 
@@ -99,26 +104,54 @@ export class BuilderComponent {
     this.route.queryParams
       .pipe(startWith({ id: undefined, page: undefined }), pairwise(), takeUntilDestroyed())
       .subscribe(async ([oldParams, q]) => {
-        if (!q.id || oldParams.id !== q.id) {
-          this.loadRequests++;
-          const loaded = q['id'] ? await this.repo.getForm(q['id']!) : null;
-          if (loaded) {
-            const name = formName(loaded, this.i18n);
-            this.store.load(loaded);
-            this.notifier.ok('builder.editing', { name });
-          } else {
-            await this.store.createEmpty();
+        const opened = !q.id || oldParams.id !== q.id;
+        if (opened && q.id && q.id === this.store._form()?.id) {
+          // Back to the form still shown while another one loads (or the new form got its
+          // `?id=`): it is kept as it is, since a fresh copy could be older than its edits.
+          ++this.loadRequests;
+          this.loading.set(false);
+        } else if (opened) {
+          const request = ++this.loadRequests;
+          // Not once the builder was left or a newer `?id=` asked for another form, which
+          // may have arrived first.
+          const wanted = () => !this.destroyed && this.loadRequests === request;
+          this.loading.set(true);
+          let form: FormDefinition | undefined;
+          try {
+            if (q.id) {
+              // Edits of it still being sent (e.g. when coming back to it) arrive first.
+              await this.store.sent(q.id);
+              form = await this.repo.getForm(q.id);
+            } else {
+              form = await this.repo.newForm(this.i18n.t('builder.pageN', { n: 1 }));
+            }
+          } catch (error) {
+            if (!wanted()) return;
+            this.loading.set(false);
+            this.notifier.apiError(error, 'builder.loadFailed');
+            this.router.navigate(['/']);
+            return;
+          }
+          if (!wanted() || !form) return;
+          this.store.load(form);
+          this.loading.set(false);
+          if (!q.id) {
             this.router.navigate([], {
               relativeTo: this.route,
-              queryParams: { id: this.store.form().id, page: this.store.activePageId() },
+              queryParams: { id: form.id, page: this.store.activePageId() },
             });
             return;
           }
+          this.notifier.ok('builder.editing', { name: formName(form, this.i18n) });
         }
-        if (oldParams.page !== q.page) {
-          this.store.selectPage(q.page);
+        // A page asked for while a form loads is selected once it is loaded, from the URL
+        // as it is by then.
+        if (this.loading()) return;
+        const page: string | undefined = opened ? this.route.snapshot.queryParams['page'] : q.page;
+        if (page && (opened || oldParams.page !== q.page)) {
+          this.store.selectPage(page);
         }
-        if (!q.page || oldParams.id !== q.id || oldParams.page !== q.page) {
+        if (!page || opened || oldParams.page !== q.page) {
           this.router.navigate([], {
             relativeTo: this.route,
             queryParams: { page: this.store.activePageId() },
@@ -148,10 +181,11 @@ export class BuilderComponent {
    * still loading).
    */
   async preview(): Promise<void> {
+    if (this.loading()) return;
     const formId = this.store.form().id;
     const request = this.loadRequests;
     const saved = await this.store.flush();
-    if (!saved || this.destroyed || this.loadRequests !== request) return;
+    if (!saved || this.destroyed || this.loadRequests !== request || this.loading()) return;
     this.router.navigate(['/runner', formId]);
   }
 
