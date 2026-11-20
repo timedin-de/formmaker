@@ -69,6 +69,8 @@ export class Runner extends PendingActions {
 
   constructor() {
     super();
+    // The language code, not `common.locale`: it is a valid tag even if translations failed to load.
+    this.store.locale = () => this.i18n.lang();
     this.route.queryParams.pipe(first()).subscribe((q) => {
       if (q['page']) {
         this.store.goTo(q['page']);

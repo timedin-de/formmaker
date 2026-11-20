@@ -1,6 +1,6 @@
 import { type ValidationRule } from '@shared/model';
 import type { QuestionDefinition } from '@shared/model/form.model';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { validateElementValue } from './validators';
 
 const message = 'a';
@@ -142,10 +142,33 @@ describe('validateElementValue', () => {
     expect(ok(min, '2026-01-10')).toBe(true);
     expect(ok(min, 'garbage')).toBe(true);
     expect(validateElementValue(min, '2026-01-01', {}).failures[0].message).toContain('2026-01-10');
+    expect(validateElementValue(min, '2026-01-01', {}, 'de-DE').failures[0].message).toBe(
+      '10.1.2026',
+    );
+    expect(validateElementValue(min, '2026-01-01', {}, 'en-US').failures[0].message).toBe(
+      '1/10/2026',
+    );
+    // An invalid locale (e.g. an untranslated key) falls back to ISO instead of throwing.
+    expect(validateElementValue(min, '2026-01-01', {}, 'common.locale').failures[0].message).toBe(
+      '2026-01-10',
+    );
 
     const max = withRule({ rule: 'dateMax', value: '2026-01-10' });
     expect(ok(max, '2026-01-11')).toBe(false);
     expect(ok(max, '2026-01-10')).toBe(true);
+  });
+
+  describe('in a time zone that skipped a day', () => {
+    afterEach(() => vi.unstubAllEnvs());
+
+    it('shows the bound day itself', () => {
+      // Samoa skipped 2011-12-30, so its local midnight does not exist.
+      vi.stubEnv('TZ', 'Pacific/Apia');
+      const max = withRule({ rule: 'dateMax', value: '2011-12-30', message: '{detail}' });
+      expect(validateElementValue(max, '2012-01-01', {}, 'de-DE').failures[0].message).toBe(
+        '30.12.2011',
+      );
+    });
   });
 
   it('dateMin and dateMax include the whole bound day for dateTime values', () => {

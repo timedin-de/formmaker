@@ -56,6 +56,9 @@ export class RunnerStore {
   /** Combined raw values of all controls (including hidden). */
   readonly values = computed<ValuesMap>(() => this.rawValues());
 
+  /** Locale for values shown in validation messages, such as date limits; ISO if unset. */
+  locale: () => string | undefined = () => undefined;
+
   private evaluator: FormEvaluator;
   private readonly draft = new RunnerDraft();
   private previousValues: ValuesMap = dict<FieldValue>();
@@ -194,7 +197,7 @@ export class RunnerStore {
   }
 
   private validateControl(el: QuestionDefinition, value: FieldValue) {
-    const result = validateElementValue(el, value, this.rawValues());
+    const result = validateElementValue(el, value, this.rawValues(), this.locale());
     if (result.valid) return null;
     return { message: result.failures[0]?.message ?? 'Invalid value' };
   }
