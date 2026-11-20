@@ -7,6 +7,12 @@ import { ApiError } from './api-error';
 
 const TOKEN_KEY = 'formmaker.token';
 const LOGOUT_PATH = '/api/auth/logout';
+/**
+ * How long a request may take before it is aborted (unless `init.signal` says otherwise),
+ * so one that never gets an answer doesn't hold up what waits for it, e.g. the designer's
+ * edits. The abort counts as a passing failure there, so the edit is sent again.
+ */
+export const REQUEST_TIMEOUT_MS = 30_000;
 
 @Injectable({ providedIn: 'root' })
 export class ApiClient {
@@ -25,6 +31,7 @@ export class ApiClient {
     const sentToken = sessionStorage.getItem(TOKEN_KEY);
     const res = await fetch(path, {
       ...init,
+      signal: init?.signal ?? AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       headers: {
         ...(init?.body ? { 'Content-Type': 'application/json' } : undefined),
         ...(sentToken ? { Authorization: `Bearer ${sentToken}` } : undefined),

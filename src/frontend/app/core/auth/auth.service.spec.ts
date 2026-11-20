@@ -156,6 +156,7 @@ describe('AuthService', () => {
     expect(fetchMock).toHaveBeenCalledWith('/api/auth/logout', {
       method: 'POST',
       headers: { Authorization: 'Bearer abc123' },
+      signal: expect.any(AbortSignal),
     });
     expect(auth.authenticated()).toBe(false);
     expect(auth.user()).toBeNull();

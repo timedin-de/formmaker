@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthService } from '../auth/auth.service';
 import { SNACK_TIME_ERROR } from '../consts';
 import { I18nService } from '../i18n/translation.service';
-import { ApiClient } from './api-client';
+import { ApiClient, REQUEST_TIMEOUT_MS } from './api-client';
 import { ApiError, apiErrorMessage } from './api-error';
 
 function jsonResponse(body: unknown, status = 200, ok = true): Response {
@@ -72,6 +72,18 @@ describe('api-client request', () => {
 
     const headers = fetchMock.mock.calls[0][1]?.headers;
     expect(headers).toEqual({ 'Content-Type': 'application/json' });
+  });
+
+  it('aborts a request without an answer after a while, unless the caller passes a signal', async () => {
+    const timeout = vi.spyOn(AbortSignal, 'timeout');
+    await request(undefined, '/x');
+    expect(timeout).toHaveBeenCalledWith(REQUEST_TIMEOUT_MS);
+    expect(fetchMock.mock.calls[0][1]?.signal).toBe(timeout.mock.results[0].value);
+
+    const own = new AbortController().signal;
+    await request(undefined, '/x', { signal: own });
+    expect(fetchMock.mock.calls[1][1]?.signal).toBe(own);
+    timeout.mockRestore();
   });
 
   it('resolves undefined on a 204 response', async () => {
