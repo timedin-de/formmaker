@@ -342,17 +342,13 @@ export class DesignerStore {
     if (this.interruptLeave() || (waiting && !navigator.onLine)) event.preventDefault();
   }
 
+  /** Restores the form stored by `persist`; warns only if one is stored but invalid. */
   private hydrate(): void {
-    const { data: parsed, error } = catchFn(() => {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      return raw ? parseFormData(raw).data : null;
-    });
-    if (parsed && Array.isArray(parsed.pages)) {
-      this._form.set(parsed);
-      this.persist();
-    } else {
-      console.warn('designer: stored form failed validation', error);
-    }
+    const { data: raw } = catchFn(() => localStorage.getItem(STORAGE_KEY));
+    if (!raw) return;
+    const { data: parsed, error } = parseFormData(raw);
+    if (parsed) this._form.set(parsed);
+    else console.warn('designer: stored form failed validation', error);
   }
 
   /** The direct children of a page or group of the current form. */

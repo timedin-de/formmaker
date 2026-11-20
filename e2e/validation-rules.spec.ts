@@ -50,6 +50,20 @@ test('creates, edits and removes validation rules on the server', async ({ page,
     ),
   );
 
+  // The messages of errors logged to the console, read from the error objects: Firefox
+  // logs `ERROR Error` without the message. Only the one checked below matters: other
+  // browsers also log icon requests cut off by navigating.
+  const logged: Promise<string>[] = [];
+  page.on('console', (msg) => {
+    if (msg.type() !== 'error') return;
+    const texts = msg
+      .args()
+      .map((arg) =>
+        arg.evaluate((v) => (v instanceof Error ? v.message : String(v))).catch(() => ''),
+      );
+    logged.push(Promise.all(texts).then((parts) => [msg.text(), ...parts].join(' ')));
+  });
+
   await login(page);
   await page.goto(`/builder?id=${formId}`);
   await selectRow(page, 'Name');
@@ -91,10 +105,36 @@ test('creates, edits and removes validation rules on the server', async ({ page,
     .poll(async () => (await storedRules(session, formId, nameId)).map((r) => r.rule))
     .toEqual(['minLength']);
   await expect(banner).toBeHidden();
+
+  // Reloading renders the builder only once the form is loaded: without a stored form
+  // or a cached answer, and while the server holds the form back. Removed as the page
+  // starts, since a pending store write could put the form back before.
+  await page.addInitScript(() => {
+    for (const key of Object.keys(localStorage)) {
+      if (key === 'formmaker.designer.v1' || key.startsWith('formmaker.cache.form.')) {
+        localStorage.removeItem(key);
+      }
+    }
+  });
+  let release!: () => void;
+  const held = new Promise<void>((resolve) => (release = resolve));
+  await page.route(`**/api/forms/${formId}`, async (route) => {
+    if (route.request().method() === 'GET') await held;
+    await route.fallback();
+  });
+  const loading = page.waitForRequest(
+    (req) => req.method() === 'GET' && req.url().endsWith(`/api/forms/${formId}`),
+  );
   await page.reload();
+  await loading;
+  await expect(page.locator('fm-builder h1')).toBeAttached();
+  await expect(page.getByRole('button', { name: 'Preview' })).toHaveCount(0);
+  release();
+
   await selectRow(page, 'Name');
   await expect(ruleCard(page, 'Min length')).toBeVisible();
   await expect(ruleCard(page, 'Regex pattern')).toHaveCount(0);
-
+  const errors = await Promise.all(logged);
+  expect(errors.filter((text) => text.includes('Form not set'))).toEqual([]);
   await deleteForm(session, formId);
 });

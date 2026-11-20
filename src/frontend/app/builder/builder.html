@@ -1,49 +1,52 @@
 <div class="main">
   <h1 class="visually-hidden">{{ i18n.t('builder.title') }}</h1>
-  <mat-toolbar color="surface" class="sub">
-    <div class="title-group">
-      <mat-form-field appearance="outline" class="title-field" subscriptSizing="dynamic">
-        <input
-          matInput
-          [ngModel]="formName(store.form(), i18n)"
-          (ngModelChange)="store.rename($event)"
-          [placeholder]="i18n.t('builder.formName')"
-          [attr.aria-label]="i18n.t('builder.formName')"
-        />
-      </mat-form-field>
-      <span class="muted">{{ i18n.t('builder.pages', { n: store.form().pages.length }) }}</span>
-    </div>
-    <div class="actions">
-      <button mat-button (click)="export()">
-        <mat-icon svgIcon="download"></mat-icon>
-        <span class="btn-label">{{ i18n.t('builder.export') }}</span>
-      </button>
-      <button mat-flat-button color="primary" (click)="preview()">
-        <mat-icon svgIcon="play_arrow"></mat-icon>
-        <span class="btn-label">{{ i18n.t('builder.preview') }}</span>
-      </button>
-    </div>
-  </mat-toolbar>
-  @if (store.unsaved()) {
-    <div class="unsaved" role="alert">
-      <span class="unsaved-text">{{ i18n.t('builder.unsaved') }}</span>
-      <div class="unsaved-actions">
-        <button mat-button (click)="store.retryFailed()">
-          <mat-icon svgIcon="refresh"></mat-icon>
-          {{ i18n.t('builder.retry') }}
-        </button>
+  <!-- Nothing to show until the form from ?id= (or a new one) is loaded. -->
+  @if (store._form()) {
+    <mat-toolbar color="surface" class="sub">
+      <div class="title-group">
+        <mat-form-field appearance="outline" class="title-field" subscriptSizing="dynamic">
+          <input
+            matInput
+            [ngModel]="formName(store.form(), i18n)"
+            (ngModelChange)="store.rename($event)"
+            [placeholder]="i18n.t('builder.formName')"
+            [attr.aria-label]="i18n.t('builder.formName')"
+          />
+        </mat-form-field>
+        <span class="muted">{{ i18n.t('builder.pages', { n: store.form().pages.length }) }}</span>
+      </div>
+      <div class="actions">
         <button mat-button (click)="export()">
           <mat-icon svgIcon="download"></mat-icon>
-          {{ i18n.t('builder.downloadBackup') }}
+          <span class="btn-label">{{ i18n.t('builder.export') }}</span>
+        </button>
+        <button mat-flat-button color="primary" (click)="preview()">
+          <mat-icon svgIcon="play_arrow"></mat-icon>
+          <span class="btn-label">{{ i18n.t('builder.preview') }}</span>
         </button>
       </div>
+    </mat-toolbar>
+    @if (store.unsaved()) {
+      <div class="unsaved" role="alert">
+        <span class="unsaved-text">{{ i18n.t('builder.unsaved') }}</span>
+        <div class="unsaved-actions">
+          <button mat-button (click)="store.retryFailed()">
+            <mat-icon svgIcon="refresh"></mat-icon>
+            {{ i18n.t('builder.retry') }}
+          </button>
+          <button mat-button (click)="export()">
+            <mat-icon svgIcon="download"></mat-icon>
+            {{ i18n.t('builder.downloadBackup') }}
+          </button>
+        </div>
+      </div>
+    }
+    <div class="layout">
+      <fm-builder-palette class="palette" [store]="store" />
+      <fm-builder-canvas class="canvas" [store]="store" />
+      <fm-property-panel class="panel" [store]="store" />
     </div>
   }
-  <div class="layout">
-    <fm-builder-palette class="palette" [store]="store" />
-    <fm-builder-canvas class="canvas" [store]="store" />
-    <fm-property-panel class="panel" [store]="store" />
-  </div>
 </div>
 @if (modal.open()) {
   <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -- backdrop click is a mouse shortcut; Esc and the close button cover keyboards -->
