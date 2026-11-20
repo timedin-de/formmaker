@@ -802,7 +802,7 @@ describe('DesignerStore server-side creation', () => {
       expect(store.patchError()).toBeNull();
     });
 
-    it('sends a pending edit at once with keepalive when the page is closed', async () => {
+    it('sends a pending edit at once with keepalive when the page is closed, and again once shown again', async () => {
       const choice = loadedChoice();
       const option = choice.options[0];
 
@@ -816,8 +816,16 @@ describe('DesignerStore server-side creation', () => {
         { label: 'Closing' },
         { keepalive: true },
       );
+      // Shown again from the back/forward cache: the edit still waits and is sent as usual.
       await vi.advanceTimersByTimeAsync(PATCH_DELAY_MS);
-      expect(repo.updateOption).toHaveBeenCalledTimes(1);
+      expect(repo.updateOption).toHaveBeenCalledTimes(2);
+      expect(repo.updateOption).toHaveBeenLastCalledWith(
+        store.form().id,
+        choice.id,
+        option.id,
+        { label: 'Closing' },
+        { keepalive: false },
+      );
     });
 
     it('keeps the edit as unsaved when the send fails', async () => {
@@ -1554,16 +1562,16 @@ describe('DesignerStore server-side creation', () => {
       );
     });
 
-    it('keeps an edit as failed when sending it on closing the page fails', async () => {
+    it('keeps an edit waiting when sending it on closing the page fails', async () => {
       const choice = loadedChoice();
       repo.updateElement.mockRejectedValueOnce(new Error('offline'));
       store.updateElement(choice.id, { label: 'Closing' });
 
       window.dispatchEvent(new Event('pagehide'));
       await vi.advanceTimersByTimeAsync(0);
-      expect(store.unsaved()).toBe(true);
+      expect(store.patchError()).toBeNull();
 
-      await store.retryFailed();
+      await vi.advanceTimersByTimeAsync(PATCH_DELAY_MS);
       expect(sentLabels()).toEqual(['Closing', 'Closing']);
       expect(store.unsaved()).toBe(false);
     });
@@ -1689,7 +1697,7 @@ describe('DesignerStore server-side creation', () => {
       );
     });
 
-    it('keeps a field sent twice at once when its form is loaded again after one send arrived', async () => {
+    it('keeps a field sent on closing the page when its form is loaded again', async () => {
       const choice = loadedChoice();
       const form = structuredClone(store.form());
       const answers: (() => void)[] = [];
@@ -1703,7 +1711,7 @@ describe('DesignerStore server-side creation', () => {
       window.dispatchEvent(new Event('pagehide'));
       expect(answers).toHaveLength(2);
 
-      // The first send arrived; the one on closing the page still carries the label.
+      // The first send arrived; the edit sent on closing the page still waits.
       answers[0]();
       await vi.advanceTimersByTimeAsync(0);
       const other = newForm('Other');
@@ -1715,7 +1723,7 @@ describe('DesignerStore server-side creation', () => {
       answers[1]();
     });
 
-    it('counts an edit sent on closing the page as being sent until it arrives', async () => {
+    it('sends an edit sent on closing the page again on flush, once that send settled', async () => {
       const choice = loadedChoice();
       let arrive!: () => void;
       repo.updateElement.mockImplementationOnce(
@@ -1724,34 +1732,17 @@ describe('DesignerStore server-side creation', () => {
       store.updateElement(choice.id, { label: 'Closing' });
       window.dispatchEvent(new Event('pagehide'));
 
-      // Shown again from the back/forward cache.
-      expect(store.interruptLeave()).toBe(true);
-      let flushed = false;
-      void store.flush().then(() => (flushed = true));
+      // Shown again from the back/forward cache: the edit still waits, and its next send
+      // doesn't overtake the one sent on closing.
+      expect(store.interruptLeave()).toBe(false);
+      store.updateElement(choice.id, { label: 'Newer' });
+      const flushed = store.flush();
       await vi.advanceTimersByTimeAsync(0);
-      expect(flushed).toBe(false);
+      expect(sentLabels()).toEqual(['Closing']);
 
       arrive();
-      await vi.advanceTimersByTimeAsync(0);
-      expect(flushed).toBe(true);
-      expect(store.unsaved()).toBe(false);
-    });
-
-    it('does not keep a failed edit sent on closing the page once its element is removed', async () => {
-      const { group } = loaded();
-      let fail!: (error: Error) => void;
-      repo.updateElement.mockImplementationOnce(
-        () => new Promise<TextElement>((_, reject) => (fail = reject)),
-      );
-      store.updateElement(group.id, { label: 'Closing' });
-      window.dispatchEvent(new Event('pagehide'));
-
-      const removal = store.removeElement(group.id);
-      await vi.advanceTimersByTimeAsync(0);
-      fail(new Error('offline'));
-      await removal;
-
-      expect(store.unsaved()).toBe(false);
+      await expect(flushed).resolves.toBe(true);
+      expect(sentLabels()).toEqual(['Closing', 'Newer']);
     });
 
     it('forgets failed edits once another form is loaded', async () => {

@@ -105,10 +105,10 @@ interface FieldEdits {
   apply: (form: FormDefinition, request: object) => FormDefinition;
   send: (patch: object, keepalive: boolean) => Promise<unknown>;
   /**
-   * The fields of sends still in flight, with how many sends carry each (a field can be
-   * in a `pagehide` send and a queued one at once); changed again if a send fails.
+   * The fields of the send in flight (sends of an edit run one after another in the
+   * creation queue); changed again if it fails.
    */
-  sending: Map<string, number>;
+  sending: Set<string>;
   /** Shown when sending fails. */
   message: TranslationKey;
   /** Sends the fields once no further edit arrives; set while they wait. */
@@ -375,7 +375,7 @@ export class DesignerStore {
       }
       const source = edit.formId === previous?.id ? previous : edit.snapshot;
       if (edit.formId === form.id) {
-        const fields = [...new Set([...edit.fields, ...edit.sending.keys()])];
+        const fields = [...new Set([...edit.fields, ...edit.sending])];
         const request = source && fields.length > 0 ? edit.build(source, fields) : undefined;
         if (request) next = edit.apply(next, request);
         edit.snapshot = undefined;
@@ -996,7 +996,7 @@ export class DesignerStore {
         // A key always stands for the same kind of edit, so the request is a `P`.
         apply: (form, request) => apply(form, request as P),
         send: (request, keepalive) => send(formId, request as P, keepalive),
-        sending: new Map(),
+        sending: new Set(),
         message,
         queued: 0,
         failed: false,
@@ -1107,15 +1107,11 @@ export class DesignerStore {
     fields: string[],
     send: () => Promise<T>,
   ): Promise<T> {
-    for (const field of fields) edit.sending.set(field, (edit.sending.get(field) ?? 0) + 1);
+    for (const field of fields) edit.sending.add(field);
     try {
       return await send();
     } finally {
-      for (const field of fields) {
-        const left = (edit.sending.get(field) ?? 1) - 1;
-        if (left > 0) edit.sending.set(field, left);
-        else edit.sending.delete(field);
-      }
+      for (const field of fields) edit.sending.delete(field);
     }
   }
 
@@ -1137,46 +1133,20 @@ export class DesignerStore {
 
   /**
    * Sends every waiting edit right away, past the creation queue and with `keepalive`,
-   * so it still reaches the server while the page is being closed. The page may only be
-   * put in the back/forward cache and shown again, so until they settle they count as
-   * being sent, and what is queued later (Preview's `flush` too) waits for them. If they
-   * fail, the fields are changed again (see `restoreFields`).
+   * so it still reaches the server while the page is being closed. The edits keep
+   * waiting: if the page is only put in the back/forward cache and shown again, their
+   * timers send them once more as usual (an edit sets fields, so it may arrive twice),
+   * and a failure is reported then. Everything queued from now on waits for these sends,
+   * so a late one doesn't overwrite a newer value.
    */
   private flushPatches(): void {
     const sends: Promise<unknown>[] = [];
     for (const edit of this.edits.values()) {
       if (!edit.timer) continue;
-      clearTimeout(edit.timer);
-      edit.timer = undefined;
-      const fields = [...edit.fields];
-      const request = this.requestOf(edit, fields);
-      edit.fields.clear();
-      if (!request) continue;
-      const send = this.whileInFlight(edit, fields, () => edit.send(request, true));
-      const settled = send.then(
-        () => this.forgetIfSent(edit),
-        () => this.restoreFields(edit, fields),
-      );
-      sends.push(this.whileSending(() => settled));
+      const request = this.requestOf(edit, [...edit.fields]);
+      if (request) sends.push(edit.send(request, true).catch(() => undefined));
     }
     if (sends.length > 0) this.creations = Promise.all([this.creations, ...sends]);
-  }
-
-  /**
-   * Marks `fields` of `edit` as changed again after a send outside the creation queue
-   * failed: taken along by a later send of them, or else failed while their form is
-   * loaded. Not once their target is gone, e.g. removed meanwhile.
-   */
-  private restoreFields(edit: FieldEdits, fields: string[]): void {
-    const loaded = this._form();
-    const isLoaded = loaded?.id === edit.formId;
-    if (isLoaded && !edit.build(loaded, [])) return;
-    const current = this.edits.get(edit.key) ?? edit;
-    if (!current.timer && current.queued === 0 && !isLoaded) return;
-    this.edits.set(current.key, current);
-    for (const field of fields) current.fields.add(field);
-    if (!current.timer && current.queued === 0) current.failed = true;
-    this.updateUnsaved();
   }
 
   /**
