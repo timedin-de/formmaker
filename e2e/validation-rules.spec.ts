@@ -69,11 +69,13 @@ test('creates, edits and removes validation rules on the server', async ({ page,
     .poll(async () => (await storedRules(session, formId, nameId))[0]?.pattern)
     .toBe('^[A-Z]+$');
 
-  // An invalid regex is rejected and reverted, and no later change carries it.
+  // An invalid regex is rejected, stays shown as unsaved, and no other change carries it.
+  const banner = page.getByRole('alert').filter({ hasText: 'Some changes are not saved' });
   await regex.fill('(');
   await regex.press('Tab');
   await expect(page.getByText('The rule change could not be saved.')).toBeVisible();
-  await expect(regex).toHaveValue('^[A-Z]+$');
+  await expect(regex).toHaveValue('(');
+  await expect(banner).toBeVisible();
   await addRule(page, 'Min length');
   await expect
     .poll(async () => (await storedRules(session, formId, nameId)).map((r) => [r.rule, r.pattern]))
@@ -82,11 +84,13 @@ test('creates, edits and removes validation rules on the server', async ({ page,
       ['minLength', undefined],
     ]);
 
-  // A removed rule is deleted on the server and stays gone after a reload.
+  // A removed rule is deleted on the server, its unsaved edit with it, and stays gone
+  // after a reload.
   await ruleCard(page, 'Regex pattern').getByRole('button', { name: 'Remove' }).click();
   await expect
     .poll(async () => (await storedRules(session, formId, nameId)).map((r) => r.rule))
     .toEqual(['minLength']);
+  await expect(banner).toBeHidden();
   await page.reload();
   await selectRow(page, 'Name');
   await expect(ruleCard(page, 'Min length')).toBeVisible();

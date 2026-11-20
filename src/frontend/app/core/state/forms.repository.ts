@@ -13,15 +13,6 @@ import {
   choiceOptionSchema,
   cloneElementResponseSchema,
   clonePageResponseSchema,
-  type CloneElementResponse,
-  type ClonePageResponse,
-  type CreateElementRequest,
-  type CreateOptionRequest,
-  type CreateValidationRuleRequest,
-  type MoveElementRequest,
-  type MoveOptionRequest,
-  type UpdatePageRequest,
-  type NewFormRequest,
   elementDefinitionSchema,
   formDefinitionSchema,
   formsWithOwnerSchema,
@@ -29,11 +20,20 @@ import {
   pageDefinitionSchema,
   submissionSchema,
   submissionsSchema,
+  validationRuleSchema,
+  type CloneElementResponse,
+  type ClonePageResponse,
+  type CreateElementRequest,
+  type CreateOptionRequest,
+  type CreateValidationRuleRequest,
+  type MoveElementRequest,
+  type MoveOptionRequest,
+  type NewFormRequest,
   type UpdateElementRequest,
   type UpdateFormRequest,
   type UpdateOptionRequest,
+  type UpdatePageRequest,
   type UpdateValidationRuleRequest,
-  validationRuleSchema,
 } from '@shared/schemas';
 import {
   FORM_CACHE_PREFIX,
@@ -218,12 +218,10 @@ export class FormsRepository {
   }
 
   async deletePage(formId: string, pageId: string) {
-    await this.api.request(
-      undefined,
+    await this.deleteInForm(
+      formId,
       `/api/forms/${encodeURIComponent(formId)}/pages/${encodeURIComponent(pageId)}`,
-      { method: 'DELETE' },
     );
-    removeCache(FORM_CACHE_PREFIX + formId);
   }
 
   /** Creates and persists a new element on the server; returns the element as generated there. */
@@ -362,20 +360,28 @@ export class FormsRepository {
   }
 
   async deleteValidationRule(formId: string, elementId: string, ruleId: string) {
-    await this.api.request(undefined, validationRuleUrl(formId, elementId, ruleId), {
-      method: 'DELETE',
-    });
-    removeCache(FORM_CACHE_PREFIX + formId);
+    await this.deleteInForm(formId, validationRuleUrl(formId, elementId, ruleId));
   }
 
   async deleteOption(formId: string, elementId: string, optionId: string) {
-    await this.api.request(undefined, optionUrl(formId, elementId, optionId), { method: 'DELETE' });
-    removeCache(FORM_CACHE_PREFIX + formId);
+    await this.deleteInForm(formId, optionUrl(formId, elementId, optionId));
   }
 
   async deleteElement(formId: string, elementId: string) {
-    await this.api.request(undefined, elementUrl(formId, elementId), { method: 'DELETE' });
-    removeCache(FORM_CACHE_PREFIX + formId);
+    await this.deleteInForm(formId, elementUrl(formId, elementId));
+  }
+
+  /**
+   * Deletes `url`, a part of the form `formId`. Its cached copy is dropped even if that
+   * fails: the server may have deleted it while the answer got lost, and a retry then
+   * fails with 404 (which the designer takes as deleted).
+   */
+  private async deleteInForm(formId: string, url: string): Promise<void> {
+    try {
+      await this.api.request(undefined, url, { method: 'DELETE' });
+    } finally {
+      removeCache(FORM_CACHE_PREFIX + formId);
+    }
   }
 
   async deleteForm(id: string): Promise<void> {
