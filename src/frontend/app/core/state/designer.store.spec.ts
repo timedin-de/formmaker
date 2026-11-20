@@ -41,6 +41,42 @@ function failTimes(
   for (let i = 0; i < times; i++) mock.mockRejectedValueOnce(error);
 }
 
+describe('DesignerStore stored form', () => {
+  const create = () => {
+    TestBed.configureTestingModule({
+      providers: [DesignerStore, { provide: FormsRepository, useValue: {} }],
+    });
+    return TestBed.inject(DesignerStore);
+  };
+
+  beforeEach(() => localStorage.clear());
+  afterEach(() => vi.restoreAllMocks());
+
+  it('restores the stored form without warning', () => {
+    const form = newForm('Stored');
+    localStorage.setItem('formmaker.designer.v1', JSON.stringify(form));
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+    expect(create().form().name).toBe('Stored');
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it('does not warn when no form is stored', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+    expect(create()._form()).toBeUndefined();
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it('warns with the reason when the stored form is invalid', () => {
+    localStorage.setItem('formmaker.designer.v1', '{"pages": "none"}');
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+    expect(create()._form()).toBeUndefined();
+    expect(warn).toHaveBeenCalledWith('designer: stored form failed validation', expect.any(Error));
+  });
+});
+
 describe('DesignerStore moveElementTo', () => {
   let store: DesignerStore;
   const repo = {
