@@ -16,6 +16,7 @@ import {
   rowForSubmission,
   type ExportChannel,
 } from '../core/export';
+import { ConfirmDialog } from '../core/components';
 import { I18nService } from '../core/i18n';
 import { Notifier } from '../core/notifier';
 import { FormsRepository } from '../core/state/forms.repository';
@@ -28,6 +29,7 @@ import { FormsRepository } from '../core/state/forms.repository';
     MatIconModule,
     MatToolbarModule,
     MatTooltipModule,
+    ConfirmDialog,
   ],
   selector: 'fm-results',
   templateUrl: './results.html',
@@ -47,6 +49,14 @@ export class Results {
     this.form() ? buildColumns(this.form()!, this.i18n) : [],
   );
   protected readonly channels = EXPORT_CHANNELS;
+  /** The deletion the confirm dialog asks about. */
+  protected readonly confirming = signal<
+    { kind: 'one'; submission: Submission } | { kind: 'all' } | null
+  >(null);
+  protected readonly confirmingDate = computed(() => {
+    const pending = this.confirming();
+    return pending?.kind === 'one' ? this.formatDate(pending.submission.submittedAt) : '';
+  });
 
   constructor() {
     const id = this.route.snapshot.paramMap.get('id');
@@ -103,6 +113,15 @@ export class Results {
     const s = Math.round(ms / 1000);
     if (s < 60) return `${s}s`;
     return `${Math.floor(s / 60)}m ${s % 60}s`;
+  }
+
+  /** Runs the action the confirm dialog asked about, once it is confirmed. */
+  async answerConfirm(ok: boolean): Promise<void> {
+    const pending = this.confirming();
+    this.confirming.set(null);
+    if (!ok || !pending) return;
+    if (pending.kind === 'all') await this.clearAll();
+    else await this.deleteOne(pending.submission.id);
   }
 
   async deleteOne(id: string): Promise<void> {

@@ -1,8 +1,11 @@
 <div class="login">
+  <div class="brand" aria-hidden="true">
+    <fm-brand-mark class="brand-mark" />
+    <span>Form<span class="accent">Maker</span></span>
+  </div>
   <mat-card class="card">
     <mat-card-header>
       <h1 mat-card-title>
-        <mat-icon svgIcon="lock" class="lock"></mat-icon>
         {{ i18n.t(registering() ? 'register.title' : 'login.title') }}
       </h1>
       <mat-card-subtitle>{{ i18n.t('login.subtitle') }}</mat-card-subtitle>

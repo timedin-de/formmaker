@@ -11,6 +11,11 @@ const de: typeof en = {
   'common.ok': 'OK',
   'common.locale': 'de-DE',
 
+  // confirm dialog
+  'confirm.cancel': 'Abbrechen',
+  'confirm.typeToConfirm': 'Zum Bestätigen „{word}“ eingeben',
+  'confirm.word': 'LÖSCHEN',
+
   // login
   'login.title': 'Anmelden',
   'login.subtitle': 'Editor-Zugriff — Teilnehmende brauchen nur den Teilen-Link.',
@@ -32,6 +37,7 @@ const de: typeof en = {
   'landing.subtitle':
     'Einmal bauen, oft ausfüllen. Seiten, Bedingungen, Berechnungen, Unterschriften.',
   'landing.import.form': 'Formular importieren',
+  'landing.import.more': 'Weitere Importoptionen',
   'landing.import.file': 'Von Datei importieren',
   'landing.import.text': 'Aus Text importieren',
   'landing.import.title': 'Formular aus Text importieren',
@@ -46,12 +52,18 @@ const de: typeof en = {
     'Erstelle dein erstes Formular oder importiere eine vorhandene JSON-Definition.',
   'landing.createForm': 'Formular erstellen',
   'landing.noDescription': 'Keine Beschreibung',
-  'landing.fill': 'Ausfüllen',
+  'landing.fill': 'Formular öffnen',
   'landing.edit': 'Bearbeiten',
   'landing.results': 'Ergebnisse',
   'landing.exportJson': 'JSON exportieren',
   'landing.delete': 'Löschen',
+  'landing.more': 'Weitere Aktionen',
+  'landing.deleteTitle': 'Formular löschen?',
+  'landing.deleteText': '„{name}“ und seine {n} Einreichung(en) werden endgültig gelöscht.',
+  'landing.deleteTextUnknown': '„{name}“ und alle seine Einreichungen werden endgültig gelöscht.',
+  'landing.deleteConfirm': 'Formular löschen',
   'landing.share': 'Teilen-Link kopieren',
+  'landing.shareShort': 'Teilen',
   'landing.linkCopied': 'Teilen-Link kopiert',
   'landing.pages': 'Seiten',
   'landing.questions': 'Fragen',
@@ -97,6 +109,13 @@ const de: typeof en = {
   'results.fillItOut': 'Ausfüllen',
   'results.submissionDeleted': 'Einreichung gelöscht',
   'results.allCleared': 'Alle Einreichungen gelöscht',
+  'results.deleteOne': 'Einreichung löschen',
+  'results.deleteOneTitle': 'Einreichung löschen?',
+  'results.deleteOneText': 'Die Einreichung vom {date} wird endgültig gelöscht.',
+  'results.clearTitle': 'Alle Einreichungen löschen?',
+  'results.clearText':
+    'Alle {n} Einreichung(en) dieses Formulars werden endgültig gelöscht. Das kann nicht rückgängig gemacht werden.',
+  'results.clearConfirm': 'Alle löschen',
   'results.noQuestions': 'Keine Fragen exportiert.',
   'results.email': 'E-Mail',
   'results.mailSubject': 'FormMaker — {name}: {n} Einreichung(en)',
@@ -281,6 +300,10 @@ const de: typeof en = {
   'panel.defaultMessage': 'Dieses Feld besteht die Prüfung "{rule}" nicht.',
   'panel.option': 'Option',
   'panel.removedOption': '[entfernte Option]',
+  'value.yes': 'Ja',
+  'value.no': 'Nein',
+  'value.mismatch': 'Passt nicht zum Fragetyp. Ändern oder leeren.',
+  'value.unsupported': 'Dateien und Unterschriften haben keinen festen Wert.',
 
   // validation rule names
   'val.required': 'Pflichtfeld',

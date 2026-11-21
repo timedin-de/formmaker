@@ -2,6 +2,8 @@ import AxeBuilder from '@axe-core/playwright';
 import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from './fixtures';
 import {
+  addSubmission,
+  clickDelete,
   createForm,
   deleteForm,
   login,
@@ -78,17 +80,6 @@ function exampleValues(name: string): Record<string, unknown> {
   };
 }
 
-async function addSubmission(
-  session: ApiSession,
-  formId: string,
-  values: Record<string, unknown>,
-): Promise<void> {
-  const res = await session.request.post(`/api/forms/${formId}/submissions`, {
-    data: { formId, durationMs: 83_000, values },
-  });
-  expect(res.ok(), await res.text()).toBeTruthy();
-}
-
 /** Selects a canvas row by its exact label. */
 async function selectRow(page: Page, label: string): Promise<void> {
   await page
@@ -139,16 +130,23 @@ test.describe('accessibility', () => {
 
     test('import menu', async ({ page }) => {
       await login(page);
-      await page.getByRole('button', { name: 'Import form' }).hover();
+      await page.getByRole('button', { name: 'More import options' }).click();
       await expect(page.getByRole('menuitem', { name: 'Import from text' })).toBeVisible();
       await expectNoViolations(page);
     });
 
     test('import-from-text dialog', async ({ page }) => {
       await login(page);
-      await page.getByRole('button', { name: 'Import form' }).hover();
+      await page.getByRole('button', { name: 'More import options' }).click();
       await page.getByRole('menuitem', { name: 'Import from text' }).click();
       await expect(page.getByText('Import form from text')).toBeVisible();
+      await expectNoViolations(page);
+    });
+
+    test('delete-form confirmation', async ({ page }) => {
+      await login(page);
+      await clickDelete(page.locator('.card').first());
+      await expect(page.getByRole('alertdialog', { name: 'Delete form?' })).toBeVisible();
       await expectNoViolations(page);
     });
   });
@@ -263,6 +261,26 @@ test.describe('accessibility', () => {
       await expectNoViolations(page);
     });
 
+    test('property panel with a mismatched static default', async ({ page }) => {
+      const age = {
+        ...seedField('number', uuid(), 'Age'),
+        defaultValue: { kind: 'static', value: 'twelve' },
+      };
+      const typedId = await createForm(
+        session,
+        makeForm(uniqueName('a11y-typed'), [{ title: 'Details', children: [age.id] }], [age]),
+      );
+      try {
+        await login(page);
+        await page.goto(`/builder?id=${typedId}`);
+        await selectRow(page, 'Age');
+        await expect(page.getByText("Doesn't match the question type")).toBeVisible();
+        await expectNoViolations(page);
+      } finally {
+        await deleteForm(session, typedId);
+      }
+    });
+
     test('property modal on a narrow screen', async ({ page }) => {
       await page.setViewportSize({ width: 800, height: 900 });
       await login(page);
@@ -319,6 +337,23 @@ test.describe('accessibility', () => {
       await login(page);
       await page.goto(`/results/${formId}`);
       await expect(page.locator('.submission-card')).toHaveCount(2);
+      await expectNoViolations(page);
+    });
+
+    test('delete-submission and clear-all confirmations', async ({ page }) => {
+      await addSubmission(session, formId, exampleValues('Jane Doe'));
+      await login(page);
+      await page.goto(`/results/${formId}`);
+
+      await page.getByRole('button', { name: 'Delete submission' }).click();
+      await expect(page.getByRole('alertdialog', { name: 'Delete submission?' })).toBeVisible();
+      await expectNoViolations(page);
+      await page.keyboard.press('Escape');
+
+      await page.getByRole('button', { name: 'Clear' }).click();
+      const clear = page.getByRole('alertdialog', { name: 'Delete all submissions?' });
+      await clear.getByLabel('Type "DELETE" to confirm').fill('DELETE');
+      await expect(clear.getByRole('button', { name: 'Delete all' })).toBeEnabled();
       await expectNoViolations(page);
     });
   });

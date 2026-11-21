@@ -9,7 +9,7 @@ import { RouterLink } from '@angular/router';
 import { formName } from '@shared/helper';
 import { countQuestions } from '@shared/model/form-tree';
 import { toPortableForm, type FormDefinition, type FormWithOwner } from '@shared/model/form.model';
-import { FormImportModal } from '../core/components';
+import { ConfirmDialog, FormImportModal } from '../core/components';
 import { downloadJSON } from '../core/export/file';
 import { FormImportService } from '../core/export/import';
 import { I18nService } from '../core/i18n';
@@ -27,6 +27,7 @@ import { FormsRepository } from '../core/state/forms.repository';
     MarkdownPipe,
     MatTooltip,
     FormImportModal,
+    ConfirmDialog,
     MatMenuModule,
   ],
   selector: 'fm-landing',
@@ -40,8 +41,13 @@ export class LandingComponent {
   readonly forms = signal<FormWithOwner[] | undefined>(undefined);
   private readonly importService = inject(FormImportService);
 
-  private timedOutCloser: number | undefined;
   protected showTextModal = signal(false);
+  /** The form whose deletion the confirm dialog asks about. */
+  protected readonly pendingDelete = signal<{
+    form: FormDefinition;
+    message: string;
+    word: string | undefined;
+  } | null>(null);
 
   readonly formName = formName;
 
@@ -98,19 +104,6 @@ export class LandingComponent {
     await this.refresh();
   }
 
-  mouseEnter(trigger: { openMenu: () => void }) {
-    if (this.timedOutCloser) {
-      clearTimeout(this.timedOutCloser);
-    }
-    trigger.openMenu();
-  }
-
-  mouseLeave(trigger: { closeMenu: () => void }) {
-    this.timedOutCloser = setTimeout(() => {
-      trigger.closeMenu();
-    }, 50);
-  }
-
   async importText(raw: string | null): Promise<void> {
     if (raw === null) return this.showTextModal.set(false);
     const form = await this.importService.importJson(raw);
@@ -121,8 +114,28 @@ export class LandingComponent {
     this.notifier.ok('landing.imported', { name });
   }
 
+  /**
+   * Asks before deleting `form`, naming how many submissions go with it. Like clearing
+   * them, losing submissions needs the confirm word typed, also when they can't be counted.
+   */
   async remove(form: FormDefinition): Promise<void> {
-    await this.repo.deleteForm(form.id);
+    const name = formName(form, this.i18n);
+    const word = this.i18n.t('confirm.word');
+    try {
+      const n = (await this.repo.submissionsFor(form.id)).length;
+      const message = this.i18n.t('landing.deleteText', { name, n });
+      this.pendingDelete.set({ form, message, word: n > 0 ? word : undefined });
+    } catch {
+      const message = this.i18n.t('landing.deleteTextUnknown', { name });
+      this.pendingDelete.set({ form, message, word });
+    }
+  }
+
+  async confirmRemove(ok: boolean): Promise<void> {
+    const pending = this.pendingDelete();
+    this.pendingDelete.set(null);
+    if (!ok || !pending) return;
+    await this.repo.deleteForm(pending.form.id);
     await this.refresh();
   }
 }

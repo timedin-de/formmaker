@@ -1,7 +1,10 @@
 <div class="shell">
   <header>
     <mat-toolbar class="shell-toolbar">
-      <a class="brand" routerLink="/">FormMaker</a>
+      <a class="brand" routerLink="/">
+        <fm-brand-mark class="brand-mark" />
+        <span class="wordmark">Form<span class="wordmark-accent">Maker</span></span>
+      </a>
       @if (auth.authenticated()) {
         <nav>
           <a

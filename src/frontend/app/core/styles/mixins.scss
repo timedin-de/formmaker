@@ -1,11 +1,8 @@
 @mixin dragable($list, $item) {
   .cdk-drag-preview {
     box-sizing: border-box;
-    border-radius: 4px;
-    box-shadow:
-      0 5px 5px -3px rgba(0, 0, 0, 0.2),
-      0 8px 10px 1px rgba(24, 20, 20, 0.14),
-      0 3px 14px 2px rgba(0, 0, 0, 0.12);
+    border-radius: var(--fm-radius-lg);
+    box-shadow: var(--fm-shadow-3);
   }
 
   .cdk-drag-placeholder ::ng-deep .row {
@@ -30,14 +27,10 @@
 @mixin placeholder() {
   background-size: 16px 16px;
   border-color: transparent;
-  background-color: color-mix(
-    in srgb,
-    var(--mat-sys-primary) 8%,
-    var(--mat-sys-surface-container-lowest)
-  );
+  background-color: color-mix(in srgb, var(--mat-sys-primary) 6%, var(--fm-sheet));
   background-image: repeating-linear-gradient(
     45deg,
-    color-mix(in srgb, var(--mat-sys-primary) 16%, transparent) 0 25%,
+    color-mix(in srgb, var(--mat-sys-primary) 12%, transparent) 0 25%,
     transparent 25% 50%
   );
   animation: slide 2.4s linear infinite;
@@ -60,11 +53,12 @@
 @mixin dialog() {
   dialog {
     z-index: 2;
-    border: 1px solid var(--mat-sys-outline-variant);
-    border-radius: 16px;
-    background: var(--mat-sys-surface);
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
-    padding: 16px;
+    border: 1px solid var(--fm-line);
+    border-radius: var(--fm-radius-xl);
+    background: var(--fm-sheet);
+    color: var(--mat-sys-on-surface);
+    box-shadow: var(--fm-shadow-3);
+    padding: 20px 22px;
     max-height: calc(100vh - var(--mat-toolbar-standad-height, 64px));
 
     .modal-head {
@@ -73,18 +67,108 @@
       justify-content: space-between;
       gap: 12px;
       margin-bottom: 8px;
+
+      h2 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--mat-sys-on-surface);
+      }
     }
 
-    .modal-head h2 {
-      margin: 0;
-      font-size: 16px;
-      font-weight: 600;
-      color: var(--mat-sys-on-surface);
+    &[open] {
+      animation: dialog-in var(--fm-medium) var(--fm-ease);
+
+      @media (prefers-reduced-motion: reduce) {
+        animation: none;
+      }
     }
 
     &::backdrop {
-      background-color: rgba(0, 0, 0, 0.1);
+      background-color: rgb(16 24 40 / 40%);
     }
+  }
+}
+
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+// A white sheet on the grey page: the base for every card-like surface.
+@mixin sheet($radius: var(--fm-radius-xl)) {
+  background: var(--fm-sheet);
+  border: 1px solid var(--fm-line);
+  border-radius: $radius;
+  box-shadow: var(--fm-shadow-1);
+}
+
+@mixin page-title() {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+
+// Muted icon in a hairline square, used for card and section headers.
+// The padding centers the icon's SVG, which fills the remaining content box.
+@mixin icon-tile($size: 32px, $icon: 18px) {
+  box-sizing: border-box;
+  width: $size !important;
+  height: $size !important;
+  padding: calc(($size - $icon) / 2);
+  border: 1px solid var(--fm-line);
+  border-radius: var(--fm-radius-md);
+  background: var(--fm-sheet);
+  color: var(--fm-text-muted);
+  box-shadow: var(--fm-shadow-1);
+  flex-shrink: 0;
+}
+
+// Sub-toolbar (runner, results, builder) under the main header.
+@mixin sub-toolbar() {
+  background: var(--fm-sheet);
+  border-bottom: 1px solid var(--fm-line);
+}
+
+// Empty-state box shared by the landing, results and account pages.
+@mixin empty-state() {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 56px 24px;
+  text-align: center;
+  border: 1px dashed var(--fm-line-strong);
+  border-radius: var(--fm-radius-xl);
+  background: var(--fm-sheet);
+  color: var(--fm-text-muted);
+
+  mat-icon,
+  .mat-icon {
+    @include icon-tile(44px, 22px);
+    margin-bottom: 12px;
+    opacity: 1 !important;
+  }
+
+  h2 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--mat-sys-on-surface);
+  }
+
+  p {
+    margin: 0 0 16px;
+    max-width: 44ch;
+    font-size: 13px;
   }
 }
 

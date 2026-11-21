@@ -4,23 +4,40 @@
     <p class="subtitle">{{ i18n.t('landing.subtitle') }}</p>
   </div>
   <div class="actions">
-    <div (mouseenter)="mouseEnter(menuTrigger)" (mouseleave)="mouseLeave(menuTrigger)">
-      <button mat-stroked-button [mat-menu-trigger-for]="menu" #menuTrigger="matMenuTrigger">
+    <!-- Split button: the main part imports a file, the chevron offers every import source. -->
+    <div class="fm-split-button">
+      <button mat-stroked-button (click)="fileInput.click()">
         <mat-icon svgIcon="upload_file"></mat-icon> {{ i18n.t('landing.import.form') }}
       </button>
-      <mat-menu #menu="matMenu" [hasBackdrop]="false">
-        <div (mouseenter)="mouseEnter(menuTrigger)" (mouseleave)="mouseLeave(menuTrigger)">
-          <button mat-menu-item (click)="fileInput.click()">
-            <mat-icon svgIcon="upload_file"></mat-icon> {{ i18n.t('landing.import.file') }}
-          </button>
-          <button mat-menu-item (click)="showTextModal.set(true)">
-            <mat-icon svgIcon="upload_file"></mat-icon> {{ i18n.t('landing.import.text') }}
-          </button>
-        </div>
-      </mat-menu>
+      <button
+        mat-stroked-button
+        class="fm-split-toggle"
+        [matMenuTriggerFor]="menu"
+        [matTooltip]="i18n.t('landing.import.more')"
+        [attr.aria-label]="i18n.t('landing.import.more')"
+      >
+        <mat-icon svgIcon="expand_more"></mat-icon>
+      </button>
     </div>
+    <mat-menu #menu="matMenu" xPosition="before">
+      <button mat-menu-item (click)="fileInput.click()">
+        <mat-icon svgIcon="upload_file"></mat-icon> {{ i18n.t('landing.import.file') }}
+      </button>
+      <button mat-menu-item (click)="showTextModal.set(true)">
+        <mat-icon svgIcon="text_snippet"></mat-icon> {{ i18n.t('landing.import.text') }}
+      </button>
+    </mat-menu>
     @if (showTextModal()) {
       <fm-form-import-modal (formSubmit)="importText($event)"></fm-form-import-modal>
+    }
+    @if (pendingDelete(); as pending) {
+      <fm-confirm-dialog
+        [title]="i18n.t('landing.deleteTitle')"
+        [message]="pending.message"
+        [confirmLabel]="i18n.t('landing.deleteConfirm')"
+        [confirmWord]="pending.word"
+        (closed)="confirmRemove($event)"
+      />
     }
     <input
       #fileInput
@@ -86,10 +103,8 @@
           }
         </mat-card-content>
         <mat-card-actions align="end">
-          <button class="form-action" mat-button [routerLink]="['/runner', form.id]">
-            <mat-icon svgIcon="play_circle_outline"></mat-icon>
-            <span class="btn-label">{{ i18n.t('landing.fill') }}</span>
-          </button>
+          <!-- What editors do with their forms: edit, read results, share the link.
+               Filling in their own form, exporting and deleting live in the menu. -->
           <button
             class="form-action"
             mat-button
@@ -104,29 +119,34 @@
             <span class="btn-label">{{ i18n.t('landing.results') }}</span>
           </button>
           <button
-            mat-icon-button
+            class="form-action"
+            mat-button
             (click)="copyShareLink(form)"
             [matTooltip]="i18n.t('landing.share')"
-            [attr.aria-label]="i18n.t('landing.share')"
           >
             <mat-icon svgIcon="link"></mat-icon>
+            <span class="btn-label">{{ i18n.t('landing.shareShort') }}</span>
           </button>
           <button
             mat-icon-button
-            (click)="exportJson(form)"
-            [matTooltip]="i18n.t('landing.exportJson')"
-            [attr.aria-label]="i18n.t('landing.exportJson')"
+            [matMenuTriggerFor]="moreMenu"
+            [matTooltip]="i18n.t('landing.more')"
+            [attr.aria-label]="i18n.t('landing.more')"
           >
-            <mat-icon svgIcon="download"></mat-icon>
+            <mat-icon svgIcon="more_vert"></mat-icon>
           </button>
-          <button
-            mat-icon-button
-            (click)="remove(form)"
-            [matTooltip]="i18n.t('landing.delete')"
-            [attr.aria-label]="i18n.t('landing.delete')"
-          >
-            <mat-icon svgIcon="delete_outline"></mat-icon>
-          </button>
+          <mat-menu #moreMenu="matMenu" xPosition="before">
+            <a mat-menu-item [routerLink]="['/runner', form.id]">
+              <mat-icon svgIcon="play_circle_outline"></mat-icon> {{ i18n.t('landing.fill') }}
+            </a>
+            <button mat-menu-item (click)="exportJson(form)">
+              <mat-icon svgIcon="download"></mat-icon> {{ i18n.t('landing.exportJson') }}
+            </button>
+            <mat-divider />
+            <button mat-menu-item class="danger" (click)="remove(form)">
+              <mat-icon svgIcon="delete_outline"></mat-icon> {{ i18n.t('landing.delete') }}
+            </button>
+          </mat-menu>
         </mat-card-actions>
       </mat-card>
     }

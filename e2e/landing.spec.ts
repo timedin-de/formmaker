@@ -1,5 +1,7 @@
 import { expect, test } from './fixtures';
 import {
+  addSubmission,
+  clickDelete,
   createForm,
   deleteForm,
   login,
@@ -85,4 +87,68 @@ test('exposes owner data only to the authenticated catalogue and strips it from 
   await login(page);
 
   await deleteForm(session, formId);
+});
+
+async function formStatus(session: ApiSession, formId: string): Promise<number> {
+  const res = await session.request.get(`/api/forms/${formId}`);
+  return res.status();
+}
+
+test('deletes a form without submissions only after confirming', async ({ page, request }) => {
+  const formName = uniqueName('delete-empty');
+  const session = await loginApi(request);
+  const formId = await createForm(session, makeForm(formName, []));
+
+  await login(page);
+  const card = page.locator('.card').filter({ hasText: formName });
+  await clickDelete(card);
+
+  const dialog = page.getByRole('alertdialog', { name: 'Delete form?' });
+  await expect(dialog).toContainText('its 0 submission(s)');
+  await expect(dialog.getByRole('button', { name: 'Cancel' })).toBeFocused();
+  await expect(dialog.getByRole('textbox')).toHaveCount(0);
+
+  // Cancel keeps the form.
+  await dialog.getByRole('button', { name: 'Cancel' }).click();
+  await expect(dialog).toBeHidden();
+  await expect(card).toBeVisible();
+  expect(await formStatus(session, formId)).toBe(200);
+
+  // Escape does too.
+  await clickDelete(card);
+  await expect(dialog).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeHidden();
+  expect(await formStatus(session, formId)).toBe(200);
+
+  await clickDelete(card);
+  await dialog.getByRole('button', { name: 'Delete form' }).click();
+  await expect(card).toBeHidden();
+  expect(await formStatus(session, formId)).toBe(404);
+});
+
+test('deleting a form with submissions needs the confirm word', async ({ page, request }) => {
+  const formName = uniqueName('delete-filled');
+  const session = await loginApi(request);
+  const formId = await createForm(session, makeForm(formName, []));
+  await addSubmission(session, formId, {});
+  await addSubmission(session, formId, {});
+
+  try {
+    await login(page);
+    const card = page.locator('.card').filter({ hasText: formName });
+    await clickDelete(card);
+
+    const dialog = page.getByRole('alertdialog', { name: 'Delete form?' });
+    await expect(dialog).toContainText('its 2 submission(s)');
+    const confirm = dialog.getByRole('button', { name: 'Delete form' });
+    await expect(confirm).toBeDisabled();
+    await dialog.getByLabel('Type "DELETE" to confirm').fill('DELETE');
+    await confirm.click();
+
+    await expect(card).toBeHidden();
+    expect(await formStatus(session, formId)).toBe(404);
+  } finally {
+    await deleteForm(session, formId);
+  }
 });

@@ -5,6 +5,7 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from './core/auth/auth.service';
+import { BrandMark } from './core/components/brand-mark/brand-mark';
 import { I18nService } from './core/i18n';
 
 @Component({
@@ -16,6 +17,7 @@ import { I18nService } from './core/i18n';
     MatButtonModule,
     MatIconModule,
     MatMenuModule,
+    BrandMark,
   ],
   selector: 'app-root',
   templateUrl: './app.html',

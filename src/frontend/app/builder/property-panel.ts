@@ -23,14 +23,16 @@ import type {
 } from '@shared/model/form.model';
 import { DEFAULT_TIME_INTERVAL, TIME_INTERVAL_UNITS } from '@shared/model/form.model';
 import { VALIDATION_RULE_TYPES } from '@shared/model/validation.model';
+import type { FieldValue } from '@shared/model/values.model';
 import { I18nService } from '../core/i18n';
 import { fieldMeta } from '../core/model/field-registry';
 import { Notifier } from '../core/notifier';
 import { type DesignerStore } from '../core/state/designer.store';
 import { ConditionEditor } from './condition-editor';
-import { OptionPicker } from './option-picker';
+import { QuestionInputField } from './question-input-field';
 import { QuestionSelector } from './question-selector';
 import { ValidationEditor } from './validation-editor';
+import { valueKindOf } from './value-kind';
 
 const WIDTHS = Array.from(
   { length: 12 },
@@ -53,7 +55,7 @@ const INPUT_TYPES = ['text', 'email', 'url', 'phone', 'number'] as const;
     MatTooltipModule,
     MatExpansionModule,
     ConditionEditor,
-    OptionPicker,
+    QuestionInputField,
     QuestionSelector,
     ValidationEditor,
   ],
@@ -109,13 +111,6 @@ export class PropertyPanel {
   num(raw: string): number {
     const n = Number(String(raw).trim());
     return Number.isNaN(n) ? 0 : n;
-  }
-
-  stringOrNum(raw: string): string | number {
-    const s = String(raw).trim();
-    if (s === '') return '';
-    const n = Number(s);
-    return s !== '' && !Number.isNaN(n) && /^-?\d*\.?\d+$/.test(s) ? n : s;
   }
 
   private choice(): ChoiceElement {
@@ -183,17 +178,17 @@ export class PropertyPanel {
     return q.defaultValue?.kind === 'static' ? q.defaultValue.value : null;
   }
 
-  staticText(el: ElementDefinition): string {
-    const v = this.staticValue(el);
-    return v === null || v === undefined ? '' : String(v);
+  /**
+   * Files and signatures have no literal value, so "Static" is only offered there to keep a
+   * default that is already stored visible.
+   */
+  staticSettable(el: ElementDefinition): boolean {
+    const q = el as QuestionDefinition;
+    return valueKindOf(el) !== 'unsupported' || q.defaultValue?.kind === 'static';
   }
 
-  setStatic(raw: string): void {
-    this.patch({ defaultValue: { kind: 'static', value: this.stringOrNum(raw) } });
-  }
-
-  /** Choice defaults store option ids as-is (no number parsing). */
-  setStaticOption(value: string | string[] | null): void {
+  /** The value comes typed from the question's own control (option ids, numbers, dates, …). */
+  setStatic(value: FieldValue): void {
     this.patch({ defaultValue: { kind: 'static', value } });
   }
 

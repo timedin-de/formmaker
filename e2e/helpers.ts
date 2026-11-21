@@ -1,4 +1,4 @@
-import { expect, type APIRequestContext, type Page } from '@playwright/test';
+import { expect, type APIRequestContext, type Locator, type Page } from '@playwright/test';
 
 /** Editor password; matches `DEFAULT_PASSWORD` in src/server/auth.ts. */
 export const USERNAME = 'admin@formmaker.local';
@@ -20,6 +20,14 @@ export async function login(page: Page, password = PASSWORD): Promise<void> {
   await page.getByLabel('Password', { exact: true }).fill(password);
   await page.getByRole('button', { name: 'Sign in' }).click();
   await page.waitForURL((url) => url.pathname === '/');
+}
+
+/** Start deleting the form of a landing-page card (Delete sits in its "More actions" menu). */
+export async function clickDelete(card: Locator): Promise<void> {
+  await card.getByRole('button', { name: 'More actions' }).click();
+  await card.page().getByRole('menuitem', { name: 'Delete' }).click();
+  // The closing menu still owns Escape until its exit animation ends.
+  await expect(card.page().getByRole('menu')).toBeHidden();
 }
 
 export interface ApiSession {
@@ -51,6 +59,25 @@ export async function createForm(session: ApiSession, form: unknown): Promise<st
   const body = (await res.json()) as { id?: string };
   expect(body.id).toBeTruthy();
   return body.id as string;
+}
+
+export async function addSubmission(
+  session: ApiSession,
+  formId: string,
+  values: Record<string, unknown>,
+): Promise<void> {
+  const res = await session.request.post(`/api/forms/${formId}/submissions`, {
+    data: { formId, durationMs: 83_000, values },
+  });
+  expect(res.ok(), await res.text()).toBeTruthy();
+}
+
+export async function countSubmissions(session: ApiSession, formId: string): Promise<number> {
+  const res = await session.request.get(`/api/forms/${formId}/submissions`, {
+    headers: editorHeaders(session),
+  });
+  expect(res.ok()).toBeTruthy();
+  return ((await res.json()) as unknown[]).length;
 }
 
 /** An element of a stored form; type-specific props stay `unknown` unless typed below. */
