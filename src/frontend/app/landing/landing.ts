@@ -41,7 +41,6 @@ export class LandingComponent {
   readonly forms = signal<FormWithOwner[] | undefined>(undefined);
   private readonly importService = inject(FormImportService);
 
-  private timedOutCloser: number | undefined;
   protected showTextModal = signal(false);
   /** The form whose deletion the confirm dialog asks about. */
   protected readonly pendingDelete = signal<{
@@ -103,19 +102,6 @@ export class LandingComponent {
     const form = await this.importService.onImport(event);
     if (!form) return;
     await this.refresh();
-  }
-
-  mouseEnter(trigger: { openMenu: () => void }) {
-    if (this.timedOutCloser) {
-      clearTimeout(this.timedOutCloser);
-    }
-    trigger.openMenu();
-  }
-
-  mouseLeave(trigger: { closeMenu: () => void }) {
-    this.timedOutCloser = setTimeout(() => {
-      trigger.closeMenu();
-    }, 50);
   }
 
   async importText(raw: string | null): Promise<void> {

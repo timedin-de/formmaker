@@ -6,29 +6,30 @@
   flex-direction: column;
   align-items: stretch;
   gap: 0;
-  background: var(--mat-sys-surface);
-  border: 1px solid var(--mat-sys-outline-variant);
-  border-radius: 12px;
+  background: var(--fm-sheet);
+  border: 1px solid var(--fm-line);
+  border-radius: var(--fm-radius-md);
+  box-shadow: var(--fm-shadow-1);
   padding: 12px 14px;
   transition:
-    border-color 0.12s ease,
-    box-shadow 0.12s ease;
-  margin-bottom: 16px;
+    border-color var(--fm-fast) var(--fm-ease),
+    box-shadow var(--fm-fast) var(--fm-ease);
+  margin-bottom: 14px;
 }
 .row:hover,
 .row:focus-within {
   border-color: var(--mat-sys-outline);
+  box-shadow: var(--fm-shadow-2);
 }
 .row.selected {
   border-color: var(--mat-sys-primary);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--mat-sys-primary) 25%, transparent);
+  box-shadow: var(--fm-ring), var(--fm-shadow-2);
 }
 .row.muted {
-  background: color-mix(in srgb, var(--mat-sys-primary) 6%, var(--mat-sys-surface));
+  background: color-mix(in srgb, var(--mat-sys-primary) 5%, var(--fm-sheet));
 }
 .icon {
-  color: var(--mat-sys-primary);
-  flex-shrink: 0;
+  @include mixins.icon-tile(30px, 18px);
 }
 .drag-handle {
   display: flex;
@@ -55,7 +56,7 @@
 }
 .name {
   display: block;
-  font-weight: 500;
+  font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -69,8 +70,9 @@
 .required-badge,
 .logic-badge {
   font-size: 11px;
+  font-weight: 550;
   padding: 1px 8px;
-  border-radius: 999px;
+  border-radius: 6px;
   background: var(--mat-sys-surface-container-high);
   color: var(--mat-sys-on-surface-variant);
 }
@@ -100,7 +102,7 @@
 .group-children {
   min-height: 40px;
   margin: 8px 0 4px 18px;
-  border-left: 2px dashed var(--mat-sys-outline-variant);
+  border-left: 1px solid var(--fm-line-strong);
   padding-left: 14px;
 }
 // While this zone receives a drag, CDK has moved the placeholder out of the list the

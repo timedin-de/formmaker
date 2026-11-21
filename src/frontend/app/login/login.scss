@@ -1,26 +1,79 @@
 .login {
+  position: relative;
+  isolation: isolate;
   flex: 1;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 32px 16px;
-  background:
-    radial-gradient(1200px 500px at 20% -10%, var(--mat-sys-primary-container), transparent 60%),
-    var(--mat-sys-surface);
+  gap: 22px;
+  padding: 40px 16px 80px;
+  overflow: hidden;
+
+  // Faint blueprint grid that fades out toward the edges, with an Ink glow at its center.
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background-image:
+      linear-gradient(var(--fm-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--fm-line) 1px, transparent 1px);
+    background-size: 44px 44px;
+    background-position: center center;
+    mask-image: radial-gradient(ellipse 60% 55% at 50% 45%, #000 20%, transparent 75%);
+    opacity: 0.7;
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: radial-gradient(
+      520px 320px at 50% 40%,
+      color-mix(in srgb, var(--mat-sys-primary) 10%, transparent),
+      transparent 70%
+    );
+  }
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  font-size: 21px;
+  font-weight: 650;
+  letter-spacing: -0.025em;
+
+  .brand-mark {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    box-shadow: var(--fm-shadow-ink);
+  }
+
+  .accent {
+    color: var(--fm-text-muted);
+    font-weight: 500;
+  }
 }
 
 .card {
   width: 100%;
-  max-width: 380px;
-  padding: 8px 16px 16px;
-  border: 1px solid var(--mat-sys-outline-variant);
-  border-radius: 16px;
-}
+  max-width: 384px;
+  padding: 10px 14px 16px;
+  box-sizing: border-box;
+  border: 1px solid var(--fm-line);
+  border-radius: 14px;
+  box-shadow: var(--fm-shadow-3);
+  background: color-mix(in srgb, var(--fm-sheet) 92%, transparent);
+  backdrop-filter: blur(8px);
 
-.lock {
-  vertical-align: -4px;
-  margin-right: 4px;
-  color: var(--mat-sys-primary);
+  h1 {
+    font-size: 19px;
+    margin: 0;
+  }
 }
 
 .field {
@@ -30,11 +83,18 @@
 
 .hint {
   font-size: 12px;
-  color: var(--mat-sys-on-surface-variant);
+  color: var(--fm-text-muted);
   margin: 4px 0 0;
   line-height: 1.5;
 }
 
-.actions button {
-  width: 50%;
+.actions {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+
+  button {
+    width: 100%;
+    height: 40px;
+  }
 }

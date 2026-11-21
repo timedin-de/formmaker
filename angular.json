@@ -34,7 +34,7 @@
                 "input": "public"
               }
             ],
-            "styles": ["src/frontend/styles.scss"]
+            "styles": ["@fontsource-variable/inter/opsz.css", "src/frontend/styles.scss"]
           },
           "configurations": {
             "production": {

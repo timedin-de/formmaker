@@ -8,12 +8,14 @@ import { MatInputModule } from '@angular/material/input';
 import { Router } from '@angular/router';
 import { AuthService } from '../core/auth/auth.service';
 import { PasswordField, TextField } from '../core/components';
+import { BrandMark } from '../core/components/brand-mark/brand-mark';
 import { I18nService, type TranslationKey } from '../core/i18n';
 import { Notifier } from '../core/notifier';
 import { fieldMatchValidator } from '../core/validators';
 
 @Component({
   imports: [
+    BrandMark,
     MatButtonModule,
     MatCardModule,
     MatIconModule,

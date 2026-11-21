@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from './fixtures';
 import {
   addSubmission,
+  clickDelete,
   createForm,
   deleteForm,
   login,
@@ -129,14 +130,14 @@ test.describe('accessibility', () => {
 
     test('import menu', async ({ page }) => {
       await login(page);
-      await page.getByRole('button', { name: 'Import form' }).hover();
+      await page.getByRole('button', { name: 'More import options' }).click();
       await expect(page.getByRole('menuitem', { name: 'Import from text' })).toBeVisible();
       await expectNoViolations(page);
     });
 
     test('import-from-text dialog', async ({ page }) => {
       await login(page);
-      await page.getByRole('button', { name: 'Import form' }).hover();
+      await page.getByRole('button', { name: 'More import options' }).click();
       await page.getByRole('menuitem', { name: 'Import from text' }).click();
       await expect(page.getByText('Import form from text')).toBeVisible();
       await expectNoViolations(page);
@@ -144,7 +145,7 @@ test.describe('accessibility', () => {
 
     test('delete-form confirmation', async ({ page }) => {
       await login(page);
-      await page.locator('.card').first().getByRole('button', { name: 'Delete' }).click();
+      await clickDelete(page.locator('.card').first());
       await expect(page.getByRole('alertdialog', { name: 'Delete form?' })).toBeVisible();
       await expectNoViolations(page);
     });
