@@ -96,6 +96,8 @@ describe('rate limits', () => {
   });
 
   it('rejects throttled requests before parsing their body', async () => {
+    // Exhaust the login quota (2) here too, so the test also passes when run alone.
+    for (let i = 0; i < 2; i++) await login();
     const res = await fetch(`${base}/api/auth/login`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },

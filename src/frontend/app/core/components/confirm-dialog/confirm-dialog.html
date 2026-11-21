@@ -1,0 +1,41 @@
+<dialog
+  #dialog
+  role="alertdialog"
+  (keydown.escape)="cancelOnEscape($event)"
+  (cancel)="$event.preventDefault(); answer(false)"
+  (close)="answer(false)"
+  [attr.aria-labelledby]="id + '-title'"
+  [attr.aria-describedby]="id + '-text'"
+>
+  <div class="modal-head">
+    <h2 [id]="id + '-title'">{{ title() }}</h2>
+  </div>
+  <p class="confirm-text" [id]="id + '-text'">{{ message() }}</p>
+  @if (confirmWord(); as word) {
+    <mat-form-field class="confirm-word" appearance="outline" subscriptSizing="dynamic">
+      <mat-label>{{ i18n.t('confirm.typeToConfirm', { word }) }}</mat-label>
+      <input
+        #wordInput
+        matInput
+        autocomplete="off"
+        [value]="typed()"
+        (input)="typed.set(wordInput.value)"
+        (keydown.enter)="answer(true)"
+      />
+    </mat-form-field>
+  }
+  <div class="confirm-actions">
+    <button type="button" mat-button autofocus (click)="answer(false)">
+      {{ i18n.t('confirm.cancel') }}
+    </button>
+    <button
+      type="button"
+      mat-flat-button
+      class="confirm-destructive"
+      [disabled]="!canConfirm()"
+      (click)="answer(true)"
+    >
+      {{ confirmLabel() }}
+    </button>
+  </div>
+</dialog>
