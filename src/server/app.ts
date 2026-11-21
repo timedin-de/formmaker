@@ -86,9 +86,15 @@ export async function createApp(): Promise<NestExpressApplication> {
 
   const dist = path.resolve('dist/form-maker/browser');
   if (fs.existsSync(dist)) {
-    app.use(express.static(dist));
-    app.use((req: Request, res: Response, next: NextFunction) => {
-      if (req.method !== 'GET' || req.path.startsWith('/api')) return next();
+    const isApiPath = (p: string): boolean => p === '/api' || p.startsWith('/api/');
+    // Mounted ahead of Nest, so skip /api: otherwise every API request stats the filesystem first.
+    const serveStatic = express.static(dist);
+    app.use(function staticAssets(req: Request, res: Response, next: NextFunction) {
+      if (isApiPath(req.path)) return next();
+      serveStatic(req, res, next);
+    });
+    app.use(function spaFallback(req: Request, res: Response, next: NextFunction) {
+      if (req.method !== 'GET' || isApiPath(req.path)) return next();
       res.sendFile(path.join(dist, 'index.html'));
     });
   }
