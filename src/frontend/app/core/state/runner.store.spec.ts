@@ -183,6 +183,31 @@ describe('RunnerStore dynamic defaults', () => {
     expect(store.submit()?.submission.values[last.id]).toBe('Option 1');
   });
 
+  it('keeps applying defaults to required fields after a failed submit', () => {
+    const { form, color, echo } = choiceSourceForm();
+    echo.required = true;
+    const store = new RunnerStore();
+    store.init(form);
+
+    expect(store.submit()).toBeNull();
+    expect(store.answers.get(echo.id)?.touched).toBe(true);
+
+    store.setAnswer(color.id, color.options[1].id);
+    expect(store.answers.get(echo.id)?.value).toBe('Option 2');
+  });
+
+  it('stops applying defaults once the user edited the field', () => {
+    const { form, color, echo } = choiceSourceForm();
+    const store = new RunnerStore();
+    store.init(form);
+
+    const control = store.answers.get(echo.id);
+    control?.markAsDirty();
+    control?.setValue('Mine');
+    store.setAnswer(color.id, color.options[1].id);
+    expect(control?.value).toBe('Mine');
+  });
+
   it('keeps restored choice answers as option ids', () => {
     const { form, color, echo, copy } = choiceSourceForm();
     const store = new RunnerStore();

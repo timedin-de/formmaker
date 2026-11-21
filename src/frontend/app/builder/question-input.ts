@@ -94,24 +94,33 @@ export class QuestionInput {
     return scaleValues(el) ?? [];
   }
 
-  multiChecked(control: FormControl, value: string | number): boolean {
-    const current = (control.value as (string | number)[] | null) ?? [];
+  /**
+   * Store a user edit. Dirty first, like the `formControl` directive does, so
+   * the runner stops applying dynamic defaults before value listeners run.
+   */
+  private write(control: FormControl, value: FieldValue): void {
+    control.markAsDirty();
+    control.setValue(value);
+    control.markAsTouched();
+  }
+
+  multiChecked(control: FormControl, value: string): boolean {
+    const current = (control.value as string[] | null) ?? [];
     return current.includes(value);
   }
 
-  toggleMulti(control: FormControl, value: string | number, checked: boolean): void {
-    const current = [...((control.value as (string | number)[] | null) ?? [])];
+  toggleMulti(control: FormControl, value: string, checked: boolean): void {
+    const current = [...((control.value as string[] | null) ?? [])];
     const next = checked
       ? current.includes(value)
         ? current
         : [...current, value]
       : current.filter((v) => v !== value);
-    control.setValue(next);
-    control.markAsTouched();
+    this.write(control, next);
   }
 
   /** Disables unchecked options once the `maxLength` rule's selection limit is reached. */
-  multiDisabled(control: FormControl, value: string | number): boolean {
+  multiDisabled(control: FormControl, value: string): boolean {
     const max = Number(this.validation('maxCount'));
     if (!Number.isFinite(max) || max <= 0 || this.multiChecked(control, value)) return false;
     return this.fileValue(control).length >= max;
@@ -137,13 +146,14 @@ export class QuestionInput {
     }
     if (!multiple) next = [];
     next = [...next, ...mapped];
-    control.setValue(next);
-    control.markAsTouched();
+    this.write(control, next);
   }
 
   removeFile(control: FormControl, file: FileValue): void {
-    control.setValue(this.fileValue(control).filter((f) => f !== file));
-    control.markAsTouched();
+    this.write(
+      control,
+      this.fileValue(control).filter((f) => f !== file),
+    );
   }
 
   sigValue(control: FormControl): SignatureValue | null {
@@ -154,13 +164,11 @@ export class QuestionInput {
   }
 
   clearValue(control: FormControl): void {
-    control.setValue(null);
-    control.markAsTouched();
+    this.write(control, null);
   }
 
   onSig(control: FormControl, value: FieldValue): void {
-    control.setValue(value);
-    control.markAsTouched();
+    this.write(control, value);
   }
 
   /** A failed `@defer` chunk load can't be retried in place, so reload the page. */
