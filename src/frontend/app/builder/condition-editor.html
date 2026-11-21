@@ -36,32 +36,15 @@
             </mat-select>
           </mat-form-field>
           <br />
-          @if (operandKind(cond) === 'literal' && choiceOf(cond); as choice) {
-            <fm-option-picker
+          @if (operandKind(cond) === 'literal') {
+            <fm-question-input-field
               class="val"
+              single
+              [element]="fieldOf(cond)"
               [ariaLabel]="i18n.t('cond.value')"
-              [options]="choice.options"
-              [value]="cond.operand?.kind === 'literal' ? cond.operand.value : null"
-              (valueChange)="setOptionOperand($index, $event)"
-            />
-          } @else if (operandKind(cond) === 'literal') {
-            @switch (group().conditions[$index].fieldType) {
-              @case ('date') {
-                <fm-question-input-field
-                  [config]="{ type: 'date', value: literalText(cond) }"
-                  (value)="set$($index, 'operand', $event)"
-                ></fm-question-input-field>
-              }
-              @default {
-                <mat-form-field appearance="outline" subscriptSizing="dynamic" class="val">
-                  <input
-                    matInput
-                    [ngModel]="literalText(cond)"
-                    (ngModelChange)="set$($index, 'operand', $event)"
-                  />
-                </mat-form-field>
-              }
-            }
+              [value]="literal(cond.operand)"
+              (valueChange)="setLiteral($index, 'operand', $event)"
+            ></fm-question-input-field>
           } @else {
             <fm-question-selector
               [form]="form()"
@@ -72,22 +55,22 @@
           }
         }
         @case ('range') {
-          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="val">
-            <input
-              matInput
-              [placeholder]="i18n.t('cond.from')"
-              [ngModel]="literalText(cond)"
-              (ngModelChange)="set$($index, 'operand', $event)"
-            />
-          </mat-form-field>
-          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="val">
-            <input
-              matInput
-              [placeholder]="i18n.t('cond.to')"
-              [ngModel]="rangeToText(cond)"
-              (ngModelChange)="setRangeTo($index, $event)"
-            />
-          </mat-form-field>
+          <fm-question-input-field
+            class="val"
+            single
+            [element]="fieldOf(cond)"
+            [label]="i18n.t('cond.from')"
+            [value]="literal(cond.operand)"
+            (valueChange)="setLiteral($index, 'operand', $event)"
+          ></fm-question-input-field>
+          <fm-question-input-field
+            class="val"
+            single
+            [element]="fieldOf(cond)"
+            [label]="i18n.t('cond.to')"
+            [value]="literal(cond.operandTo)"
+            (valueChange)="setLiteral($index, 'operandTo', $event)"
+          ></fm-question-input-field>
         }
         @case ('list') {
           @if (choiceOf(cond); as choice) {

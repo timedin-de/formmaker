@@ -281,6 +281,10 @@ const de: typeof en = {
   'panel.defaultMessage': 'Dieses Feld besteht die Prüfung "{rule}" nicht.',
   'panel.option': 'Option',
   'panel.removedOption': '[entfernte Option]',
+  'value.yes': 'Ja',
+  'value.no': 'Nein',
+  'value.mismatch': 'Passt nicht zum Fragetyp. Ändern oder leeren.',
+  'value.unsupported': 'Dateien und Unterschriften haben keinen festen Wert.',
 
   // validation rule names
   'val.required': 'Pflichtfeld',

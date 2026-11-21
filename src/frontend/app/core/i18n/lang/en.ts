@@ -276,6 +276,10 @@ const en = {
   'panel.defaultMessage': 'This field fails the "{rule}" check.',
   'panel.option': 'Option',
   'panel.removedOption': '[removed option]',
+  'value.yes': 'Yes',
+  'value.no': 'No',
+  'value.mismatch': "Doesn't match the question type. Change or clear it.",
+  'value.unsupported': 'Files and signatures have no fixed value.',
 
   // validation rule names
   'val.required': 'Required',
