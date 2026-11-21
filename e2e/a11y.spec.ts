@@ -263,6 +263,26 @@ test.describe('accessibility', () => {
       await expectNoViolations(page);
     });
 
+    test('property panel with a mismatched static default', async ({ page }) => {
+      const age = {
+        ...seedField('number', uuid(), 'Age'),
+        defaultValue: { kind: 'static', value: 'twelve' },
+      };
+      const typedId = await createForm(
+        session,
+        makeForm(uniqueName('a11y-typed'), [{ title: 'Details', children: [age.id] }], [age]),
+      );
+      try {
+        await login(page);
+        await page.goto(`/builder?id=${typedId}`);
+        await selectRow(page, 'Age');
+        await expect(page.getByText("Doesn't match the question type")).toBeVisible();
+        await expectNoViolations(page);
+      } finally {
+        await deleteForm(session, typedId);
+      }
+    });
+
     test('property modal on a narrow screen', async ({ page }) => {
       await page.setViewportSize({ width: 800, height: 900 });
       await login(page);

@@ -108,13 +108,11 @@
     }
     @case ('date') {
       <fm-question-input-field
-        [config]="{
-          id: vr.id,
-          type: 'date',
-          min: date(validation('dateMin')),
-          max: date(validation('dateMax')),
-          control: vr.control,
-        }"
+        kind="date"
+        [id]="vr.id"
+        [min]="date(validation('dateMin'))"
+        [max]="date(validation('dateMax'))"
+        [control]="vr.control"
       ></fm-question-input-field>
     }
     @case ('time') {
