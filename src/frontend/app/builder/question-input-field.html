@@ -1,15 +1,165 @@
-@if (config(); as config) {
-  @if (config?.type === 'date') {
-    <mat-form-field appearance="outline" class="field-host" subscriptSizing="dynamic">
-      <input
-        matInput
-        [min]="config.min"
-        [max]="config.max"
-        type="date"
-        [id]="config.id ?? ''"
-        [formControl]="control()"
-        (input)="value.emit($event.target.value)"
+@if (!fits()) {
+  <!-- A stored value the typed control cannot show: keep it visible and editable as text. -->
+  <mat-form-field appearance="outline" subscriptSizing="dynamic" class="mismatch">
+    @if (label(); as label) {
+      <mat-label>{{ label }}</mat-label>
+    }
+    <!-- A textarea, so a stored value with line breaks is shown and edited as it is. -->
+    <textarea
+      #raw
+      matInput
+      cdkTextareaAutosize
+      cdkAutosizeMinRows="1"
+      [attr.aria-label]="aria()"
+      [value]="text()"
+      (change)="emitRaw(raw.value)"
+    ></textarea>
+    <mat-hint>{{
+      resolvedKind() === 'unsupported' ? i18n.t('value.unsupported') : i18n.t('value.mismatch')
+    }}</mat-hint>
+  </mat-form-field>
+} @else {
+  @switch (resolvedKind()) {
+    @case ('options') {
+      <fm-option-picker
+        [options]="options()"
+        [multiple]="multiple()"
+        [value]="value()"
+        [label]="label()"
+        [ariaLabel]="ariaLabel()"
+        (valueChange)="emitOption($event)"
       />
-    </mat-form-field>
+    }
+    @case ('unsupported') {
+      <span class="hint">{{ i18n.t('value.unsupported') }}</span>
+    }
+    @case ('number') {
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        @if (label(); as label) {
+          <mat-label>{{ label }}</mat-label>
+        }
+        <input
+          matInput
+          type="number"
+          [attr.aria-label]="aria()"
+          [ngModel]="numberValue()"
+          (ngModelChange)="emitNumber($event)"
+        />
+        @if (unit(); as unit) {
+          <span matTextSuffix>{{ unit }}</span>
+        }
+      </mat-form-field>
+    }
+    @case ('scale') {
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        @if (label(); as label) {
+          <mat-label>{{ label }}</mat-label>
+        }
+        <mat-select
+          [aria-label]="aria() ?? ''"
+          [value]="numberValue()"
+          (valueChange)="emitPicked($event)"
+        >
+          <mat-option [value]="null">{{ i18n.t('panel.none') }}</mat-option>
+          @for (v of scaleValues(); track v) {
+            <mat-option [value]="v">{{ v }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    }
+    @case ('boolean') {
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        @if (label(); as label) {
+          <mat-label>{{ label }}</mat-label>
+        }
+        <mat-select
+          [aria-label]="aria() ?? ''"
+          [value]="boolValue()"
+          (valueChange)="emitPicked($event)"
+        >
+          <mat-option [value]="null">{{ i18n.t('panel.none') }}</mat-option>
+          <mat-option [value]="true">{{ i18n.t('value.yes') }}</mat-option>
+          <mat-option [value]="false">{{ i18n.t('value.no') }}</mat-option>
+        </mat-select>
+      </mat-form-field>
+    }
+    @case ('date') {
+      <mat-form-field appearance="outline" class="field-host" subscriptSizing="dynamic">
+        @if (label(); as label) {
+          <mat-label>{{ label }}</mat-label>
+        }
+        @if (control(); as control) {
+          <input
+            matInput
+            type="date"
+            [id]="id() ?? ''"
+            [min]="min()"
+            [max]="max()"
+            [formControl]="control"
+          />
+        } @else {
+          <input
+            matInput
+            type="date"
+            [attr.aria-label]="aria()"
+            [ngModel]="text()"
+            (ngModelChange)="emitText($event)"
+          />
+        }
+      </mat-form-field>
+    }
+    @case ('time') {
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        @if (label(); as label) {
+          <mat-label>{{ label }}</mat-label>
+        }
+        <input
+          matInput
+          type="time"
+          [step]="timeStep()"
+          [attr.aria-label]="aria()"
+          [ngModel]="text()"
+          (ngModelChange)="emitText($event)"
+        />
+      </mat-form-field>
+    }
+    @case ('dateTime') {
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        @if (label(); as label) {
+          <mat-label>{{ label }}</mat-label>
+        }
+        <input
+          matInput
+          type="datetime-local"
+          [step]="timeStep()"
+          [attr.aria-label]="aria()"
+          [ngModel]="text()"
+          (ngModelChange)="emitText($event)"
+        />
+      </mat-form-field>
+    }
+    @default {
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        @if (label(); as label) {
+          <mat-label>{{ label }}</mat-label>
+        }
+        @if (element()?.type === 'longText') {
+          <textarea
+            matInput
+            rows="2"
+            [attr.aria-label]="aria()"
+            [ngModel]="text()"
+            (ngModelChange)="emitText($event)"
+          ></textarea>
+        } @else {
+          <input
+            matInput
+            [attr.aria-label]="aria()"
+            [ngModel]="text()"
+            (ngModelChange)="emitText($event)"
+          />
+        }
+      </mat-form-field>
+    }
   }
 }

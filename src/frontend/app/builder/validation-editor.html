@@ -38,15 +38,13 @@
 
         @switch (ruleInputKind(rule.rule)) {
           @case ('number') {
-            <mat-form-field appearance="outline" subscriptSizing="dynamic">
-              <mat-label>{{ i18n.t('panel.value') }}</mat-label>
-              <input
-                matInput
-                type="number"
-                [value]="str(rule.value)"
-                (change)="patchRule(rule.id, { value: stringOrNum($event.target.value) })"
-              />
-            </mat-form-field>
+            <fm-question-input-field
+              kind="number"
+              [element]="element()"
+              [label]="i18n.t('panel.value')"
+              [value]="rule.value"
+              (valueChange)="patchRule(rule.id, { value: $event ?? '' })"
+            ></fm-question-input-field>
           }
           @case ('text') {
             <mat-form-field appearance="outline" subscriptSizing="dynamic">
@@ -60,24 +58,20 @@
           }
           @case ('range') {
             <div class="two-col">
-              <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                <mat-label>{{ i18n.t('panel.from') }}</mat-label>
-                <input
-                  matInput
-                  type="number"
-                  [value]="str(rule.value)"
-                  (change)="patchRule(rule.id, { value: stringOrNum($event.target.value) })"
-                />
-              </mat-form-field>
-              <mat-form-field appearance="outline" subscriptSizing="dynamic">
-                <mat-label>{{ i18n.t('panel.to') }}</mat-label>
-                <input
-                  matInput
-                  type="number"
-                  [value]="str(rule.valueTo)"
-                  (change)="patchRule(rule.id, { valueTo: stringOrNum($event.target.value) })"
-                />
-              </mat-form-field>
+              <fm-question-input-field
+                kind="number"
+                [element]="element()"
+                [label]="i18n.t('panel.from')"
+                [value]="rule.value"
+                (valueChange)="patchRule(rule.id, { value: $event ?? '' })"
+              ></fm-question-input-field>
+              <fm-question-input-field
+                kind="number"
+                [element]="element()"
+                [label]="i18n.t('panel.to')"
+                [value]="rule.valueTo"
+                (valueChange)="patchRule(rule.id, { valueTo: $event ?? '' })"
+              ></fm-question-input-field>
             </div>
           }
           @case ('pattern') {
@@ -91,15 +85,13 @@
             </mat-form-field>
           }
           @case ('date') {
-            <mat-form-field appearance="outline" subscriptSizing="dynamic">
-              <mat-label>{{ i18n.t('panel.date') }}</mat-label>
-              <input
-                matInput
-                type="date"
-                [value]="str(rule.value)"
-                (change)="patchRule(rule.id, { value: $event.target.value })"
-              />
-            </mat-form-field>
+            <!-- A day even on dateTime questions: dateMin/dateMax compare by calendar day. -->
+            <fm-question-input-field
+              kind="date"
+              [label]="i18n.t('panel.date')"
+              [value]="rule.value"
+              (valueChange)="patchRule(rule.id, { value: $event })"
+            ></fm-question-input-field>
           }
           @case ('accept') {
             <mat-form-field appearance="outline" subscriptSizing="dynamic">
