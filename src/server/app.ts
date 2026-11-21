@@ -38,10 +38,6 @@ export async function createApp(): Promise<NestExpressApplication> {
     .map((origin) => origin.trim())
     .filter(Boolean);
   app.use(cors({ origin: corsOrigins?.length ? corsOrigins : false }));
-  // Body parsing stays here (Nest's parser is disabled) so the 50mb limit covers all routes.
-  // inflate: false rejects compressed bodies (415) so untrusted input never reaches zlib/Brotli
-  // pre-auth (CVE-2026-111497) and the limit applies to the bytes actually received.
-  app.use(express.json({ limit: '50mb', inflate: false }));
   app.use((_req, res, next) => {
     res.setHeader('X-Request-Id', crypto.randomUUID());
     next();
@@ -71,6 +67,13 @@ export async function createApp(): Promise<NestExpressApplication> {
   });
   app.use(['/api/auth/login', '/api/auth/register'], authLimiter);
 
+  // Body parsing stays here (Nest's parser is disabled) so the 50mb limit covers all API routes.
+  // Scoped to /api: static assets and the SPA fallback never read a body. Registered after the
+  // rate limiters so throttled clients get a 429 before their body is read.
+  // inflate: false rejects compressed bodies (415) so untrusted input never reaches zlib/Brotli
+  // pre-auth (CVE-2026-111497) and the limit applies to the bytes actually received.
+  app.use('/api', express.json({ limit: '50mb', inflate: false }));
+
   const nest = await NestFactory.create<NestExpressApplication>(
     AppModule,
     new ExpressAdapter(app),
@@ -86,9 +89,15 @@ export async function createApp(): Promise<NestExpressApplication> {
 
   const dist = path.resolve('dist/form-maker/browser');
   if (fs.existsSync(dist)) {
-    app.use(express.static(dist));
-    app.use((req: Request, res: Response, next: NextFunction) => {
-      if (req.method !== 'GET' || req.path.startsWith('/api')) return next();
+    const isApiPath = (p: string): boolean => p === '/api' || p.startsWith('/api/');
+    // Mounted ahead of Nest, so skip /api: otherwise every API request stats the filesystem first.
+    const serveStatic = express.static(dist);
+    app.use(function staticAssets(req: Request, res: Response, next: NextFunction) {
+      if (isApiPath(req.path)) return next();
+      serveStatic(req, res, next);
+    });
+    app.use(function spaFallback(req: Request, res: Response, next: NextFunction) {
+      if (req.method !== 'GET' || isApiPath(req.path)) return next();
       res.sendFile(path.join(dist, 'index.html'));
     });
   }

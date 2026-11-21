@@ -57,6 +57,15 @@
     </button>
   </div>
 } @else {
+  @if (pendingDelete(); as pending) {
+    <fm-confirm-dialog
+      [title]="i18n.t('landing.deleteTitle')"
+      [message]="pending.message"
+      [confirmLabel]="i18n.t('landing.deleteConfirm')"
+      [confirmWord]="pending.word"
+      (closed)="confirmRemove($event)"
+    />
+  }
   <div class="cards">
     @for (form of forms(); track form.id) {
       <mat-card class="card">
@@ -122,6 +131,7 @@
           <button
             mat-icon-button
             (click)="remove(form)"
+            [disabled]="countingForDelete()"
             [matTooltip]="i18n.t('landing.delete')"
             [attr.aria-label]="i18n.t('landing.delete')"
           >

@@ -50,6 +50,17 @@ describe('app', () => {
     expect(res.status).toBe(415);
     expect(await res.json()).toHaveProperty('error');
   });
+
+  it('parses JSON bodies only under /api', async () => {
+    const post = (p: string) =>
+      fetch(`${base}${p}`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: '{not json',
+      });
+    expect((await post('/api/auth/login')).status).toBe(400);
+    expect((await post('/some/asset.js')).status).toBe(404);
+  });
 });
 
 describe('rate limits', () => {
@@ -59,7 +70,7 @@ describe('rate limits', () => {
   beforeAll(async () => {
     process.env.SQLITE_PATH = ':memory:';
     vi.stubEnv('FORMMAKER_PASSWORD', 'formmaker');
-    vi.stubEnv('RATELIMIT', '5');
+    vi.stubEnv('RATELIMIT', '10');
     vi.stubEnv('RATELIMIT_AUTH', '2');
     app = await createApp();
     await app.listen(0);
@@ -82,6 +93,15 @@ describe('rate limits', () => {
     expect((await login()).status).toBe(401);
     expect((await login()).status).toBe(429);
     expect((await fetch(`${base}/api/health`)).status).toBe(200);
+  });
+
+  it('rejects throttled requests before parsing their body', async () => {
+    const res = await fetch(`${base}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: '{not json',
+    });
+    expect(res.status).toBe(429);
   });
 
   it('does not count requests outside /api', async () => {
