@@ -243,7 +243,9 @@ export class RunnerStore {
   }
 
   /**
-   * Re-evaluate untouched dynamic defaults that depend on `diff`. A default
+   * Re-evaluate dynamic defaults that depend on `diff`, unless the user has
+   * edited the field (dirty). Touched alone is not enough: blurring a field or
+   * a failed submit marks it touched to show errors. A default
    * written here can feed other defaults, so passes repeat with the ids that
    * just changed until nothing changes (bounded, in case of a reference
    * cycle). Returns the ids of all controls that were updated.
@@ -267,7 +269,7 @@ export class RunnerStore {
       const next: string[] = [];
       for (const el of candidates) {
         const control = this.answers.get(el.id);
-        if (!control || control.touched) continue;
+        if (!control || control.dirty) continue;
         const dirtyIds = dirty;
         if (dirtyIds !== 'all' && !collectElementRefs(el).some((d) => dirtyIds.includes(d))) {
           continue;
