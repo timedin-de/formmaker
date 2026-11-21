@@ -22,6 +22,15 @@
     @if (showTextModal()) {
       <fm-form-import-modal (formSubmit)="importText($event)"></fm-form-import-modal>
     }
+    @if (pendingDelete(); as pending) {
+      <fm-confirm-dialog
+        [title]="i18n.t('landing.deleteTitle')"
+        [message]="pending.message"
+        [confirmLabel]="i18n.t('landing.deleteConfirm')"
+        [confirmWord]="pending.word"
+        (closed)="confirmRemove($event)"
+      />
+    }
     <input
       #fileInput
       type="file"

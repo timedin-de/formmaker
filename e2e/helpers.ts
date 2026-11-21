@@ -53,6 +53,25 @@ export async function createForm(session: ApiSession, form: unknown): Promise<st
   return body.id as string;
 }
 
+export async function addSubmission(
+  session: ApiSession,
+  formId: string,
+  values: Record<string, unknown>,
+): Promise<void> {
+  const res = await session.request.post(`/api/forms/${formId}/submissions`, {
+    data: { formId, durationMs: 83_000, values },
+  });
+  expect(res.ok(), await res.text()).toBeTruthy();
+}
+
+export async function countSubmissions(session: ApiSession, formId: string): Promise<number> {
+  const res = await session.request.get(`/api/forms/${formId}/submissions`, {
+    headers: editorHeaders(session),
+  });
+  expect(res.ok()).toBeTruthy();
+  return ((await res.json()) as unknown[]).length;
+}
+
 /** An element of a stored form; type-specific props stay `unknown` unless typed below. */
 export interface StoredElement {
   id: string;

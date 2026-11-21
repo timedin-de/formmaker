@@ -10,6 +10,11 @@ const en = {
   'common.ok': 'OK',
   'common.locale': 'en-US',
 
+  // confirm dialog
+  'confirm.cancel': 'Cancel',
+  'confirm.typeToConfirm': 'Type "{word}" to confirm',
+  'confirm.word': 'DELETE',
+
   // login
   'login.title': 'Sign in',
   'login.subtitle': 'Editor access — respondents only need the share link.',
@@ -47,6 +52,10 @@ const en = {
   'landing.results': 'Results',
   'landing.exportJson': 'Export JSON',
   'landing.delete': 'Delete',
+  'landing.deleteTitle': 'Delete form?',
+  'landing.deleteText': '"{name}" and its {n} submission(s) will be deleted permanently.',
+  'landing.deleteTextUnknown': '"{name}" and all its submissions will be deleted permanently.',
+  'landing.deleteConfirm': 'Delete form',
   'landing.share': 'Copy share link',
   'landing.linkCopied': 'Share link copied',
   'landing.pages': 'pages',
@@ -92,6 +101,13 @@ const en = {
   'results.fillItOut': 'Fill it out',
   'results.submissionDeleted': 'Submission deleted',
   'results.allCleared': 'All submissions cleared',
+  'results.deleteOne': 'Delete submission',
+  'results.deleteOneTitle': 'Delete submission?',
+  'results.deleteOneText': 'The submission from {date} will be deleted permanently.',
+  'results.clearTitle': 'Delete all submissions?',
+  'results.clearText':
+    'All {n} submission(s) of this form will be deleted permanently. This cannot be undone.',
+  'results.clearConfirm': 'Delete all',
   'results.noQuestions': 'No questions exported.',
   'results.email': 'Email',
   'results.mailSubject': 'FormMaker — {name}: {n} submission(s)',

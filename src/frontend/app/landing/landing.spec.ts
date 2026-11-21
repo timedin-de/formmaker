@@ -99,6 +99,7 @@ describe('LandingComponent actions', () => {
   const open = vi.fn();
   const listForms = vi.fn();
   const deleteForm = vi.fn();
+  const submissionsFor = vi.fn();
   const onImport = vi.fn();
   const importJson = vi.fn();
   let component: LandingComponent;
@@ -107,6 +108,7 @@ describe('LandingComponent actions', () => {
   beforeEach(async () => {
     open.mockReset();
     deleteForm.mockReset();
+    submissionsFor.mockReset();
     onImport.mockReset();
     importJson.mockReset();
     listForms.mockReset();
@@ -117,7 +119,7 @@ describe('LandingComponent actions', () => {
         provideRouter([]),
         {
           provide: FormsRepository,
-          useValue: { init: () => Promise.resolve(), listForms, deleteForm },
+          useValue: { init: () => Promise.resolve(), listForms, deleteForm, submissionsFor },
         },
         { provide: MatSnackBar, useValue: { open } },
         { provide: FormImportService, useValue: { onImport, importJson } },
@@ -240,8 +242,46 @@ describe('LandingComponent actions', () => {
     expect(open.mock.calls[0][0]).toBe(i18n.t('landing.imported', { name: 'Demo' }));
   });
 
-  it('remove deletes then refreshes', async () => {
+  it('remove asks first, naming the submissions that go with the form', async () => {
+    submissionsFor.mockResolvedValue([{}, {}, {}]);
     await component.remove(makeForm());
+    expect(submissionsFor).toHaveBeenCalledWith('1');
+    expect(deleteForm).not.toHaveBeenCalled();
+    expect(component['pendingDelete']()).toMatchObject({
+      message: i18n.t('landing.deleteText', { name: 'Demo', n: 3 }),
+      word: i18n.t('confirm.word'),
+    });
+  });
+
+  it('remove needs no typed word for a form without submissions', async () => {
+    submissionsFor.mockResolvedValue([]);
+    await component.remove(makeForm());
+    expect(component['pendingDelete']()?.word).toBeUndefined();
+  });
+
+  it('remove still asks, with the typed word, when the submissions cannot be counted', async () => {
+    submissionsFor.mockRejectedValue(new Error('offline'));
+    await component.remove(makeForm());
+    expect(component['pendingDelete']()).toMatchObject({
+      message: i18n.t('landing.deleteTextUnknown', { name: 'Demo' }),
+      word: i18n.t('confirm.word'),
+    });
+  });
+
+  it('a canceled delete keeps the form', async () => {
+    submissionsFor.mockResolvedValue([]);
+    await component.remove(makeForm());
+    await component.confirmRemove(false);
+    expect(component['pendingDelete']()).toBeNull();
+    expect(deleteForm).not.toHaveBeenCalled();
+    expect(listForms).not.toHaveBeenCalled();
+  });
+
+  it('a confirmed delete deletes then refreshes', async () => {
+    submissionsFor.mockResolvedValue([]);
+    await component.remove(makeForm());
+    await component.confirmRemove(true);
+    expect(component['pendingDelete']()).toBeNull();
     expect(deleteForm).toHaveBeenCalledWith('1');
     expect(listForms).toHaveBeenCalledTimes(1);
   });

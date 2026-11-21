@@ -11,6 +11,11 @@ const de: typeof en = {
   'common.ok': 'OK',
   'common.locale': 'de-DE',
 
+  // confirm dialog
+  'confirm.cancel': 'Abbrechen',
+  'confirm.typeToConfirm': 'Zum Bestätigen „{word}“ eingeben',
+  'confirm.word': 'LÖSCHEN',
+
   // login
   'login.title': 'Anmelden',
   'login.subtitle': 'Editor-Zugriff — Teilnehmende brauchen nur den Teilen-Link.',
@@ -51,6 +56,10 @@ const de: typeof en = {
   'landing.results': 'Ergebnisse',
   'landing.exportJson': 'JSON exportieren',
   'landing.delete': 'Löschen',
+  'landing.deleteTitle': 'Formular löschen?',
+  'landing.deleteText': '„{name}“ und seine {n} Einreichung(en) werden endgültig gelöscht.',
+  'landing.deleteTextUnknown': '„{name}“ und alle seine Einreichungen werden endgültig gelöscht.',
+  'landing.deleteConfirm': 'Formular löschen',
   'landing.share': 'Teilen-Link kopieren',
   'landing.linkCopied': 'Teilen-Link kopiert',
   'landing.pages': 'Seiten',
@@ -97,6 +106,13 @@ const de: typeof en = {
   'results.fillItOut': 'Ausfüllen',
   'results.submissionDeleted': 'Einreichung gelöscht',
   'results.allCleared': 'Alle Einreichungen gelöscht',
+  'results.deleteOne': 'Einreichung löschen',
+  'results.deleteOneTitle': 'Einreichung löschen?',
+  'results.deleteOneText': 'Die Einreichung vom {date} wird endgültig gelöscht.',
+  'results.clearTitle': 'Alle Einreichungen löschen?',
+  'results.clearText':
+    'Alle {n} Einreichung(en) dieses Formulars werden endgültig gelöscht. Das kann nicht rückgängig gemacht werden.',
+  'results.clearConfirm': 'Alle löschen',
   'results.noQuestions': 'Keine Fragen exportiert.',
   'results.email': 'E-Mail',
   'results.mailSubject': 'FormMaker — {name}: {n} Einreichung(en)',
