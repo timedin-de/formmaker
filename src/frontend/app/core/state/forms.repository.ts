@@ -398,16 +398,21 @@ export class FormsRepository {
     removeCache(SUBMISSIONS_CACHE_PREFIX + id);
   }
 
-  async submissionsFor(formId: string): Promise<Submission[]> {
+  /**
+   * The submissions of `formId`, from the short-lived cache unless `fresh` asks for the
+   * server's current list. A cache hit doesn't rewrite the entry, so it can't outlive its TTL.
+   */
+  async submissionsFor(formId: string, { fresh = false } = {}): Promise<Submission[]> {
     await this.init();
     const key = SUBMISSIONS_CACHE_PREFIX + formId;
-    const list =
-      readCache(submissionsSchema, key, SUBMISSIONS_CACHE_TTL_MS) ??
-      (await this.api.request(
+    let list = fresh ? undefined : readCache(submissionsSchema, key, SUBMISSIONS_CACHE_TTL_MS);
+    if (!list) {
+      list = await this.api.request(
         submissionsSchema,
         `/api/forms/${encodeURIComponent(formId)}/submissions`,
-      ));
-    writeCache(key, list);
+      );
+      writeCache(key, list);
+    }
     this.submissions.set([
       ...list,
       ...this.submissions().filter((submission) => submission.formId !== formId),

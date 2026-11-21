@@ -9,13 +9,19 @@ import { RouterLink } from '@angular/router';
 import { formName } from '@shared/helper';
 import { countQuestions } from '@shared/model/form-tree';
 import { toPortableForm, type FormDefinition, type FormWithOwner } from '@shared/model/form.model';
-import { FormImportModal } from '../core/components';
+import { ConfirmDialog, FormImportModal } from '../core/components';
 import { downloadJSON } from '../core/export/file';
 import { FormImportService } from '../core/export/import';
 import { I18nService } from '../core/i18n';
 import { MarkdownPipe } from '../core/markdown';
 import { Notifier } from '../core/notifier';
 import { FormsRepository } from '../core/state/forms.repository';
+
+interface PendingDelete {
+  form: FormDefinition;
+  message: string;
+  word: string | undefined;
+}
 
 @Component({
   imports: [
@@ -27,6 +33,7 @@ import { FormsRepository } from '../core/state/forms.repository';
     MarkdownPipe,
     MatTooltip,
     FormImportModal,
+    ConfirmDialog,
     MatMenuModule,
   ],
   selector: 'fm-landing',
@@ -42,6 +49,10 @@ export class LandingComponent {
 
   private timedOutCloser: number | undefined;
   protected showTextModal = signal(false);
+  /** The form whose deletion the confirm dialog asks about. */
+  protected readonly pendingDelete = signal<PendingDelete | null>(null);
+  /** True while `remove` counts submissions; Delete stays disabled meanwhile. */
+  protected readonly countingForDelete = signal(false);
 
   readonly formName = formName;
 
@@ -121,8 +132,34 @@ export class LandingComponent {
     this.notifier.ok('landing.imported', { name });
   }
 
+  /**
+   * Asks before deleting `form`, naming how many submissions go with it. Like clearing
+   * them, losing submissions needs the confirm word typed, also when they can't be counted.
+   */
   async remove(form: FormDefinition): Promise<void> {
-    await this.repo.deleteForm(form.id);
+    // One at a time, so a slower count can't swap the form the dialog asks about.
+    if (this.countingForDelete()) return;
+    this.countingForDelete.set(true);
+    const name = formName(form, this.i18n);
+    const word = this.i18n.t('confirm.word');
+    try {
+      // Fresh, so submissions sent since the list was cached still demand the typed word.
+      const n = (await this.repo.submissionsFor(form.id, { fresh: true })).length;
+      const message = this.i18n.t('landing.deleteText', { name, n });
+      this.pendingDelete.set({ form, message, word: n > 0 ? word : undefined });
+    } catch {
+      const message = this.i18n.t('landing.deleteTextUnknown', { name });
+      this.pendingDelete.set({ form, message, word });
+    } finally {
+      this.countingForDelete.set(false);
+    }
+  }
+
+  async confirmRemove(ok: boolean): Promise<void> {
+    const pending = this.pendingDelete();
+    this.pendingDelete.set(null);
+    if (!ok || !pending) return;
+    await this.repo.deleteForm(pending.form.id);
     await this.refresh();
   }
 }
