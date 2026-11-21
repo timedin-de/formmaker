@@ -1,55 +1,85 @@
 .cond {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
 }
 .row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
+  gap: 8px 12px;
 }
 .legend {
-  font-size: 12px;
-  color: var(--mat-sys-on-surface-variant);
+  font-size: 13px;
+  color: var(--fm-text-muted);
   font-weight: 500;
 }
+// Each condition is its own little sheet, so field, operator and value read as one rule.
+// The panel is narrow, so the rule's parts stack full width with the remove button top-right.
 .cond-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  flex-wrap: wrap;
-  padding: 8px;
-  background: var(--mat-sys-surface-container-low);
-  border-radius: 10px;
-}
-.cond-row mat-form-field {
-  min-width: 132px;
-  flex: none;
-}
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 10px 8px;
+  padding: 12px;
+  background: var(--fm-sheet-muted);
+  border: 1px solid var(--fm-line);
+  border-radius: var(--fm-radius-lg);
 
-.cond-row .val {
-  min-width: 120px;
-}
-.cond-row .val.grow {
-  flex: 1;
-  min-width: 200px;
+  > * {
+    grid-column: 1;
+    min-width: 0;
+    width: 100%;
+    margin: 0;
+  }
+
+  > br {
+    display: none;
+  }
+
+  > button[mat-icon-button] {
+    grid-column: 2;
+    grid-row: 1;
+    width: auto;
+    margin-top: 4px;
+  }
 }
 .nested {
-  margin-left: 18px;
-  padding-left: 16px;
-  border-left: 2px dashed var(--mat-sys-outline-variant);
   display: flex;
   gap: 8px;
   align-items: flex-start;
+  margin-left: 6px;
+  padding: 4px 0 4px 16px;
+  border-left: 1px solid var(--fm-line-strong);
+
+  fm-condition-editor {
+    flex: 1;
+    min-width: 0;
+  }
 }
-.nested fm-condition-editor {
-  flex: 1;
-}
+// "Add" actions are dashed ghosts: clearly secondary to the rules above them.
 .add-row {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
+
+  button {
+    flex: 1 1 auto;
+    white-space: nowrap;
+    border-style: dashed;
+    --mat-button-outlined-outline-color: var(--fm-line-strong);
+    --mat-button-outlined-label-text-color: var(--fm-text-muted);
+    background: transparent !important;
+    box-shadow: none !important;
+
+    &:hover {
+      --mat-button-outlined-label-text-color: var(--mat-sys-primary);
+      --mat-button-outlined-outline-color: var(--mat-sys-primary);
+    }
+  }
 }
 .hint {
-  font-size: 12px;
-  color: var(--mat-sys-on-surface-variant);
+  align-self: center;
+  font-size: 13px;
+  color: var(--fm-text-muted);
 }

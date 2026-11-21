@@ -1,0 +1,399 @@
+// FormMaker control styles: Material components reshaped into the brand's flat, compact look
+// (see BRAND.md). Token overrides go into `theme()`, structural tweaks Material has no token
+// for are plain global rules below.
+@use '@angular/material' as mat;
+
+@mixin theme() {
+  // Compact, desktop-tool sizing: 36px buttons, 40px fields.
+  @include mat.button-density(-1);
+  @include mat.form-field-density(-4);
+  @include mat.button-toggle-density(-4);
+  @include mat.checkbox-density(-1);
+  @include mat.radio-density(-1);
+  @include mat.tabs-density(-3);
+  @include mat.toolbar-density(-1);
+
+  $radius: var(--fm-radius-md);
+  @include mat.button-overrides(
+    (
+      filled-container-shape: $radius,
+      outlined-container-shape: $radius,
+      protected-container-shape: $radius,
+      text-container-shape: $radius,
+      tonal-container-shape: $radius,
+      filled-label-text-weight: 550,
+      outlined-label-text-weight: 550,
+      text-label-text-weight: 550,
+      tonal-label-text-weight: 550,
+      filled-label-text-tracking: -0.005em,
+      outlined-label-text-tracking: -0.005em,
+      text-label-text-tracking: -0.005em,
+      outlined-outline-color: var(--fm-line-strong),
+      outlined-label-text-color: var(--mat-sys-on-surface),
+      filled-horizontal-padding: 14px,
+      outlined-horizontal-padding: 14px,
+      text-horizontal-padding: 8px,
+      text-icon-spacing: 6px,
+      text-icon-offset: -2px,
+      filled-icon-spacing: 6px,
+      outlined-icon-spacing: 6px,
+    )
+  );
+  // 36px buttons with 20px icons; Material derives the padding from these two tokens.
+  @include mat.icon-button-overrides(
+    (
+      icon-color: var(--fm-text-muted),
+      state-layer-size: 36px,
+      icon-size: 20px,
+      container-shape: var(--fm-radius-md),
+    )
+  );
+  @include mat.form-field-overrides(
+    (
+      outlined-container-shape: $radius,
+      outlined-outline-color: var(--fm-line-strong),
+      outlined-hover-outline-color: color-mix(in srgb, var(--mat-sys-on-surface) 35%, transparent),
+      outlined-focus-outline-color: var(--mat-sys-primary),
+      outlined-focus-outline-width: 1px,
+      outlined-label-text-color: var(--mat-sys-on-surface),
+      outlined-focus-label-text-color: var(--mat-sys-on-surface),
+      outlined-hover-label-text-color: var(--mat-sys-on-surface),
+      outlined-label-text-weight: 550,
+      outlined-label-text-populated-size: 13px,
+      outlined-label-text-size: 13px,
+      outlined-input-text-placeholder-color: color-mix(
+          in srgb,
+          var(--fm-text-muted) 80%,
+          transparent
+        ),
+      container-text-size: 14px,
+      subscript-text-size: 12px,
+      filled-container-shape: $radius,
+    )
+  );
+  @include mat.select-overrides(
+    (
+      panel-background-color: var(--fm-sheet),
+      container-elevation-shadow: var(--fm-shadow-3),
+      trigger-text-size: 14px,
+    )
+  );
+  @include mat.option-overrides(
+    (
+      label-text-size: 14px,
+      selected-state-layer-color: color-mix(in srgb, var(--mat-sys-primary) 9%, transparent),
+      selected-state-label-text-color: var(--mat-sys-on-surface),
+    )
+  );
+  @include mat.button-toggle-overrides(
+    (
+      shape: $radius,
+      divider-color: var(--fm-line-strong),
+      selected-state-background-color: color-mix(
+          in srgb,
+          var(--mat-sys-primary) 10%,
+          var(--fm-sheet)
+        ),
+      selected-state-text-color: var(--mat-sys-primary),
+      label-text-weight: 550,
+      label-text-size: 13px,
+    )
+  );
+  @include mat.tabs-overrides(
+    (
+      divider-color: var(--fm-line),
+      active-indicator-height: 2px,
+      active-indicator-shape: 2px 2px 0 0,
+      label-text-weight: 550,
+      label-text-size: 13px,
+      label-text-tracking: 0,
+      inactive-label-text-color: var(--fm-text-muted),
+      active-label-text-color: var(--mat-sys-on-surface),
+      active-focus-label-text-color: var(--mat-sys-on-surface),
+      active-hover-label-text-color: var(--mat-sys-on-surface),
+    )
+  );
+  @include mat.card-overrides(
+    (
+      elevated-container-color: var(--fm-sheet),
+      elevated-container-elevation: none,
+      elevated-container-shape: var(--fm-radius-xl),
+      outlined-container-color: var(--fm-sheet),
+      outlined-container-shape: var(--fm-radius-xl),
+      title-text-size: 15px,
+      title-text-weight: 600,
+      title-text-tracking: -0.01em,
+      subtitle-text-size: 13px,
+      subtitle-text-color: var(--fm-text-muted),
+    )
+  );
+  @include mat.toolbar-overrides(
+    (
+      container-background-color: var(--fm-sheet),
+      title-text-size: 15px,
+      title-text-weight: 600,
+    )
+  );
+  @include mat.menu-overrides(
+    (
+      container-shape: var(--fm-radius-lg),
+      container-color: var(--fm-sheet),
+      container-elevation-shadow: var(--fm-shadow-3),
+      item-label-text-size: 14px,
+      item-icon-size: 18px,
+      item-icon-color: var(--fm-text-muted),
+    )
+  );
+  @include mat.tooltip-overrides(
+    (
+      container-shape: var(--fm-radius-sm),
+      container-color: light-dark(#1d2025, #e1e2e9),
+      supporting-text-color: light-dark(#fff, #191c20),
+      supporting-text-size: 12px,
+    )
+  );
+  @include mat.progress-bar-overrides(
+    (
+      active-indicator-height: 4px,
+      track-height: 4px,
+      track-shape: 999px,
+    )
+  );
+  @include mat.expansion-overrides(
+    (
+      container-shape: var(--fm-radius-xl),
+      container-background-color: var(--fm-sheet),
+      header-text-weight: 600,
+    )
+  );
+  @include mat.snack-bar-overrides(
+    (
+      container-shape: var(--fm-radius-lg),
+      container-color: light-dark(#1d2025, #e1e2e9),
+      supporting-text-color: light-dark(#fff, #191c20),
+    )
+  );
+  @include mat.checkbox-overrides(
+    (
+      selected-checkmark-color: var(--mat-sys-on-primary),
+    )
+  );
+  @include mat.divider-overrides(
+    (
+      color: var(--fm-line),
+    )
+  );
+
+  // Clear focus rings in Ink on every Material control, for keyboard users.
+  @include mat.strong-focus-indicators(
+    (
+      border-color: var(--mat-sys-primary),
+      border-width: 2px,
+      border-radius: var(--fm-radius-md),
+    )
+  );
+}
+
+// ─── No ink ripples ─────────────────────────────────────────────────────────────────────
+// Hover, focus and pressed state layers stay; only the splash goes. Done in CSS rather than
+// MAT_RIPPLE_GLOBAL_OPTIONS, which would pull @angular/material/core into the main bundle.
+.mat-ripple-element {
+  display: none !important;
+}
+
+// ─── Buttons ─────────────────────────────────────────────────────────────────────────────
+// Filled: solid Ink with a hairline inner highlight. Stroked: white key-cap with a shadow.
+// A soft top-light sheen over the fill works in both color schemes.
+.mat-mdc-unelevated-button:not(.mat-warn, .confirm-destructive, :disabled) {
+  background-image: linear-gradient(180deg, rgb(255 255 255 / 14%), rgb(255 255 255 / 0%));
+  box-shadow:
+    var(--fm-shadow-ink),
+    inset 0 1px 0 rgb(255 255 255 / 18%),
+    inset 0 -1px 0 rgb(0 0 0 / 12%);
+  transition:
+    box-shadow var(--fm-fast) var(--fm-ease),
+    transform var(--fm-fast) var(--fm-ease);
+
+  &:hover {
+    box-shadow:
+      0 2px 4px color-mix(in srgb, var(--fm-ink) 30%, transparent),
+      0 10px 22px -8px color-mix(in srgb, var(--fm-ink) 60%, transparent),
+      inset 0 1px 0 rgb(255 255 255 / 18%),
+      inset 0 -1px 0 rgb(0 0 0 / 12%);
+  }
+
+  &:active {
+    transform: translateY(1px);
+  }
+}
+.mat-mdc-outlined-button:not(:disabled) {
+  background: var(--fm-sheet);
+  box-shadow: var(--fm-shadow-1);
+}
+// Inline SVGs sit on the text baseline and ride a few pixels high; block centers them.
+.mat-icon > svg {
+  display: block;
+}
+
+// ─── Split button ───────────────────────────────────────────────────────────────────────
+// `<div class="fm-split-button">` + main button + `.fm-split-toggle` (menu trigger): one
+// key-cap with a hairline divider, main action left, a chevron for more options right.
+.fm-split-button {
+  display: inline-flex;
+  border-radius: var(--fm-radius-md);
+  box-shadow: var(--fm-shadow-1);
+
+  > .mat-mdc-button-base {
+    box-shadow: none !important;
+
+    // When the split button is stretched, the main part takes the room, not the chevron.
+    &:first-child {
+      flex: 1;
+      border-start-end-radius: 0;
+      border-end-end-radius: 0;
+    }
+  }
+
+  > .fm-split-toggle {
+    min-width: 0;
+    margin-inline-start: -1px;
+    padding-inline: 8px;
+    border-start-start-radius: 0;
+    border-end-start-radius: 0;
+
+    .mat-icon {
+      margin: 0;
+    }
+  }
+}
+
+// ─── Form fields ────────────────────────────────────────────────────────────────────────
+// A floated label sits above the box instead of cutting a notch into the border, so fields
+// read like classic web inputs.
+.mat-mdc-form-field.mat-form-field-appearance-outline {
+  &:has(.mdc-floating-label) {
+    margin-top: 24px;
+  }
+
+  .mat-mdc-text-field-wrapper {
+    background: var(--fm-sheet);
+    border-radius: var(--fm-radius-md);
+    transition: box-shadow var(--fm-fast) var(--fm-ease);
+  }
+
+  &.mat-focused .mat-mdc-text-field-wrapper {
+    box-shadow: var(--fm-ring);
+  }
+
+  &.mat-form-field-invalid.mat-focused .mat-mdc-text-field-wrapper {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--mat-sys-error) 18%, transparent);
+  }
+
+  &.mat-form-field-disabled .mat-mdc-text-field-wrapper {
+    background: var(--fm-sheet-muted);
+  }
+
+  // Close the notch: the label no longer sits in the border.
+  .mdc-notched-outline--notched .mdc-notched-outline__notch {
+    border-top-style: solid !important;
+    border-top-width: var(--mat-form-field-outlined-outline-width, 1px) !important;
+  }
+  &.mat-focused .mdc-notched-outline--notched .mdc-notched-outline__notch {
+    border-top-width: var(--mat-form-field-outlined-focus-outline-width, 1px) !important;
+  }
+
+  // The label always sits above the box, whether Material considers it floated or not, so a
+  // form never mixes labels inside and outside fields. It stays at the notch's x position
+  // (lined up with the input text) because the notch clips anything left of it.
+  .mdc-notched-outline .mdc-floating-label {
+    top: 50%;
+    transform: translateY(
+      calc(-1 * var(--mat-form-field-container-height, 40px) / 2 - 26px)
+    ) !important;
+    transition: none !important;
+    font-size: 13px !important;
+    font-weight: 550;
+    color: var(--mat-sys-on-surface) !important;
+    overflow: visible;
+    max-width: none !important;
+  }
+  &.mat-form-field-invalid .mdc-notched-outline .mdc-floating-label {
+    color: var(--mat-sys-error) !important;
+  }
+  &.mat-form-field-disabled .mdc-notched-outline .mdc-floating-label {
+    color: color-mix(in srgb, var(--mat-sys-on-surface) 50%, transparent) !important;
+  }
+
+  .mdc-floating-label .mat-mdc-form-field-required-marker::after {
+    color: var(--mat-sys-error);
+  }
+
+  .mat-mdc-form-field-hint-wrapper,
+  .mat-mdc-form-field-error-wrapper {
+    padding-inline: 2px;
+  }
+}
+
+// ─── Tabs: underline, but quiet and left-aligned ────────────────────────────────────────
+.mat-mdc-tab-group .mat-mdc-tab {
+  flex-grow: 0 !important;
+  min-width: 0;
+  padding-inline: 12px;
+}
+
+// ─── Button toggle: segmented control ───────────────────────────────────────────────────
+.mat-button-toggle-group-appearance-standard {
+  border-color: var(--fm-line-strong) !important;
+  background: var(--fm-sheet);
+  box-shadow: var(--fm-shadow-1);
+
+  // The selected segment is marked by its fill, so drop M3's checkmark and the room it takes.
+  .mat-button-toggle-checkbox-wrapper {
+    display: none;
+  }
+  .mat-button-toggle-checked .mat-button-toggle-button {
+    padding-inline: 0 !important;
+  }
+}
+
+// ─── Menus & select panels: hairline border, compact items ──────────────────────────────
+.mat-mdc-menu-panel,
+.mat-mdc-select-panel,
+.mat-mdc-autocomplete-panel {
+  border: 1px solid var(--fm-line);
+}
+.mat-mdc-menu-panel .mat-mdc-menu-content {
+  padding: 4px !important;
+}
+.mat-mdc-menu-item {
+  min-height: 36px !important;
+  border-radius: var(--fm-radius-sm);
+
+  // Destructive entries (e.g. Delete) read as such, icon included.
+  &.danger,
+  &.danger .mat-icon {
+    color: var(--mat-sys-error);
+  }
+}
+.mat-mdc-menu-content .mat-divider {
+  margin-block: 4px;
+}
+.mat-mdc-select-panel {
+  padding: 4px !important;
+
+  .mat-mdc-option {
+    min-height: 36px;
+    border-radius: var(--fm-radius-sm);
+  }
+}
+
+// ─── Expansion panels: flat sheets ──────────────────────────────────────────────────────
+.mat-expansion-panel:not([class*='mat-elevation-z']) {
+  border: 1px solid var(--fm-line);
+  box-shadow: var(--fm-shadow-1) !important;
+}
+
+// ─── Cards ──────────────────────────────────────────────────────────────────────────────
+.mat-mdc-card-title {
+  line-height: 1.35 !important;
+}
