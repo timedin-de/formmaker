@@ -18,6 +18,7 @@ import { type UpdateValidationRuleRequest } from '@shared/schemas';
 import { DesignerStore } from '../core';
 import { I18nService } from '../core/i18n';
 import { PendingActions } from '../core/pending-actions';
+import { QuestionInputField } from './question-input-field';
 
 @Component({
   templateUrl: './validation-editor.html',
@@ -32,6 +33,7 @@ import { PendingActions } from '../core/pending-actions';
     MatLabel,
     MatInput,
     MatButtonModule,
+    QuestionInputField,
   ],
 })
 export class ValidationEditor extends PendingActions {
@@ -126,12 +128,5 @@ export class ValidationEditor extends PendingActions {
   str(value: unknown): string {
     if (value === null || value === undefined) return '';
     return String(value);
-  }
-
-  stringOrNum(raw: string): string | number {
-    const s = String(raw).trim();
-    if (s === '') return '';
-    const n = Number(s);
-    return s !== '' && !Number.isNaN(n) && /^-?\d*\.?\d+$/.test(s) ? n : s;
   }
 }

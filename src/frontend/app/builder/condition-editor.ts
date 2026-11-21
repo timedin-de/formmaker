@@ -8,13 +8,14 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { isChoice } from '@shared/helper';
-import { type FormDocument } from '@shared/model';
-import type { ChoiceElement } from '@shared/model/form.model';
+import { type FieldValue, type FormDocument } from '@shared/model';
+import type { ChoiceElement, ElementDefinition } from '@shared/model/form.model';
 import type {
   Condition,
   ConditionGroup,
   ConditionOperand,
   ConditionOperator,
+  LiteralOperand,
 } from '@shared/model/conditions.model';
 import { CONDITION_OPERATORS, emptyCondition } from '@shared/model/conditions.model';
 import { I18nService } from '../core/i18n';
@@ -97,16 +98,9 @@ export class ConditionEditor {
     return op?.kind === 'field' ? op.fieldId : '';
   }
 
-  literalText(cond: Condition): string {
-    const value = cond.operand?.kind === 'literal' ? cond.operand.value : null;
-    if (value === null || value === undefined) return '';
-    return String(value);
-  }
-
-  rangeToText(cond: Condition): string {
-    const value = cond.operandTo?.kind === 'literal' ? cond.operandTo.value : null;
-    if (value === null || value === undefined) return '';
-    return String(value);
+  /** The stored literal of an operand, as is (no coercion for display). */
+  literal(operand: ConditionOperand | undefined): LiteralOperand['value'] {
+    return operand?.kind === 'literal' ? operand.value : null;
   }
 
   listText(cond: Condition): string {
@@ -121,23 +115,26 @@ export class ConditionEditor {
     this.mutate((g) => Object.assign(g.conditions[index], patch));
   }
 
-  set$(index: number, which: 'operand', raw: string): void {
+  /** Stores a literal entered with the tested field's control (a single value, never a list). */
+  setLiteral(index: number, which: 'operand' | 'operandTo', value: FieldValue): void {
+    const literal =
+      typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean'
+        ? value
+        : null;
     this.mutate((g) => {
-      g.conditions[index].operand = { kind: 'literal', value: parseLiteral(raw) };
+      g.conditions[index][which] = { kind: 'literal', value: literal };
     });
+  }
+
+  /** The element a condition tests; its type picks the control for literal operands. */
+  fieldOf(cond: Condition): ElementDefinition | null {
+    return (cond.fieldId && this.form().elements[cond.fieldId]) || null;
   }
 
   /** The choice question a condition tests, if any; its literals are option ids. */
   choiceOf(cond: Condition): ChoiceElement | null {
-    const el = cond.fieldId ? this.form().elements[cond.fieldId] : undefined;
+    const el = this.fieldOf(cond);
     return el && isChoice(el) ? el : null;
-  }
-
-  setOptionOperand(index: number, value: string | string[] | null): void {
-    const id = Array.isArray(value) ? (value[0] ?? null) : value;
-    this.mutate((g) => {
-      g.conditions[index].operand = { kind: 'literal', value: id };
-    });
   }
 
   setOptionList(index: number, value: string | string[] | null): void {
@@ -154,15 +151,6 @@ export class ConditionEditor {
       } else {
         cond.operand = { kind: 'field', fieldId: '' };
       }
-    });
-  }
-
-  setRangeTo(index: number, raw: string): void {
-    this.mutate((g) => {
-      g.conditions[index].operandTo = {
-        kind: 'literal',
-        value: raw.trim() === '' ? null : parseLiteral(raw),
-      };
     });
   }
 
