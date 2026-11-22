@@ -102,15 +102,32 @@ export interface ScaleElement extends QuestionBase {
 /** Most values a scale question may offer (0–10); larger scales are rejected when saved. */
 export const MAX_SCALE_STEPS = 11;
 
-/** Number of values from `min` to `max` in `step`s; `Infinity` when `step` makes no progress. */
-export function scaleStepCount({
+/**
+ * The values a scale offers from `min` up to `max` in `step`s (rounded to 2 decimals), or `null`
+ * when that is not 1 to `MAX_SCALE_STEPS` values or a step leaves the value unchanged.
+ */
+export function scaleValues({
   min,
   max,
   step,
-}: Pick<ScaleElement, 'min' | 'max' | 'step'>): number {
-  if (!(step > 0) || !Number.isFinite(min) || !Number.isFinite(max)) return Infinity;
-  if (max < min) return 0;
-  return Math.floor((max - min) / step + 1e-9) + 1;
+}: Pick<ScaleElement, 'min' | 'max' | 'step'>): number[] | null {
+  if (!(step > 0) || !Number.isFinite(min) || !Number.isFinite(max)) return null;
+  const values: number[] = [];
+  // Each value is computed from `min`, so float errors don't add up; the loop ends after at
+  // most MAX_SCALE_STEPS + 1 rounds.
+  for (let i = 0; ; i++) {
+    const raw = min + i * step;
+    if (raw > max + step * 1e-9) break;
+    const value = Math.round(raw * 100) / 100;
+    if (value === values.at(-1) || values.length === MAX_SCALE_STEPS) return null;
+    values.push(value);
+  }
+  return values.length ? values : null;
+}
+
+/** Number of values a scale offers; `Infinity` when it has no valid set of values. */
+export function scaleStepCount(scale: Pick<ScaleElement, 'min' | 'max' | 'step'>): number {
+  return scaleValues(scale)?.length ?? Infinity;
 }
 
 export interface FileElement extends QuestionBase {

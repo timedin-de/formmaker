@@ -13,14 +13,15 @@ import { MatRadioModule } from '@angular/material/radio';
 import { MatOption, MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { has } from '@shared/helper';
-import type {
-  ChoiceElement,
-  ElementDefinition,
-  FieldValue,
-  FileValue,
-  ScaleElement,
-  SignatureValue,
-  ValidationRuleType,
+import {
+  scaleValues,
+  type ChoiceElement,
+  type ElementDefinition,
+  type FieldValue,
+  type FileValue,
+  type ScaleElement,
+  type SignatureValue,
+  type ValidationRuleType,
 } from '@shared/model';
 import { I18nService } from '../core/i18n';
 import { MarkdownPipe } from '../core/markdown';
@@ -94,10 +95,7 @@ export class QuestionInput {
   }
 
   scaleValues(el: ElementDefinition): number[] {
-    const s = el as ScaleElement;
-    const out: number[] = [];
-    for (let v = s.min; v <= s.max + 1e-9; v += s.step) out.push(Math.round(v * 100) / 100);
-    return out;
+    return scaleValues(el as ScaleElement) ?? [];
   }
 
   hasScaleLabels(el: ElementDefinition): boolean {
@@ -111,11 +109,6 @@ export class QuestionInput {
 
   scaleMaxLabel(el: ElementDefinition): string {
     return (el as ScaleElement).maxLabel ?? '';
-  }
-
-  setScale(control: FormControl, value: number): void {
-    control.setValue(value);
-    control.markAsTouched();
   }
 
   multiChecked(control: FormControl, value: string | number): boolean {
