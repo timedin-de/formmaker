@@ -82,6 +82,9 @@ export class RunnerStore {
     const restoreValues: ValuesMap | undefined = initialValues ?? draft ?? undefined;
 
     this.rebuildControls(form, restoreValues);
+    // Drafts hold only edited fields, so restored values stay safe from
+    // dynamic defaults; every other field recalculates its default.
+    for (const id of Object.keys(restoreValues ?? {})) this.answers.get(id)?.markAsDirty();
 
     this.changeSub?.unsubscribe();
     this.changeSub = this.answers.valueChanges.pipe(filter(() => !!this.form())).subscribe(() => {
@@ -120,7 +123,17 @@ export class RunnerStore {
   saveDraft(): void {
     const form = this.form();
     if (!form) return;
-    this.draft.save(form, this.rawValues());
+    this.draft.save(form, this.editedValues());
+  }
+
+  /** Values of fields the user edited; unedited ones recalculate their defaults on restore. */
+  private editedValues(): ValuesMap {
+    const out = dict<FieldValue>();
+    for (const [id, control] of Object.entries(this.answers.controls)) {
+      const ctrl = control as FormControl;
+      if (ctrl.dirty) out[id] = ctrl.getRawValue() ?? null;
+    }
+    return out;
   }
 
   private loadDraft(form: FormDefinition): ValuesMap | null {
@@ -480,6 +493,7 @@ export class RunnerStore {
   ): void {
     const control = this.answers.get(id);
     if (!control) return;
+    control.markAsDirty();
     control.setValue(value, { emitEvent: options.emitEvent ?? true });
     if (options.markTouched) control.markAsTouched({ onlySelf: true });
   }
