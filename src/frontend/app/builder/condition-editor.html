@@ -12,20 +12,39 @@
       <fm-question-selector
         [model]="cond.fieldId"
         [form]="form()"
-        (selectChange)="set($index, { fieldId: $event.id, fieldType: $event.type })"
+        (selectChange)="setField($index, $event.id, $event.type)"
         [selfId]="self()"
       ></fm-question-selector>
 
       <mat-form-field appearance="outline" subscriptSizing="dynamic">
-        <mat-select [ngModel]="cond.operator" (ngModelChange)="set($index, { operator: $event })">
-          @for (op of OPERATORS; track op) {
+        <mat-select [ngModel]="cond.operator" (ngModelChange)="setOperator($index, $event)">
+          @for (op of operators(cond); track op) {
             <mat-option [value]="op">{{ i18n.t(`op.${op}`) }}</mat-option>
           }
         </mat-select>
       </mat-form-field>
 
       @switch (rightKind(cond.operator)) {
-        @case ('operand') {
+        @case ('range') {
+          <fm-question-input-field
+            class="val"
+            [element]="fieldOf(cond)"
+            [label]="i18n.t('cond.from')"
+            [value]="literal(cond.operand)"
+            (valueChange)="setLiteral($index, 'operand', $event)"
+          ></fm-question-input-field>
+          <fm-question-input-field
+            class="val"
+            [element]="fieldOf(cond)"
+            [label]="i18n.t('cond.to')"
+            [value]="literal(cond.operandTo)"
+            (valueChange)="setLiteral($index, 'operandTo', $event)"
+          ></fm-question-input-field>
+        }
+        @case ('none') {
+          <span class="hint">{{ i18n.t('cond.noValue') }}</span>
+        }
+        @default {
           <mat-form-field appearance="outline" subscriptSizing="dynamic" class="val">
             <mat-select
               [ngModel]="operandKind(cond)"
@@ -36,65 +55,42 @@
             </mat-select>
           </mat-form-field>
           <br />
-          @if (operandKind(cond) === 'literal') {
-            <fm-question-input-field
-              class="val"
-              single
-              [element]="fieldOf(cond)"
-              [ariaLabel]="i18n.t('cond.value')"
-              [value]="literal(cond.operand)"
-              (valueChange)="setLiteral($index, 'operand', $event)"
-            ></fm-question-input-field>
-          } @else {
+          @if (operandKind(cond) === 'field') {
             <fm-question-selector
               [form]="form()"
               [selfId]="self()"
               [model]="fieldOperandId(cond)"
               (selectChange)="set($index, { operand: { kind: 'field', fieldId: $event.id } })"
             ></fm-question-selector>
-          }
-        }
-        @case ('range') {
-          <fm-question-input-field
-            class="val"
-            single
-            [element]="fieldOf(cond)"
-            [label]="i18n.t('cond.from')"
-            [value]="literal(cond.operand)"
-            (valueChange)="setLiteral($index, 'operand', $event)"
-          ></fm-question-input-field>
-          <fm-question-input-field
-            class="val"
-            single
-            [element]="fieldOf(cond)"
-            [label]="i18n.t('cond.to')"
-            [value]="literal(cond.operandTo)"
-            (valueChange)="setLiteral($index, 'operandTo', $event)"
-          ></fm-question-input-field>
-        }
-        @case ('list') {
-          @if (choiceOf(cond); as choice) {
+          } @else if (rightKind(cond.operator) === 'operand') {
+            <fm-question-input-field
+              class="val"
+              [element]="fieldOf(cond)"
+              [ariaLabel]="i18n.t('cond.value')"
+              [value]="literal(cond.operand)"
+              (valueChange)="setLiteral($index, 'operand', $event)"
+            ></fm-question-input-field>
+          } @else if (choiceOf(cond); as choice) {
+            <!-- in / notIn: any of several options, whatever the question allows to pick. -->
             <fm-option-picker
               class="val grow"
               multiple
               [ariaLabel]="i18n.t('cond.value')"
               [options]="choice.options"
-              [value]="cond.values ?? []"
+              [value]="optionIds(cond)"
               (valueChange)="setOptionList($index, $event)"
             />
           } @else {
             <mat-form-field appearance="outline" subscriptSizing="dynamic" class="val grow">
               <input
                 matInput
+                [attr.aria-label]="i18n.t('cond.value')"
                 [placeholder]="i18n.t('cond.commaList')"
                 [ngModel]="listText(cond)"
                 (ngModelChange)="setList($index, $event)"
               />
             </mat-form-field>
           }
-        }
-        @case ('none') {
-          <span class="hint">{{ i18n.t('cond.noValue') }}</span>
         }
       }
 

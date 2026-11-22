@@ -126,8 +126,8 @@ describe('cloneElement', () => {
     dependent.enabledWhen = {
       logic: 'all',
       conditions: [
-        { fieldId: multi.id, operator: 'eq', operand: { kind: 'literal', value: b } },
-        { fieldId: multi.id, operator: 'hasAnyOf', values: [a, b] },
+        { fieldId: multi.id, operator: 'eq', operand: { kind: 'literal', value: [b] } },
+        { fieldId: multi.id, operator: 'in', operand: { kind: 'literal', value: [a, b] } },
       ],
       groups: [],
     };
@@ -140,9 +140,9 @@ describe('cloneElement', () => {
     const [newA, newB] = copiedMulti.options.map((o) => o.id);
 
     expect(copiedMulti.defaultValue).toEqual({ kind: 'static', value: [newA, 'unknown'] });
-    const [eq, anyOf] = copiedDependent.enabledWhen!.conditions;
-    expect(eq.operand).toEqual({ kind: 'literal', value: newB });
-    expect(anyOf.values).toEqual([newA, newB]);
+    const [eq, inList] = copiedDependent.enabledWhen!.conditions;
+    expect(eq.operand).toEqual({ kind: 'literal', value: [newB] });
+    expect(inList.operand).toEqual({ kind: 'literal', value: [newA, newB] });
     expect(multi.defaultValue).toEqual({ kind: 'static', value: [a, 'unknown'] });
   });
 

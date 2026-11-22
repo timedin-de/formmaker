@@ -101,7 +101,13 @@
       "inputType": "phone",
       "enabledWhen": {
         "logic": "all",
-        "conditions": [{ "fieldId": "q_country", "operator": "in", "values": ["US", "UK"] }],
+        "conditions": [
+          {
+            "fieldId": "q_country",
+            "operator": "in",
+            "operand": { "kind": "literal", "value": ["US", "UK"] }
+          }
+        ],
         "groups": []
       }
     },
@@ -293,7 +299,13 @@
       "multiple": true,
       "enabledWhen": {
         "logic": "all",
-        "conditions": [{ "fieldId": "q_tags", "operator": "hasAnyOf", "values": ["a", "b"] }],
+        "conditions": [
+          {
+            "fieldId": "q_tags",
+            "operator": "in",
+            "operand": { "kind": "literal", "value": ["a", "b"] }
+          }
+        ],
         "groups": [
           {
             "logic": "any",

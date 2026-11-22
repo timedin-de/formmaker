@@ -122,24 +122,28 @@ Missing on import ⇒ `{ "value": 1, "multiplier": "60" }`.
   "fieldId":   "q_other",                       // referenced element id (must exist)
   "fieldType": "text",                          // optional hint
   "operator":  "<op>",
-  "operand":   { "kind": "literal", "value": "x" | 5 | true | null }
+  "operand":   { "kind": "literal", "value": "x" | 5 | true | ["a", "b"] | null }
             |  { "kind": "field", "fieldId": "q_x" },   // compare against another field
   "operandTo": { … },                            // only for `between` (upper bound)
-  "values":    ["a","b"],                        // only for in/notIn/has* (array of string|number|boolean)
 }
 ```
 
-| operator                 | needs                  | semantics                                                             |
-| ------------------------ | ---------------------- | --------------------------------------------------------------------- |
-| `eq` `neq`               | `operand`              | equal / not equal (case-insensitive; arrays match if any item equals) |
-| `gt` `gte` `lt` `lte`    | `operand`              | numeric compare (falls back to string compare)                        |
-| `contains` `notContains` | `operand`              | substring (case-insensitive; arrays: any item)                        |
-| `startsWith` `endsWith`  | `operand`              | string prefix/suffix                                                  |
-| `isEmpty` `isNotEmpty`   | –                      | empty check (null/''/empty array)                                     |
-| `in` `notIn`             | `values`               | left value in / not in list                                           |
-| `hasAnyOf`               | `values`               | array value intersects list                                           |
-| `hasAllOf`               | `values`               | array value contains all list items                                   |
-| `between`                | `operand`, `operandTo` | operand ≤ value ≤ operandTo                                           |
+A list literal (items: string | number | boolean) is the operand of `in` / `notIn`, and of
+`eq` / `contains` on a multi-choice question, whose answer is a list of option ids.
+
+| operator                 | needs                  | semantics                                                                     |
+| ------------------------ | ---------------------- | ----------------------------------------------------------------------------- |
+| `eq` `neq`               | `operand`              | equal / not equal (case-insensitive); a list equals exactly the same items    |
+| `gt` `gte` `lt` `lte`    | `operand`              | numeric compare (falls back to string compare)                                |
+| `contains` `notContains` | `operand`              | substring (case-insensitive); a list operand: the answer has all of its items |
+| `startsWith` `endsWith`  | `operand`              | string prefix/suffix                                                          |
+| `isEmpty` `isNotEmpty`   | –                      | empty check (null/''/empty array)                                             |
+| `in` `notIn`             | `operand` (list)       | any / none of the answer's items (a single value is one item) is in the list  |
+| `between`                | `operand`, `operandTo` | operand ≤ value ≤ operandTo                                                   |
+
+The builder only offers operators that fit the tested question: multi-choice gets `eq` `neq`
+`contains` `notContains` `in` `notIn` `isEmpty` `isNotEmpty`; choice and dropdown get `eq` `neq`
+`in` `notIn` `isEmpty` `isNotEmpty`.
 
 ## Validation rules (`validations`, ValidationRule[])
 
@@ -240,7 +244,13 @@ dateDiff yearsBetween msg required`. Identifiers = field ids (null when empty).
           "inputType": "phone",
           "enabledWhen": {
             "logic": "all",
-            "conditions": [{ "fieldId": "q_country", "operator": "in", "values": ["US", "UK"] }],
+            "conditions": [
+              {
+                "fieldId": "q_country",
+                "operator": "in",
+                "operand": { "kind": "literal", "value": ["US", "UK"] }
+              }
+            ],
             "groups": []
           }
         },
@@ -433,7 +443,13 @@ dateDiff yearsBetween msg required`. Identifiers = field ids (null when empty).
           "multiple": true,
           "enabledWhen": {
             "logic": "all",
-            "conditions": [{ "fieldId": "q_tags", "operator": "hasAnyOf", "values": ["a", "b"] }],
+            "conditions": [
+              {
+                "fieldId": "q_tags",
+                "operator": "in",
+                "operand": { "kind": "literal", "value": ["a", "b"] }
+              }
+            ],
             "groups": [
               {
                 "logic": "any",
