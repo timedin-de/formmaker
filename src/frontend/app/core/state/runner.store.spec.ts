@@ -83,6 +83,44 @@ describe('RunnerStore draft persistence', () => {
     expect(localStorage.getItem(`formmaker.draft.${form.id}`)).toBeNull();
   });
 
+  it('keeps edited fields after a reload when a default source changes', () => {
+    const form = newForm('Draft Defaults');
+    const page = createPage('Details');
+    const source = createElement('text', 'Source');
+    const edited = createElement('text', 'Edited');
+    edited.defaultValue = { kind: 'fromField', fieldId: source.id };
+    const following = createElement('text', 'Following');
+    following.defaultValue = { kind: 'fromField', fieldId: source.id };
+    addToGroup([source, edited, following], page, form);
+    form.pages = [page];
+    store.init(form);
+
+    store.setAnswer(source.id, 'First');
+    const control = store.answers.get(edited.id);
+    control?.markAsDirty();
+    control?.setValue('Mine');
+    store.saveDraft();
+
+    const reloaded = new RunnerStore();
+    reloaded.init(form);
+    reloaded.setAnswer(source.id, 'Second');
+    expect(reloaded.answers.get(edited.id)?.value).toBe('Mine');
+    expect(reloaded.answers.get(following.id)?.value).toBe('Second');
+  });
+
+  it('does not save unedited fields in the draft', () => {
+    const form = draftForm();
+    store.init(form);
+    const [nameEl, ageEl] = getElements(form.pages[0], form);
+
+    store.setAnswer(nameEl.id, 'Ada');
+    store.saveDraft();
+
+    const saved = JSON.parse(localStorage.getItem(`formmaker.draft.${form.id}`) ?? '{}');
+    expect(saved.values).toEqual({ [nameEl.id]: 'Ada' });
+    expect(saved.values).not.toHaveProperty(ageEl.id);
+  });
+
   it('ignores corrupted draft data', () => {
     const form = draftForm();
     localStorage.setItem(`formmaker.draft.${form.id}`, 'not json {');
