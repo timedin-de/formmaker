@@ -189,6 +189,41 @@ test.describe('accessibility', () => {
       await expectNoViolations(page);
     });
 
+    test('scale of eleven values, in a row and stacked', async ({ page }) => {
+      const scale = {
+        ...seedField('scale', uuid(), 'How likely are you to recommend us?'),
+        min: 0,
+        max: 10,
+        step: 1,
+        minLabel: 'Not at all',
+        maxLabel: 'Very likely',
+      };
+      const scaleId = await createForm(
+        session,
+        makeForm(uniqueName('a11y-scale'), [{ title: 'Rating', children: [scale.id] }], [scale]),
+      );
+      try {
+        await page.goto(`/runner/${scaleId}`);
+        const group = page.getByRole('radiogroup', { name: scale.label });
+        await group.getByRole('radio', { name: '7' }).check();
+        await expect(group.getByRole('radio', { name: '7' })).toBeChecked();
+        // Axe only flags several labels on one input as "incomplete", and screen readers disagree
+        // on which one they read.
+        const labelCounts = await group
+          .getByRole('radio')
+          .evaluateAll((inputs) => inputs.map((i) => (i as HTMLInputElement).labels?.length));
+        expect(labelCounts).toEqual(Array<number>(11).fill(1));
+        await expectNoViolations(page);
+
+        // Too narrow for eleven values in a row: they stack, with the end labels beside them.
+        await page.setViewportSize({ width: 400, height: 900 });
+        await expect(group.getByText('Very likely')).toBeVisible();
+        await expectNoViolations(page);
+      } finally {
+        await deleteForm(session, scaleId);
+      }
+    });
+
     test('later page and thank-you screen', async ({ page }) => {
       const name = seedField('text', uuid(), 'Name');
       const age = seedField('number', uuid(), 'Age');

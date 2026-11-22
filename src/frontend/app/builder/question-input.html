@@ -82,29 +82,46 @@
       </div>
     }
     @case ('scale') {
-      <div class="scale">
-        @for (val of scaleValues(vr.el); track val) {
-          <div class="scale-container">
-            <button
-              #field
-              [matButton]="vr.control.value === val ? 'filled' : 'outlined'"
-              extended
-              type="button"
-              class="scale-val"
-              [class.on]="vr.control.value === val"
-              (click)="setScale(vr.control, val)"
-            >
-              <span>{{ val }}</span>
-            </button>
+      @let values = scaleValues(vr.el);
+      <div class="scale" [class.many]="values.length > 5" [style.--scale-count]="values.length">
+        <!-- Native radios: the label around each input is its only label and fills its cell.
+             `[name]` only reaches the forms radio accessor; `[attr.name]` puts the inputs in one
+             native group, which arrow-key navigation needs (Firefox). -->
+        <div
+          class="scale-values"
+          role="radiogroup"
+          [attr.aria-labelledby]="`${vr.id}-title`"
+          [attr.aria-describedby]="hasScaleLabels(vr.el) ? `${vr.id}-scale-labels` : null"
+        >
+          @for (val of values; track val; let first = $first, last = $last) {
+            <label class="scale-val">
+              <input
+                #field
+                type="radio"
+                [name]="vr.id"
+                [attr.name]="vr.id"
+                [value]="val"
+                [formControl]="vr.control"
+              />
+              <span class="scale-num">{{ val }}</span>
+              <!-- End labels beside the first / last value, shown only when the values are stacked.
+                   A one-value scale's only value is both, so it gets both labels. -->
+              @if (first && scaleMinLabel(vr.el)) {
+                <span class="scale-end" aria-hidden="true">{{ scaleMinLabel(vr.el) }}</span>
+              }
+              @if (last && scaleMaxLabel(vr.el)) {
+                <span class="scale-end" aria-hidden="true">{{ scaleMaxLabel(vr.el) }}</span>
+              }
+            </label>
+          }
+        </div>
+        @if (hasScaleLabels(vr.el)) {
+          <div class="scale-labels" [id]="`${vr.id}-scale-labels`">
+            <span>{{ scaleMinLabel(vr.el) }}</span>
+            <span>{{ scaleMaxLabel(vr.el) }}</span>
           </div>
         }
       </div>
-      @if (hasScaleLabels(vr.el)) {
-        <div class="scale-labels">
-          <span>{{ scaleMinLabel(vr.el) }}</span>
-          <span>{{ scaleMaxLabel(vr.el) }}</span>
-        </div>
-      }
     }
     @case ('date') {
       <fm-question-input-field
