@@ -560,6 +560,60 @@ describe('FormService updateElement', () => {
     ).rejects.toBeInstanceOf(BadRequestException);
     expect(saveForm).not.toHaveBeenCalled();
   });
+
+  it('throws 400 without saving for a scale step that gives too many values', async () => {
+    const form = formOf([
+      page('p1', [
+        {
+          id: 's1',
+          type: 'scale',
+          label: 's1',
+          description: undefined,
+          width: 12,
+          required: false,
+          validations: [],
+          readonly: false,
+          defaultValue: null,
+          min: 1,
+          max: 5,
+          step: 1,
+        },
+      ]),
+    ]);
+
+    for (const step of [1e-20, 0.000001, -1, 0.25]) {
+      await expect(
+        service.updateElement({ form, ownerId: 'owner-1' }, 's1', { step }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+    }
+    expect(saveForm).not.toHaveBeenCalled();
+  });
+
+  it('throws 400 without saving for a scale whose max lies below its min', async () => {
+    const form = formOf([
+      page('p1', [
+        {
+          id: 's1',
+          type: 'scale',
+          label: 's1',
+          description: undefined,
+          width: 12,
+          required: false,
+          validations: [],
+          readonly: false,
+          defaultValue: null,
+          min: 1,
+          max: 5,
+          step: 1,
+        },
+      ]),
+    ]);
+
+    await expect(
+      service.updateElement({ form, ownerId: 'owner-1' }, 's1', { max: 0 }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(saveForm).not.toHaveBeenCalled();
+  });
 });
 
 describe('FormService cloning', () => {

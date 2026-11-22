@@ -99,6 +99,20 @@ export interface ScaleElement extends QuestionBase {
   maxLabel?: string;
 }
 
+/** Most values a scale question may offer (0–10); larger scales are rejected when saved. */
+export const MAX_SCALE_STEPS = 11;
+
+/** Number of values from `min` to `max` in `step`s; `Infinity` when `step` makes no progress. */
+export function scaleStepCount({
+  min,
+  max,
+  step,
+}: Pick<ScaleElement, 'min' | 'max' | 'step'>): number {
+  if (!(step > 0) || !Number.isFinite(min) || !Number.isFinite(max)) return Infinity;
+  if (max < min) return 0;
+  return Math.floor((max - min) / step + 1e-9) + 1;
+}
+
 export interface FileElement extends QuestionBase {
   type: 'file';
   accept?: string;

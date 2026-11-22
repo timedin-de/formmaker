@@ -68,6 +68,14 @@
   font-size: 13px;
   color: var(--mat-sys-on-surface-variant);
 }
+.scale-error {
+  font-size: 12px;
+  color: var(--mat-sys-error);
+
+  &:empty {
+    display: none;
+  }
+}
 .opts {
   display: flex;
   flex-direction: column;
