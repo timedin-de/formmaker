@@ -267,3 +267,43 @@ test('enforces required fields nested inside groups', async ({ page, request }) 
 
   await deleteForm(session, formId);
 });
+
+test('picks a scale value from its radio group', async ({ page, request }) => {
+  const scaleId = uuid();
+  const session = await loginApi(request);
+  const formId = await createForm(
+    session,
+    makeForm(
+      uniqueName('runner-scale'),
+      [{ title: 'Rating', children: [scaleId] }],
+      [
+        {
+          ...seedField('scale', scaleId, 'How likely are you to recommend us?'),
+          min: 0,
+          max: 10,
+          step: 1,
+          minLabel: 'Not at all',
+          maxLabel: 'Very likely',
+        },
+      ],
+    ),
+  );
+
+  await page.goto(`/runner/${formId}`);
+  const scale = page.getByRole('radiogroup', { name: 'How likely are you to recommend us?' });
+  await expect(scale.getByRole('radio')).toHaveCount(11);
+
+  await scale.getByRole('radio', { name: '7' }).check();
+  await page.keyboard.press('ArrowRight');
+  await expect(scale.getByRole('radio', { name: '8' })).toBeChecked();
+
+  await page.getByRole('button', { name: 'Submit' }).click();
+  await expect(page.getByRole('heading', { name: 'Thank you!' })).toBeVisible();
+  const res = await session.request.get(`/api/forms/${formId}/submissions`, {
+    headers: { Authorization: `Bearer ${session.token}` },
+  });
+  const subs = (await res.json()) as { values: Record<string, unknown> }[];
+  expect(subs[0].values).toMatchObject({ [scaleId]: 8 });
+
+  await deleteForm(session, formId);
+});

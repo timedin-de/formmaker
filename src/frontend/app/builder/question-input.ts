@@ -113,11 +113,6 @@ export class QuestionInput {
     return (el as ScaleElement).maxLabel ?? '';
   }
 
-  setScale(control: FormControl, value: number): void {
-    control.setValue(value);
-    control.markAsTouched();
-  }
-
   multiChecked(control: FormControl, value: string | number): boolean {
     const current = (control.value as (string | number)[] | null) ?? [];
     return current.includes(value);

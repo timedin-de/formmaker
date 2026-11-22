@@ -8,40 +8,108 @@
   gap: 10px;
   padding-top: 4px;
 }
-.scale {
-  display: flex;
-  .scale-container {
-    width: calc(100% / 5);
-    margin: 0 10px;
-    .scale-val {
-      border: solid;
-      position: relative;
-      border-radius: var(--mat-sys-corner-full);
+// Only for containers too narrow for one row of values: list them like a choice question.
+@mixin stacked-scale {
+  .scale-values {
+    grid-template-columns: 1fr;
+  }
+  .scale-val {
+    flex-direction: row;
+    justify-content: flex-start;
+    padding: 0 8px 0 0;
+    border-inline-start: 0;
+    border-top: 1px solid var(--mat-sys-outline-variant);
 
-      padding-bottom: 100% !important;
-      width: 100%;
-      padding-bottom: 50%;
-      padding: 0;
-      overflow: hidden;
-      box-sizing: border-box;
-
-      /*! border: 0; */
-
-      span {
-        justify-self: center;
-        font-size: clamp(1px, 15cqw, 110px);
-        transform: translate(-50%, 0);
-        font-weight: 900;
-        position: absolute !important;
-      }
+    &:first-child {
+      border-top: 0;
     }
   }
+  // End labels move next to the first / last value instead of below the list.
+  .scale-end {
+    display: block;
+  }
+  .scale-labels {
+    display: none;
+  }
 }
-.scale-labels {
+
+.scale {
+  container-type: inline-size;
   display: flex;
-  justify-content: space-between;
-  font-size: 12px;
-  color: var(--mat-sys-on-surface-variant);
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 4px;
+
+  .scale-values {
+    display: grid;
+    grid-template-columns: repeat(var(--scale-count, 5), minmax(0, 1fr));
+    border: 1px solid var(--mat-sys-outline-variant);
+    border-radius: 14px;
+    background: var(--mat-sys-surface-container-low);
+    overflow: hidden;
+  }
+
+  // A label filling its cell, so the whole cell picks the value: radio with its number underneath.
+  .scale-val {
+    display: flex;
+    cursor: pointer;
+    flex-direction: column;
+    align-items: center;
+    padding: 2px 0 8px;
+    border-inline-start: 1px solid var(--mat-sys-outline-variant);
+    transition: background-color 120ms ease;
+
+    &:first-child {
+      border-inline-start: 0;
+    }
+    &:hover {
+      background: var(--mat-sys-surface-container);
+    }
+    &:has(.mat-mdc-radio-checked) {
+      background: var(--mat-sys-secondary-container);
+      color: var(--mat-sys-on-secondary-container);
+    }
+  }
+
+  .scale-num {
+    font-size: 14px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .scale-end {
+    display: none;
+    margin-inline-start: auto;
+    font-size: 12px;
+    color: var(--mat-sys-on-surface-variant);
+
+    // Both end labels on a one-value scale.
+    & + & {
+      margin-inline-start: 12px;
+    }
+  }
+
+  .scale-labels {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    font-size: 12px;
+    color: var(--mat-sys-on-surface-variant);
+
+    span:last-child {
+      text-align: end;
+    }
+  }
+
+  // A cell needs ~44px for the radio: up to 11 values fit in one row from 520px.
+  @container (max-width: 300px) {
+    @include stacked-scale;
+  }
+  &.many {
+    @container (max-width: 520px) {
+      @include stacked-scale;
+    }
+  }
 }
 .files {
   display: flex;
