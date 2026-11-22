@@ -392,8 +392,6 @@ const en = {
   'op.isNotEmpty': 'is not empty',
   'op.in': 'is one of',
   'op.notIn': 'is none of',
-  'op.hasAnyOf': 'has any of',
-  'op.hasAllOf': 'has all of',
   'op.between': 'is between',
 
   // builder canvas / pages

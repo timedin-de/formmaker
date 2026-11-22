@@ -470,7 +470,6 @@ function remapConditionGroup(
     if (condition.operandTo?.kind === 'literal') {
       condition.operandTo.value = mapOptionValue(condition.operandTo.value, options);
     }
-    if (condition.values) condition.values = mapOptionValue(condition.values, options);
     mapReference(condition, 'fieldId', idMap);
     if (condition.operand?.kind === 'field') {
       mapReference(condition.operand, 'fieldId', idMap);

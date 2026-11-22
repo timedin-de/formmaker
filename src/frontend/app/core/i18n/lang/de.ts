@@ -398,8 +398,6 @@ const de: typeof en = {
   'op.isNotEmpty': 'ist nicht leer',
   'op.in': 'ist eines von',
   'op.notIn': 'ist keines von',
-  'op.hasAnyOf': 'hat eines von',
-  'op.hasAllOf': 'hat alle von',
   'op.between': 'liegt zwischen',
 
   // builder canvas / pages

@@ -16,13 +16,17 @@ export type ConditionOperator =
   | 'isNotEmpty'
   | 'in'
   | 'notIn'
-  | 'hasAnyOf'
-  | 'hasAllOf'
   | 'between';
+
+export type LiteralValue = string | number | boolean;
 
 export interface LiteralOperand {
   kind: 'literal';
-  value: string | number | boolean | null;
+  /**
+   * A list for `in` / `notIn` (any of its items), and for a multi-choice question, whose
+   * answer is a list of option ids (`eq`: exactly these, `contains`: all of these).
+   */
+  value: LiteralValue | LiteralValue[] | null;
 }
 
 export interface FieldOperand {
@@ -41,12 +45,10 @@ export interface Condition {
   fieldId: ElementId | '';
   fieldType?: ElementType;
   operator: ConditionOperator;
-  /** Right side of binary operators (eq/neq/gt/.../between-with-single-value). */
+  /** Right side of every operator but `isEmpty` / `isNotEmpty`; the lower bound of `between`. */
   operand?: ConditionOperand;
   /** Upper bound for `between`. */
   operandTo?: ConditionOperand;
-  /** For `in` / `notIn` / `hasAnyOf` / `hasAllOf`. */
-  values?: (string | number | boolean)[];
 }
 
 export interface ConditionGroup {
@@ -77,10 +79,36 @@ export const CONDITION_OPERATORS: ConditionOperator[] = [
   'isNotEmpty',
   'in',
   'notIn',
-  'hasAnyOf',
-  'hasAllOf',
   'between',
 ];
+
+/** A multi-choice answer is an unordered set of option ids. */
+const MULTI_CHOICE_OPERATORS: ConditionOperator[] = [
+  'eq',
+  'neq',
+  'contains',
+  'notContains',
+  'in',
+  'notIn',
+  'isEmpty',
+  'isNotEmpty',
+];
+
+/** A choice / dropdown answer is one option id: no text matching or ordering. */
+const CHOICE_OPERATORS: ConditionOperator[] = ['eq', 'neq', 'in', 'notIn', 'isEmpty', 'isNotEmpty'];
+
+/** The operators that make sense for a field of `type`; every operator when it is unknown. */
+export function conditionOperatorsFor(type: ElementType | undefined): ConditionOperator[] {
+  switch (type) {
+    case 'multiChoice':
+      return MULTI_CHOICE_OPERATORS;
+    case 'choice':
+    case 'dropdown':
+      return CHOICE_OPERATORS;
+    default:
+      return CONDITION_OPERATORS;
+  }
+}
 
 export function emptyCondition(): Condition {
   return { fieldId: '', operator: 'eq', operand: { kind: 'literal', value: null } };

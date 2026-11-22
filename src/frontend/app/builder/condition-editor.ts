@@ -9,19 +9,21 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { isChoice } from '@shared/helper';
 import { type FieldValue, type FormDocument } from '@shared/model';
-import type { ChoiceElement, ElementDefinition } from '@shared/model/form.model';
 import type {
   Condition,
   ConditionGroup,
   ConditionOperand,
   ConditionOperator,
   LiteralOperand,
+  LiteralValue,
 } from '@shared/model/conditions.model';
-import { CONDITION_OPERATORS, emptyCondition } from '@shared/model/conditions.model';
+import { conditionOperatorsFor, emptyCondition } from '@shared/model/conditions.model';
+import type { ChoiceElement, ElementDefinition, ElementType } from '@shared/model/form.model';
 import { I18nService } from '../core/i18n';
 import { OptionPicker } from './option-picker';
 import { QuestionInputField } from './question-input-field';
 import { QuestionSelector } from './question-selector';
+import { parseRaw, valueKindOf } from './value-kind';
 
 const NEEDS_RIGHT: Record<ConditionOperator, 'operand' | 'list' | 'range' | 'none'> = {
   eq: 'operand',
@@ -38,8 +40,6 @@ const NEEDS_RIGHT: Record<ConditionOperator, 'operand' | 'list' | 'range' | 'non
   isNotEmpty: 'none',
   in: 'list',
   notIn: 'list',
-  hasAnyOf: 'list',
-  hasAllOf: 'list',
   between: 'range',
 };
 
@@ -76,8 +76,6 @@ export class ConditionEditor {
   readonly indent = input(false);
   readonly changed = output<ConditionGroup>();
 
-  readonly OPERATORS = CONDITION_OPERATORS;
-
   private readonly source = signal<ConditionGroup>({ logic: 'all', conditions: [], groups: [] });
   protected edit = computed(() => this.source());
 
@@ -103,24 +101,79 @@ export class ConditionEditor {
     return operand?.kind === 'literal' ? operand.value : null;
   }
 
+  /** The literal of a list operator as its items. */
+  listItems(cond: Condition): LiteralValue[] {
+    const value = this.literal(cond.operand);
+    return Array.isArray(value) ? value : value === null ? [] : [value];
+  }
+
+  /** Option ids picked for a list operator on a choice question. */
+  optionIds(cond: Condition): string[] {
+    return this.listItems(cond).map(String);
+  }
+
   listText(cond: Condition): string {
-    return (cond.values ?? []).map(String).join(', ');
+    return this.listItems(cond).map(String).join(', ');
   }
 
   setLogic(logic: 'all' | 'any'): void {
     this.mutate((g) => (g.logic = logic));
   }
 
+  /**
+   * Operators offered for a condition: those fitting the tested field's type, plus the stored
+   * one so a condition saved before stays visible.
+   */
+  operators(cond: Condition): ConditionOperator[] {
+    const fitting = conditionOperatorsFor(this.fieldOf(cond)?.type);
+    return fitting.includes(cond.operator) ? fitting : [...fitting, cond.operator];
+  }
+
   set(index: number, patch: Partial<Condition>): void {
     this.mutate((g) => Object.assign(g.conditions[index], patch));
   }
 
-  /** Stores a literal entered with the tested field's control (a single value, never a list). */
+  /** Changes the operator, keeping the literal in the shape it now needs (see `fitLiteral`). */
+  setOperator(index: number, operator: ConditionOperator): void {
+    this.mutate((g) => {
+      const cond = g.conditions[index];
+      cond.operator = operator;
+      this.fitLiteral(cond);
+    });
+  }
+
+  /**
+   * Picks the tested field; an operator that does not fit its type falls back to `eq`, and
+   * the literal is kept in the shape the field needs (see `fitLiteral`).
+   */
+  setField(index: number, fieldId: string, fieldType: ElementType): void {
+    this.mutate((g) => {
+      const cond = g.conditions[index];
+      Object.assign(cond, { fieldId, fieldType });
+      if (!conditionOperatorsFor(fieldType).includes(cond.operator)) {
+        Object.assign(cond, emptyCondition(), { fieldId, fieldType });
+      }
+      this.fitLiteral(cond);
+    });
+  }
+
+  /**
+   * Puts a literal operand in the shape its operator and field need: a list for `in` /
+   * `notIn` and multi-choice questions, else a single value (the first of a former list).
+   */
+  private fitLiteral(cond: Condition): void {
+    const operand = cond.operand;
+    if (operand?.kind !== 'literal') return;
+    const list =
+      NEEDS_RIGHT[cond.operator] === 'list' || this.fieldOf(cond)?.type === 'multiChoice';
+    const value = operand.value;
+    if (list && !Array.isArray(value)) operand.value = value === null ? [] : [value];
+    if (!list && Array.isArray(value)) operand.value = value[0] ?? null;
+  }
+
+  /** Stores a literal entered with the tested field's control (a list for multi-choice). */
   setLiteral(index: number, which: 'operand' | 'operandTo', value: FieldValue): void {
-    const literal =
-      typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean'
-        ? value
-        : null;
+    const literal = toLiteral(value);
     this.mutate((g) => {
       g.conditions[index][which] = { kind: 'literal', value: literal };
     });
@@ -138,9 +191,7 @@ export class ConditionEditor {
   }
 
   setOptionList(index: number, value: string | string[] | null): void {
-    this.mutate((g) => {
-      g.conditions[index].values = Array.isArray(value) ? value : value ? [value] : [];
-    });
+    this.setListLiteral(index, Array.isArray(value) ? value : value ? [value] : []);
   }
 
   setOperandKind(index: number, kind: 'literal' | 'field'): void {
@@ -154,12 +205,24 @@ export class ConditionEditor {
     });
   }
 
+  /**
+   * Stores a comma-separated list literal. Entries are only converted to numbers or booleans
+   * where the tested question holds them, so e.g. `001` stays text for a text question.
+   */
   setList(index: number, raw: string): void {
-    this.mutate((g) => {
-      g.conditions[index].values = raw
+    const kind = valueKindOf(this.fieldOf(this.source().conditions[index]));
+    this.setListLiteral(
+      index,
+      raw
         .split(',')
-        .map((s) => parseLiteral(s.trim()))
-        .filter((v): v is string | number | boolean => v !== null && v !== '');
+        .map((s) => parseRaw(kind, s.trim()))
+        .filter((v): v is LiteralValue => isLiteralValue(v) && v !== ''),
+    );
+  }
+
+  private setListLiteral(index: number, value: LiteralValue[]): void {
+    this.mutate((g) => {
+      g.conditions[index].operand = { kind: 'literal', value };
     });
   }
 
@@ -193,13 +256,16 @@ export class ConditionEditor {
   }
 }
 
-function parseLiteral(raw: string): string | number | boolean | null {
-  if (raw === '') return null;
-  const nr = Number(raw);
-  if (raw !== '' && !Number.isNaN(nr) && /^-?\d*\.?\d+$/.test(raw)) return nr;
-  if (raw === 'true') return true;
-  if (raw === 'false') return false;
-  return raw;
+function isLiteralValue(v: unknown): v is LiteralValue {
+  return typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean';
+}
+
+/** A value as a condition literal: a single value or a list of them, else none (e.g. files). */
+function toLiteral(value: FieldValue): LiteralOperand['value'] {
+  if (isLiteralValue(value)) return value;
+  if (!Array.isArray(value)) return null;
+  const items: unknown[] = value;
+  return items.every(isLiteralValue) ? items : null;
 }
 
 function cloneGroup(g: ConditionGroup): ConditionGroup {

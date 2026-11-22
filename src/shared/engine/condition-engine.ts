@@ -1,8 +1,15 @@
-import type { Condition, ConditionGroup, ConditionOperand } from '@shared/model/conditions.model';
+import type {
+  Condition,
+  ConditionGroup,
+  ConditionOperand,
+  LiteralValue,
+} from '@shared/model/conditions.model';
 import type { FieldValue } from '@shared/model/values.model';
 import { isEmptyValue } from './expression/evaluator';
 
 type ConditionValues = Readonly<Record<string, FieldValue | undefined>>;
+/** A side of a condition: an answer, or a literal (a list for `in` / multi-choice). */
+type Side = FieldValue | LiteralValue[];
 
 export function evalCondition(condition: Condition, values: ConditionValues): boolean {
   const { fieldId } = condition;
@@ -15,11 +22,11 @@ export function evalCondition(condition: Condition, values: ConditionValues): bo
       return isEmptyValue(left as never);
     case 'isNotEmpty':
       return !isEmptyValue(left as never);
-    case 'eq': {
-      if (left === null) return right === null;
-      if (Array.isArray(left)) return left.some((item) => equals(item, right));
+    case 'eq':
+      // A list (multi-choice) equals exactly the same items, in any order.
+      if (Array.isArray(left) || Array.isArray(right))
+        return sameItems(asList(left), asList(right));
       return equals(left, right);
-    }
     case 'neq':
       return !evalCondition({ ...condition, operator: 'eq' }, values);
     case 'gt':
@@ -31,6 +38,8 @@ export function evalCondition(condition: Condition, values: ConditionValues): bo
     case 'lte':
       return numericCompare(left, right) <= 0;
     case 'contains':
+      // A list operand: every one of its items is among the answer's items.
+      if (Array.isArray(right)) return right.every((v) => includes(asList(left), v));
       if (Array.isArray(left)) return left.some((item) => contains(stringify(item), right));
       return contains(left, right);
     case 'notContains':
@@ -40,17 +49,10 @@ export function evalCondition(condition: Condition, values: ConditionValues): bo
     case 'endsWith':
       return left != null && String(left).endsWith(String(right ?? ''));
     case 'in':
-      return valuesList(condition).some((v) => equals(left, v));
+      // Any item of the answer (a single value is one item) is among the operand's items.
+      return asList(left).some((item) => includes(asList(right), item));
     case 'notIn':
-      return !valuesList(condition).some((v) => equals(left, v));
-    case 'hasAnyOf': {
-      const list = asList(left);
-      return valuesList(condition).some((v) => list.some((item) => equals(item, v)));
-    }
-    case 'hasAllOf': {
-      const list = asList(left);
-      return valuesList(condition).every((v) => list.some((item) => equals(item, v)));
-    }
+      return !evalCondition({ ...condition, operator: 'in' }, values);
     case 'between': {
       const to = resolveOperand(condition.operandTo, values);
       return numericCompare(left, right) >= 0 && numericCompare(left, to) <= 0;
@@ -76,17 +78,10 @@ export function evalConditionGroup(
   return group.logic === 'any' ? results.some((r) => r) : results.every((r) => r);
 }
 
-function resolveOperand(
-  operand: ConditionOperand | undefined,
-  values: ConditionValues,
-): FieldValue {
+function resolveOperand(operand: ConditionOperand | undefined, values: ConditionValues): Side {
   if (!operand) return null;
   if (operand.kind === 'field') return values[operand.fieldId] ?? null;
   return operand.value;
-}
-
-function valuesList(condition: Condition): readonly (string | number | boolean)[] {
-  return condition.values ?? [];
 }
 
 function equals(a: unknown, b: unknown): boolean {
@@ -99,7 +94,7 @@ function equals(a: unknown, b: unknown): boolean {
   return String(a).toLowerCase() === String(b).toLowerCase();
 }
 
-function numericCompare(a: FieldValue, b: FieldValue): number {
+function numericCompare(a: Side, b: Side): number {
   const na = Number(a);
   const nb = Number(b);
   if (Number.isFinite(na) && Number.isFinite(nb)) return na === nb ? 0 : na < nb ? -1 : 1;
@@ -108,7 +103,7 @@ function numericCompare(a: FieldValue, b: FieldValue): number {
   return sa === sb ? 0 : sa < sb ? -1 : 1;
 }
 
-function contains(a: FieldValue, b: FieldValue): boolean {
+function contains(a: Side, b: Side): boolean {
   if (a === null || b === null) return false;
   return stringify(a).toLowerCase().includes(stringify(b).toLowerCase());
 }
@@ -122,7 +117,16 @@ function stringify(value: unknown): string {
   return String(value);
 }
 
-function asList(a: FieldValue): unknown[] {
+function includes(list: readonly unknown[], v: unknown): boolean {
+  return list.some((item) => equals(item, v));
+}
+
+/** Same items regardless of order (and of duplicates). */
+function sameItems(a: readonly unknown[], b: readonly unknown[]): boolean {
+  return a.every((v) => includes(b, v)) && b.every((v) => includes(a, v));
+}
+
+function asList(a: Side): readonly unknown[] {
   if (Array.isArray(a)) return a;
   return a === null || a === undefined ? [] : [a];
 }

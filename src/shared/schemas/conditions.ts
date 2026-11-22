@@ -11,9 +11,11 @@ import {
 
 const conditionOperatorSchema = z.enum(CONDITION_OPERATORS);
 
+const literalValueSchema = z.union([z.string(), z.number(), z.boolean()]);
+
 const literalOperandSchema = z.strictObject({
   kind: z.literal('literal'),
-  value: z.nullable(z.union([z.string(), z.number(), z.boolean()])),
+  value: z.nullable(z.union([literalValueSchema, z.array(literalValueSchema)])),
 }) satisfies z.ZodMiniType<LiteralOperand>;
 
 const fieldOperandSchema = z.strictObject({
@@ -32,7 +34,6 @@ const conditionSchema = z.strictObject({
   operator: conditionOperatorSchema,
   operand: z.optional(conditionOperandSchema),
   operandTo: z.optional(conditionOperandSchema),
-  values: z.optional(z.array(z.union([z.string(), z.number(), z.boolean()]))),
 }) satisfies z.ZodMiniType<Condition>;
 
 export const conditionGroupSchema: z.ZodMiniType<ConditionGroup> = z.lazy(() =>

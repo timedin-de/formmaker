@@ -93,21 +93,63 @@ describe('evalCondition', () => {
   });
 
   it('in / notIn', () => {
-    const cond: Condition = { fieldId: 'age', operator: 'in', values: [20, 30, 40] };
+    const cond: Condition = {
+      fieldId: 'age',
+      operator: 'in',
+      operand: { kind: 'literal', value: [20, 30, 40] },
+    };
     expect(evalCondition(cond, values)).toBe(true);
     expect(evalCondition({ ...cond, operator: 'notIn' }, values)).toBe(false);
+    expect(evalCondition({ ...cond, fieldId: 'missing' }, values)).toBe(false);
   });
 
-  it('hasAnyOf / hasAllOf', () => {
-    expect(
-      evalCondition({ fieldId: 'colors', operator: 'hasAnyOf', values: ['red', 'green'] }, values),
-    ).toBe(true);
+  it('in on a list: any of its items', () => {
+    const anyOf = (value: string[] | string) =>
+      evalCondition(
+        { fieldId: 'colors', operator: 'in', operand: { kind: 'literal', value } },
+        values,
+      );
+    expect(anyOf(['red', 'green'])).toBe(true);
+    expect(anyOf(['green'])).toBe(false);
+    expect(anyOf('blue')).toBe(true);
     expect(
       evalCondition(
-        { fieldId: 'colors', operator: 'hasAllOf', values: ['red', 'blue', 'green'] },
+        { fieldId: 'age', operator: 'in', operand: { kind: 'field', fieldId: 'ages' } },
+        {
+          age: 30,
+          ages: ['20', '30'],
+        },
+      ),
+    ).toBe(true);
+  });
+
+  it('eq on a list matches exactly the same items, in any order', () => {
+    const eq = (value: string[] | string | null, of: Record<string, FieldValue> = values) =>
+      evalCondition({ fieldId: 'colors', operator: 'eq', operand: { kind: 'literal', value } }, of);
+    expect(eq(['blue', 'red'])).toBe(true);
+    expect(eq(['red'])).toBe(false);
+    expect(eq(['red', 'blue', 'green'])).toBe(false);
+    expect(eq('red')).toBe(false);
+    expect(eq([], { colors: [] })).toBe(true);
+    expect(eq(null, { colors: [] })).toBe(true);
+    expect(eq(['red'], { colors: null })).toBe(false);
+    expect(
+      evalCondition(
+        { fieldId: 'colors', operator: 'neq', operand: { kind: 'literal', value: ['red'] } },
         values,
       ),
-    ).toBe(false);
+    ).toBe(true);
+  });
+
+  it('contains with a list needs all of its items', () => {
+    const contains = (value: string[]) =>
+      evalCondition(
+        { fieldId: 'colors', operator: 'contains', operand: { kind: 'literal', value } },
+        values,
+      );
+    expect(contains(['red'])).toBe(true);
+    expect(contains(['blue', 'red'])).toBe(true);
+    expect(contains(['red', 'green'])).toBe(false);
   });
 
   it('between', () => {
@@ -196,7 +238,7 @@ describe('conditionGroupReferences', () => {
       logic: 'all',
       conditions: [
         { fieldId: 'a', operator: 'eq', operand: { kind: 'field', fieldId: 'b' } },
-        { fieldId: 'c', operator: 'in', values: [1, 2] },
+        { fieldId: 'c', operator: 'in', operand: { kind: 'literal', value: [1, 2] } },
       ],
       groups: [{ logic: 'any', conditions: [{ fieldId: 'd', operator: 'isEmpty' }], groups: [] }],
     });

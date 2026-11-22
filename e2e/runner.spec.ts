@@ -173,6 +173,54 @@ test('clears a picked single-choice answer', async ({ page, request }) => {
   await deleteForm(session, formId);
 });
 
+test('shows a question when a multi-choice answer is exactly the listed options', async ({
+  page,
+  request,
+}) => {
+  const multiId = uuid();
+  const dependentId = uuid();
+  const [a, b, c] = [uuid(), uuid(), uuid()];
+  const session = await loginApi(request);
+  const formId = await createForm(
+    session,
+    makeForm(
+      uniqueName('runner-multi-eq'),
+      [{ title: 'Pick', children: [multiId, dependentId] }],
+      [
+        {
+          ...seedField('multiChoice', multiId, 'Toppings'),
+          options: [
+            { id: a, label: 'Cheese' },
+            { id: b, label: 'Ham' },
+            { id: c, label: 'Olives' },
+          ],
+        },
+        {
+          ...seedField('text', dependentId, 'Classic'),
+          enabledWhen: {
+            logic: 'all',
+            conditions: [
+              { fieldId: multiId, operator: 'eq', operand: { kind: 'literal', value: [b, a] } },
+            ],
+            groups: [],
+          },
+        },
+      ],
+    ),
+  );
+
+  await page.goto(`/runner/${formId}`);
+  const dependent = page.getByLabel('Classic');
+  await page.getByRole('checkbox', { name: 'Cheese' }).check();
+  await expect(dependent).toHaveCount(0);
+  await page.getByRole('checkbox', { name: 'Ham' }).check();
+  await expect(dependent).toBeVisible();
+  await page.getByRole('checkbox', { name: 'Olives' }).check();
+  await expect(dependent).toHaveCount(0);
+
+  await deleteForm(session, formId);
+});
+
 /** An optional question of `type`, with the props its schema requires. */
 function seedOptionalQuestion(type: string, id: string): SeedElement {
   const field = seedField(type, id, `Optional ${type}`);
