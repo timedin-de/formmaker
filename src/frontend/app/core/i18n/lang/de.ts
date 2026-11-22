@@ -303,6 +303,7 @@ const de: typeof en = {
   'value.no': 'Nein',
   'value.mismatch': 'Passt nicht zum Fragetyp. Ändern oder leeren.',
   'value.unsupported': 'Dateien und Unterschriften haben keinen festen Wert.',
+  'value.clear': 'Leeren',
 
   // validation rule names
   'val.required': 'Pflichtfeld',

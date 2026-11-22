@@ -2,10 +2,14 @@
   @switch (vr.el.type) {
     @case ('text') {
       <mat-form-field appearance="outline" class="field-host" subscriptSizing="dynamic">
+        @if (label(); as label) {
+          <mat-label>{{ label }}</mat-label>
+        }
         <input
           #field
           matInput
           [id]="vr.id"
+          [attr.aria-label]="ariaLabel() ?? null"
           [formControl]="vr.control"
           [placeholder]="vr.placeholder ?? ''"
           [minlength]="validation('minLength')"
@@ -16,10 +20,14 @@
     }
     @case ('longText') {
       <mat-form-field appearance="outline" class="field-host" subscriptSizing="dynamic">
+        @if (label(); as label) {
+          <mat-label>{{ label }}</mat-label>
+        }
         <textarea
           #field
           matInput
           [id]="vr.id"
+          [attr.aria-label]="ariaLabel() ?? null"
           [formControl]="vr.control"
           [placeholder]="vr.placeholder ?? ''"
           [rows]="vr.el.rows ?? 4"
@@ -30,10 +38,14 @@
     }
     @case ('number') {
       <mat-form-field appearance="outline" class="field-host" subscriptSizing="dynamic">
+        @if (label(); as label) {
+          <mat-label>{{ label }}</mat-label>
+        }
         <input
           #field
           matInput
           [id]="vr.id"
+          [attr.aria-label]="ariaLabel() ?? null"
           type="number"
           [min]="validation('min')"
           [max]="validation('max')"
@@ -56,6 +68,7 @@
           <mat-radio-button #field [value]="opt.id">{{ opt.label }}</mat-radio-button>
         }
       </mat-radio-group>
+      <ng-container *ngTemplateOutlet="clear; context: { $implicit: vr.control }" />
     }
     @case ('dropdown') {
       <mat-form-field appearance="outline" class="field-host" subscriptSizing="dynamic">
@@ -125,22 +138,35 @@
           </div>
         }
       </div>
+      <ng-container *ngTemplateOutlet="clear; context: { $implicit: vr.control }" />
     }
     @case ('date') {
-      <fm-question-input-field
-        kind="date"
-        [id]="vr.id"
-        [min]="date(validation('dateMin'))"
-        [max]="date(validation('dateMax'))"
-        [control]="vr.control"
-      ></fm-question-input-field>
-    }
-    @case ('time') {
       <mat-form-field appearance="outline" class="field-host" subscriptSizing="dynamic">
+        @if (label(); as label) {
+          <mat-label>{{ label }}</mat-label>
+        }
         <input
           #field
           matInput
           [id]="vr.id"
+          [attr.aria-label]="ariaLabel() ?? null"
+          type="date"
+          [min]="validation('dateMin') ?? null"
+          [max]="validation('dateMax') ?? null"
+          [formControl]="vr.control"
+        />
+      </mat-form-field>
+    }
+    @case ('time') {
+      <mat-form-field appearance="outline" class="field-host" subscriptSizing="dynamic">
+        @if (label(); as label) {
+          <mat-label>{{ label }}</mat-label>
+        }
+        <input
+          #field
+          matInput
+          [id]="vr.id"
+          [attr.aria-label]="ariaLabel() ?? null"
           type="time"
           [formControl]="vr.control"
           [step]="timeStep(vr.el)"
@@ -149,10 +175,14 @@
     }
     @case ('dateTime') {
       <mat-form-field appearance="outline" class="field-host" subscriptSizing="dynamic">
+        @if (label(); as label) {
+          <mat-label>{{ label }}</mat-label>
+        }
         <input
           #field
           matInput
           [id]="vr.id"
+          [attr.aria-label]="ariaLabel() ?? null"
           type="datetime-local"
           [formControl]="vr.control"
           [step]="timeStep(vr.el)"
@@ -215,3 +245,12 @@
     <mat-error>{{ errMsg(vr.control) }}</mat-error>
   }
 }
+
+<!-- A picked radio button cannot be unpicked, so radio groups offer to clear the answer. -->
+<ng-template #clear let-control>
+  @if (control.enabled && control.value !== null && control.value !== '') {
+    <button mat-button type="button" class="clear" (click)="clearValue(control)">
+      {{ i18n.t('value.clear') }}
+    </button>
+  }
+</ng-template>

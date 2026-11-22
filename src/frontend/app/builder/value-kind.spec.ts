@@ -62,6 +62,13 @@ describe('fitsKind', () => {
     expect(fitsKind('dateTime', '2026-11-21T24:00')).toBe(false);
   });
 
+  it('keeps multi-line text out of single-line inputs', () => {
+    expect(fitsKind('text', 'first\nsecond', el('text'))).toBe(false);
+    expect(fitsKind('text', 'first\r\nsecond')).toBe(false);
+    expect(fitsKind('text', 'first\nsecond', el('longText'))).toBe(true);
+    expect(fitsKind('text', 'one line', el('text'))).toBe(true);
+  });
+
   it('rejects numbers too large to be finite', () => {
     expect(fitsKind('number', '9'.repeat(400))).toBe(false);
     expect(fitsKind('number', '1e400')).toBe(false);

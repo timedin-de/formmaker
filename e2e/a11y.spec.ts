@@ -207,6 +207,8 @@ test.describe('accessibility', () => {
         const group = page.getByRole('radiogroup', { name: scale.label });
         await group.getByRole('radio', { name: '7' }).check();
         await expect(group.getByRole('radio', { name: '7' })).toBeChecked();
+        // A picked answer can be cleared again.
+        await expect(page.getByRole('button', { name: 'Clear' })).toBeVisible();
         // Axe only flags several labels on one input as "incomplete", and screen readers disagree
         // on which one they read.
         const labelCounts = await group

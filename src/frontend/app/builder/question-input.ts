@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { Component, ElementRef, inject, input, viewChild } from '@angular/core';
 import {
   FormsModule,
@@ -28,8 +29,12 @@ import { I18nService } from '../core/i18n';
 import { MarkdownPipe } from '../core/markdown';
 import type { ElementViewRef } from '../core/state/runner.model';
 import { SignaturePadField } from '../runner/signature-pad';
-import { QuestionInputField } from './question-input-field';
 
+/**
+ * The input of a question, bound to its form control. The runner shows it beneath the question's
+ * own title; the builder reuses it to enter fixed values (see `QuestionInputField`), passing a
+ * `label` or `ariaLabel` because there is no title.
+ */
 @Component({
   templateUrl: './question-input.html',
   styleUrl: './question-input.scss',
@@ -41,8 +46,8 @@ import { QuestionInputField } from './question-input-field';
     SignaturePadField,
     MatIconModule,
     MatCheckboxModule,
-    QuestionInputField,
     MatOption,
+    NgTemplateOutlet,
     MatSelectModule,
     MatRadioModule,
     MarkdownPipe,
@@ -52,6 +57,10 @@ import { QuestionInputField } from './question-input-field';
 })
 export class QuestionInput {
   readonly vr = input<ElementViewRef>();
+  /** Floating label of text-like fields, for use without a question title. */
+  readonly label = input<string>();
+  /** Accessible name of text-like fields without a `label` or question title. */
+  readonly ariaLabel = input<string>();
   protected readonly i18n = inject(I18nService);
   /** Main control: a native input, or a Material component (select, checkbox, radio, button). */
   private readonly field = viewChild<ElementRef<HTMLElement> | { focus(): void }>('field');
@@ -63,8 +72,6 @@ export class QuestionInput {
       field.nativeElement.focus({ preventScroll: true });
     } else field?.focus();
   }
-
-  date = (value: unknown) => value as Date;
 
   inputType(el: TextElement): string {
     const type = el.inputType ?? 'text';
@@ -144,6 +151,11 @@ export class QuestionInput {
     return v && typeof v === 'object' && 'dataUrl' in (v as Record<string, unknown>)
       ? (v as SignatureValue)
       : null;
+  }
+
+  clearValue(control: FormControl): void {
+    control.setValue(null);
+    control.markAsTouched();
   }
 
   onSig(control: FormControl, value: FieldValue): void {
