@@ -142,6 +142,37 @@ test('blocks submission while a revealed required field is still empty', async (
   await deleteForm(session, formId);
 });
 
+test('clears a picked single-choice answer', async ({ page, request }) => {
+  const choiceId = uuid();
+  const session = await loginApi(request);
+  const formId = await createForm(
+    session,
+    makeForm(
+      uniqueName('runner-clear'),
+      [{ title: 'Pick', children: [choiceId] }],
+      [
+        {
+          ...seedField('choice', choiceId, 'Colour'),
+          options: [
+            { id: uuid(), label: 'Red' },
+            { id: uuid(), label: 'Blue' },
+          ],
+        },
+      ],
+    ),
+  );
+
+  await page.goto(`/runner/${formId}`);
+  const clear = page.getByRole('button', { name: 'Clear' });
+  await expect(clear).toHaveCount(0);
+  await page.getByRole('radio', { name: 'Red' }).check();
+  await clear.click();
+  await expect(page.getByRole('radio', { name: 'Red' })).not.toBeChecked();
+  await expect(clear).toHaveCount(0);
+
+  await deleteForm(session, formId);
+});
+
 /** An optional question of `type`, with the props its schema requires. */
 function seedOptionalQuestion(type: string, id: string): SeedElement {
   const field = seedField(type, id, `Optional ${type}`);

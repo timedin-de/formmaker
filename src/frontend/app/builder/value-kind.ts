@@ -87,7 +87,11 @@ export function fitsKind(
   if (value === null || value === undefined || value === '') return true;
   switch (kind) {
     case 'text':
-      return typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean';
+      // Single-line inputs strip line breaks, so multi-line text (e.g. of a former long-text
+      // question) is shown as raw text; long-text questions keep their own textarea.
+      return typeof value === 'string'
+        ? el?.type === 'longText' || !/[\r\n]/.test(value)
+        : typeof value === 'number' || typeof value === 'boolean';
     case 'number':
       return (
         (typeof value === 'number' && Number.isFinite(value)) ||

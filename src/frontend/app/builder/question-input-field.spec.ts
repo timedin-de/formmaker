@@ -1,5 +1,6 @@
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
+import { MatButtonHarness } from '@angular/material/button/testing';
 import { MatInputHarness } from '@angular/material/input/testing';
 import { MatSelectHarness } from '@angular/material/select/testing';
 import type { ElementDefinition } from '@shared/model/form.model';
@@ -15,6 +16,19 @@ describe('QuestionInputField', () => {
 
   const loader = () => TestbedHarnessEnvironment.loader(fixture);
   const host = (): HTMLElement => fixture.nativeElement as HTMLElement;
+
+  /** Fires the native `change` of the typed input, which bubbles as leaving the input does. */
+  function change(): void {
+    host()
+      .querySelector('input, textarea')!
+      .dispatchEvent(new Event('change', { bubbles: true }));
+  }
+
+  /** Types `value` and commits it. */
+  async function commit(input: MatInputHarness, value: string): Promise<void> {
+    await input.setValue(value);
+    change();
+  }
 
   function show(element: Partial<ElementDefinition> & { type: string }, value: unknown): void {
     fixture.componentRef.setInput('element', { id: 'q', ...element } as ElementDefinition);
@@ -42,10 +56,38 @@ describe('QuestionInputField', () => {
     expect(await input.getValue()).toBe('4');
     expect(host().textContent).toContain('kg');
 
-    await input.setValue('12.5');
+    await commit(input, '12.5');
     expect(emitted.at(-1)).toBe(12.5);
-    await input.setValue('');
+    await commit(input, '');
     expect(emitted.at(-1)).toBeNull();
+  });
+
+  it('emits a typed value only once its input commits it', async () => {
+    show({ type: 'number' }, null);
+    const input = await loader().getHarness(MatInputHarness);
+    await input.setValue('120');
+    expect(emitted).toEqual([]);
+    change();
+    expect(emitted).toEqual([120]);
+  });
+
+  it('drops an uncommitted typed value when the store replaces the value', async () => {
+    show({ type: 'number' }, 1);
+    const input = await loader().getHarness(MatInputHarness);
+    await input.setValue('120');
+    // The selection moves to another question while the input keeps focus.
+    show({ id: 'other', type: 'number' }, 5);
+    change();
+    expect(emitted).toEqual([]);
+  });
+
+  it('drops an uncommitted typed value when another question with the same value is shown', async () => {
+    show({ type: 'number' }, null);
+    const input = await loader().getHarness(MatInputHarness);
+    await input.setValue('120');
+    show({ id: 'other', type: 'number' }, null);
+    change();
+    expect(emitted).toEqual([]);
   });
 
   it.each([
@@ -59,15 +101,41 @@ describe('QuestionInputField', () => {
     expect(await input.getValue()).toBe(value);
   });
 
-  it('picks scale values from the scale steps', async () => {
-    show({ type: 'scale', min: 1, max: 3, step: 1 } as never, 2);
-    const select = await loader().getHarness(MatSelectHarness);
-    expect(await select.getValueText()).toBe('2');
-    await select.open();
-    const labels = await Promise.all((await select.getOptions()).map((o) => o.getText()));
-    expect(labels).toEqual([i18n.t('panel.none'), '1', '2', '3']);
-    await select.clickOptions({ text: '3' });
+  it('picks scale values with the runner radio group, and clears them', async () => {
+    show({ type: 'scale', min: 1, max: 3, step: 1, minLabel: '', maxLabel: '' } as never, 2);
+    await fixture.whenStable();
+    const radios = [...host().querySelectorAll<HTMLInputElement>('input[type="radio"]')];
+    const shown = (r?: HTMLInputElement) => r?.closest('label')?.textContent?.trim();
+    expect(radios.map((r) => shown(r))).toEqual(['1', '2', '3']);
+    expect(shown(radios.find((r) => r.checked))).toBe('2');
+    // The group is named by the visible label.
+    const group = host().querySelector('[role="radiogroup"]')!;
+    const title = host().querySelector(`[id="${group.getAttribute('aria-labelledby')}"]`);
+    expect(title?.textContent?.trim()).toBe('Value');
+
+    radios[2].click();
     expect(emitted).toEqual([3]);
+
+    await (
+      await loader().getHarness(MatButtonHarness.with({ text: i18n.t('value.clear') }))
+    ).click();
+    expect(emitted).toEqual([3, null]);
+  });
+
+  it('enters text with the runner input of the question', async () => {
+    show({ type: 'longText' }, 'a');
+    const input = await loader().getHarness(MatInputHarness);
+    expect(await input.getType()).toBe('textarea');
+    await commit(input, 'hello');
+    expect(emitted.at(-1)).toBe('hello');
+    await commit(input, '');
+    expect(emitted.at(-1)).toBeNull();
+  });
+
+  it('does not apply the rules of the question to the value', async () => {
+    show({ type: 'text', validations: [{ id: 'r', rule: 'maxLength', value: 2 }] } as never, '');
+    const input = await loader().getHarness(MatInputHarness);
+    expect(await (await input.host()).getAttribute('maxlength')).toBeNull();
   });
 
   it('picks yes or no for booleans', async () => {
@@ -79,19 +147,18 @@ describe('QuestionInputField', () => {
     expect(emitted).toEqual([false]);
   });
 
-  it('picks options by label, a single one when asked to', async () => {
+  it('picks several options of a multi-choice question', async () => {
     const options = [
       { id: 'id-a', label: 'A' },
       { id: 'id-b', label: 'B' },
     ];
-    fixture.componentRef.setInput('single', true);
-    show({ type: 'multiChoice', options } as never, 'id-a');
+    show({ type: 'multiChoice', options } as never, ['id-a']);
     const select = await loader().getHarness(MatSelectHarness);
-    expect(await select.isMultiple()).toBe(false);
+    expect(await select.isMultiple()).toBe(true);
     expect(await select.getValueText()).toBe('A');
     await select.open();
     await select.clickOptions({ text: 'B' });
-    expect(emitted).toEqual(['id-b']);
+    expect(emitted).toEqual([['id-a', 'id-b']]);
   });
 
   it('keeps a stored value that does not fit visible as text, without rewriting it', async () => {
@@ -112,6 +179,13 @@ describe('QuestionInputField', () => {
   it('keeps line breaks of a stored value that does not fit', async () => {
     show({ type: 'number' }, 'first\nsecond');
     const input = await loader().getHarness(MatInputHarness);
+    expect(await input.getValue()).toBe('first\nsecond');
+  });
+
+  it('shows multi-line text of a single-line question as raw text', async () => {
+    show({ type: 'text' }, 'first\nsecond');
+    const input = await loader().getHarness(MatInputHarness);
+    expect(await input.getType()).toBe('textarea');
     expect(await input.getValue()).toBe('first\nsecond');
   });
 

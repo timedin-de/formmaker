@@ -2,6 +2,9 @@
 .field-host {
   width: 100%;
 }
+.clear {
+  align-self: flex-start;
+}
 .choice-group {
   display: flex;
   flex-direction: column;

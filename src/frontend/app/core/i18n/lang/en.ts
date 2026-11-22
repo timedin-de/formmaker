@@ -297,6 +297,7 @@ const en = {
   'value.no': 'No',
   'value.mismatch': "Doesn't match the question type. Change or clear it.",
   'value.unsupported': 'Files and signatures have no fixed value.',
+  'value.clear': 'Clear',
 
   // validation rule names
   'val.required': 'Required',
