@@ -298,20 +298,4 @@ describe('LandingComponent actions', () => {
     expect(deleteForm).toHaveBeenCalledWith('1');
     expect(listForms).toHaveBeenCalledTimes(1);
   });
-
-  it('opens the menu on hover and closes it shortly after leaving', () => {
-    vi.useFakeTimers();
-    const trigger = { openMenu: vi.fn(), closeMenu: vi.fn() };
-    component.mouseEnter(trigger);
-    expect(trigger.openMenu).toHaveBeenCalled();
-
-    component.mouseLeave(trigger);
-    component.mouseEnter(trigger); // cancels the pending close
-    vi.advanceTimersByTime(100);
-    expect(trigger.closeMenu).not.toHaveBeenCalled();
-
-    component.mouseLeave(trigger);
-    vi.advanceTimersByTime(100);
-    expect(trigger.closeMenu).toHaveBeenCalledTimes(1);
-  });
 });

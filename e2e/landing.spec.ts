@@ -1,6 +1,7 @@
 import { expect, test } from './fixtures';
 import {
   addSubmission,
+  clickDelete,
   createForm,
   deleteForm,
   login,
@@ -100,7 +101,7 @@ test('deletes a form without submissions only after confirming', async ({ page, 
 
   await login(page);
   const card = page.locator('.card').filter({ hasText: formName });
-  await card.getByRole('button', { name: 'Delete' }).click();
+  await clickDelete(card);
 
   const dialog = page.getByRole('alertdialog', { name: 'Delete form?' });
   await expect(dialog).toContainText('its 0 submission(s)');
@@ -114,13 +115,13 @@ test('deletes a form without submissions only after confirming', async ({ page, 
   expect(await formStatus(session, formId)).toBe(200);
 
   // Escape does too.
-  await card.getByRole('button', { name: 'Delete' }).click();
+  await clickDelete(card);
   await expect(dialog).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(dialog).toBeHidden();
   expect(await formStatus(session, formId)).toBe(200);
 
-  await card.getByRole('button', { name: 'Delete' }).click();
+  await clickDelete(card);
   await dialog.getByRole('button', { name: 'Delete form' }).click();
   await expect(card).toBeHidden();
   expect(await formStatus(session, formId)).toBe(404);
@@ -136,7 +137,7 @@ test('deleting a form with submissions needs the confirm word', async ({ page, r
   try {
     await login(page);
     const card = page.locator('.card').filter({ hasText: formName });
-    await card.getByRole('button', { name: 'Delete' }).click();
+    await clickDelete(card);
 
     const dialog = page.getByRole('alertdialog', { name: 'Delete form?' });
     await expect(dialog).toContainText('its 2 submission(s)');

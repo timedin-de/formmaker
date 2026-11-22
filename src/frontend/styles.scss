@@ -1,21 +1,39 @@
 @use 'sass:map';
 @use '@angular/material' as mat;
 @use './app/core/styles/mixins';
+@use './app/core/styles/brand-palettes' as brand;
+@use './app/core/styles/controls';
+
+// FormMaker brand identity — see BRAND.md for the full guide.
+//   Ink       #2D3A8C  primary: actions, links, focus, the mark
+//   Marigold  #E8A33D  signal accent: the tick in the mark, progress (fills only, never text)
+//   Slate     #74767C  cool neutral: crisp grey surfaces and hairlines
+//   Type      Inter (variable, optical sizes) for everything
+
+$font: "'Inter Variable', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif";
 
 html {
+  color-scheme: light dark;
+
   @include mat.theme(
     (
       color: (
-        primary: mat.$violet-palette,
-        tertiary: mat.$chartreuse-palette,
+        primary: brand.$primary-palette,
+        tertiary: brand.$tertiary-palette,
       ),
-      typography: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+      typography: (
+        plain-family: #{$font},
+        brand-family: #{$font},
+        bold-weight: 600,
+        medium-weight: 500,
+        regular-weight: 400,
+      ),
       density: 0,
       shape: (
-        small: 8px,
-        medium: 14px,
-        large: 20px,
-        extra-large: 28px,
+        small: 6px,
+        medium: 8px,
+        large: 10px,
+        extra-large: 12px,
       ),
     )
   );
@@ -27,53 +45,91 @@ html {
   // under the focus/hover state layer.
   @include mat.theme-overrides(
     (
-      primary: light-dark(map.get(mat.$violet-palette, 30), map.get(mat.$violet-palette, 80)),
-      on-primary: light-dark(map.get(mat.$violet-palette, 100), map.get(mat.$violet-palette, 10)),
+      primary: light-dark(map.get(brand.$primary-palette, 30), map.get(brand.$primary-palette, 80)),
+      on-primary: light-dark(
+          map.get(brand.$primary-palette, 100),
+          map.get(brand.$primary-palette, 10)
+        ),
       tertiary: light-dark(
-          map.get(mat.$chartreuse-palette, 30),
-          map.get(mat.$chartreuse-palette, 80)
+          map.get(brand.$tertiary-palette, 30),
+          map.get(brand.$tertiary-palette, 80)
         ),
       error: light-dark(
-          map.get(mat.$violet-palette, error, 30),
-          map.get(mat.$violet-palette, error, 80)
+          map.get(brand.$primary-palette, error, 30),
+          map.get(brand.$primary-palette, error, 80)
         ),
     )
   );
 
-  $border_radius: 8px;
-  @include mat.button-overrides(
-    (
-      filled-container-shape: $border_radius,
-      outlined-container-shape: $border_radius,
-      protected-container-shape: $border_radius,
-      text-container-shape: $border_radius,
-      tonal-container-shape: $border_radius,
-    )
-  );
-  @include mat.button-toggle-overrides(
-    (
-      shape: $border_radius,
-    )
-  );
-  @include mat.form-field-overrides(
-    (
-      filled-container-shape: $border_radius,
+  // Brand tokens that Material has no slot for. Components use these instead of raw values.
+  --fm-ink: #2d3a8c;
+  --fm-marigold: #e8a33d;
 
-      outlined-container-shape: $border_radius,
-    )
+  --fm-radius-sm: 6px;
+  --fm-radius-md: 8px;
+  --fm-radius-lg: 10px;
+  --fm-radius-xl: 12px;
+
+  // Surfaces: a cool grey page with white sheets on it. In dark mode the sheets are the
+  // lighter layer, as elevation reads there.
+  // Light page is a true neutral; the generated neutral palette leans slightly blue.
+  --fm-page: light-dark(#f5f6f8, var(--mat-sys-surface));
+  --fm-sheet: light-dark(
+    var(--mat-sys-surface-container-lowest),
+    var(--mat-sys-surface-container-low)
   );
+  --fm-sheet-muted: light-dark(#fafbfc, var(--mat-sys-surface-container));
+  --fm-line: light-dark(#e3e5ea, #2c2f36);
+  --fm-line-strong: light-dark(#cfd2d9, #3c4049);
+  --fm-text-muted: var(--mat-sys-on-surface-variant);
+
+  // Shadows stay small and crisp: hairline border does the work, the shadow only adds depth.
+  --fm-shadow-1: 0 1px 2px light-dark(rgb(16 24 40 / 5%), rgb(0 0 0 / 40%));
+  --fm-shadow-2:
+    0 1px 2px light-dark(rgb(16 24 40 / 6%), rgb(0 0 0 / 40%)),
+    0 4px 12px -2px light-dark(rgb(16 24 40 / 8%), rgb(0 0 0 / 40%));
+  --fm-shadow-3:
+    0 2px 4px light-dark(rgb(16 24 40 / 5%), rgb(0 0 0 / 40%)),
+    0 16px 40px -8px light-dark(rgb(16 24 40 / 18%), rgb(0 0 0 / 60%));
+  --fm-ring: 0 0 0 3px color-mix(in srgb, var(--mat-sys-primary) 18%, transparent);
+  // Ink-tinted lift for primary actions and the mark.
+  --fm-shadow-ink:
+    0 1px 2px color-mix(in srgb, var(--fm-ink) 30%, transparent),
+    0 6px 16px -6px color-mix(in srgb, var(--fm-ink) 55%, transparent);
+
+  // Signature gradients. "Ink" fills primary surfaces, "accent" is the thin hairline that
+  // marks brand moments (card hover, form header). Violet keeps it cool and serious.
+  --fm-violet: light-dark(#6a5cd8, #c4bbff);
+  --fm-gradient-ink: linear-gradient(160deg, #4352b8 0%, var(--fm-ink) 55%, #222a6e 100%);
+  --fm-gradient-accent: linear-gradient(90deg, var(--mat-sys-primary), var(--fm-violet));
+
+  --fm-ease: cubic-bezier(0.2, 0, 0, 1);
+  --fm-fast: 120ms;
+  --fm-medium: 200ms;
+
+  @include controls.theme();
 }
 
 body {
-  background: linear-gradient(
-    135deg,
-    var(--mat-sys-surface-container-lowest) 0%,
-    var(--mat-sys-surface-container-low) 50%,
-    var(--mat-sys-surface) 100%
-  );
+  background-color: var(--fm-page);
+  // A faint Ink/violet glow behind the top of every page: depth without decoration.
+  background-image:
+    radial-gradient(
+      1000px 420px at 15% -180px,
+      color-mix(in srgb, var(--mat-sys-primary) 8%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      900px 380px at 90% -200px,
+      color-mix(in srgb, var(--fm-violet) 8%, transparent),
+      transparent 70%
+    );
+  background-repeat: no-repeat;
+  background-attachment: fixed;
   color: var(--mat-sys-on-surface);
   font:
-    400 14px/1.5 system-ui,
+    400 14px/1.5 'Inter Variable',
+    system-ui,
     -apple-system,
     BlinkMacSystemFont,
     'Segoe UI',
@@ -81,9 +137,40 @@ body {
     'Helvetica Neue',
     Arial,
     sans-serif;
+  // Inter's alternate digits and disambiguated forms read more "tool" than "text".
+  font-feature-settings:
+    'cv11' 1,
+    'ss03' 1;
+  font-optical-sizing: auto;
   margin: 0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+h1,
+h2,
+h3 {
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--mat-sys-primary) 20%, transparent);
+}
+
+a {
+  color: var(--mat-sys-primary);
+  text-underline-offset: 0.18em;
+}
+
+:focus-visible {
+  outline-color: var(--mat-sys-primary);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--fm-line-strong) transparent;
 }
 
 @media (prefers-color-scheme: dark) {

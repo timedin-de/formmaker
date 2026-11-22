@@ -1,4 +1,4 @@
-import { expect, type APIRequestContext, type Page } from '@playwright/test';
+import { expect, type APIRequestContext, type Locator, type Page } from '@playwright/test';
 
 /** Editor password; matches `DEFAULT_PASSWORD` in src/server/auth.ts. */
 export const USERNAME = 'admin@formmaker.local';
@@ -20,6 +20,14 @@ export async function login(page: Page, password = PASSWORD): Promise<void> {
   await page.getByLabel('Password', { exact: true }).fill(password);
   await page.getByRole('button', { name: 'Sign in' }).click();
   await page.waitForURL((url) => url.pathname === '/');
+}
+
+/** Start deleting the form of a landing-page card (Delete sits in its "More actions" menu). */
+export async function clickDelete(card: Locator): Promise<void> {
+  await card.getByRole('button', { name: 'More actions' }).click();
+  await card.page().getByRole('menuitem', { name: 'Delete' }).click();
+  // The closing menu still owns Escape until its exit animation ends.
+  await expect(card.page().getByRole('menu')).toBeHidden();
 }
 
 export interface ApiSession {

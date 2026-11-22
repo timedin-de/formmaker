@@ -1,0 +1,43 @@
+:host {
+  display: inline-block;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  line-height: 0;
+}
+
+svg {
+  width: 100%;
+  height: 100%;
+
+  .sheet {
+    fill: var(--fm-ink);
+  }
+
+  .box-checked {
+    fill: var(--fm-marigold);
+  }
+
+  .tick {
+    fill: none;
+    stroke: var(--fm-ink);
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .line {
+    fill: #fff;
+
+    &.faded {
+      fill-opacity: 0.55;
+    }
+  }
+
+  .box-open {
+    fill: none;
+    stroke: #fff;
+    stroke-opacity: 0.55;
+    stroke-width: 1.5;
+  }
+}

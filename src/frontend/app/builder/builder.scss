@@ -8,10 +8,9 @@
   min-height: 0;
 }
 .sub {
+  @include mixins.sub-toolbar();
   gap: 16px;
   justify-content: space-between;
-  background: var(--mat-sys-surface);
-  border-bottom: 1px solid var(--mat-sys-outline-variant);
   min-height: 56px;
 }
 .unsaved {
@@ -65,10 +64,8 @@
   min-height: 0;
 }
 .palette {
+  @include mixins.sheet();
   overflow: auto;
-  background: var(--mat-sys-surface);
-  border: 1px solid var(--mat-sys-outline-variant);
-  border-radius: 16px;
   min-height: 0;
 }
 
@@ -77,12 +74,10 @@
 }
 
 .panel {
+  @include mixins.sheet();
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  background: var(--mat-sys-surface);
-  border: 1px solid var(--mat-sys-outline-variant);
-  border-radius: 16px;
   min-height: 0;
 }
 .muted {
