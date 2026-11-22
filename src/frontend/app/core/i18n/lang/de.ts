@@ -253,6 +253,8 @@ const de: typeof en = {
   'panel.timeInterval.unit.hours': 'Stunden',
   'panel.timeInterval.hint': 'Schrittweite des Auswahlfelds',
   'panel.step': 'Schritt',
+  'panel.scaleSteps':
+    'Min, Max und Schritt müssen 1 bis {max} Werte ergeben. Noch nicht gespeichert.',
   'panel.unit': 'Einheit',
   'panel.minScaleLabel': 'Beschriftung Min-Skala',
   'panel.maxScaleLabel': 'Beschriftung Max-Skala',

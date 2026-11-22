@@ -123,7 +123,11 @@
                 matInput
                 type="number"
                 [ngModel]="el.min"
-                (ngModelChange)="patch({ min: num($event) })"
+                [min]="scaleLimits().min.min"
+                [max]="scaleLimits().min.max"
+                [attr.aria-invalid]="scaleInvalid()"
+                aria-describedby="scale-error"
+                (ngModelChange)="patchScale('min', $event)"
               />
             </mat-form-field>
             <mat-form-field appearance="outline" subscriptSizing="dynamic">
@@ -132,7 +136,11 @@
                 matInput
                 type="number"
                 [ngModel]="el.max"
-                (ngModelChange)="patch({ max: num($event) })"
+                [min]="scaleLimits().max.min"
+                [max]="scaleLimits().max.max"
+                [attr.aria-invalid]="scaleInvalid()"
+                aria-describedby="scale-error"
+                (ngModelChange)="patchScale('max', $event)"
               />
             </mat-form-field>
             <mat-form-field appearance="outline" subscriptSizing="dynamic">
@@ -141,9 +149,18 @@
                 matInput
                 type="number"
                 [ngModel]="el.step"
-                (ngModelChange)="patch({ step: num($event) })"
+                [min]="scaleLimits().step.min"
+                [max]="scaleLimits().step.max"
+                [attr.aria-invalid]="scaleInvalid()"
+                aria-describedby="scale-error"
+                (ngModelChange)="patchScale('step', $event)"
               />
             </mat-form-field>
+          </div>
+          <div id="scale-error" class="scale-error" aria-live="polite">
+            @if (scaleInvalid()) {
+              {{ i18n.t('panel.scaleSteps', { max: MAX_SCALE_STEPS }) }}
+            }
           </div>
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
             <mat-label>{{ i18n.t('panel.minScaleLabel') }}</mat-label>

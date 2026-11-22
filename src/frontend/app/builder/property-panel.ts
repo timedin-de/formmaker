@@ -1,4 +1,4 @@
-import { Component, computed, inject, input } from '@angular/core';
+import { Component, computed, inject, input, linkedSignal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
@@ -19,9 +19,15 @@ import type {
   ElementDefinition,
   PageDefinition,
   QuestionDefinition,
+  ScaleElement,
   TimeElement,
 } from '@shared/model/form.model';
-import { DEFAULT_TIME_INTERVAL, TIME_INTERVAL_UNITS } from '@shared/model/form.model';
+import {
+  DEFAULT_TIME_INTERVAL,
+  MAX_SCALE_STEPS,
+  scaleStepCount,
+  TIME_INTERVAL_UNITS,
+} from '@shared/model/form.model';
 import { VALIDATION_RULE_TYPES } from '@shared/model/validation.model';
 import { I18nService } from '../core/i18n';
 import { fieldMeta } from '../core/model/field-registry';
@@ -38,6 +44,19 @@ const WIDTHS = Array.from(
 );
 
 const INPUT_TYPES = ['text', 'email', 'url', 'phone', 'number'] as const;
+
+interface ScaleLimit {
+  min: number | null;
+  max: number | null;
+}
+const NO_LIMIT: ScaleLimit = { min: null, max: null };
+
+type ScaleBounds = Pick<ScaleElement, 'min' | 'max' | 'step'>;
+
+function isValidScale(s: ScaleBounds): boolean {
+  const count = scaleStepCount(s);
+  return count >= 1 && count <= MAX_SCALE_STEPS;
+}
 
 @Component({
   imports: [
@@ -116,6 +135,56 @@ export class PropertyPanel {
     if (s === '') return '';
     const n = Number(s);
     return s !== '' && !Number.isNaN(n) && /^-?\d*\.?\d+$/.test(s) ? n : s;
+  }
+
+  /**
+   * Scale bounds as typed while they give too many or no values. `from` holds the element's
+   * bounds the draft started from: once the element changes otherwise, the draft is stale.
+   * Selecting another element discards it, since the inputs then show the saved bounds again.
+   */
+  private readonly scaleDraft = linkedSignal<
+    string | undefined,
+    (ScaleBounds & { id: string; from: ScaleBounds }) | null
+  >({ source: () => this.el()?.id, computation: () => null });
+  /** The draft of the selected scale, unless the element changed since it was started. */
+  private readonly activeScaleDraft = computed(() => {
+    const el = this.el();
+    const draft = this.scaleDraft();
+    if (el?.type !== 'scale' || draft?.id !== el.id) return null;
+    const { from } = draft;
+    return from.min === el.min && from.max === el.max && from.step === el.step ? draft : null;
+  });
+  /** Whether the typed scale bounds break the rules the server enforces. */
+  protected readonly scaleInvalid = computed(() => {
+    const draft = this.activeScaleDraft();
+    return !!draft && !isValidScale(draft);
+  });
+  protected readonly MAX_SCALE_STEPS = MAX_SCALE_STEPS;
+  /** `min` / `max` of the scale inputs, so each bound keeps 1 to `MAX_SCALE_STEPS` values. */
+  protected readonly scaleLimits = computed<Record<'min' | 'max' | 'step', ScaleLimit>>(() => {
+    const el = this.el();
+    if (el?.type !== 'scale') return { min: NO_LIMIT, max: NO_LIMIT, step: NO_LIMIT };
+    const span = (MAX_SCALE_STEPS - 1) * el.step;
+    return {
+      min: { min: el.max - span, max: el.max },
+      max: { min: el.min, max: el.min + span },
+      step: { min: (el.max - el.min) / (MAX_SCALE_STEPS - 1), max: el.max - el.min || null },
+    };
+  });
+
+  /** Saves a scale bound only while the scale offers 1 to `MAX_SCALE_STEPS` values. */
+  patchScale(field: 'min' | 'max' | 'step', raw: string): void {
+    const el = this.sel();
+    if (el.type !== 'scale') return;
+    const from = { min: el.min, max: el.max, step: el.step };
+    const base = this.activeScaleDraft() ?? { id: el.id, from, ...from };
+    const next = { ...base, [field]: this.numOrUndef(raw) ?? NaN };
+    if (isValidScale(next)) {
+      this.scaleDraft.set(null);
+      this.patch({ min: next.min, max: next.max, step: next.step });
+    } else {
+      this.scaleDraft.set(next);
+    }
   }
 
   private choice(): ChoiceElement {

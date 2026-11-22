@@ -13,11 +13,13 @@ import {
   type FormElements,
   type GroupElement,
   type LongTextElement,
+  MAX_SCALE_STEPS,
   type NumberElement,
   QUESTION_TYPES,
   type QuestionBase,
   type QuestionDefinition,
   type ScaleElement,
+  scaleStepCount,
   type SectionElement,
   type SignatureElement,
   type TextDisplayElement,
@@ -81,14 +83,24 @@ const numberElementSchema = z.extend(questionBaseSchema, {
   decimals: z.optional(z.number()),
 }) satisfies z.ZodMiniType<NumberElement>;
 
-const scaleElementSchema = z.extend(questionBaseSchema, {
-  type: z.literal('scale'),
-  min: z.number(),
-  max: z.number(),
-  step: z.number(),
-  minLabel: z.optional(z.string()),
-  maxLabel: z.optional(z.string()),
-}) satisfies z.ZodMiniType<ScaleElement>;
+const scaleElementSchema = z
+  .extend(questionBaseSchema, {
+    type: z.literal('scale'),
+    min: z.number(),
+    max: z.number(),
+    step: z.number(),
+    minLabel: z.optional(z.string()),
+    maxLabel: z.optional(z.string()),
+  })
+  .check(
+    z.refine(
+      (el) => {
+        const count = scaleStepCount(el);
+        return count >= 1 && count <= MAX_SCALE_STEPS;
+      },
+      { path: ['step'], message: `step must give 1 to ${MAX_SCALE_STEPS} values` },
+    ),
+  ) satisfies z.ZodMiniType<ScaleElement>;
 
 const fileElementSchema = z.extend(questionBaseSchema, {
   type: z.literal('file'),

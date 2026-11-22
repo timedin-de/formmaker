@@ -248,6 +248,7 @@ const en = {
   'panel.timeInterval.unit.hours': 'Hours',
   'panel.timeInterval.hint': 'Step size of the picker',
   'panel.step': 'Step',
+  'panel.scaleSteps': 'Min, max and step must give 1 to {max} values. Not saved yet.',
   'panel.unit': 'Unit',
   'panel.minScaleLabel': 'Min scale label',
   'panel.maxScaleLabel': 'Max scale label',
