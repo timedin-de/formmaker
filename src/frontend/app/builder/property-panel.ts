@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import type { ErrorStateMatcher } from '@angular/material/core';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -44,12 +45,6 @@ const WIDTHS = Array.from(
 );
 
 const INPUT_TYPES = ['text', 'email', 'url', 'phone', 'number'] as const;
-
-interface ScaleLimit {
-  min: number | null;
-  max: number | null;
-}
-const NO_LIMIT: ScaleLimit = { min: null, max: null };
 
 type ScaleBounds = Pick<ScaleElement, 'min' | 'max' | 'step'>;
 
@@ -160,17 +155,14 @@ export class PropertyPanel {
     return !!draft && !isValidScale(draft);
   });
   protected readonly MAX_SCALE_STEPS = MAX_SCALE_STEPS;
-  /** `min` / `max` of the scale inputs, so each bound keeps 1 to `MAX_SCALE_STEPS` values. */
-  protected readonly scaleLimits = computed<Record<'min' | 'max' | 'step', ScaleLimit>>(() => {
-    const el = this.el();
-    if (el?.type !== 'scale') return { min: NO_LIMIT, max: NO_LIMIT, step: NO_LIMIT };
-    const span = (MAX_SCALE_STEPS - 1) * el.step;
-    return {
-      min: { min: el.max - span, max: el.max },
-      max: { min: el.min, max: el.min + span },
-      step: { min: (el.max - el.min) / (MAX_SCALE_STEPS - 1), max: el.max - el.min || null },
-    };
-  });
+  /**
+   * Marks all three scale inputs invalid (red, `aria-invalid`) from the value count. Native
+   * `min` / `max` attributes can't express it: the count also depends on the other two bounds,
+   * and the upper limit is exclusive (`max - min < MAX_SCALE_STEPS * step`).
+   */
+  protected readonly scaleErrorMatcher: ErrorStateMatcher = {
+    isErrorState: () => this.scaleInvalid(),
+  };
 
   /** Saves a scale bound only while the scale offers 1 to `MAX_SCALE_STEPS` values. */
   patchScale(field: 'min' | 'max' | 'step', raw: string): void {

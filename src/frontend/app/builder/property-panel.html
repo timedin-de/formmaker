@@ -123,9 +123,7 @@
                 matInput
                 type="number"
                 [ngModel]="el.min"
-                [min]="scaleLimits().min.min"
-                [max]="scaleLimits().min.max"
-                [attr.aria-invalid]="scaleInvalid()"
+                [errorStateMatcher]="scaleErrorMatcher"
                 aria-describedby="scale-error"
                 (ngModelChange)="patchScale('min', $event)"
               />
@@ -136,9 +134,7 @@
                 matInput
                 type="number"
                 [ngModel]="el.max"
-                [min]="scaleLimits().max.min"
-                [max]="scaleLimits().max.max"
-                [attr.aria-invalid]="scaleInvalid()"
+                [errorStateMatcher]="scaleErrorMatcher"
                 aria-describedby="scale-error"
                 (ngModelChange)="patchScale('max', $event)"
               />
@@ -149,9 +145,7 @@
                 matInput
                 type="number"
                 [ngModel]="el.step"
-                [min]="scaleLimits().step.min"
-                [max]="scaleLimits().step.max"
-                [attr.aria-invalid]="scaleInvalid()"
+                [errorStateMatcher]="scaleErrorMatcher"
                 aria-describedby="scale-error"
                 (ngModelChange)="patchScale('step', $event)"
               />
