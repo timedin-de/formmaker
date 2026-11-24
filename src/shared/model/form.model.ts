@@ -95,8 +95,8 @@ export interface ScaleElement extends QuestionBase {
   min: number;
   max: number;
   step: number;
-  minLabel?: string;
-  maxLabel?: string;
+  minLabel: string;
+  maxLabel: string;
 }
 
 /** Most values a scale question may offer (0–10); larger scales are rejected when saved. */

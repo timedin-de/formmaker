@@ -158,19 +158,11 @@
           </div>
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
             <mat-label>{{ i18n.t('panel.minScaleLabel') }}</mat-label>
-            <input
-              matInput
-              [ngModel]="el.minLabel ?? ''"
-              (ngModelChange)="patch({ minLabel: $event })"
-            />
+            <input matInput [ngModel]="el.minLabel" (ngModelChange)="patch({ minLabel: $event })" />
           </mat-form-field>
           <mat-form-field appearance="outline" subscriptSizing="dynamic">
             <mat-label>{{ i18n.t('panel.maxScaleLabel') }}</mat-label>
-            <input
-              matInput
-              [ngModel]="el.maxLabel ?? ''"
-              (ngModelChange)="patch({ maxLabel: $event })"
-            />
+            <input matInput [ngModel]="el.maxLabel" (ngModelChange)="patch({ maxLabel: $event })" />
           </mat-form-field>
         }
 
