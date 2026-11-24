@@ -22,7 +22,7 @@
           [id]="vr.id"
           [formControl]="vr.control"
           [placeholder]="vr.placeholder ?? ''"
-          [rows]="rows(vr.el)"
+          [rows]="vr.el.rows ?? 4"
           [minlength]="validation('minLength')"
           [maxlength]="validation('maxLength')"
         ></textarea>
@@ -52,7 +52,7 @@
     }
     @case ('choice') {
       <mat-radio-group class="choice-group" [formControl]="vr.control" [name]="vr.id">
-        @for (opt of options(vr.el); track opt.id) {
+        @for (opt of vr.el.options; track opt.id) {
           <mat-radio-button #field [value]="opt.id">{{ opt.label }}</mat-radio-button>
         }
       </mat-radio-group>
@@ -60,7 +60,7 @@
     @case ('dropdown') {
       <mat-form-field appearance="outline" class="field-host" subscriptSizing="dynamic">
         <mat-select #field [formControl]="vr.control" [aria-labelledby]="`${vr.id}-title`">
-          @for (opt of options(vr.el); track opt.id) {
+          @for (opt of vr.el.options; track opt.id) {
             <mat-option [value]="opt.id">{{ opt.label }}</mat-option>
           }
         </mat-select>
@@ -68,11 +68,11 @@
     }
     @case ('multiChoice') {
       <div class="choice-group">
-        @for (opt of options(vr.el); track opt.id) {
+        @for (opt of vr.el.options; track opt.id) {
           <mat-checkbox
             #field
             [disabled]="multiDisabled(vr.control, opt.id)"
-            [value]="strOpt(opt.id)"
+            [value]="opt.id"
             [checked]="multiChecked(vr.control, opt.id)"
             (change)="toggleMulti(vr.control, opt.id, $event.checked)"
           >
@@ -83,8 +83,8 @@
     }
     @case ('scale') {
       @let values = scaleValues(vr.el);
-      @let minLabel = scaleMinLabel(vr.el);
-      @let maxLabel = scaleMaxLabel(vr.el);
+      @let minLabel = vr.el.minLabel;
+      @let maxLabel = vr.el.maxLabel;
       @let hasLabels = !!(minLabel.trim() || maxLabel.trim());
       <div class="scale" [class.many]="values.length > 5" [style.--scale-count]="values.length">
         <!-- Native radios: the label around each input is its only label and fills its cell.
@@ -168,7 +168,7 @@
             #fileInput
             type="file"
             [id]="vr.id"
-            [multiple]="fileMultiple(vr.el)"
+            [multiple]="vr.el.multiple"
             hidden
             (change)="onFiles(vr.control, vr.el, $event)"
           />
@@ -176,7 +176,7 @@
             <mat-icon svgIcon="attach_file"></mat-icon> {{ i18n.t('q.chooseFiles') }}
           </button>
         </div>
-        @for (f of fileList(vr.control); track f.name) {
+        @for (f of fileValue(vr.control); track f.name) {
           <div class="file-chip">
             <mat-icon svgIcon="description"></mat-icon>
             <span class="fname">{{ f.name }}</span>

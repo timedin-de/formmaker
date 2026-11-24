@@ -15,12 +15,13 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { has } from '@shared/helper';
 import {
   scaleValues,
-  type ChoiceElement,
   type ElementDefinition,
   type FieldValue,
+  type FileElement,
   type FileValue,
   type ScaleElement,
   type SignatureValue,
+  type TextElement,
   type ValidationRuleType,
 } from '@shared/model';
 import { I18nService } from '../core/i18n';
@@ -65,8 +66,8 @@ export class QuestionInput {
 
   date = (value: unknown) => value as Date;
 
-  inputType(el: ElementDefinition): string {
-    const type = (el as { inputType?: string }).inputType ?? 'text';
+  inputType(el: TextElement): string {
+    const type = el.inputType ?? 'text';
     return type === 'phone' ? 'tel' : type;
   }
   errMsg(control: AbstractControl): string {
@@ -82,28 +83,8 @@ export class QuestionInput {
     return this.i18n.t('q.invalid', { field: this.vr()?.label ?? '' });
   }
 
-  rows(el: ElementDefinition): number {
-    return (el as { rows?: number }).rows ?? 4;
-  }
-
-  options(el: ElementDefinition): ChoiceElement['options'] {
-    return (el as ChoiceElement).options ?? [];
-  }
-
-  strOpt(value: string | number): string {
-    return String(value);
-  }
-
-  scaleValues(el: ElementDefinition): number[] {
-    return scaleValues(el as ScaleElement) ?? [];
-  }
-
-  scaleMinLabel(el: ElementDefinition): string {
-    return (el as ScaleElement).minLabel;
-  }
-
-  scaleMaxLabel(el: ElementDefinition): string {
-    return (el as ScaleElement).maxLabel;
+  scaleValues(el: ScaleElement): number[] {
+    return scaleValues(el) ?? [];
   }
 
   multiChecked(control: FormControl, value: string | number): boolean {
@@ -126,16 +107,7 @@ export class QuestionInput {
   multiDisabled(control: FormControl, value: string | number): boolean {
     const max = Number(this.validation('maxCount'));
     if (!Number.isFinite(max) || max <= 0 || this.multiChecked(control, value)) return false;
-    return this.multiCount(control) >= max;
-  }
-
-  multiCount(control: FormControl): number {
-    const current = (control.value as (string | number)[] | null) ?? [];
-    return current.length;
-  }
-
-  fileMultiple(el: ElementDefinition): boolean {
-    return (el as { multiple?: boolean }).multiple ?? false;
+    return this.fileValue(control).length >= max;
   }
 
   fileValue(control: FormControl): FileValue[] {
@@ -143,17 +115,13 @@ export class QuestionInput {
     return Array.isArray(v) ? (v as FileValue[]) : [];
   }
 
-  fileList(control: FormControl): FileValue[] {
-    return this.fileValue(control);
-  }
-
-  async onFiles(control: FormControl, el: ElementDefinition, event: Event): Promise<void> {
+  async onFiles(control: FormControl, el: FileElement, event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
     const files = input.value ? Array.from(input.files ?? []) : [];
     input.value = '';
     if (files.length === 0) return;
 
-    const multiple = (el as { multiple?: boolean }).multiple ?? false;
+    const multiple = el.multiple ?? false;
     let next = multiple ? [...this.fileValue(control)] : [];
     const mapped: FileValue[] = [];
     for (const file of files) {
