@@ -207,6 +207,12 @@ test.describe('accessibility', () => {
         const group = page.getByRole('radiogroup', { name: scale.label });
         await group.getByRole('radio', { name: '7' }).check();
         await expect(group.getByRole('radio', { name: '7' })).toBeChecked();
+        // Axe only flags several labels on one input as "incomplete", and screen readers disagree
+        // on which one they read.
+        const labelCounts = await group
+          .getByRole('radio')
+          .evaluateAll((inputs) => inputs.map((i) => (i as HTMLInputElement).labels?.length));
+        expect(labelCounts).toEqual(Array<number>(11).fill(1));
         await expectNoViolations(page);
 
         // Too narrow for eleven values in a row: they stack, with the end labels beside them.

@@ -65,9 +65,40 @@
     &:hover {
       background: var(--mat-sys-surface-container);
     }
-    &:has(.mat-mdc-radio-checked) {
+    &:has(:checked) {
       background: var(--mat-sys-secondary-container);
       color: var(--mat-sys-on-secondary-container);
+    }
+
+    // Drawn like Material's radio (20px ring, dot when checked), so it matches choice questions.
+    input {
+      appearance: none;
+      flex: none;
+      box-sizing: border-box;
+      width: 20px;
+      height: 20px;
+      margin: 10px;
+      border: 2px solid var(--mat-sys-on-surface-variant);
+      border-radius: 50%;
+      cursor: pointer;
+      transition:
+        border-color 120ms ease,
+        background-size 120ms ease;
+      background: radial-gradient(circle closest-side, var(--mat-sys-primary) 98%, transparent)
+        center / 0 0 no-repeat;
+
+      &:checked {
+        border-color: var(--mat-sys-primary);
+        background-size: 10px 10px;
+      }
+      &:focus-visible {
+        outline: 2px solid var(--mat-sys-primary);
+        outline-offset: 3px;
+      }
+      &:disabled {
+        cursor: default;
+        opacity: 0.38;
+      }
     }
   }
 

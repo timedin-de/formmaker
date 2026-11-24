@@ -84,16 +84,16 @@
     @case ('scale') {
       @let values = scaleValues(vr.el);
       <div class="scale" [class.many]="values.length > 5" [style.--scale-count]="values.length">
-        <mat-radio-group
+        <!-- Native radios: the label around each input is its only label and fills its cell. -->
+        <div
           class="scale-values"
-          [formControl]="vr.control"
-          [name]="vr.id"
-          [aria-labelledby]="`${vr.id}-title`"
+          role="radiogroup"
+          [attr.aria-labelledby]="`${vr.id}-title`"
           [attr.aria-describedby]="hasScaleLabels(vr.el) ? `${vr.id}-scale-labels` : null"
         >
           @for (val of values; track val; let first = $first, last = $last) {
-            <label class="scale-val" [for]="radio.inputId">
-              <mat-radio-button #field #radio [value]="val"></mat-radio-button>
+            <label class="scale-val">
+              <input #field type="radio" [name]="vr.id" [value]="val" [formControl]="vr.control" />
               <span class="scale-num">{{ val }}</span>
               <!-- End labels beside the first / last value, shown only when the values are stacked.
                    A one-value scale's only value is both, so it gets both labels. -->
@@ -105,7 +105,7 @@
               }
             </label>
           }
-        </mat-radio-group>
+        </div>
         @if (hasScaleLabels(vr.el)) {
           <div class="scale-labels" [id]="`${vr.id}-scale-labels`">
             <span>{{ scaleMinLabel(vr.el) }}</span>
