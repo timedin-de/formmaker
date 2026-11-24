@@ -154,7 +154,7 @@ function seedOptionalQuestion(type: string, id: string): SeedElement {
       ],
     };
   }
-  if (type === 'scale') return { ...field, min: 1, max: 5, step: 1 };
+  if (type === 'scale') return { ...field, min: 1, max: 5, step: 1, minLabel: '', maxLabel: '' };
   return field;
 }
 

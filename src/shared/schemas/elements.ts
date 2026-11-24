@@ -89,8 +89,8 @@ const scaleElementSchema = z
     min: z.number(),
     max: z.number(),
     step: z.number(),
-    minLabel: z.optional(z.string()),
-    maxLabel: z.optional(z.string()),
+    minLabel: z.string(),
+    maxLabel: z.string(),
   })
   .check(
     z.refine(
@@ -208,8 +208,8 @@ export const updateElementSchema = z.strictObject({
   decimals: removable(z.number()),
   min: z.optional(z.number()),
   max: z.optional(z.number()),
-  minLabel: removable(z.string()),
-  maxLabel: removable(z.string()),
+  minLabel: z.optional(z.string()),
+  maxLabel: z.optional(z.string()),
   accept: removable(z.string()),
   multiple: removable(z.boolean()),
   timeInterval: z.optional(timeIntervalSchema),

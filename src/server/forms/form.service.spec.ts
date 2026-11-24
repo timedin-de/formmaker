@@ -551,6 +551,8 @@ describe('FormService updateElement', () => {
           min: 1,
           max: 5,
           step: 1,
+          minLabel: '',
+          maxLabel: '',
         },
       ]),
     ]);
@@ -577,6 +579,8 @@ describe('FormService updateElement', () => {
           min: 1,
           max: 5,
           step: 1,
+          minLabel: '',
+          maxLabel: '',
         },
       ]),
     ]);
@@ -605,6 +609,8 @@ describe('FormService updateElement', () => {
           min: 1,
           max: 5,
           step: 1,
+          minLabel: '',
+          maxLabel: '',
         },
       ]),
     ]);

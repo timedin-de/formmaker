@@ -98,17 +98,12 @@ export class QuestionInput {
     return scaleValues(el as ScaleElement) ?? [];
   }
 
-  hasScaleLabels(el: ElementDefinition): boolean {
-    const s = el as ScaleElement;
-    return !!s.minLabel || !!s.maxLabel;
-  }
-
   scaleMinLabel(el: ElementDefinition): string {
-    return (el as ScaleElement).minLabel ?? '';
+    return (el as ScaleElement).minLabel;
   }
 
   scaleMaxLabel(el: ElementDefinition): string {
-    return (el as ScaleElement).maxLabel ?? '';
+    return (el as ScaleElement).maxLabel;
   }
 
   multiChecked(control: FormControl, value: string | number): boolean {

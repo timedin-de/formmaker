@@ -13,7 +13,6 @@ import {
   type ElementDefinition,
   type FieldValue,
   type FileValue,
-  type ScaleElement,
   type SignatureValue,
 } from '@shared/model';
 
@@ -71,31 +70,6 @@ export class QuestionInputField {
 
   strOpt(value: string | number): string {
     return String(value);
-  }
-
-  scaleValues(el: ElementDefinition): number[] {
-    const s = el as ScaleElement;
-    const out: number[] = [];
-    for (let v = s.min; v <= s.max + 1e-9; v += s.step) out.push(Math.round(v * 100) / 100);
-    return out;
-  }
-
-  hasScaleLabels(el: ElementDefinition): boolean {
-    const s = el as ScaleElement;
-    return !!s.minLabel || !!s.maxLabel;
-  }
-
-  scaleMinLabel(el: ElementDefinition): string {
-    return (el as ScaleElement).minLabel ?? '';
-  }
-
-  scaleMaxLabel(el: ElementDefinition): string {
-    return (el as ScaleElement).maxLabel ?? '';
-  }
-
-  setScale(control: FormControl, value: number): void {
-    control.setValue(value);
-    control.markAsTouched();
   }
 
   multiChecked(control: FormControl, value: string | number): boolean {

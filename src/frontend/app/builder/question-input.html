@@ -83,6 +83,9 @@
     }
     @case ('scale') {
       @let values = scaleValues(vr.el);
+      @let minLabel = scaleMinLabel(vr.el);
+      @let maxLabel = scaleMaxLabel(vr.el);
+      @let hasLabels = !!(minLabel.trim() || maxLabel.trim());
       <div class="scale" [class.many]="values.length > 5" [style.--scale-count]="values.length">
         <!-- Native radios: the label around each input is its only label and fills its cell.
              `[name]` only reaches the forms radio accessor; `[attr.name]` puts the inputs in one
@@ -91,7 +94,7 @@
           class="scale-values"
           role="radiogroup"
           [attr.aria-labelledby]="`${vr.id}-title`"
-          [attr.aria-describedby]="hasScaleLabels(vr.el) ? `${vr.id}-scale-labels` : null"
+          [attr.aria-describedby]="hasLabels ? `${vr.id}-scale-labels` : null"
         >
           @for (val of values; track val; let first = $first, last = $last) {
             <label class="scale-val">
@@ -106,19 +109,19 @@
               <span class="scale-num">{{ val }}</span>
               <!-- End labels beside the first / last value, shown only when the values are stacked.
                    A one-value scale's only value is both, so it gets both labels. -->
-              @if (first && scaleMinLabel(vr.el)) {
-                <span class="scale-end" aria-hidden="true">{{ scaleMinLabel(vr.el) }}</span>
+              @if (first && minLabel.trim()) {
+                <span class="scale-end" aria-hidden="true">{{ minLabel }}</span>
               }
-              @if (last && scaleMaxLabel(vr.el)) {
-                <span class="scale-end" aria-hidden="true">{{ scaleMaxLabel(vr.el) }}</span>
+              @if (last && maxLabel.trim()) {
+                <span class="scale-end" aria-hidden="true">{{ maxLabel }}</span>
               }
             </label>
           }
         </div>
-        @if (hasScaleLabels(vr.el)) {
+        @if (hasLabels) {
           <div class="scale-labels" [id]="`${vr.id}-scale-labels`">
-            <span>{{ scaleMinLabel(vr.el) }}</span>
-            <span>{{ scaleMaxLabel(vr.el) }}</span>
+            <span>{{ minLabel }}</span>
+            <span>{{ maxLabel }}</span>
           </div>
         }
       </div>
