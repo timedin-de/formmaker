@@ -1,6 +1,7 @@
 import { type Routes } from '@angular/router';
 import type { BuilderComponent } from './builder/builder';
 import { authGuard } from './core/auth/auth.guard';
+import { canManageGuard } from './core/guards/canManage';
 
 export const routes: Routes = [
   { path: 'login', loadComponent: () => import('./login/login').then((m) => m.Login) },
@@ -12,7 +13,7 @@ export const routes: Routes = [
   },
   {
     path: 'builder',
-    canActivate: [authGuard],
+    canActivate: [authGuard, canManageGuard({ query: 'id' })],
     // Don't lose edits that failed or are still being sent.
     canDeactivate: [(builder: BuilderComponent) => builder.canLeave()],
     // Also when only `?id=` changes to open another form in the same builder (Angular's
@@ -23,11 +24,18 @@ export const routes: Routes = [
     loadComponent: () => import('./builder/builder').then((m) => m.BuilderComponent),
   },
   {
+    path: 'builder/preview/:id',
+    canActivate: [canManageGuard({ param: 'id' })],
+    loadComponent: () => import('./runner/runner').then((m) => m.Runner),
+    data: { preview: true },
+  },
+  {
     path: 'account',
     canActivate: [authGuard],
     loadComponent: () => import('./account/account').then((m) => m.Account),
   },
   { path: 'runner/:id', loadComponent: () => import('./runner/runner').then((m) => m.Runner) },
+
   {
     path: 'results/:id',
     canActivate: [authGuard],

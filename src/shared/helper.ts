@@ -5,6 +5,7 @@ import {
   type ElementDefinition,
   type FormDefinition,
   type GroupElement,
+  type PublicUser,
   QUESTION_TYPES,
   type QuestionDefinition,
   type QuestionType,
@@ -74,4 +75,9 @@ export function formName(form: FormDefinition, i18n: I18nService) {
       date: form.createdAt ? new Date(form.createdAt).toLocaleDateString(i18n.lang()) : '',
     })
   );
+}
+
+/** Whether `user` may manage a form owned by `ownerId`: its owner or an admin. */
+export function canManage(form: FormDefinition, user: PublicUser): boolean {
+  return user.role === 'admin' || user.id === form.ownerId;
 }

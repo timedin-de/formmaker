@@ -191,7 +191,7 @@ export class BuilderComponent {
     const request = this.loadRequests;
     const saved = await this.store.flush();
     if (!saved || this.destroyed || this.loadRequests !== request || this.loading()) return;
-    this.router.navigate(['/runner', formId]);
+    this.router.navigate(['/builder/preview', formId]);
   }
 
   export(): void {

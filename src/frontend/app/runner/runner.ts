@@ -67,6 +67,8 @@ export class Runner extends PendingActions {
     () => this.store.form()?.settings?.submitLabel ?? this.i18n.t('runner.submit'),
   );
 
+  protected isPreview = this.route.snapshot.data['preview'];
+
   constructor() {
     super();
     // The language code, not `common.locale`: it is a valid tag even if translations failed to load.
@@ -107,6 +109,11 @@ export class Runner extends PendingActions {
   }
 
   back(): void {
+    if (this.isPreview)
+      return void this.router.navigate(['/builder'], {
+        queryParams: { id: this.store.form()?.id },
+      });
+
     void this.router.navigate(['/']);
   }
 
@@ -146,14 +153,17 @@ export class Runner extends PendingActions {
         this.store.revealFirstInvalid();
         return;
       }
-      const submission = await this.repo.addSubmission(result.submission);
-      if (!submission) {
-        this.notifier.error('errors.unknown');
-        return;
+
+      if (!this.isPreview) {
+        const submission = await this.repo.addSubmission(result.submission);
+        if (!submission) {
+          this.notifier.error('errors.unknown');
+          return;
+        }
+        this.lastSubmission.set(submission);
       }
       this.store.clearDraft();
       this.submitted.set(true);
-      this.lastSubmission.set(submission);
       this.notifier.ok('runner.submitted');
     }, 'errors.unknown');
   }

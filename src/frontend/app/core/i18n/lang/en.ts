@@ -170,6 +170,7 @@ const en = {
   'builder.preview': 'Preview',
   'builder.editing': 'Editing "{name}"',
   'builder.loadFailed': 'The form could not be opened.',
+  'builder.notManaged': 'Only the owner of this form or an admin can open it here.',
   'builder.unsaved':
     'Some changes are not saved. Try again, or download a backup you can import later.',
   'builder.retry': 'Try again',

@@ -175,6 +175,8 @@ const de: typeof en = {
   'builder.preview': 'Vorschau',
   'builder.editing': 'Bearbeite "{name}"',
   'builder.loadFailed': 'Das Formular konnte nicht geöffnet werden.',
+  'builder.notManaged':
+    'Nur die Person, der das Formular gehört, oder ein Admin kann es hier öffnen.',
   'builder.unsaved':
     'Einige Änderungen sind nicht gespeichert. Versuche es erneut oder lade eine Sicherung herunter, die du später importieren kannst.',
   'builder.retry': 'Erneut versuchen',
