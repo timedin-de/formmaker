@@ -1,0 +1,9 @@
+// The field fills its host, so a host given a width (e.g. a growing value slot) is filled.
+:host {
+  display: inline-flex;
+
+  mat-form-field {
+    flex: 1;
+    min-width: 0;
+  }
+}

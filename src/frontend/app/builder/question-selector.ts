@@ -23,6 +23,7 @@ interface OptionRow {
 @Component({
   selector: 'fm-question-selector',
   templateUrl: './question-selector.html',
+  styleUrl: './question-selector.scss',
   imports: [FormsModule, MatSelectModule, MatExpansionModule],
 })
 export class QuestionSelector {
