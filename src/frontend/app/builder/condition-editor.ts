@@ -43,6 +43,9 @@ const NEEDS_RIGHT: Record<ConditionOperator, 'operand' | 'list' | 'range' | 'non
   between: 'range',
 };
 
+/** Question types whose values are option ids of that one question. */
+const CHOICE_TYPES = new Set<ElementType>(['choice', 'dropdown', 'multiChoice']);
+
 export interface ConditionFieldOption {
   id: string;
   label: string;
@@ -143,17 +146,26 @@ export class ConditionEditor {
   }
 
   /**
-   * Picks the tested field; an operator that does not fit its type falls back to `eq`, and
-   * the literal is kept in the shape the field needs (see `fitLiteral`).
+   * Picks the tested field. The compared value stays when the new question has the same type,
+   * except for choice questions, whose option ids belong to the question they were picked
+   * from. Otherwise it is cleared, never converted. The operator stays when it fits the new
+   * field's type, else it falls back to `eq`.
    */
   setField(index: number, fieldId: string, fieldType: ElementType): void {
+    const old = this.source().conditions[index];
+    if (old?.fieldId === fieldId) return;
+    const oldType = this.fieldOf(old)?.type ?? old?.fieldType;
+    const keep = oldType === fieldType && !CHOICE_TYPES.has(fieldType);
     this.mutate((g) => {
-      const cond = g.conditions[index];
-      Object.assign(cond, { fieldId, fieldType });
-      if (!conditionOperatorsFor(fieldType).includes(cond.operator)) {
-        Object.assign(cond, emptyCondition(), { fieldId, fieldType });
+      if (keep) {
+        Object.assign(g.conditions[index], { fieldId, fieldType });
+        return;
       }
+      const { operator } = g.conditions[index];
+      const cond: Condition = { ...emptyCondition(), fieldId, fieldType };
+      if (conditionOperatorsFor(fieldType).includes(operator)) cond.operator = operator;
       this.fitLiteral(cond);
+      g.conditions[index] = cond;
     });
   }
 
