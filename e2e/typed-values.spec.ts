@@ -86,7 +86,7 @@ test('enters defaults and condition values with the control of the question type
 
   // The condition literal on Age is a number input as well.
   await selectRow(page, 'Note');
-  const literal = panel.locator('fm-condition-editor').getByRole('spinbutton', { name: 'value' });
+  const literal = panel.locator('fm-condition-editor').getByRole('spinbutton', { name: 'Value' });
   await expect(literal).toHaveValue('18');
   await literal.fill('25');
 

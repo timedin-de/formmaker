@@ -1,4 +1,7 @@
 <mat-form-field appearance="outline" subscriptSizing="dynamic">
+  @if (label(); as label) {
+    <mat-label>{{ label }}</mat-label>
+  }
   <mat-select [value]="model()">
     @for (p of _pages(); track p.page.id) {
       <mat-optgroup [label]="p.page.title ?? p.page.id">

@@ -11,6 +11,7 @@
   @for (cond of edit().conditions; track $index) {
     <div class="cond-row" [class.indent]="indent()">
       <fm-question-selector
+        [label]="i18n.t('cond.question')"
         [model]="cond.fieldId"
         [form]="form()"
         (selectChange)="setField($index, $event.id, $event.type)"
@@ -18,6 +19,7 @@
       ></fm-question-selector>
 
       <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>{{ i18n.t('cond.operator') }}</mat-label>
         <mat-select [ngModel]="cond.operator" (ngModelChange)="setOperator($index, $event)">
           @for (op of operators(cond); track op) {
             <mat-option [value]="op">{{ i18n.t(`op.${op}`) }}</mat-option>
@@ -47,6 +49,7 @@
         }
         @default {
           <mat-form-field appearance="outline" subscriptSizing="dynamic" class="val">
+            <mat-label>{{ i18n.t('cond.compareWith') }}</mat-label>
             <mat-select
               [ngModel]="operandKind(cond)"
               (ngModelChange)="setOperandKind($index, $event)"
@@ -58,6 +61,7 @@
           <br />
           @if (operandKind(cond) === 'field') {
             <fm-question-selector
+              [label]="i18n.t('cond.comparedQuestion')"
               [form]="form()"
               [selfId]="self()"
               [model]="fieldOperandId(cond)"
@@ -67,7 +71,7 @@
             <fm-question-input-field
               class="val"
               [element]="fieldOf(cond)"
-              [ariaLabel]="i18n.t('cond.value')"
+              [label]="i18n.t('cond.literal')"
               [value]="literal(cond.operand)"
               (valueChange)="setLiteral($index, 'operand', $event)"
             ></fm-question-input-field>
@@ -76,16 +80,16 @@
             <fm-option-picker
               class="val grow"
               multiple
-              [ariaLabel]="i18n.t('cond.value')"
+              [label]="i18n.t('cond.values')"
               [options]="choice.options"
               [value]="optionIds(cond)"
               (valueChange)="setOptionList($index, $event)"
             />
           } @else {
             <mat-form-field appearance="outline" subscriptSizing="dynamic" class="val grow">
+              <mat-label>{{ i18n.t('cond.values') }}</mat-label>
               <input
                 matInput
-                [attr.aria-label]="i18n.t('cond.value')"
                 [placeholder]="i18n.t('cond.commaList')"
                 [ngModel]="listText(cond)"
                 (ngModelChange)="setList($index, $event)"
