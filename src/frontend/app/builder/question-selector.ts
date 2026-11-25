@@ -29,6 +29,7 @@ export class QuestionSelector {
   readonly form = input.required<FormDocument>();
   readonly model = input.required<string>();
   readonly selfId = input<string>();
+  readonly label = input<string>();
   readonly questionType = input<QuestionType | 'group'>();
   readonly filterFn = input<(e: ElementDefinition) => boolean>();
 
