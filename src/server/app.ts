@@ -11,6 +11,7 @@ import { AppModule } from './app.module.js';
 import { AuthService } from './auth/auth.service';
 import { ApiExceptionFilter } from './common/api-exception.filter.js';
 import { useRe2Regex } from './common/re2-regex.js';
+import { staticCacheControl } from './common/static-cache.js';
 
 /** http-errors shape (body-parser): `expose` marks a 4xx whose message is safe to return. */
 function isExposedHttpError(error: unknown): error is { status: number; message: string } {
@@ -91,13 +92,17 @@ export async function createApp(): Promise<NestExpressApplication> {
   if (fs.existsSync(dist)) {
     const isApiPath = (p: string): boolean => p === '/api' || p.startsWith('/api/');
     // Mounted ahead of Nest, so skip /api: otherwise every API request stats the filesystem first.
-    const serveStatic = express.static(dist);
+    const serveStatic = express.static(dist, {
+      setHeaders: (res, file) =>
+        res.setHeader('Cache-Control', staticCacheControl(path.relative(dist, file))),
+    });
     app.use(function staticAssets(req: Request, res: Response, next: NextFunction) {
       if (isApiPath(req.path)) return next();
       serveStatic(req, res, next);
     });
     app.use(function spaFallback(req: Request, res: Response, next: NextFunction) {
       if (req.method !== 'GET' || isApiPath(req.path)) return next();
+      res.setHeader('Cache-Control', staticCacheControl('index.html'));
       res.sendFile(path.join(dist, 'index.html'));
     });
   }

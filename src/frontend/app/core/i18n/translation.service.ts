@@ -4,36 +4,30 @@ import {
   type EnvironmentProviders,
   inject,
   Injectable,
-  isDevMode,
   provideAppInitializer,
   signal,
 } from '@angular/core';
 import { type ValidationErrors } from '@angular/forms';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { catchFn } from '@shared/helper';
-import * as z from 'zod/mini';
 import { SNACK_TIME_ERROR } from '../consts';
 import type en from './lang/en';
 
 const STORAGE_KEY = 'formmaker.lang';
-export const TRANSLATIONS_CACHE_PREFIX = 'formmaker.i18n.';
 
 export const SUPPORTED_LANGS: { code: Lang; label: string }[] = [
   { code: 'en', label: 'English' },
   { code: 'de', label: 'Deutsch' },
 ];
 
-/** Each language is its own lazy chunk, so only the active one is downloaded. */
+/**
+ * Each language is its own lazy chunk, so only the active one is downloaded. The chunks have
+ * hashed names and are served as immutable, so repeat visits read them from the HTTP cache.
+ */
 const LOADERS: Record<Lang, () => Promise<{ default: Dict }>> = {
   en: () => import('./lang/en'),
   de: () => import('./lang/de'),
 };
-
-/**
- * Identifies the build: this module's bundle URL carries a content hash that changes whenever a
- * language chunk changes. Dev bundles are unhashed, so caching is off there.
- */
-const BUILD_VERSION = isDevMode() ? null : import.meta.url;
 
 /**
  * Tiny dependency-free i18n service: English + German, falls back to the key.
@@ -78,7 +72,7 @@ export class I18nService {
     this.requested = lang;
     let dict: Dict;
     try {
-      dict = await loadTranslations(lang);
+      dict = (await LOADERS[lang]()).default;
     } catch (error) {
       // Uses the still-active dictionary; falls back to the key if none has loaded yet.
       // Not `Notifier`: it depends on this service.
@@ -130,30 +124,6 @@ export function getErrorKey(
   return [undefined];
 }
 
-/** Loads a dictionary, preferring the localStorage copy written by the same build. */
-export async function loadTranslations(
-  lang: Lang,
-  version: string | null = BUILD_VERSION,
-): Promise<Dict> {
-  const key = TRANSLATIONS_CACHE_PREFIX + lang;
-  if (version) {
-    const { data: cached } = catchFn(() =>
-      cacheSchema.parse(JSON.parse(localStorage.getItem(key) ?? '')),
-    );
-    if (cached?.version === version) return cached.dict;
-  }
-
-  const dict = (await LOADERS[lang]()).default;
-  if (version) {
-    catchFn(() => localStorage.setItem(key, JSON.stringify({ version, dict })));
-  }
-  return dict;
-}
-
 type Lang = 'en' | 'de';
 type Dict = Record<string, string>;
 export type TranslationKey = keyof typeof en;
-const cacheSchema = z.strictObject({
-  version: z.string(),
-  dict: z.record(z.string(), z.string()),
-});

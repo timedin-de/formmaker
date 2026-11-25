@@ -1,44 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { I18nService, loadTranslations, TRANSLATIONS_CACHE_PREFIX } from './translation.service';
-
-describe('loadTranslations', () => {
-  const key = TRANSLATIONS_CACHE_PREFIX + 'de';
-
-  beforeEach(() => localStorage.clear());
-
-  it('caches the dictionary per build version', async () => {
-    const dict = await loadTranslations('de', 'build-1');
-    expect(dict['app.forms']).toBe('Formulare');
-    expect(JSON.parse(localStorage.getItem(key) ?? '')).toEqual({ version: 'build-1', dict });
-  });
-
-  it('serves a cached dictionary from the same build', async () => {
-    localStorage.setItem(
-      key,
-      JSON.stringify({ version: 'build-1', dict: { 'app.forms': 'cached' } }),
-    );
-    expect((await loadTranslations('de', 'build-1'))['app.forms']).toBe('cached');
-  });
-
-  it('ignores a dictionary cached by another build', async () => {
-    localStorage.setItem(
-      key,
-      JSON.stringify({ version: 'build-0', dict: { 'app.forms': 'stale' } }),
-    );
-    expect((await loadTranslations('de', 'build-1'))['app.forms']).toBe('Formulare');
-    expect(JSON.parse(localStorage.getItem(key) ?? '').version).toBe('build-1');
-  });
-
-  it('ignores a malformed cache entry', async () => {
-    localStorage.setItem(key, '{"version":"build-1","dict":[1]}');
-    expect((await loadTranslations('de', 'build-1'))['app.forms']).toBe('Formulare');
-  });
-
-  it('does not cache without a build version', async () => {
-    await loadTranslations('de', null);
-    expect(localStorage.getItem(key)).toBeNull();
-  });
-});
+import { I18nService } from './translation.service';
 
 describe('I18nService', () => {
   let i18n: I18nService;
