@@ -268,9 +268,15 @@ test.describe('accessibility', () => {
 
     test('new empty form', async ({ page }) => {
       await login(page);
-      await page.goto('/builder?new=1');
-      await expect(page.locator('mat-form-field').first()).toBeVisible();
-      await expectNoViolations(page);
+      await page.getByRole('button', { name: 'New form' }).first().click();
+      await page.waitForURL(/\/builder\?id=/);
+      const newId = new URL(page.url()).searchParams.get('id') as string;
+      try {
+        await expect(page.locator('mat-form-field').first()).toBeVisible();
+        await expectNoViolations(page);
+      } finally {
+        await deleteForm(session, newId);
+      }
     });
 
     test('property panel with validations and a condition', async ({ page }) => {

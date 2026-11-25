@@ -71,7 +71,7 @@ export class BuilderComponent {
   } | null>(null);
   protected readonly leaving = computed(() => this.leaveAnswer() !== null);
   private destroyed = false;
-  /** Counts the forms asked for by `?id=` or `?new=1`; only the latest is loaded or previewed. */
+  /** Counts the forms asked for by `?id=`; only the latest is loaded or previewed. */
   private loadRequests = 0;
   /**
    * Another form than the loaded one was asked for and is still loading. The loaded one
@@ -100,14 +100,17 @@ export class BuilderComponent {
       const ended = event instanceof NavigationCancel || event instanceof NavigationError;
       if (ended && asked && asked.id === event.id) this.closeLeaveDialog();
     });
-    // Load the working form: ?id= opens an existing form, ?new=1 a blank one.
+    // Load the form `?id=` asks for. The builder never creates one (the list does), and
+    // the route sends a URL without `?id=` to the list (see `app.routes.ts`).
     this.route.queryParams
       .pipe(startWith({ id: undefined, page: undefined }), pairwise(), takeUntilDestroyed())
       .subscribe(async ([oldParams, q]) => {
-        const opened = !q.id || oldParams.id !== q.id;
-        if (opened && q.id && q.id === this.store._form()?.id) {
-          // Back to the form still shown while another one loads (or the new form got its
-          // `?id=`): it is kept as it is, since a fresh copy could be older than its edits.
+        const id: string | undefined = q.id;
+        if (!id) return;
+        const opened = oldParams.id !== id;
+        if (opened && id === this.store._form()?.id) {
+          // Back to the form still shown while another one loads: it is kept as it is,
+          // since a fresh copy could be older than its edits.
           ++this.loadRequests;
           this.loading.set(false);
         } else if (opened) {
@@ -118,13 +121,9 @@ export class BuilderComponent {
           this.loading.set(true);
           let form: FormDefinition | undefined;
           try {
-            if (q.id) {
-              // Edits of it still being sent (e.g. when coming back to it) arrive first.
-              await this.store.sent(q.id);
-              form = await this.repo.getForm(q.id);
-            } else {
-              form = await this.repo.newForm(this.i18n.t('builder.pageN', { n: 1 }));
-            }
+            // Edits of it still being sent (e.g. when coming back to it) arrive first.
+            await this.store.sent(id);
+            form = await this.repo.getForm(id);
           } catch (error) {
             if (!wanted()) return;
             this.loading.set(false);
@@ -135,16 +134,6 @@ export class BuilderComponent {
           if (!wanted() || !form) return;
           this.store.load(form);
           this.loading.set(false);
-          if (!q.id) {
-            // Replaced, so going back doesn't open the URL without `?id=` again, which would
-            // create another form.
-            this.router.navigate([], {
-              relativeTo: this.route,
-              queryParams: { id: form.id, page: this.store.activePageId() },
-              replaceUrl: true,
-            });
-            return;
-          }
           this.notifier.ok('builder.editing', { name: formName(form, this.i18n) });
         }
         // A page asked for while a form loads is selected once it is loaded, from the URL

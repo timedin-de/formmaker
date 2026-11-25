@@ -29,7 +29,7 @@
       hidden
       (change)="onImport($event)"
     />
-    <button mat-flat-button color="primary" routerLink="/builder" [queryParams]="{ new: '1' }">
+    <button mat-flat-button color="primary" [disabled]="creating()" (click)="createForm()">
       <mat-icon svgIcon="add"></mat-icon> {{ i18n.t('landing.newForm') }}
     </button>
   </div>
@@ -52,7 +52,7 @@
     ></mat-icon>
     <h2>{{ i18n.t('landing.empty.title') }}</h2>
     <p>{{ i18n.t('landing.empty.text') }}</p>
-    <button mat-flat-button color="primary" routerLink="/builder" [queryParams]="{ new: '1' }">
+    <button mat-flat-button color="primary" [disabled]="creating()" (click)="createForm()">
       <mat-icon svgIcon="add"></mat-icon> {{ i18n.t('landing.createForm') }}
     </button>
   </div>

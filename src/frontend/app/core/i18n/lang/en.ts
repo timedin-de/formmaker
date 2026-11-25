@@ -1,7 +1,6 @@
 const en = {
   // shell
   'app.forms': 'Forms',
-  'app.builder': 'Builder',
   'app.account': 'Account',
   'app.logout': 'Log out',
   'app.menu': 'Language',
@@ -46,6 +45,7 @@ const en = {
   'landing.empty.title': 'No forms yet',
   'landing.empty.text': 'Create your first form or import an existing JSON definition.',
   'landing.createForm': 'Create form',
+  'landing.createFailed': 'The form could not be created.',
   'landing.noDescription': 'No description',
   'landing.fill': 'Fill',
   'landing.edit': 'Edit',
