@@ -31,6 +31,16 @@ describe('ConditionEditor', () => {
     return operand?.kind === 'literal' ? operand.value : undefined;
   };
 
+  it('reports no change just by rendering, but when the author picks the logic', async () => {
+    show('text');
+    await fixture.whenStable();
+    expect(changed).toEqual([]);
+
+    const any = fixture.nativeElement.querySelectorAll('mat-button-toggle button')[1];
+    (any as HTMLButtonElement).click();
+    expect(changed.map((g) => g.logic)).toEqual(['any']);
+  });
+
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [ConditionEditor],

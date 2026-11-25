@@ -1,7 +1,8 @@
 <div class="cond">
   <div class="row">
     <span class="legend">{{ legend() }}</span>
-    <mat-button-toggle-group [value]="edit().logic" (valueChange)="setLogic($event)">
+    <!-- `change`, not `valueChange`: the latter also fires when `value` is set on render. -->
+    <mat-button-toggle-group [value]="edit().logic" (change)="setLogic($event.value)">
       <mat-button-toggle value="all">{{ i18n.t('cond.all') }}</mat-button-toggle>
       <mat-button-toggle value="any">{{ i18n.t('cond.any') }}</mat-button-toggle>
     </mat-button-toggle-group>
