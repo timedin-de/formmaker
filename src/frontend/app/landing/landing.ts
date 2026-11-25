@@ -5,7 +5,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltip } from '@angular/material/tooltip';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { formName } from '@shared/helper';
 import { countQuestions } from '@shared/model/form-tree';
 import { toPortableForm, type FormDefinition, type FormWithOwner } from '@shared/model/form.model';
@@ -43,6 +43,7 @@ interface PendingDelete {
 export class LandingComponent {
   private readonly repo = inject(FormsRepository);
   private readonly notifier = inject(Notifier);
+  private readonly router = inject(Router);
   protected readonly i18n = inject(I18nService);
   readonly forms = signal<FormWithOwner[] | undefined>(undefined);
   private readonly importService = inject(FormImportService);
@@ -56,6 +57,8 @@ export class LandingComponent {
    * (`disabledInteractive`), so it keeps the focus the dialog hands back on cancel.
    */
   protected readonly countingForDelete = signal(false);
+  /** True while `createForm` waits for the new form. */
+  protected readonly creating = signal(false);
 
   readonly formName = formName;
 
@@ -123,6 +126,24 @@ export class LandingComponent {
     this.timedOutCloser = setTimeout(() => {
       trigger.closeMenu();
     }, 50);
+  }
+
+  /**
+   * Creates a blank form and opens it in the builder. Only here: the builder just opens
+   * forms, so no URL (a reload, Back, a bookmark) creates one.
+   */
+  async createForm(): Promise<void> {
+    // One at a time, so a double click doesn't create two forms.
+    if (this.creating()) return;
+    this.creating.set(true);
+    try {
+      const form = await this.repo.newForm(this.i18n.t('builder.pageN', { n: 1 }));
+      await this.router.navigate(['/builder'], { queryParams: { id: form.id } });
+    } catch (error) {
+      this.notifier.apiError(error, 'landing.createFailed');
+    } finally {
+      this.creating.set(false);
+    }
   }
 
   async importText(raw: string | null): Promise<void> {

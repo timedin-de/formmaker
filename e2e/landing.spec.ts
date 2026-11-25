@@ -88,6 +88,24 @@ test('exposes owner data only to the authenticated catalogue and strips it from 
   await deleteForm(session, formId);
 });
 
+test('the builder without a form goes to the list and creates none', async ({ page }) => {
+  await login(page);
+  await expect(page.getByRole('navigation').getByRole('link')).toHaveText(['Forms', 'Account']);
+  const creates: string[] = [];
+  page.on('request', (req) => {
+    if (req.method() === 'POST' && new URL(req.url()).pathname.startsWith('/api/forms')) {
+      creates.push(req.url());
+    }
+  });
+
+  for (const url of ['/builder', '/builder', '/builder?new=1']) {
+    await page.goto(url);
+    await expect(page.getByRole('button', { name: 'New form' }).first()).toBeVisible();
+  }
+
+  expect(creates).toEqual([]);
+});
+
 async function formStatus(session: ApiSession, formId: string): Promise<number> {
   const res = await session.request.get(`/api/forms/${formId}`);
   return res.status();

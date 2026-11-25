@@ -2,7 +2,6 @@ import type en from './en';
 const de: typeof en = {
   // shell
   'app.forms': 'Formulare',
-  'app.builder': 'Editor',
   'app.account': 'Konto',
   'app.logout': 'Abmelden',
   'app.menu': 'Sprache',
@@ -50,6 +49,7 @@ const de: typeof en = {
   'landing.empty.text':
     'Erstelle dein erstes Formular oder importiere eine vorhandene JSON-Definition.',
   'landing.createForm': 'Formular erstellen',
+  'landing.createFailed': 'Das Formular konnte nicht erstellt werden.',
   'landing.noDescription': 'Keine Beschreibung',
   'landing.fill': 'Ausfüllen',
   'landing.edit': 'Bearbeiten',

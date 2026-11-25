@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { createElement, createPage } from '@shared/model';
 import type { FormWithOwner } from '@shared/model/form.model';
 import { addToGroup, initRegistry } from '@test/helper';
@@ -102,6 +102,7 @@ describe('LandingComponent actions', () => {
   const submissionsFor = vi.fn();
   const onImport = vi.fn();
   const importJson = vi.fn();
+  const newForm = vi.fn();
   let component: LandingComponent;
   let i18n: I18nService;
 
@@ -111,6 +112,7 @@ describe('LandingComponent actions', () => {
     submissionsFor.mockReset();
     onImport.mockReset();
     importJson.mockReset();
+    newForm.mockReset();
     listForms.mockReset();
     listForms.mockResolvedValue([]);
     await TestBed.configureTestingModule({
@@ -119,7 +121,13 @@ describe('LandingComponent actions', () => {
         provideRouter([]),
         {
           provide: FormsRepository,
-          useValue: { init: () => Promise.resolve(), listForms, deleteForm, submissionsFor },
+          useValue: {
+            init: () => Promise.resolve(),
+            listForms,
+            deleteForm,
+            submissionsFor,
+            newForm,
+          },
         },
         { provide: MatSnackBar, useValue: { open } },
         { provide: FormImportService, useValue: { onImport, importJson } },
@@ -216,6 +224,33 @@ describe('LandingComponent actions', () => {
     onImport.mockResolvedValueOnce(makeForm());
     await component.onImport(new Event('change'));
     expect(listForms).toHaveBeenCalledTimes(1);
+  });
+
+  it('creates one blank form per click and opens it in the builder', async () => {
+    let created!: (form: FormWithOwner) => void;
+    newForm.mockReturnValue(new Promise((resolve) => (created = resolve)));
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+
+    const first = component.createForm();
+    // A second click while the first form is still being created.
+    await component.createForm();
+    created({ ...makeForm(), id: 'new-1' });
+    await first;
+
+    expect(newForm.mock.calls).toEqual([[i18n.t('builder.pageN', { n: 1 })]]);
+    expect(navigate.mock.calls).toEqual([[['/builder'], { queryParams: { id: 'new-1' } }]]);
+    expect(component['creating']()).toBe(false);
+  });
+
+  it('reports a form that could not be created and stays on the list', async () => {
+    newForm.mockRejectedValue(new Error('offline'));
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate');
+
+    await component.createForm();
+
+    expect(navigate).not.toHaveBeenCalled();
+    expect(open.mock.calls[0][0]).toBe(i18n.t('landing.createFailed'));
+    expect(component['creating']()).toBe(false);
   });
 
   it('importText closes the modal on cancel', async () => {

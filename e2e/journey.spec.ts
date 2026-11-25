@@ -16,7 +16,7 @@ test('builds a form in the designer, fills it out in the runner and exports resu
   const formName = uniqueName('journey');
   await login(page);
 
-  // Landing → new form in the builder (blank form is created + saved on load).
+  // Landing → new form in the builder (the landing creates the blank form, then opens it).
   await page.getByRole('button', { name: 'New form' }).first().click();
   await page.waitForURL(/\/builder/);
 
